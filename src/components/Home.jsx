@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import firebase from '../firebase/config';
+import { useNavigate } from 'react-router-dom';
+
 
 const SwitchButton = ({ number, isOn, toggleSwitch }) => {
+  
+  
   return (
     <button
       onClick={toggleSwitch}
-      className={`flex items-center justify-center ${isOn ? 'bg-green-700' : 'bg-red-600'} text-white font-bold text-center no-underline rounded-xl w-24 h-24 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+      className={`flex items-center justify-center ${isOn ? 'bg-emerald-700' : 'bg-rose-700'} text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
     >
       {number}
     </button>
@@ -13,9 +17,15 @@ const SwitchButton = ({ number, isOn, toggleSwitch }) => {
 };
 
 const SwitchPage = () => {
+
   const [documents, setDocuments] = useState([]);
   const [lunchCount, setLunchCount] = useState(0);
   const [breakfastCount, setBreakfastCount] = useState(0);
+
+  
+
+  const navigate=useNavigate()
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,6 +37,7 @@ const SwitchPage = () => {
         }));
         tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
         setDocuments(tokenDocuments);
+        
       } catch (error) {
         console.error('Error fetching tokens:', error);
       }
@@ -72,26 +83,33 @@ const SwitchPage = () => {
     setIsLunch(!isLunch); // Toggle between lunch and breakfast
   };
 
+
+  const handleUpdateBtn=()=>{
+    navigate('/login')
+  }
+
   return (
     <div className='text-center'>
+
       <div className="flex p-10 justify-between">
       <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
 
-          <h1 className='text-2xl text-gray-950 '>Lunch : {lunchCount}</h1>
-          <h1 className='text-2xl text-gray-950 '>Breakfast : {breakfastCount}</h1>
+          <h1 className='text-1xl text-gray-950 '>Lunch : {lunchCount}</h1>
+          <h1 className='text-1xl text-gray-950 '>Breakfast : {breakfastCount}</h1>
         </div>
 
  
 
         <div className="flex items-center">
-          <a href='/login' className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors duration-300">Update Token</a>
+        
+          <button onClick={handleUpdateBtn} className="text-white bg-gray-800 font-bold hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300  rounded-[3px] text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Update Token</button>
         </div>
       </div>
 
       <div className="flex items-center justify-center">
       <button
         onClick={toggleStatus}
-        className={`relative flex items-center justify-center w-36 h-16 bg-gray-900 rounded-full focus:outline-none transition-all duration-300 ${
+        className={`relative flex items-center justify-center w-60 h-10 bg-gray-900 rounded-full focus:outline-none transition-all duration-300 ${
           isLunch ? 'bg-blue-500' : 'bg-gary-400'
         }`}
       >

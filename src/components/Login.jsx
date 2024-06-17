@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 import firebase from '../firebase/config'
 import {DataOfOne} from '../store/StudentData';
@@ -16,6 +17,8 @@ function Login() {
   const [token, setToken] = useState();
   const [pass, setPass] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const [err,setErr]=useState("")
   const {setStdata} = useContext(DataOfOne)
 
 
@@ -40,6 +43,8 @@ function Login() {
       navigate('/student-portal');
   } else {
       console.log("No student found with the provided username and password.");
+      setErr('_ username or password is invalid !')
+
       // Handle case where no matching student is found
       // You might want to show an error message or take appropriate action
   }
@@ -63,6 +68,15 @@ function Login() {
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md">
         <h2 className="text-2xl font-bold mb-4">Student Login</h2>
+
+{
+
+      err && <div className="flex justify-center items-center pb-3">
+
+        <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger text-red-700" />
+          <p class="text-red-600"> {err}</p>
+      </div> 
+}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
