@@ -7,7 +7,7 @@ import List from "./components/List"
 import Section from './components/Section'
 
 import Fmenu from "./components/Fmenu"
-import {Route,Routes,useLocation} from 'react-router-dom'
+import {Route,Routes} from 'react-router-dom'
 import  PersonInfo  from './store/StudentData'
 import GetTokens from './store/GetDocuments'
 import SectionBF from './components/SectionBF'

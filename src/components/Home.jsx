@@ -16,6 +16,8 @@ const SwitchButton = ({ number, isOn, toggleSwitch }) => {
   );
 };
 
+
+
 const SwitchPage = () => {
 
   const [documents, setDocuments] = useState([]);
