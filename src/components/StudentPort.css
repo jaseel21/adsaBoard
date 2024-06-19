@@ -1,0 +1,30 @@
+.swal2-toast {
+    top: 50% !important; /* Override top position */
+    transform: translateY(-50%); /* Center vertically */
+  }
+  .swal2-center {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+  
+  .swal2-title-center {
+    text-align: center !important;
+  }
+    
+  .swal2-small {
+    max-width: 300px !important; /* Adjust maximum width as needed */
+  }
+  
+  .swal2-title-center {
+    text-align: center !important;
+    font-size: 20px;
+  }
+  
+  .swal2-content-padding {
+    padding: 10px; /* Adjust padding as per your design */
+  }
+
+  .swal2-icon-small svg {
+    width: 20px !important; /* Adjust icon width as needed */
+    height: 20px !important; /* Adjust icon height as needed */
+  }

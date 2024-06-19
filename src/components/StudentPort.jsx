@@ -3,6 +3,7 @@ import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import './StudentPort.css'
 
 function StudentPort() {
   const { stdata } = useContext(DataOfOne);
@@ -88,8 +89,10 @@ function StudentPort() {
           showConfirmButton: false,
           timer: 1500,
           customClass: {
-            popup: 'swal2-center',
+            popup: 'swal2-center swal2-small',
             title: 'swal2-title-center',
+            icon: 'swal2-icon-small',
+            content: 'swal2-content-padding'
           },
         });
         navigate('/login');
