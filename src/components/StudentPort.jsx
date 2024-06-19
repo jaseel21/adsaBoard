@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 function StudentPort() {
   const { stdata } = useContext(DataOfOne);
@@ -80,8 +81,19 @@ function StudentPort() {
         },
       })
       .then(() => {
+        Swal.fire({
+          position: 'center',
+          icon: 'success',
+          title: 'Your token updated',
+          showConfirmButton: false,
+          timer: 1500,
+          customClass: {
+            popup: 'swal2-center',
+            title: 'swal2-title-center',
+          },
+        });
         navigate('/login');
-        console.log('Successfully submitted');
+        
       });
   };
 
@@ -90,9 +102,9 @@ function StudentPort() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <form className="bg-white p-8 rounded shadow-md" onSubmit={handleSubmit}>
-        <h2 className="text-2xl font-bold mb-4">Student Portal</h2>
+    <div className="flex justify-center items-center pt-5  bg-gray-100">
+      <form className="bg-white p-5 w-auto rounded shadow-md" onSubmit={handleSubmit}>
+        <h2 className="text-2xl text-center font-bold mb-4 px-24 md:px-36">Student Portal</h2>
         <div className="mb-2 flex">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="studentNumber">
             Name :

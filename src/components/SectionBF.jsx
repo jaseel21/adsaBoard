@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHamburger } from '@fortawesome/free-solid-svg-icons';
+
 import firebase from "../firebase/config";
+import { faSearchMinus } from '@fortawesome/free-solid-svg-icons';
 
 const SectionBF = () => {
   const [documents, setDocuments] = useState([]);
@@ -60,6 +62,11 @@ const SectionBF = () => {
   return (
     <div className="bg-gray-100 min-h-screen py-8 flex">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-center items-center pb-5">
+      <FontAwesomeIcon icon={faSearchMinus} className="text-lg pr-1" />
+
+            <h1 className='font-normal underline  -700 text-gray-800  rounded-lg text-1xl'>Breakfast Sections</h1>
+          </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {/* Section 1 */}
           <div>

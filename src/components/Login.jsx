@@ -4,6 +4,7 @@ import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
+
 import firebase from '../firebase/config'
 import {DataOfOne} from '../store/StudentData';
 
@@ -65,9 +66,9 @@ function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Student Login</h2>
+    <div className="flex justify-center  h-auto bg-gray-100">
+      <div className="bg-white p-8 mt-8 rounded shadow-md">
+        <h2 className="text-2xl font-bold mb-4 ">Student Login</h2>
 
 {
 
@@ -114,7 +115,7 @@ function Login() {
             </div>
           </div>
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="text-white bg-gray-800 font-bold hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300  rounded-[3px] text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
             type="submit"
           >
             Sign In

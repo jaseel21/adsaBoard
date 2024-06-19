@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faListCheck } from '@fortawesome/free-solid-svg-icons';
+
 
 
 const SwitchButton = ({ number, isOn, toggleSwitch }) => {
@@ -92,8 +95,13 @@ const SwitchPage = () => {
 
   return (
     <div className='text-center'>
+<div className="pb-5 flex justify-center items-center">
 
-      <div className="flex p-10 justify-between">
+<FontAwesomeIcon icon={faListCheck} className="text-lg pr-1 " />
+          <h1 class="text-1xl underline text-center text-gray-800">ADSA TOEKN BOARD</h1>
+        </div>
+      <div className="flex px-10 pb-10 justify-between">
+        
       <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
 
           <h1 className='text-1xl text-gray-950 '>Lunch : {lunchCount}</h1>
