@@ -68,16 +68,16 @@ const MenuTable = () => {
         <table className="min-w-full divide-y divide-gray-200">
   <thead className="bg-gray-50">
     <tr>
-      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
+      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
         Beef
       </th>
-      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
+      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
         Chicken
       </th>
-      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
+      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
         Fish
       </th>
-      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
         Mutton
       </th>
     </tr>

@@ -100,7 +100,7 @@ const SwitchPage = () => {
 <FontAwesomeIcon icon={faListCheck} className="text-lg pr-1 " />
           <h1 class="text-1xl underline text-center text-gray-800">ADSA TOEKN BOARD</h1>
         </div>
-      <div className="flex px-10 pb-10 justify-between">
+      <div className="flex px-2 md:px-10 pb-10 justify-between">
         
       <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
 

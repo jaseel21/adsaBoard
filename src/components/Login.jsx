@@ -43,8 +43,8 @@ function Login() {
       // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
       navigate('/student-portal');
   } else {
-      console.log("No student found with the provided username and password.");
-      setErr('_ username or password is invalid !')
+      
+      setErr(' entry is invalid')
 
       // Handle case where no matching student is found
       // You might want to show an error message or take appropriate action
@@ -66,15 +66,15 @@ function Login() {
   };
 
   return (
-    <div className="flex justify-center  h-auto bg-gray-100">
-      <div className="bg-white p-8 mt-8 rounded shadow-md">
+    <div className="flex justify-center p-3  h-auto bg-gray-100">
+      <div className="bg-white p-8 mt-8 rounded shadow-md ">
         <h2 className="text-2xl font-bold mb-4 ">Student Login</h2>
 
 {
 
-      err && <div className="flex justify-center items-center pb-3">
+      err && <div className="flex  items-center pb-3">
 
-        <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger text-red-700" />
+        <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger mr-2 text-red-700" />
           <p class="text-red-600"> {err}</p>
       </div> 
 }

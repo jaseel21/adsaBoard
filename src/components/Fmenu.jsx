@@ -24,8 +24,8 @@ const MenuTable = () => {
             <th className="py-3 px-6 text-left">Day</th>
             <th className="py-3 px-6 text-left">M-T</th>
             <th className="py-3 px-6 text-left">B-F</th>
-            <th className="py-3 px-6 text-left">L</th>
-            <th className="py-3 px-6 text-left">e-t</th>
+            {/* <th className="py-3 px-6 text-left">L</th>
+            <th className="py-3 px-6 text-left">e-t</th> */}
           </tr>
         </thead>
         <tbody className="text-gray-700">
@@ -34,8 +34,8 @@ const MenuTable = () => {
               <td className="py-3 px-6 text-left whitespace-nowrap">{menuItem.day}</td>
               <td className="py-3 px-6 text-left">{menuItem.meal}</td>
               <td className="py-3 px-6 text-left">{menuItem.item}</td>
-              <td className="py-3 px-6 text-left">{menuItem.meal}</td>
-              <td className="py-3 px-6 text-left">{menuItem.meal}</td>
+              {/* <td className="py-3 px-6 text-left">{menuItem.meal}</td>
+              <td className="py-3 px-6 text-left">{menuItem.meal}</td> */}
               
             </tr>
           ))}

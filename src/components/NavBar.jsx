@@ -49,12 +49,12 @@ const Navbar = () => {
     }, []);
 
     return (
-        <nav className="bg-transparent p-4 flex">
+        <nav className="bg-transparent py-4  md:p-4 flex">
             <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
                 <div className="relative flex items-center justify-between h-16">
                     {/* Navbar Links */}
                     <div className="justify-center items-center sm:block sm:ml-6 w-full sm:w-auto">
-                        <div className="flex justify-center sm:justify-start space-x-4">
+                        <div className="flex justify-center sm:justify-start sm:space-x-0 md:space-x-4">
                             {/* Home Button */}
                             <button
                                 onClick={handleHomeBtn}

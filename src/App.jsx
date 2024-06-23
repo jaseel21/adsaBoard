@@ -11,6 +11,7 @@ import {Route,Routes} from 'react-router-dom'
 import  PersonInfo  from './store/StudentData'
 import GetTokens from './store/GetDocuments'
 import SectionBF from './components/SectionBF'
+import Admin from './components/Admin'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path='/lunch' Component={Section}></Route>
         <Route path='/menu' Component={Fmenu}></Route>
         <Route path='/breakfast' Component={SectionBF} />
+        <Route path='/admin' Component={Admin} ></Route>
       </Routes>
           </GetTokens>
         </PersonInfo>

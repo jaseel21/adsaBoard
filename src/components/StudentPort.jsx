@@ -105,9 +105,9 @@ function StudentPort() {
   };
 
   return (
-    <div className="flex justify-center items-center pt-5  bg-gray-100">
-      <form className="bg-white p-5 w-auto rounded shadow-md" onSubmit={handleSubmit}>
-        <h2 className="text-2xl text-center font-bold mb-4 px-24 md:px-36">Student Portal</h2>
+    <div className="flex justify-center p-3 items-center pt-5  bg-gray-100">
+      <form className="bg-white p-5 w-full rounded shadow-md" onSubmit={handleSubmit}>
+        <h2 className="text-2xl text-center font-bold mb-4  md:px-36">Student Portal</h2>
         <div className="mb-2 flex">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="studentNumber">
             Name :
@@ -158,7 +158,7 @@ function StudentPort() {
         {showCheckoutOptions && (
           <div className="mb-4">
             <h2 className="text-xl font-bold mb-2">Checkout Options</h2>
-            <div className="flex">
+            <div className="flex flex-wrap ">
               <label className="inline-flex items-center mr-2">
                 <input
                   type="checkbox"
