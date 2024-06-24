@@ -105,9 +105,11 @@ function StudentPort() {
   };
 
   return (
-    <div className="flex justify-center p-3 items-center pt-5  bg-gray-100">
+    <div className="md:flex md:justify-center">
+
+    <div className="flex justify-center p-3 items-center pt-5 md:w-1/2 bg-gray-100">
       <form className="bg-white p-5 w-full rounded shadow-md" onSubmit={handleSubmit}>
-        <h2 className="text-2xl text-center font-bold mb-4  md:px-36">Student Portal</h2>
+        <h2 className="text-2xl text-center font-bold mb-4  md:px-10">Student Portal</h2>
         <div className="mb-2 flex">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="studentNumber">
             Name :
@@ -207,6 +209,8 @@ function StudentPort() {
         </button>
       </form>
     </div>
+    </div>
+
   );
 }
 

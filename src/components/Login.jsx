@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +13,6 @@ import {DataOfOne} from '../store/StudentData';
 
 function Login() {
 
-  
-
   const [token, setToken] = useState();
   const [pass, setPass] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,30 +23,71 @@ function Login() {
 
   const navigate=useNavigate()
 
+
+
+  // Define your time period here
+  const startTime = new Date();
+  startTime.setHours(1, 0, 0); // 5:00 AM
+  const endTime = new Date();
+  endTime.setHours(2, 0, 0); // 5:00 PM
+
+
+
+  const [canClick, setCanClick] = useState(isCurrentTimeInRange(startTime, endTime));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCanClick(isCurrentTimeInRange(startTime, endTime));
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [startTime, endTime]);
+
+  function isCurrentTimeInRange(start, end) {
+    const now = new Date();
+    return now >= start && now <= end;
+  }
+
+  const SubmitForm = async()=> {
+    if (isCurrentTimeInRange(startTime, endTime)) {
+      
+      let StInfo= await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).where('password',"==",pass).get()
+      if (!StInfo.empty) {
+        // Access the data of the first document found
+        
+        let studentData = StInfo.docs[0].data();
+        studentData.documentId = StInfo.docs[0].id;
+       
+        
+        // Assuming setStdata is a function to set state or perform further actions
+        setStdata(studentData);
+        
+        // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
+        navigate('/student-portal');
+    } else {
+        
+        setErr(' entry is invalid')
+  
+        // Handle case where no matching student is found
+        // You might want to show an error message or take appropriate action
+    }
+      } else {
+        alert('only you can sign between 1:00 AM and 5:00 PM.');
+      }
+    
+  }
+
+  function checkTimeAndHandleClick () {
+    SubmitForm();
+  }
+
+
   const handleSubmit = async(e) => {
+
     e.preventDefault();
+    checkTimeAndHandleClick();
     console.log(token, pass);
   
-    let StInfo= await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).where('password',"==",pass).get()
-    if (!StInfo.empty) {
-      // Access the data of the first document found
-      
-      let studentData = StInfo.docs[0].data();
-      studentData.documentId = StInfo.docs[0].id;
-     
-      
-      // Assuming setStdata is a function to set state or perform further actions
-      setStdata(studentData);
-      
-      // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
-      navigate('/student-portal');
-  } else {
-      
-      setErr(' entry is invalid')
-
-      // Handle case where no matching student is found
-      // You might want to show an error message or take appropriate action
-  }
     
     // Add logic here to handle login authentication or other operations
   };
@@ -66,7 +105,7 @@ function Login() {
   };
 
   return (
-    <div className="flex justify-center p-3  h-auto bg-gray-100">
+    <div className="flex justify-center p-3   bg-gray-100">
       <div className="bg-white p-8 mt-8 rounded shadow-md ">
         <h2 className="text-2xl font-bold mb-4 ">Student Login</h2>
 

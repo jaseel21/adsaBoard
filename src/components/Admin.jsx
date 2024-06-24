@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const TimedButton = () => {
   // Define your time period here
   const startTime = new Date();
-  startTime.setHours(22, 0, 0); // 5:00 AM
+  startTime.setHours(8, 0, 0); // 5:00 AM
   const endTime = new Date();
   endTime.setHours(24, 0, 0); // 5:00 PM
 
