@@ -29,7 +29,7 @@ function Login() {
   const startTime = new Date();
   startTime.setHours(1, 0, 0); // 5:00 AM
   const endTime = new Date();
-  endTime.setHours(2, 0, 0); // 5:00 PM
+  endTime.setHours(24, 0, 0); // 5:00 PM
 
 
 
@@ -105,7 +105,7 @@ function Login() {
   };
 
   return (
-    <div className="flex justify-center p-3   bg-gray-100">
+    <div className="flex justify-center p-3   bg-white">
       <div className="bg-white p-8 mt-8 rounded shadow-md ">
         <h2 className="text-2xl font-bold mb-4 ">Student Login</h2>
 
