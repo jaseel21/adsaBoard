@@ -108,6 +108,7 @@ const MenuTable = () => {
           </div>
         </div>
       </div>
+    
     </div>
   );
 };
