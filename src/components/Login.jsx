@@ -29,7 +29,7 @@ function Login() {
   const startTime = new Date();
   startTime.setHours(1, 0, 0); // 5:00 AM
   const endTime = new Date();
-  endTime.setHours(24, 0, 0); // 5:00 PM
+  endTime.setHours(1, 0, 0); // 5:00 PM
 
 
 
@@ -48,29 +48,51 @@ function Login() {
     return now >= start && now <= end;
   }
 
+  let tbStatus
   const SubmitForm = async()=> {
+    let tokenBoard= await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get().then((doc=>{
+      if (doc.exists) {
+        tbStatus = doc.data(); // Assign doc.data() to tbStatus
+        console.log(tbStatus); // Optionally log tbStatus
+      } else {
+        console.log("No such document!");
+      }
+    }))
+  console.log(tbStatus);
+
+  const LoginWith=async()=>{
+    let StInfo= await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).where('password',"==",pass).get()
+    if (!StInfo.empty) {
+      // Access the data of the first document found
+      
+      let studentData = StInfo.docs[0].data();
+      studentData.documentId = StInfo.docs[0].id;
+     
+      
+      // Assuming setStdata is a function to set state or perform further actions
+      setStdata(studentData);
+      
+      // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
+      navigate('/student-portal');
+  } else {
+      
+      setErr(' entry is invalid')
+
+      // Handle case where no matching student is found
+      // You might want to show an error message or take appropriate action
+  }
+  }
+   
+
     if (isCurrentTimeInRange(startTime, endTime)) {
       
-      let StInfo= await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).where('password',"==",pass).get()
-      if (!StInfo.empty) {
-        // Access the data of the first document found
-        
-        let studentData = StInfo.docs[0].data();
-        studentData.documentId = StInfo.docs[0].id;
-       
-        
-        // Assuming setStdata is a function to set state or perform further actions
-        setStdata(studentData);
-        
-        // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
-        navigate('/student-portal');
-    } else {
-        
-        setErr(' entry is invalid')
-  
-        // Handle case where no matching student is found
-        // You might want to show an error message or take appropriate action
-    }
+      
+     LoginWith();
+      }else if(tbStatus.status==true){
+
+        LoginWith();
+
+
       } else {
         alert('only you can sign between 1:00 AM and 5:00 PM.');
       }

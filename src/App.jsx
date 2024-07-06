@@ -12,6 +12,7 @@ import  PersonInfo  from './store/StudentData'
 import GetTokens from './store/GetDocuments'
 import SectionBF from './components/SectionBF'
 import Admin from './components/Admin'
+import AstudentPort from './components/AstudentPort'
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path='/menu' Component={Fmenu}></Route>
         <Route path='/breakfast' Component={SectionBF} />
         <Route path='/admin' Component={Admin} ></Route>
+        <Route path='/astudent-port' Component={AstudentPort}></Route>
       </Routes>
           </GetTokens>
         </PersonInfo>

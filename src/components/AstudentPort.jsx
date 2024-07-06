@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import './StudentPort.css'
 
-function StudentPort() {
+function AstudentPort() {
   const { stdata } = useContext(DataOfOne);
 
   const [lunch, setLunch] = useState(stdata.obj.lunch);
@@ -95,7 +95,7 @@ function StudentPort() {
             content: 'swal2-content-padding'
           },
         });
-        navigate('/login');
+        navigate('/admin');
         
       });
   };
@@ -115,7 +115,6 @@ function StudentPort() {
             Name :
           </label>
           <h2 className="block pl-2 text-gray-700 text-sm font-bold mb-2">{stdata.uname}</h2>
-
         </div>
         <div className="mb-2 flex">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="studentNumber">
@@ -215,4 +214,4 @@ function StudentPort() {
   );
 }
 
-export default StudentPort;
+export default AstudentPort;
