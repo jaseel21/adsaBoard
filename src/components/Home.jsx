@@ -9,6 +9,7 @@ import { faListCheck } from '@fortawesome/free-solid-svg-icons';
 const SwitchButton = ({ number, isOn, toggleSwitch }) => {
   
   
+  
   return (
     <button
       onClick={toggleSwitch}
@@ -22,6 +23,7 @@ const SwitchButton = ({ number, isOn, toggleSwitch }) => {
 
 
 const SwitchPage = () => {
+
 
   const [documents, setDocuments] = useState([]);
   const [lunchCount, setLunchCount] = useState(0);
@@ -76,9 +78,11 @@ const SwitchPage = () => {
     }
   };
 
-  const toggleSwitch = (index) => {
-    // Implement your toggle logic here
+  const toggleSwitch = async (index) => {
+    
     console.log("Toggle switch for token:", documents[index]);
+    navigate('/login')
+
     // Example logic: You would update Firestore here
   };
 

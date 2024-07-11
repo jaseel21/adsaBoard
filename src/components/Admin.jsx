@@ -71,6 +71,7 @@ function Admin() {
         let tbStatus = doc.data(); // Assign doc.data() to tbStatus
         console.log(tbStatus); // Optionally log tbStatus
         setIsChecked(tbStatus.status)
+        console.log(tbStatus);
       } else {
         console.log("No such document!");
       }

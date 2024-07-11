@@ -21,6 +21,7 @@ function Login() {
   const {setStdata} = useContext(DataOfOne)
 
 
+
   const navigate=useNavigate()
 
 
@@ -29,7 +30,7 @@ function Login() {
   const startTime = new Date();
   startTime.setHours(1, 0, 0); // 5:00 AM
   const endTime = new Date();
-  endTime.setHours(1, 0, 0); // 5:00 PM
+  endTime.setHours(2, 0, 0); // 5:00 PM
 
 
 
@@ -47,18 +48,6 @@ function Login() {
     const now = new Date();
     return now >= start && now <= end;
   }
-
-  let tbStatus
-  const SubmitForm = async()=> {
-    let tokenBoard= await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get().then((doc=>{
-      if (doc.exists) {
-        tbStatus = doc.data(); // Assign doc.data() to tbStatus
-        console.log(tbStatus); // Optionally log tbStatus
-      } else {
-        console.log("No such document!");
-      }
-    }))
-  console.log(tbStatus);
 
   const LoginWith=async()=>{
     let StInfo= await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).where('password',"==",pass).get()
@@ -82,20 +71,43 @@ function Login() {
       // You might want to show an error message or take appropriate action
   }
   }
-   
-
-    if (isCurrentTimeInRange(startTime, endTime)) {
-      
-      
-     LoginWith();
-      }else if(tbStatus.status==true){
-
-        LoginWith();
 
 
+  const SubmitForm = async()=> {
+
+    let tbStatus
+    await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get().then((doc=>{
+      if (doc.exists) {
+        tbStatus = doc.data(); // Assign doc.data() to tbStatus
+        console.log(tbStatus.status); // Optionally log tbStatus
+        tbStatus=tbStatus.status  
       } else {
-        alert('only you can sign between 1:00 AM and 5:00 PM.');
+        console.log("No such document!");
       }
+    }))
+  if (isCurrentTimeInRange(startTime, endTime)) {
+  console.log(tbStatus);
+  LoginWith();
+
+      console.log('pass time',tbStatus);
+      // if(tbStatus==true){
+      //   console.log('pass admin pri'.tbStatus);
+
+      //   LoginWith();
+      //   console.log('in status checking codition');
+      // }else{
+      //   alert("blocked by admin")
+      // }
+    
+     } else {
+       alert('You cannot log in at this time');
+     }
+
+     if(tbStatus==true){
+      LoginWith();
+     }else{
+      alert('blocked by admin')
+     }
     
   }
 
