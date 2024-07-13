@@ -5,11 +5,11 @@ import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData'; // Assuming this is your context
 import { useNavigate } from 'react-router-dom';
 
-const SwitchButton = ({ number, isOn, toggleSwitch }) => {
+const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
   return (
     <button
       onClick={toggleSwitch}
-      className={`flex items-center justify-center ${isOn ? 'bg-emerald-700' : 'bg-rose-700'} text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+      className={`flex items-center justify-center ${block && 'bg-slate-700' } ${isOn ? 'bg-emerald-700' : 'bg-rose-700'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
     >
       {number}
     </button>
@@ -178,6 +178,7 @@ function Admin() {
             <SwitchButton
               key={index}
               number={doc.tokenNo}
+              block={doc.block}
               isOn={doc.obj && doc.obj.lunch}
               toggleSwitch={() => toggleSwitch(index)}
             />
@@ -187,6 +188,7 @@ function Admin() {
             <SwitchButton
               key={index}
               number={doc.tokenNo}
+              block={doc.block}
               isOn={doc.obj && doc.obj.breakfast}
               toggleSwitch={() => toggleSwitch(index)}
             />

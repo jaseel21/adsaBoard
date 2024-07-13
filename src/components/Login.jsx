@@ -30,7 +30,7 @@ function Login() {
   const startTime = new Date();
   startTime.setHours(1, 0, 0); // 5:00 AM
   const endTime = new Date();
-  endTime.setHours(2, 0, 0); // 5:00 PM
+  endTime.setHours(24, 0, 0); // 5:00 PM
 
 
 
@@ -111,10 +111,30 @@ function Login() {
     
   }
 
-  function checkTimeAndHandleClick () {
-    SubmitForm();
-  }
+  async function checkTimeAndHandleClick() {
+    try {
+      // Assuming 'token' is passed as an argument to the function
+      let blockStatus = await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).get();
+  
+      if (!blockStatus.empty) {
+        let statusData = blockStatus.docs[0].data();
+       statusData=statusData.block
+        // Call SubmitForm() here or pass 'statusData' to it if needed
+        if(statusData==false){
 
+          SubmitForm();
+        }else{
+         alert("youer token has been blocked")
+        }
+      } else {
+        console.log('No document found for token:', token);
+      }
+    } catch (error) {
+      console.error('Error fetching block status:', error);
+      // Handle error as needed
+    }
+  }
+  
 
   const handleSubmit = async(e) => {
 
@@ -139,24 +159,24 @@ function Login() {
   };
 
   return (
-    <div className="flex justify-center p-3   bg-white">
-      <div className="bg-white p-8 mt-8 rounded shadow-md ">
-        <h2 className="text-2xl font-bold mb-4 ">Student Login</h2>
+    <div className="flex justify-center items-center h-auto md:pt-24 sm:pt-20 ">
+      <div className="max-w-md w-full p-8 mt-8 bg-white rounded shadow-md">
+        <h2 className="text-3xl font-bold mb-4 text-gray-800">Student Login</h2>
 
-{
+        {err && (
+          <div className="flex items-center pb-3">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger mr-2 text-red-700" />
+            <p className="text-red-600">{err}</p>
+          </div>
+        )}
 
-      err && <div className="flex  items-center pb-3">
-
-        <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger mr-2 text-red-700" />
-          <p class="text-red-600"> {err}</p>
-      </div> 
-}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
               Username
             </label>
             <input
+              required
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               id="username"
               type="number"
@@ -171,6 +191,7 @@ function Login() {
             </label>
             <div className="relative">
               <input
+                required
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -188,7 +209,7 @@ function Login() {
             </div>
           </div>
           <button
-            className="text-white bg-gray-800 font-bold hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300  rounded-[3px] text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded"
             type="submit"
           >
             Sign In
