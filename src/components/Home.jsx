@@ -58,10 +58,10 @@ const SwitchPage = () => {
       let breakfast = 0;
       
       documents.forEach((doc) => {
-        if (doc.obj && doc.obj.lunch) {
+        if (doc.block==false && doc.obj.lunch) {
           lunch++;
         }
-        if (doc.obj && doc.obj.breakfast) {
+        if (doc.block==false && doc.obj.breakfast) {
           breakfast++;
         }
       });

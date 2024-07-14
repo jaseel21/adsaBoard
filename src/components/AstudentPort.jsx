@@ -70,7 +70,7 @@ function AstudentPort() {
         uname: stdata.uname,
         password: stdata.password,
         tokenNo: stdata.tokenNo,
-        block:stdata.block,
+        block:blocked,
         obj: {
           lunch: lunch,
           breakfast: breakfast,
