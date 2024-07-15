@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import './StudentPort.css'
 
+
 function AstudentPort() {
   const { stdata } = useContext(DataOfOne);
 
@@ -14,6 +15,7 @@ function AstudentPort() {
   const [chicken, setChicken] = useState(stdata.obj2.chicken);
   const [fish, setFish] = useState(stdata.obj2.fish);
   const [mutton, setMutton] = useState(stdata.obj2.mutton);
+
 
   const navigate = useNavigate();
   const [showCheckoutOptions, setShowCheckoutOptions] = useState(false);
@@ -70,7 +72,7 @@ function AstudentPort() {
         uname: stdata.uname,
         password: stdata.password,
         tokenNo: stdata.tokenNo,
-        block:blocked,
+        block:blocked  ,
         obj: {
           lunch: lunch,
           breakfast: breakfast,
