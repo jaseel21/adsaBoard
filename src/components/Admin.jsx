@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData'; // Assuming this is your context
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useLocation } from 'react-router-dom';
 
 const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
   return (
@@ -17,13 +17,22 @@ const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
 };
 
 function Admin() {
+  const location=useLocation()
   const { setStdata } = useContext(DataOfOne); // Getting context value
 
   const [documents, setDocuments] = useState([]);
   const [isChecked, setIsChecked] = useState();
   const [isLunch, setIsLunch] = useState(false);
-
   const navigate=useNavigate()
+
+  useEffect(() => {
+    // Check for location state and update isLunch accordingly
+    if (location.state?.isLunch !== undefined) {
+      setIsLunch(location.state.isLunch);
+    } else {
+      setIsLunch(false); // Default value if no state is provided
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -89,6 +98,7 @@ function Admin() {
     if (!StInfo.empty) {
       let studentData = StInfo.docs[0].data();
       studentData.documentId = StInfo.docs[0].id;
+      studentData.isLunch=isLunch
 
       setStdata(studentData); // Assuming setStdata updates context state
       navigate("/astudent-port")

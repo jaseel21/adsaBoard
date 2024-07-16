@@ -98,7 +98,7 @@ function AstudentPort() {
             content: 'swal2-content-padding'
           },
         });
-        navigate('/admin');
+        navigate('/admin',{state:{isLunch:stdata.isLunch}});
         
       });
   };

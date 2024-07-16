@@ -3,41 +3,50 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faList, faTicketAlt, faUtensils } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 
-const Navbar = () => {
+const Navbar = ({ isAdmin }) => {
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
     const dropdownRef = useRef(null);
 
+    // Navigation handlers
     const handleHomeBtn = () => {
-        navigate('/');
+        if(isAdmin){
+            navigate('/admin')
+        }else{
+
+            navigate('/');
+        }
     };
 
     const handleListBtn = () => {
         navigate('/list');
     };
 
-    const handleMenuBtn=()=>{
-        navigate('/menu')
-    }
+    const handleMenuBtn = () => {
+        navigate('/menu');
+    };
 
     const handleDropdownToggle = () => {
-        setIsOpen(!isOpen);
+        setIsOpen(prevState => !prevState);
     };
 
     const closeDropdown = () => {
         setIsOpen(false);
     };
-    const lunchRoute=()=>{
-        navigate('/lunch')
-    }
-    const BreakfastRoute=()=>{
-        navigate('/breakfast')
-    }
 
+    const lunchRoute = () => {
+        navigate('/lunch');
+    };
+
+    const breakfastRoute = () => {
+        navigate('/breakfast');
+    };
+
+    // Close the dropdown when clicking outside
     useEffect(() => {
         const handleOutsideClick = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
+                closeDropdown();
             }
         };
 
@@ -49,7 +58,7 @@ const Navbar = () => {
     }, []);
 
     return (
-        <nav className="bg-transparent py-4  md:p-4 flex">
+        <nav className="bg-transparent py-4 md:p-4 flex">
             <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
                 <div className="relative flex items-center justify-between h-16">
                     {/* Navbar Links */}
@@ -61,7 +70,7 @@ const Navbar = () => {
                                 className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                             >
                                 <FontAwesomeIcon icon={faHome} className="mr-1" />
-                                Home
+                                {isAdmin ? 'Admin' : 'Home'} {/* Fixed the display text */}
                             </button>
                             {/* List Button */}
                             <button
@@ -73,7 +82,6 @@ const Navbar = () => {
                             </button>
                             {/* Token Dropdown Button */}
                             <div className="relative">
-                                {/* Button trigger */}
                                 <button
                                     onClick={handleDropdownToggle}
                                     className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
@@ -89,22 +97,18 @@ const Navbar = () => {
                                             {/* Option 1 */}
                                             <button
                                                 onClick={() => {
-                                                    // Handle option 1 click
-
                                                     lunchRoute();
                                                     closeDropdown();
                                                 }}
-                                                className="block px-4 py-2 text-sm  text-gray-700 hover:bg-gray-100 w-3 text-left"
+                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                                             >
-                                                Lunch 
+                                                Lunch
                                             </button>
 
                                             {/* Option 2 */}
                                             <button
                                                 onClick={() => {
-                                                    // Handle option 2 click
-                                                   
-                                                    BreakfastRoute();
+                                                    breakfastRoute();
                                                     closeDropdown();
                                                 }}
                                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
