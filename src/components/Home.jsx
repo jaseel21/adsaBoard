@@ -93,6 +93,28 @@ const SwitchPage = () => {
     navigate('/login')
   }
 
+  const supplyList=()=>{
+    firebase.firestore().collection('students').add({
+      uname:"jimshad",
+      password:"50",
+      tokenNo:50,
+      block:false,
+      obj:{
+        lunch:true,
+        breakfast:true
+      },
+      obj2:{
+        beef:true,
+        chicken:true,
+        fish:true,
+        mutton:true
+      }
+  
+    }).then(()=>{
+      alert("submittd")
+    })
+  }
+
   return (
     <div className='text-center'>
 <div className="pb-5 flex justify-center items-center">
@@ -109,7 +131,7 @@ const SwitchPage = () => {
           <h1 className='text-1xl text-gray-950 '>Breakfast : {breakfastCount}</h1>
         <div className=" justify-center mt-4">
           <button
-            
+            onClick={supplyList}
             className="bg-green-500 text-white rounded-lg shadow-md p-2 text-sm font-semibold flex items-center space-x-2 transition duration-300 ease-in-out hover:bg-green-600"
           >
             <FontAwesomeIcon icon={faPrint} className="text-xl" />
