@@ -7,12 +7,13 @@ import List from "./components/List"
 import Section from './components/Section'
 
 import Fmenu from "./components/Fmenu"
-import {Route,Routes,useLocation} from 'react-router-dom'
+import {Route,Routes,generatePath,useLocation} from 'react-router-dom'
 import  PersonInfo  from './store/StudentData'
 import GetTokens from './store/GetDocuments'
 import SectionBF from './components/SectionBF'
 import Admin from './components/Admin'
 import AstudentPort from './components/AstudentPort'
+import GeneratePdf from "./components/GeneratePdf"
 
 function App() {
   const isAdmin=location.pathname === "/admin"
@@ -34,6 +35,7 @@ function App() {
         <Route path='/breakfast' Component={SectionBF} />
         <Route path='/admin' Component={Admin} ></Route>
         <Route path='/astudent-port' Component={AstudentPort}></Route>
+        <Route path='/pdfg' Component={GeneratePdf}></Route>
       </Routes>
           </GetTokens>
         </PersonInfo>

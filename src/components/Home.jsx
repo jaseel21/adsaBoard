@@ -3,6 +3,7 @@ import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faListCheck } from '@fortawesome/free-solid-svg-icons';
+import { faBowlFood, faPrint } from '@fortawesome/free-solid-svg-icons';
 
 
 
@@ -101,12 +102,25 @@ const SwitchPage = () => {
         </div>
       <div className="flex px-2 md:px-64 pb-10 justify-between">
         
-      <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
+      <div className="">
+        <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
 
           <h1 className='text-1xl text-gray-950 '>Lunch : {lunchCount}</h1>
           <h1 className='text-1xl text-gray-950 '>Breakfast : {breakfastCount}</h1>
+        <div className=" justify-center mt-4">
+          <button
+            
+            className="bg-green-500 text-white rounded-lg shadow-md p-2 text-sm font-semibold flex items-center space-x-2 transition duration-300 ease-in-out hover:bg-green-600"
+          >
+            <FontAwesomeIcon icon={faPrint} className="text-xl" />
+            <span>Supply List</span>
+          </button>
+        </div>
+        </div>
         </div>
 
+
+        
  
 
         <div className="flex items-center">

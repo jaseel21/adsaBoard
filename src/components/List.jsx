@@ -50,12 +50,12 @@ const MenuTable = () => {
   
   }, []);
   
-  useEffect(() => {
-    console.log(beef); // This will log whenever beef state changes
-    console.log(chicken);
-    console.log(fish);
-    console.log(mutton);
-  }, [beef]);
+  // useEffect(() => {
+  //   console.log(beef); // This will log whenever beef state changes
+  //   console.log(chicken);
+  //   console.log(fish);
+  //   console.log(mutton);
+  // }, [beef]);
   
 
   
