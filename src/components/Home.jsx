@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -31,6 +31,7 @@ const SwitchPage = () => {
 
 
   useEffect(() => {
+  
     const fetchData = async () => {
       try {
         const querySnapshot = await firebase.firestore().collection('students').get();
@@ -94,25 +95,7 @@ const SwitchPage = () => {
   }
 
   const supplyList=()=>{
-    firebase.firestore().collection('students').add({
-      uname:"jimshad",
-      password:"50",
-      tokenNo:50,
-      block:false,
-      obj:{
-        lunch:true,
-        breakfast:true
-      },
-      obj2:{
-        beef:true,
-        chicken:true,
-        fish:true,
-        mutton:true
-      }
   
-    }).then(()=>{
-      alert("submittd")
-    })
   }
 
   return (

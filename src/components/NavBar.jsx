@@ -1,19 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faList, faTicketAlt, faUtensils } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faList, faTicketAlt, faUtensils,faUser } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../store/AuthContext';
+import Swal from 'sweetalert2';
+import firebase from '../firebase/config'
 
 const Navbar = ({ isAdmin }) => {
+    const { user } = useContext(AuthContext);
     const [isOpen, setIsOpen] = useState(false);
+    const [optionsOpen, setOptionsOpen] = useState(false);
     const navigate = useNavigate();
     const dropdownRef = useRef(null);
+    const optionsRef = useRef(null);
 
     // Navigation handlers
     const handleHomeBtn = () => {
-        if(isAdmin){
-            navigate('/admin')
-        }else{
-
+        if (isAdmin) {
+            navigate('/admin');
+        } else {
             navigate('/');
         }
     };
@@ -22,16 +27,17 @@ const Navbar = ({ isAdmin }) => {
         navigate('/list');
     };
 
-    const handleMenuBtn = () => {
-        navigate('/menu');
-    };
-
-    const handleDropdownToggle = () => {
+    const handleTokenDropdownToggle = () => {
         setIsOpen(prevState => !prevState);
     };
 
-    const closeDropdown = () => {
+    const handleOptionsDropdownToggle = () => {
+        setOptionsOpen(prevState => !prevState);
+    };
+
+    const closeDropdowns = () => {
         setIsOpen(false);
+        setOptionsOpen(false);
     };
 
     const lunchRoute = () => {
@@ -41,12 +47,40 @@ const Navbar = ({ isAdmin }) => {
     const breakfastRoute = () => {
         navigate('/breakfast');
     };
+    const handleMenueBtn=()=>{
+        navigate('/menu')
+    }
 
-    // Close the dropdown when clicking outside
+      const handleLogout = () => {
+
+
+
+    Swal.fire({
+      title: 'Logout',
+      text: 'Are you sure you want to log out?',
+      icon: 'warning',
+      
+      showCancelButton: true,
+      confirmButtonColor: '#f44336',
+      cancelButtonColor: '#2E8B57',
+      confirmButtonText: 'Logout',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        firebase.auth().signOut();
+    navigate('/alogin')
+        
+      }
+    });
+  };
+
+    // Close the dropdowns when clicking outside
     useEffect(() => {
         const handleOutsideClick = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                closeDropdown();
+            if (
+                (dropdownRef.current && !dropdownRef.current.contains(event.target)) &&
+                (optionsRef.current && !optionsRef.current.contains(event.target))
+            ) {
+                closeDropdowns();
             }
         };
 
@@ -70,7 +104,7 @@ const Navbar = ({ isAdmin }) => {
                                 className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                             >
                                 <FontAwesomeIcon icon={faHome} className="mr-1" />
-                                {isAdmin ? 'Admin' : 'Home'} {/* Fixed the display text */}
+                                {isAdmin ? 'Admin' : 'Home'}
                             </button>
                             {/* List Button */}
                             <button
@@ -81,35 +115,31 @@ const Navbar = ({ isAdmin }) => {
                                 List
                             </button>
                             {/* Token Dropdown Button */}
-                            <div className="relative">
+                            <div className="relative" ref={dropdownRef}>
                                 <button
-                                    onClick={handleDropdownToggle}
+                                    onClick={handleTokenDropdownToggle}
                                     className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                                 >
                                     <FontAwesomeIcon icon={faTicketAlt} className="mr-1" />
                                     Token
                                 </button>
-
-                                {/* Dropdown menu */}
+                                {/* Token Dropdown Menu */}
                                 {isOpen && (
-                                    <div ref={dropdownRef} className="absolute right-0 mt-2 w-auto bg-white rounded-md shadow-lg z-10">
+                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                                         <div className="py-1">
-                                            {/* Option 1 */}
                                             <button
                                                 onClick={() => {
                                                     lunchRoute();
-                                                    closeDropdown();
+                                                    closeDropdowns();
                                                 }}
                                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                                             >
                                                 Lunch
                                             </button>
-
-                                            {/* Option 2 */}
                                             <button
                                                 onClick={() => {
                                                     breakfastRoute();
-                                                    closeDropdown();
+                                                    closeDropdowns();
                                                 }}
                                                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                                             >
@@ -119,14 +149,59 @@ const Navbar = ({ isAdmin }) => {
                                     </div>
                                 )}
                             </div>
-                            {/* Food Menu Link */}
+                            {/* Options Dropdown Button */}
+                            {isAdmin ? 
+                            <div className="relative" ref={optionsRef}>
                             <button
-                                onClick={handleMenuBtn}
+                                onClick={handleOptionsDropdownToggle}
                                 className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
-                            >
-                                <FontAwesomeIcon icon={faUtensils} className="mr-1" />
-                                Menu
+                                aria-expanded={optionsOpen}
+                                aria-haspopup="true"
+                            >   <FontAwesomeIcon icon={faUser} className="mr-1" /> 
+                                
+                                {user ? "ADSA" : "Login"}
+                                <svg className="-mr-1 h-5 w-5 text-gray-400 ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                                </svg>
                             </button>
+                            {/* Options Dropdown Menu */}
+                            {optionsOpen && (
+                                <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                    <div className="py-1">
+                                        {/* <a
+                                            href="/profile"
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                            onClick={closeDropdowns}
+                                        >
+                                            Profile
+                                        </a> */}
+                                        
+                                        
+                                        <button
+                                            onClick={() => {
+                                                if (user) {
+                                                    handleLogout();
+                                                }else{
+                                                    navigate("/alogin")
+                                                }
+                                                closeDropdowns();
+                                            }}
+                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                        >
+                                            {user ? 'Logout' : 'Login'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div> :
+                         <button
+                         onClick={handleMenueBtn}
+                         className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                     >
+                         <FontAwesomeIcon icon={faUtensils} className="mr-1" />
+                         Menu
+                     </button>}
+                            
                         </div>
                     </div>
                 </div>

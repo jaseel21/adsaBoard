@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { useEffect } from 'react'
 import Home from "./components/Home"
 import Login from './components/Login'
 import StudentPort from './components/StudentPort'
@@ -7,16 +8,29 @@ import List from "./components/List"
 import Section from './components/Section'
 
 import Fmenu from "./components/Fmenu"
-import {Route,Routes,generatePath,useLocation} from 'react-router-dom'
+import {Route,Routes,generatePath,useLocation,Navigate} from 'react-router-dom'
 import  PersonInfo  from './store/StudentData'
 import GetTokens from './store/GetDocuments'
 import SectionBF from './components/SectionBF'
 import Admin from './components/Admin'
 import AstudentPort from './components/AstudentPort'
 import GeneratePdf from "./components/GeneratePdf"
+import AdminLogin from "./components/AdminLogin"
+import firebase from './firebase/config'
+
+import { AuthContext } from './store/AuthContext'
 
 function App() {
+  const {user,setUser}=useContext(AuthContext)
   const isAdmin=location.pathname === "/admin"
+
+  useEffect(() => {
+    firebase.auth().onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    console.log(user);
+  });
+
   return (
     <div>
    
@@ -33,9 +47,10 @@ function App() {
         <Route path='/lunch' Component={Section}></Route>
         <Route path='/menu' Component={Fmenu}></Route>
         <Route path='/breakfast' Component={SectionBF} />
-        <Route path='/admin' Component={Admin} ></Route>
-        <Route path='/astudent-port' Component={AstudentPort}></Route>
+        <Route path='/admin'  element={user ? <Admin /> : <Navigate to="/alogin" />} ></Route>
+        <Route path='/astudent-port' element={user ? <AstudentPort /> : <Navigate to="/alogin" />}></Route>
         <Route path='/pdfg' Component={GeneratePdf}></Route>
+        <Route path='/alogin' Component={AdminLogin}></Route>
       </Routes>
           </GetTokens>
         </PersonInfo>
