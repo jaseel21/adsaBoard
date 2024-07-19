@@ -47,7 +47,7 @@ function App() {
         <Route path='/lunch' Component={Section}></Route>
         <Route path='/menu' Component={Fmenu}></Route>
         <Route path='/breakfast' Component={SectionBF} />
-        <Route path='/admin'  element={user ? <Admin /> : <Navigate to="/alogin" />} ></Route>
+        <Route path='/admin'  Component={Admin} ></Route>
         <Route path='/astudent-port' element={user ? <AstudentPort /> : <Navigate to="/alogin" />}></Route>
         <Route path='/pdfg' Component={GeneratePdf}></Route>
         <Route path='/alogin' Component={AdminLogin}></Route>
