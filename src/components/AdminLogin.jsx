@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 
 function AdminLogin() {
   const [password, setPassword] = useState("")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState("adsacanteen@gmail.com")
   const navigate = useNavigate()
 
   const handleLogin = (e) => {
@@ -34,13 +34,14 @@ function AdminLogin() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen ">
+    <div className="flex items-center justify-center pt-32  ">
     <div className="w-full max-w-md bg-white p-10 rounded-lg shadow-lg space-y-8">
       <h1 className="text-2xl font-semibold text-gray-700 text-center">Login to Admin</h1>
       <form onSubmit={handleLogin} className="space-y-6">
         <div className="relative">
           <input
             onChange={(e) => setEmail(e.target.value)}
+            value={email}
             type="email"
             id="email"
             required

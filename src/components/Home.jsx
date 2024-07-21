@@ -95,7 +95,7 @@ const SwitchPage = () => {
   }
 
   const supplyList=()=>{
-  
+    navigate("/pdfg")
   }
 
   return (

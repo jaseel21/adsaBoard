@@ -395,8 +395,8 @@ const FetchData = () => {
 
     return (
         <div className="p-14">
-            <button onClick={generatePDF} className="bg-blue-500 text-white py-2 px-4 rounded mb-4">
-                Generate PDF
+            <button onClick={generatePDF} className="bg-green-500 text-white py-2 px-4 rounded mb-4">
+                Download PDF
             </button>
             <div className="flex flex-col w-full max-w-full mx-auto overflow-x-auto">
                 <h1 className='p-5 text-center text-xl font-bold underline'>Lunch Token Canceled List</h1>

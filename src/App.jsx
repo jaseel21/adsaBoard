@@ -22,7 +22,12 @@ import { AuthContext } from './store/AuthContext'
 
 function App() {
   const {user,setUser}=useContext(AuthContext)
-  const isAdmin=location.pathname === "/admin"
+  let isAdmin=location.pathname === "/admin"
+  if(!isAdmin){
+    isAdmin=location.pathname === "/alogin"
+  }
+
+
 
   useEffect(() => {
     firebase.auth().onAuthStateChanged((user) => {

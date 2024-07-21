@@ -4,6 +4,7 @@ import { faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData'; // Assuming this is your context
 import { useNavigate,useLocation } from 'react-router-dom';
+import {AuthContext} from "../store/AuthContext"
 
 const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
   return (
@@ -24,6 +25,8 @@ function Admin() {
   const [isChecked, setIsChecked] = useState();
   const [isLunch, setIsLunch] = useState(false);
   const navigate=useNavigate()
+
+  const {user}=useContext(AuthContext)
 
   useEffect(() => {
     // Check for location state and update isLunch accordingly
@@ -66,10 +69,15 @@ function Admin() {
 
 
   const toggleSwitch1 = () => {
-    const action = isChecked ? 'close' : 'open';
-    const changeConfirm = window.confirm(`Are you sure you want to ${action} the board?`);
-    if (changeConfirm) {
-      changeStatus();
+    if(user){
+
+      const action = isChecked ? 'close' : 'open';
+      const changeConfirm = window.confirm(`Are you sure you want to ${action} the board?`);
+      if (changeConfirm) {
+        changeStatus();
+      }
+    }else{
+      navigate('/alogin')
     }
   };
 
