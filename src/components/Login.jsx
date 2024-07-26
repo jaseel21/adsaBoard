@@ -89,7 +89,7 @@ function Login() {
   console.log(tbStatus);
   LoginWith();
 
-      console.log('pass time',tbStatus);
+     
       // if(tbStatus==true){
       //   console.log('pass admin pri'.tbStatus);
 
@@ -99,14 +99,11 @@ function Login() {
       //   alert("blocked by admin")
       // }
     
-     } else {
-       alert('You cannot log in at this time');
-     }
-
-     if(tbStatus==true){
-      LoginWith();
+     } else if (tbStatus==true) {
+      LoginWith()
+      
      }else{
-      alert('blocked by admin')
+       alert('Your login attempt has been prevented');
      }
     
   }

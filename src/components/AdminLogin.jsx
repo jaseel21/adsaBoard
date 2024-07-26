@@ -74,7 +74,7 @@ function AdminLogin() {
       </form>
       <p className="text-center text-gray-600 text-sm">
         Don't have an account?{' '}
-        <a href="/signup" className="text-blue-500 hover:underline">Sign up</a>
+        <a href="/alogin" className="text-blue-500 hover:underline">Sign up</a>
       </p>
     </div>
   </div>

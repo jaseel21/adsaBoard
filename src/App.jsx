@@ -19,6 +19,7 @@ import AdminLogin from "./components/AdminLogin"
 import firebase from './firebase/config'
 
 import { AuthContext } from './store/AuthContext'
+import  "./App.css"
 
 function App() {
   const {user,setUser}=useContext(AuthContext)

@@ -92,7 +92,7 @@ const Navbar = ({ isAdmin }) => {
     }, []);
 
     return (
-        <nav className="bg-transparent py-4 md:p-4 flex">
+        <nav className="bg-transparent py-4 md:p-4 flex ">
             <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
                 <div className="relative flex items-center justify-between h-16">
                     {/* Navbar Links */}
@@ -101,7 +101,7 @@ const Navbar = ({ isAdmin }) => {
                             {/* Home Button */}
                             <button
                                 onClick={handleHomeBtn}
-                                className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                             >
                                 <FontAwesomeIcon icon={faHome} className="mr-1" />
                                 {isAdmin ? 'Admin' : 'Home'}
@@ -109,7 +109,7 @@ const Navbar = ({ isAdmin }) => {
                             {/* List Button */}
                             <button
                                 onClick={handleListBtn}
-                                className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                             >
                                 <FontAwesomeIcon icon={faList} className="mr-1" />
                                 List
@@ -118,7 +118,7 @@ const Navbar = ({ isAdmin }) => {
                             <div className="relative" ref={dropdownRef}>
                                 <button
                                     onClick={handleTokenDropdownToggle}
-                                    className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                    className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                                 >
                                     <FontAwesomeIcon icon={faTicketAlt} className="mr-1" />
                                     Token
@@ -154,7 +154,7 @@ const Navbar = ({ isAdmin }) => {
                             <div className="relative" ref={optionsRef}>
                             <button
                                 onClick={handleOptionsDropdownToggle}
-                                className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                                 aria-expanded={optionsOpen}
                                 aria-haspopup="true"
                             >   <FontAwesomeIcon icon={faUser} className="mr-1" /> 
@@ -196,7 +196,7 @@ const Navbar = ({ isAdmin }) => {
                         </div> :
                          <button
                          onClick={handleMenueBtn}
-                         className="text-gray-900 hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                         className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
                      >
                          <FontAwesomeIcon icon={faUtensils} className="mr-1" />
                          Menu

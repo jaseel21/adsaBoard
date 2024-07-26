@@ -1,0 +1,16 @@
+body {
+    /* Set the background image */
+    background-image: url('https://ensafe.in/wp-content/uploads/2021/11/eretrtr.jpg'); /* Replace 'background.jpg' with your image file name */
+    
+    /* Ensure the background image covers the entire viewport */
+    background-size: cover;
+    
+    /* Center the background image */
+    background-position: center;
+    
+    /* Set a fixed background attachment so it doesn't scroll with the content */
+    background-attachment: fixed;
+    
+    /* Optionally, add a background color in case the image is not fully loaded or visible */
+    background-color: #f0f0f0; /* Replace with a suitable background color */
+  }

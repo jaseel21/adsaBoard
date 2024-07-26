@@ -10,7 +10,7 @@ const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
   return (
     <button
       onClick={toggleSwitch}
-      className={`flex items-center justify-center ${block && 'bg-slate-700' } ${isOn ? 'bg-emerald-700' : 'bg-rose-700'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-red-600 glossy-button1 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
     >
       {number}
     </button>
@@ -125,7 +125,7 @@ function Admin() {
   return (
     <div>
       <div className="p-10">
-        <div className="flex justify-center items-center pb-4">
+        <div className="flex justify-center items-center pb-4 text-white">
           <FontAwesomeIcon icon={faScrewdriverWrench} className='px-1' />
           <h1 className="text-center text-2xl font-bold">Admin panel</h1>
         </div>
@@ -155,12 +155,12 @@ function Admin() {
       <div className="flex items-center justify-center">
       <button
         onClick={toggleStatus}
-        className={`relative flex items-center justify-center w-60 h-10 bg-gray-900 rounded-full focus:outline-none transition-all duration-300 ${
+        className={`relative flex items-center justify-center w-60 h-10 bg-yellow-500 rounded-md focus:outline-none transition-all duration-300 ${
           isLunch ? 'bg-blue-500' : 'bg-gary-400'
         }`}
       >
         <span
-          className={`absolute left-0 w-1/2 h-full bg-slate-700 rounded-full transition-transform duration-300 transform ${
+          className={`absolute left-0 w-1/2 h-full bg-gray-500 rounded-md transition-transform duration-300 transform ${
             isLunch ? 'translate-x-0' : 'translate-x-full'
           }`}
         ></span>

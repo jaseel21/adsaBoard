@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faListCheck } from '@fortawesome/free-solid-svg-icons';
 import { faBowlFood, faPrint } from '@fortawesome/free-solid-svg-icons';
+import "./Home.css"
 
 
 
@@ -11,7 +12,7 @@ const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   return (
     <button
       onClick={toggleSwitch}
-      className={`flex items-center justify-center ${block && 'bg-slate-700' } ${isOn ? 'bg-emerald-700' : 'bg-rose-700'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-red-600 glossy-button1 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
     >
       {number}
     </button>
@@ -98,20 +99,23 @@ const SwitchPage = () => {
     navigate("/pdfg")
   }
 
+
   return (
     <div className='text-center'>
-<div className="pb-5 flex justify-center items-center">
+<div className="pb-5 flex justify-center items-center ">
+  
 
-<FontAwesomeIcon icon={faListCheck} className="text-lg pr-1 " />
-          <h1 class="text-1xl underline text-center text-gray-800">ADSA TOEKN BOARD</h1>
+<FontAwesomeIcon icon={faListCheck} className="text-lg text-gray-50 pr-1 " />
+          <h1 class="text-1xl underline text-center text-gray-50 ">ADSA TOEKN BOARD</h1>
+
         </div>
       <div className="flex px-2 md:px-64 pb-10 justify-between">
         
       <div className="">
         <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
 
-          <h1 className='text-1xl text-gray-950 '>Lunch : {lunchCount}</h1>
-          <h1 className='text-1xl text-gray-950 '>Breakfast : {breakfastCount}</h1>
+          <h1 className='text-1xl text-gray-950 font-bold '>Lunch : {lunchCount}</h1>
+          <h1 className='text-1xl text-gray-950 font-bold '>Breakfast : {breakfastCount}</h1>
         <div className=" justify-center mt-4">
           <button
             onClick={supplyList}
@@ -130,19 +134,31 @@ const SwitchPage = () => {
 
         <div className="flex items-center">
         
-          <button onClick={handleUpdateBtn} className="text-white bg-gray-800 font-bold hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300  rounded-[3px] text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Update Token</button>
-        </div>
-      </div>
+        {/* <button onClick={handleUpdateBtn} className="bg-green-500	 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-md border border-blue-500 hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+  Update Token
+</button> */}<button
+onClick={handleUpdateBtn}
+      
+      class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded inline-flex items-center border border-gray-400"
+    >
+     <svg className="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <path d="M10 1a9 9 0 0 0-7.42 13.92l2.5-4.33A5.98 5.98 0 0 1 10 3a6 6 0 1 1 0 12 5.98 5.98 0 0 1-3.92-1.42l-2.5 4.33A9 9 0 1 0 10 1z"/>
+</svg>
+      <span>Update token</span>
+    </button>
+
+ </div>
+      </div>  
 
       <div className="flex items-center justify-center">
       <button
         onClick={toggleStatus}
-        className={`relative flex items-center justify-center w-60 h-10 bg-gray-900 rounded-full focus:outline-none transition-all duration-300 ${
-          isLunch ? 'bg-blue-500' : 'bg-gary-400'
+        className={`relative flex items-center justify-center w-60 h-10 bg-yellow-500 rounded-md focus:outline-none transition-all duration-300 ${
+          isLunch ? 'bg-blue-400' : 'bg-gary-400'
         }`}
       >
         <span
-          className={`absolute left-0 w-1/2 h-full bg-slate-700 rounded-full transition-transform duration-300 transform ${
+          className={`absolute left-0 w-1/2 h-full bg-gray-500 rounded-md transition-transform duration-300 transform ${
             isLunch ? 'translate-x-0' : 'translate-x-full'
           }`}
         ></span>

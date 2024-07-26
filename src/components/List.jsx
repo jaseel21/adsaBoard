@@ -86,16 +86,16 @@ const MenuTable = () => {
     {Array.from({ length: Math.max(beef.length, chicken.length, fish.length, mutton.length) }).map((_, index) => (
       <tr key={index}>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index < beef.length ? beef[index] : ''}
+          {index==0 && beef.length==0 ? "empty" : beef.length ? beef[index] : ''}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index < chicken.length ? chicken[index] : ''}
+          {index==0 && chicken.length==0 ? "empty" : chicken.length ? chicken[index] : ''}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index < fish.length ? fish[index] : ''}
+          {index==0 && fish.length==0 ? "empty" : fish.length ? fish[index] : ''}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index < mutton.length ? mutton[index] : ''}
+          {index==0 && mutton.length==0 ? "empty" : mutton.length ? mutton[index] : ''}
         </td>
       </tr>
     ))}
