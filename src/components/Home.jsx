@@ -99,9 +99,36 @@ const SwitchPage = () => {
     navigate("/pdfg")
   }
 
+  const addStudent=()=>{
+    firebase.firestore().collection('students').add({
+      uname:"MUHAMMED NUFAIL",
+      tokenNo:30,
+      password:"190",
+      block:false,
+      obj:{
+        lunch:true,
+        breakfast:true
+      },
+      obj2:{
+        beef:true,
+        chicken:true,
+        fish:true,
+        mutton:true
+      }
+  
+    }).then(()=>{
+      window.location.href = "/";
+    }).catch((error) => {
+      console.error("Error adding document: ", error);
+    })
+  }
+
 
   return (
     <div className='text-center'>
+       <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
+        add student
+      </button>
 <div className="pb-5 flex justify-center items-center ">
   
 
@@ -139,11 +166,15 @@ const SwitchPage = () => {
 </button> */}<button
 onClick={handleUpdateBtn}
       
-      class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded inline-flex items-center border border-gray-400"
+      class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-4  inline-flex items-center border border-gray-400"
     >
-     <svg className="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-  <path d="M10 1a9 9 0 0 0-7.42 13.92l2.5-4.33A5.98 5.98 0 0 1 10 3a6 6 0 1 1 0 12 5.98 5.98 0 0 1-3.92-1.42l-2.5 4.33A9 9 0 1 0 10 1z"/>
+<svg className="fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+
+  <path d="M14.12 2.62a2.5 2.5 0 0 0-3.54 0L7.29 6.56a1 1 0 0 0-.29.71v8.59a1 1 0 0 0 1 1h8.59a1 1 0 0 0 .71-.29l3.29-3.29a2.5 2.5 0 0 0 0-3.54l-6.46-6.46zM12 4.13l3.88 3.88-1.41 1.41L10.59 5.54 12 4.13zM7 15.59V12h4v4H8.41L7 15.59zM17.29 16.29l-1.41-1.41 2.12-2.12 1.41 1.41-2.12 2.12z"/>
 </svg>
+
+
+
       <span>Update token</span>
     </button>
 

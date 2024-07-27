@@ -121,10 +121,11 @@ function Admin() {
   const toggleStatus = () => {
     setIsLunch(!isLunch);
   };
-
+ 
   return (
     <div>
       <div className="p-10">
+     
         <div className="flex justify-center items-center pb-4 text-white">
           <FontAwesomeIcon icon={faScrewdriverWrench} className='px-1' />
           <h1 className="text-center text-2xl font-bold">Admin panel</h1>
