@@ -126,9 +126,9 @@ const SwitchPage = () => {
 
   return (
     <div className='text-center'>
-       <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
+       {/* <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
         add student
-      </button>
+      </button> */}
 <div className="pb-5 flex justify-center items-center ">
   
 

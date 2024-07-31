@@ -1,7 +1,9 @@
 body {
     /* Set the background image */
-    background-image: url('https://ensafe.in/wp-content/uploads/2021/11/eretrtr.jpg'); /* Replace 'background.jpg' with your image file name */
+    background-image: url('https://ensafe.in/wp-content/uploads/2021/11/eretrtr.jpg');
+  
     
+    background-image: #447c9c;
     /* Ensure the background image covers the entire viewport */
     background-size: cover;
     
