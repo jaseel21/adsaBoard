@@ -45,7 +45,7 @@ function AdminLogin() {
             type="email"
             id="email"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-500 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder=" "
           />
           <label htmlFor="email" className="absolute top-2 left-4 text-gray-500 text-sm transition-transform transform -translate-y-2 scale-75 origin-top-left peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:-translate-y-2 peer-focus:scale-75 peer-focus:text-blue-500 peer-placeholder:text-blue-500">
@@ -58,7 +58,7 @@ function AdminLogin() {
             type="password"
             id="password"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4  py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder=" "
           />
           <label htmlFor="password" className="absolute top-2 left-4 text-gray-500 text-sm transition-transform transform -translate-y-2 scale-75 origin-top-left peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:-translate-y-2 peer-focus:scale-75 peer-focus:text-blue-500 peer-placeholder:text-blue-500">
@@ -67,14 +67,14 @@ function AdminLogin() {
         </div>
         <button
           type="submit"
-          className="w-full py-3 bg-blue-500 text-white rounded-md shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition ease-in-out duration-300"
+          className="w-full py-3 bg-emerald-500 text-white rounded-md shadow-md hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition ease-in-out duration-300"
         >
           Login
         </button>
       </form>
       <p className="text-center text-gray-600 text-sm">
         Don't have an account?{' '}
-        <a href="/alogin" className="text-blue-500 hover:underline">Sign up</a>
+        <a  className="text-blue-500 hover:underline">Sign up</a>
       </p>
     </div>
   </div>

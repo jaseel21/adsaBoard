@@ -101,13 +101,44 @@ const SwitchPage = () => {
 
   const addStudent=()=>{
     firebase.firestore().collection('students').add({
-      uname:"MUHAMMED NUFAIL",
-      tokenNo:30,
-      password:"190",
+      // uname:"MUHAMMED MUSTHSFA",
+      // tokenNo:31,
+      // password:"191",
+      // block:false,
+      // obj:{
+      //   lunch:true,
+      //   breakfast:true
+      // },
+      // obj2:{
+      //   beef:true,
+      //   chicken:true,
+      //   fish:true,
+      //   mutton:true
+      // }
+
+      uname:"MUHAMMED SHAHAD",
+      tokenNo:3,
+      password:"3",
       block:false,
       obj:{
-        lunch:true,
-        breakfast:true
+        lunch:{
+          su:true,
+          mo:true,
+          tu:true,
+          we:false,
+          th:true,
+          fr:true,
+          sa:false
+        },
+        breakfast:{
+          su:false,
+          mo:true,
+          tu:true,
+          we:false,
+          th:true,
+          fr:false,
+          sa:true
+        }
       },
       obj2:{
         beef:true,
@@ -116,19 +147,47 @@ const SwitchPage = () => {
         mutton:true
       }
   
-    }).then(()=>{
+    }
+  ).then(()=>{
       window.location.href = "/";
     }).catch((error) => {
       console.error("Error adding document: ", error);
     })
+
+
   }
+
+  const [day, setDay] = useState('');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = convertToGMTPlus530(new Date());
+      const dayOfWeek = getDayOfWeek(now);
+      setDay(dayOfWeek);
+    }, 60000); // Update every minute
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(timer);
+  }, []);
+
+  const convertToGMTPlus530 = (date) => {
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 5.5)); // Add 5 hours 30 minutes
+  };
+
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getDay()];
+  };
+
+
 
 
   return (
     <div className='text-center'>
-       {/* <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
+       <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
         add student
-      </button> */}
+      </button>
 <div className="pb-5 flex justify-center items-center ">
   
 
@@ -224,7 +283,7 @@ onClick={handleUpdateBtn}
             key={index}
             number={doc.tokenNo}
             block={doc.block}
-            isOn={doc.obj && doc.obj.lunch}
+            isOn={doc.obj && doc.obj.lunch[day]}
             toggleSwitch={() => toggleSwitch(index)}
           />
         ))}
@@ -238,7 +297,7 @@ onClick={handleUpdateBtn}
               key={index}
               number={doc.tokenNo}
               block={doc.block}
-              isOn={doc.obj && doc.obj.breakfast}
+              isOn={doc.obj && doc.obj.breakfast[day]}
               toggleSwitch={() => toggleSwitch(index)}
             />
           ))}

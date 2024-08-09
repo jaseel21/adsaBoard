@@ -17,7 +17,7 @@ const MenuTable = () => {
 
   return (
     <div className="container mx-auto">
-      <h1 className="text-3xl font-bold text-center my-4">Food Menu</h1>
+      <h1 className="text-3xl font-bold text-center my-4 text-white">Food Menu</h1>
       <table className="min-w-full text-xs bg-white border rounded-lg overflow-hidden">
         <thead className="bg-gray-100 text-gray-800 uppercase  leading-normal">
           <tr>

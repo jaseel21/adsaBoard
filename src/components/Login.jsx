@@ -1,146 +1,124 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faEyeSlash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
-import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
-
-
-import firebase from '../firebase/config'
-import {DataOfOne} from '../store/StudentData';
-
-
-
+import firebase from '../firebase/config';
+import { DataOfOne } from '../store/StudentData';
 
 function Login() {
-
-  const [token, setToken] = useState();
+  const [token, setToken] = useState('');
   const [pass, setPass] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [err, setErr] = useState('');
+  const [time, setTime] = useState(new Date());
+  const [canClick, setCanClick] = useState(true);
 
-  const [err,setErr]=useState("")
-  const {setStdata} = useContext(DataOfOne)
+  const { setStdata } = useContext(DataOfOne);
+  const navigate = useNavigate();
 
+  // Create start time as 2:00 AM GMT+05:30
+const startTime = new Date();
+startTime.setHours(2, 0, 0); // 2:00 AM
+startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
 
+// Create end time as 8:00 PM GMT+05:30
+const endTime = new Date();
+endTime.setHours(13, 0, 0); // 8:00 PM
+endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
 
-  const navigate=useNavigate()
+  useEffect(() => {
+    const updateClock = () => setTime(new Date());
+    updateClock(); // Set initial time
 
-
-
-  // Define your time period here
-    const startTime = new Date();
-    startTime.setHours(1, 0, 0); // 5:00 AM
-  const endTime = new Date();
-  endTime.setHours(24, 0, 0); // 5:00 PM
-
-
-
-  const [canClick, setCanClick] = useState(isCurrentTimeInRange(startTime, endTime));
+    const intervalId = setInterval(updateClock, 1000); // Update every second
+    return () => clearInterval(intervalId); // Clean up on component unmount
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCanClick(isCurrentTimeInRange(startTime, endTime));
+      const now = convertToGMTPlus530(new Date());
+     
+      
+      setCanClick(now >= startTime && now <= endTime);
     }, 60000); // Update every minute
 
     return () => clearInterval(timer);
   }, [startTime, endTime]);
 
-  function isCurrentTimeInRange(start, end) {
-    const now = new Date();
-    return now >= start && now <= end;
-  }
+  const convertToGMTPlus530 = (date) => {
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 5.5)); // Add 5 hours 30 minutes
+  };
 
-  const LoginWith=async()=>{
-    let StInfo= await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).where('password',"==",pass).get()
-    if (!StInfo.empty) {
-      // Access the data of the first document found
-      
-      let studentData = StInfo.docs[0].data();
-      studentData.documentId = StInfo.docs[0].id;
-     
-      
-      // Assuming setStdata is a function to set state or perform further actions
-      setStdata(studentData);
-      
-      // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
-      navigate('/student-portal');
-  } else {
-      
-      setErr(' entry is invalid')
+  const isCurrentTimeInRange = () => {
+    const now = convertToGMTPlus530(new Date());
+    console.log(now);
+    console.log(now,startTime,endTime);
+    
+    return now >= startTime && now <= endTime;
+  };
 
-      // Handle case where no matching student is found
-      // You might want to show an error message or take appropriate action
-  }
-  }
+  const LoginWith = async () => {
+    try {
+      const StInfo = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(token)).where('password', '==', pass).get();
+      if (!StInfo.empty) {
+        const studentData = StInfo.docs[0].data();
+        studentData.documentId = StInfo.docs[0].id;
+        setStdata(studentData);
+        navigate('/student-portal');
+      } else {
+        setErr('Invalid entry');
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      setErr('Error during login');
+    }
+  };
 
-
-  const SubmitForm = async()=> {
-
-    let tbStatus
-    await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get().then((doc=>{
+  const SubmitForm = async () => {
+    try {
+      const doc = await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get();
       if (doc.exists) {
-        tbStatus = doc.data(); // Assign doc.data() to tbStatus
-        console.log(tbStatus.status); // Optionally log tbStatus
-        tbStatus=tbStatus.status  
+        const tbStatus = doc.data().status;
+        if (isCurrentTimeInRange() || tbStatus === true) {
+          await LoginWith();
+        } else {
+          alert('Your login attempt has been prevented');
+        }
       } else {
         console.log("No such document!");
       }
-    }))
-  if (isCurrentTimeInRange(startTime, endTime)) {
-  console.log(tbStatus);
-  LoginWith();
+    } catch (error) {
+      console.error('Error checking tokenboard status:', error);
+    }
+  };
 
-     
-      // if(tbStatus==true){
-      //   console.log('pass admin pri'.tbStatus);
-
-      //   LoginWith();
-      //   console.log('in status checking codition');
-      // }else{
-      //   alert("blocked by admin")
-      // }
-    
-     } else if (tbStatus==true) {
-      LoginWith()
-      
-     }else{
-       alert('Your login attempt has been prevented');
-     }
-    
-  }
-
-  async function checkTimeAndHandleClick() {
+  const checkTimeAndHandleClick = async () => {
     try {
-      // Assuming 'token' is passed as an argument to the function
-      let blockStatus = await firebase.firestore().collection('students').where('tokenNo','==',parseInt(token)).get();
-  
+      const blockStatus = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(token)).get();
       if (!blockStatus.empty) {
-        let statusData = blockStatus.docs[0].data();
-       statusData=statusData.block
-        // Call SubmitForm() here or pass 'statusData' to it if needed
-        if(statusData==false){
-
-          SubmitForm();
-        }else{
-         alert("youer token has been blocked")
+        const statusData = blockStatus.docs[0].data().block;
+        if (statusData === false) {
+          await SubmitForm();
+        } else {
+          alert('Your token has been blocked');
         }
       } else {
         console.log('No document found for token:', token);
       }
     } catch (error) {
       console.error('Error fetching block status:', error);
-      // Handle error as needed
     }
-  }
-  
+  };
 
-  const handleSubmit = async(e) => {
-
+  const handleSubmit = async (e) => {
+    alert("enter")
     e.preventDefault();
-    checkTimeAndHandleClick();
-    console.log(token, pass);
-  
-    
-    // Add logic here to handle login authentication or other operations
+    if (time) {
+      await checkTimeAndHandleClick();
+    }else{
+      alert("not captuar time ")
+    }
   };
 
   const handleUsernameChange = (e) => {
@@ -156,7 +134,7 @@ function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center h-auto md:pt-24 sm:pt-20 ">
+    <div className="flex justify-center items-center h-auto md:pt-24 sm:pt-20">
       <div className="max-w-md w-full p-8 mt-8 bg-white rounded shadow-md">
         <h2 className="text-3xl font-bold mb-4 text-gray-800">Student Login</h2>
 
@@ -208,6 +186,7 @@ function Login() {
           <button
             className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded"
             type="submit"
+            disabled={!canClick}
           >
             Sign In
           </button>

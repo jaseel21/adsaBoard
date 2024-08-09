@@ -1,18 +1,18 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faList, faTicketAlt, faUtensils,faUser } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faList, faTicketAlt, faUtensils, faUser } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../store/AuthContext';
 import Swal from 'sweetalert2';
-import firebase from '../firebase/config'
+import firebase from '../firebase/config';
 
 const Navbar = ({ isAdmin }) => {
     const { user } = useContext(AuthContext);
     const [isOpen, setIsOpen] = useState(false);
     const [optionsOpen, setOptionsOpen] = useState(false);
     const navigate = useNavigate();
-    const dropdownRef = useRef(null);
-    const optionsRef = useRef(null);
+    const tokenDropdownRef = useRef(null);
+    const optionsDropdownRef = useRef(null);
 
     // Navigation handlers
     const handleHomeBtn = () => {
@@ -47,52 +47,54 @@ const Navbar = ({ isAdmin }) => {
     const breakfastRoute = () => {
         navigate('/breakfast');
     };
-    const handleMenueBtn=()=>{
-        navigate('/menu')
-    }
 
-      const handleLogout = () => {
+    const handleMenueBtn = () => {
+        navigate('/menu');
+    };
 
+    const handleLogout = () => {
+        Swal.fire({
+            title: 'Logout',
+            text: 'Are you sure you want to log out?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f44336',
+            cancelButtonColor: '#2E8B57',
+            confirmButtonText: 'Logout',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                firebase.auth().signOut();
+                navigate('/alogin');
+            }
+        });
+    };
 
-
-    Swal.fire({
-      title: 'Logout',
-      text: 'Are you sure you want to log out?',
-      icon: 'warning',
-      
-      showCancelButton: true,
-      confirmButtonColor: '#f44336',
-      cancelButtonColor: '#2E8B57',
-      confirmButtonText: 'Logout',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        firebase.auth().signOut();
-    navigate('/alogin')
-        
-      }
-    });
-  };
-
-    // Close the dropdowns when clicking outside
+    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleOutsideClick = (event) => {
-            if (
-                (dropdownRef.current && !dropdownRef.current.contains(event.target)) &&
-                (optionsRef.current && !optionsRef.current.contains(event.target))
-            ) {
-                closeDropdowns();
+            // Check if the click is outside the token dropdown
+            if (tokenDropdownRef.current && !tokenDropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+    
+            // Check if the click is outside the options dropdown
+            if (optionsDropdownRef.current && !optionsDropdownRef.current.contains(event.target)) {
+                setOptionsOpen(false);
             }
         };
-
+    
+        // Add event listener for click outside
         document.addEventListener('mousedown', handleOutsideClick);
-
+    
+        // Clean up the event listener on component unmount
         return () => {
             document.removeEventListener('mousedown', handleOutsideClick);
         };
-    }, []);
+    }, [isOpen, optionsOpen]); // Include dependencies so the effect runs on state changes
+    
 
     return (
-        <nav className="bg-transparent py-4 md:p-4 flex ">
+        <nav className="bg-transparent py-4 md:p-4 flex">
             <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
                 <div className="relative flex items-center justify-between h-16">
                     {/* Navbar Links */}
@@ -115,7 +117,7 @@ const Navbar = ({ isAdmin }) => {
                                 List
                             </button>
                             {/* Token Dropdown Button */}
-                            <div className="relative" ref={dropdownRef}>
+                            <div className="relative" ref={tokenDropdownRef}>
                                 <button
                                     onClick={handleTokenDropdownToggle}
                                     className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
@@ -125,7 +127,7 @@ const Navbar = ({ isAdmin }) => {
                                 </button>
                                 {/* Token Dropdown Menu */}
                                 {isOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                    <div  className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                                         <div className="py-1">
                                             <button
                                                 onClick={() => {
@@ -150,58 +152,50 @@ const Navbar = ({ isAdmin }) => {
                                 )}
                             </div>
                             {/* Options Dropdown Button */}
-                            {isAdmin ? 
-                            <div className="relative" ref={optionsRef}>
-                            <button
-                                onClick={handleOptionsDropdownToggle}
-                                className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
-                                aria-expanded={optionsOpen}
-                                aria-haspopup="true"
-                            >   <FontAwesomeIcon icon={faUser} className="mr-1" /> 
-                                
-                                {user ? "ADSA" : "Login"}
-                                <svg className="-mr-1 h-5 w-5 text-gray-400 ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                            {/* Options Dropdown Menu */}
-                            {optionsOpen && (
-                                <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                    <div className="py-1">
-                                        {/* <a
-                                            href="/profile"
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                                            onClick={closeDropdowns}
-                                        >
-                                            Profile
-                                        </a> */}
-                                        
-                                        
-                                        <button
-                                            onClick={() => {
-                                                if (user) {
-                                                    handleLogout();
-                                                }else{
-                                                    navigate("/alogin")
-                                                }
-                                                closeDropdowns();
-                                            }}
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                                        >
-                                            {user ? 'Logout' : 'Login'}
-                                        </button>
-                                    </div>
+                            {isAdmin ? (
+                                <div className="relative" ref={optionsDropdownRef}>
+                                    <button
+                                        onClick={handleOptionsDropdownToggle}
+                                        className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                        aria-expanded={optionsOpen}
+                                        aria-haspopup="true"
+                                    >
+                                        <FontAwesomeIcon icon={faUser} className="mr-1" />
+                                        {user ? "ADSA" : "Login"}
+                                        <svg className="-mr-1 h-5 w-5 text-gray-400 ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    {/* Options Dropdown Menu */}
+                                    {optionsOpen && (
+                                        <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                            <div className="py-1">
+                                                <button
+                                                    onClick={() => {
+                                                        if (user) {
+                                                            handleLogout();
+                                                        } else {
+                                                            navigate("/alogin");
+                                                        }
+                                                        closeDropdowns();
+                                                    }}
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                                >
+                                                    {user ? 'Logout' : 'Login'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+                            ) : (
+                                <button
+                                    onClick={handleMenueBtn}
+                                    className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                >
+                                    <FontAwesomeIcon icon={faUtensils} className="mr-1" />
+                                    Menu
+                                </button>
                             )}
-                        </div> :
-                         <button
-                         onClick={handleMenueBtn}
-                         className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
-                     >
-                         <FontAwesomeIcon icon={faUtensils} className="mr-1" />
-                         Menu
-                     </button>}
-                            
                         </div>
                     </div>
                 </div>
