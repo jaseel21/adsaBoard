@@ -30,6 +30,35 @@ const SwitchPage = () => {
 
   const navigate=useNavigate()
 
+  const [day, setDay] = useState("");
+
+  useEffect(() => {
+    // Function to get the current day of the week in GMT+5:30
+    const updateDay = () => {
+      const nowUtc = new Date(); // Current time in UTC
+      // Manually adjust for GMT+5:30
+      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
+      const dayOfWeek = getDayOfWeek(gmtPlus530);
+      setDay(dayOfWeek);
+      console.log(dayOfWeek, "day");
+    };
+
+    // Initial call to set the day immediately on mount
+    updateDay();
+
+    // Set up an interval to update every minute
+    const timer = setInterval(updateDay, 60000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(timer);
+  }, []);
+
+  // Function to get the day of the week from a Date object
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
+  };
+
 
   useEffect(() => {
   
@@ -157,31 +186,6 @@ const SwitchPage = () => {
 
   }
 
-  const [day, setDay] = useState('');
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = convertToGMTPlus530(new Date());
-      const dayOfWeek = getDayOfWeek(now);
-      setDay(dayOfWeek);
-    }, 60000); // Update every minute
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(timer);
-  }, []);
-
-  const convertToGMTPlus530 = (date) => {
-    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-    return new Date(utc + (3600000 * 5.5)); // Add 5 hours 30 minutes
-  };
-
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getDay()];
-  };
-
-
-
 
   return (
     <div className='text-center'>
@@ -192,7 +196,7 @@ const SwitchPage = () => {
   
 
 <FontAwesomeIcon icon={faListCheck} className="text-lg text-gray-50 pr-1 " />
-          <h1 class="text-1xl underline text-center text-gray-50 ">ADSA TOEKN BOARD</h1>
+          <h1 class="text-1xl underline text-center text-gray-50 ">ADSA TOEKN BOARD{day}</h1>
 
         </div>
       <div className="flex px-2 md:px-64 pb-10 justify-between">

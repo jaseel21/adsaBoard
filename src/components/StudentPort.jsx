@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState,useEffect } from 'react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,35 @@ function StudentPort() {
 
   const navigate = useNavigate();
   const [showCheckoutOptions, setShowCheckoutOptions] = useState(false);
+
+  const [day, setDay] = useState("");
+
+  useEffect(() => {
+    // Function to get the current day of the week in GMT+5:30
+    const updateDay = () => {
+      const nowUtc = new Date(); // Current time in UTC
+      // Manually adjust for GMT+5:30
+      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
+      const dayOfWeek = getDayOfWeek(gmtPlus530);
+      setDay(dayOfWeek);
+      console.log(dayOfWeek, "day");
+    };
+
+    // Initial call to set the day immediately on mount
+    updateDay();
+
+    // Set up an interval to update every minute
+    const timer = setInterval(updateDay, 60000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(timer);
+  }, []);
+
+  // Function to get the day of the week from a Date object
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
+  };
 
   const handleLunchToggle = () => {
     const LunchConfirm = window.confirm('Are you sure you want to change the settings');
@@ -134,7 +163,7 @@ function StudentPort() {
               <input
                 type="checkbox"
                 className="form-checkbox h-5 w-5 text-blue-500"
-                checked={lunch}
+                checked={lunch[day]}
                 onChange={handleLunchToggle}
               />
               <span
@@ -143,6 +172,78 @@ function StudentPort() {
                 {lunch ? 'Lunch is On' : 'Lunch is Off'}
               </span>
             </label>
+            <div className="flex flex-wrap gap-4 p-3">
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="su" className="text-sm">Su</label>
+          <input
+            type="checkbox"
+            id="su"
+            name="day"
+            checked={lunch["su"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="mo" className="text-sm">Mo</label>
+          <input
+            type="checkbox"
+            id="mo"
+            name="day"
+            checked={lunch["mo"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="tu" className="text-sm">Tu</label>
+          <input
+            type="checkbox"
+            id="tu"
+            name="day"
+            checked={lunch["tu"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="we" className="text-sm">We</label>
+          <input
+            type="checkbox"
+            id="we"
+            name="day"
+            checked={lunch["we"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="th" className="text-sm">Th</label>
+          <input
+            type="checkbox"
+            id="th"
+            name="day"
+            checked={lunch["th"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="fr" className="text-sm">Fr</label>
+          <input
+            type="checkbox"
+            id="fr"
+            name="day"
+            checked={lunch["fr"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+        <div className="flex flex-col items-center space-y-1">
+          <label htmlFor="sa" className="text-sm">Sa</label>
+          <input
+            type="checkbox"
+            id="sa"
+            name="day"
+            checked={lunch["sa"]}
+            className="form-checkbox h-5 w-5 text-blue-500"
+          />
+        </div>
+      </div>
           </div>
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2">

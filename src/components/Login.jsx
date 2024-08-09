@@ -112,7 +112,6 @@ endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); //
   };
 
   const handleSubmit = async (e) => {
-    alert("enter")
     e.preventDefault();
     if (time) {
       await checkTimeAndHandleClick();
