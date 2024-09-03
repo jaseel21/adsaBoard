@@ -68,17 +68,54 @@ function StudentPort() {
     return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
   };
 
-  const handleLunchToggle = () => {
-    const LunchConfirm = window.confirm('Are you sure you want to change the settings');
-    if (LunchConfirm) {
-      setLunch(!lunch);
+  const lunchSelectAll = (event) => {
+
+    const {checked} =event.target;
+    const LunchSelectConfirm = window.confirm('Are you wnat to select all');
+    if (LunchSelectConfirm) {
+      if(checked){
+
+        setLsu(true)
+        setLmo(true)
+        setLtu(true)
+        setLwe(true)
+        setLth(true)
+        setLfr(true)
+        setLsa(true)
+      }
+      else{
+        setLsu(false)
+        setLmo(false)
+        setLtu(false)
+        setLwe(false)
+        setLth(false)
+        setLfr(false)
+        setLsa(false)
+      }
     }
   };
 
-  const handleBeackfastToggle = () => {
+  const selectBreackfastAll = (event) => {
+    const {checked}= event.target;
     const breackFastConfirm = window.confirm('Are you sure you want to change the settings');
     if (breackFastConfirm) {
-      setBreakfast(!breakfast);
+      if(checked){
+        setBsu(true)
+        setBmo(true)
+        setBtu(true)
+        setBwe(true)
+        setBth(true)
+        setBfr(true)
+        setBsa(true)
+      }else{
+        setBsu(false)
+        setBmo(false)
+        setBtu(false)
+        setBwe(false)
+        setBth(false)
+        setBfr(false)
+        setBsa(false)
+      }
     }
   };
 
@@ -172,6 +209,106 @@ function StudentPort() {
     setShowCheckoutOptions(!showCheckoutOptions);
   };
 
+  const handleCkeckedlsu=()=>{
+    const conFirmOfLsu= window.confirm("are you want to change the settings  ")
+    if(conFirmOfLsu){
+      setLsu(!lsu)
+    }
+  }
+
+  const handleCkeckedLmo=()=>{
+    const confirmOFLmo= window.confirm("are you want to change the setting ")
+    if(confirmOFLmo){
+      setLmo(!lmo)
+    }
+  }
+
+  const handleCkeckedLtu=()=>{
+    const confirmOfLtu=window.confirm("are you wnat to change the token")
+    if(confirmOfLtu){
+      setLtu(!ltu)
+    }
+  }
+
+  const handleCkeckedLwe=()=>{
+    const confirmOfLwe=window.confirm("are you wnat to change the token")
+    if(confirmOfLwe){
+      setLwe(!lwe)
+    }
+  }
+ 
+  const handleCkeckedLth=()=>{
+    const confirmOfLth=window.confirm("are you wnat to change the token")
+    if(confirmOfLth){
+      setLth(!lth)
+    }
+  }
+
+  const handleCkeckedLfr=()=>{
+    const confirmOfLfr=window.confirm("are you wnat to change the token")
+    if(confirmOfLfr){
+      setLfr(!lfr)
+    }
+  }
+
+  const handleCheckedLsa=()=>{
+    const confrimOfLsa=window.confirm("are you want to change the token")
+    if(confrimOfLsa){
+      setLsa(!lsa)
+    }
+  }
+
+
+  const handleCheckedBsu=()=>{
+    const conFirmOfLsu= window.confirm("are you want to change the settings  ")
+    if(conFirmOfLsu){
+      setBsu(!bsu)
+    }
+  }
+
+  const handleCheckedBmo=()=>{
+    const confirmOFLmo= window.confirm("are you want to change the setting ")
+    if(confirmOFLmo){
+      setBmo(!bmo)
+    }
+  }
+
+  const handleCheckedBtu=()=>{
+    const confirmOfLtu=window.confirm("are you wnat to change the token")
+    if(confirmOfLtu){
+      setBtu(!btu)
+    }
+  }
+
+  const handleCheckedBwe=()=>{
+    const confirmOfLwe=window.confirm("are you wnat to change the token")
+    if(confirmOfLwe){
+      setBwe(!bwe)
+    }
+  }
+ 
+  const handleCheckedBth=()=>{
+    const confirmOfLth=window.confirm("are you wnat to change the token")
+    if(confirmOfLth){
+      setBth(!bth)
+    }
+  }
+
+  const handleCheckedBfr=()=>{
+    const confirmOfLfr=window.confirm("are you wnat to change the token")
+    if(confirmOfLfr){
+      setBfr(!bfr)
+    }
+  }
+
+  const handleCheckedBsa=()=>{
+    const confrimOfLsa=window.confirm("are you want to change the token")
+    if(confrimOfLsa){
+      setBsa(!bsa)
+    }
+  }
+
+
   return (
     <div className="container mx-auto p-4 md:p-6">
       <div className="max-w-md mx-auto bg-white rounded shadow-md p-4">
@@ -201,14 +338,15 @@ function StudentPort() {
               <input
                 type="checkbox"
                 className="form-checkbox h-5 w-5 text-blue-500"
-                checked={lunch[day]}
-                onChange={handleLunchToggle}
+                
+                onChange={lunchSelectAll}
               />
-              <span
+              <span className='ml-2'>select all</span>
+              {/* <span
                 className={lunch ? "ml-2 text-green-800" : "ml-2 text-red-600"}
               >
                 {lunch ? 'Lunch is On' : 'Lunch is Off'}
-              </span>
+              </span> */}
             </label>
             <div className="flex flex-wrap gap-4 p-3">
               <div className="flex flex-col items-center space-y-1">
@@ -218,6 +356,7 @@ function StudentPort() {
                   id="su"
                   name="day"
                   checked={lsu}
+                  onChange={handleCkeckedlsu}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -227,7 +366,9 @@ function StudentPort() {
                   type="checkbox"
                   id="mo"
                   name="day"
+                  onChange={handleCkeckedLmo}
                   checked={lmo}
+                  
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -237,6 +378,7 @@ function StudentPort() {
                   type="checkbox"
                   id="tu"
                   name="day"
+                  onChange={handleCkeckedLtu}
                   checked={ltu}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
@@ -247,6 +389,7 @@ function StudentPort() {
                   type="checkbox"
                   id="we"
                   name="day"
+                  onChange={handleCkeckedLwe}
                   checked={lwe}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
@@ -257,6 +400,7 @@ function StudentPort() {
                   type="checkbox"
                   id="th"
                   name="day"
+                  onChange={handleCkeckedLth}
                   checked={lth}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
@@ -267,6 +411,7 @@ function StudentPort() {
                   type="checkbox"
                   id="fr"
                   name="day"
+                  onChange={handleCkeckedLfr}
                   checked={lfr}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
@@ -277,6 +422,7 @@ function StudentPort() {
                   type="checkbox"
                   id="sa"
                   name="day"
+                  onChange={handleCheckedLsa}
                   checked={lsa}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
@@ -291,14 +437,15 @@ function StudentPort() {
               <input
                 type="checkbox"
                 className="form-checkbox h-5 w-5 text-blue-500"
-                checked={breakfast}
-                onChange={handleBeackfastToggle}
-              />
-              <span
+               
+                onChange={selectBreackfastAll}
+              /> 
+              <span className='ml-2'>select all</span>
+              {/* <span
                 className={breakfast ? "ml-2 text-green-800" : "ml-2 text-red-600"}
               >
                 {breakfast ? 'Breakfast is On' : 'Breakfast is Off'}
-              </span>
+              </span> */}
             </label>
           <div className="flex flex-wrap gap-4 p-3">
               <div className="flex flex-col items-center space-y-1">
@@ -308,6 +455,7 @@ function StudentPort() {
                   id="su"
                   name="day"
                   checked={bsu}
+                  onChange={handleCheckedBsu}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -318,6 +466,7 @@ function StudentPort() {
                   id="mo"
                   name="day"
                   checked={bmo}
+                  onChange={handleCheckedBmo}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -328,6 +477,7 @@ function StudentPort() {
                   id="tu"
                   name="day"
                   checked={btu}
+                  onChange={handleCheckedBtu}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -338,6 +488,7 @@ function StudentPort() {
                   id="we"
                   name="day"
                   checked={bwe}
+                  onChange={handleCheckedBwe}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -348,6 +499,7 @@ function StudentPort() {
                   id="th"
                   name="day"
                   checked={bth}
+                  onChange={handleCheckedBth}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -358,6 +510,7 @@ function StudentPort() {
                   id="fr"
                   name="day"
                   checked={bfr}
+                 onChange={handleCheckedBfr}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>
@@ -368,6 +521,7 @@ function StudentPort() {
                   id="sa"
                   name="day"
                   checked={bsa}
+                  onChange={handleCheckedBsa}
                   className="form-checkbox h-5 w-5 text-blue-500"
                 />
               </div>

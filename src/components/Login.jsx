@@ -18,13 +18,22 @@ function Login() {
 
   // Create start time as 2:00 AM GMT+05:30
 const startTime = new Date();
-startTime.setHours(2, 0, 0); // 2:00 AM
+startTime.setHours(1, 0, 0); // 6:00 AM
 startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
 
 // Create end time as 8:00 PM GMT+05:30
 const endTime = new Date();
-endTime.setHours(13, 0, 0); // 8:00 PM
+endTime.setHours(22, 0, 0); // 2:00 PM
 endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
+
+
+
+
+
+
+
+
+
 
   useEffect(() => {
     const updateClock = () => setTime(new Date());

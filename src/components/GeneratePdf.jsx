@@ -17,6 +17,8 @@ const FetchData = () => {
     const [section9, setSection9] = useState([]);
     const [section10, setSection10] = useState([]);
 
+
+    
     
   const [day, setDay] = useState("");
  
@@ -62,14 +64,18 @@ const FetchData = () => {
                 }));
                 tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
                 setDocuments(tokenDocuments);
-                
+
+
                 const sectionOneTokens = tokenDocuments.slice(0, 5);
                 const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection1(selectedSOT);
-
-                const sectionTwoTokens = tokenDocuments.slice(5, 10);
-                const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                setSection2(selectedSTT);
+      
+                
+                
+               const sectionTwoTokens = tokenDocuments.slice(5, 10);
+               const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+               setSection2(selectedSTT);
+                
 
                 const section3Tokens=tokenDocuments.slice(10, 15);
                 const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
@@ -113,7 +119,7 @@ const FetchData = () => {
         };
 
         fetchData();
-    }, []);
+    }, [day]);
 
     const [document,setDocument]=useState([])
   const [beef,setBeef]=useState([])
@@ -227,6 +233,8 @@ const FetchData = () => {
         const selectedS10T= section10Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection10(selectedS10T)
 
+        console.log(day);
+        
   
 
       } catch (error) {
