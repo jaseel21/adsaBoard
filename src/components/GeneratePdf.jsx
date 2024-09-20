@@ -55,6 +55,7 @@ const FetchData = () => {
 
  console.log(day);
     useEffect(() => {
+        
         const fetchData = async () => {
             try {
                 const querySnapshot = await firebase.firestore().collection('students').get();

@@ -67,6 +67,36 @@ function Admin() {
     fetchData();
   }, []);
 
+  const [day, setDay] = useState("");
+
+  useEffect(() => {
+    // Function to get the current day of the week in GMT+5:30
+    const updateDay = () => {
+      const nowUtc = new Date(); // Current time in UTC
+      // Manually adjust for GMT+5:30
+      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
+      const dayOfWeek = getDayOfWeek(gmtPlus530);
+      setDay(dayOfWeek);
+      console.log(dayOfWeek, "day");
+    };
+
+    // Initial call to set the day immediately on mount
+    updateDay();
+
+    // Set up an interval to update every minute
+    const timer = setInterval(updateDay, 60000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(timer);
+  }, []);
+
+  // Function to get the day of the week from a Date object
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
+  };
+
+
 
   const toggleSwitch1 = () => {
     if(user){
@@ -198,7 +228,7 @@ function Admin() {
               key={index}
               number={doc.tokenNo}
               block={doc.block}
-              isOn={doc.obj && doc.obj.lunch}
+              isOn={doc.obj && doc.obj.lunch[day]}
               toggleSwitch={() => toggleSwitch(index)}
             />
           ))
@@ -208,7 +238,7 @@ function Admin() {
               key={index}
               number={doc.tokenNo}
               block={doc.block}
-              isOn={doc.obj && doc.obj.breakfast}
+              isOn={doc.obj && doc.obj.breakfast[day]}
               toggleSwitch={() => toggleSwitch(index)}
             />
           ))

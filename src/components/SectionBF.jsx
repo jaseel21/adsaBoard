@@ -19,6 +19,35 @@ const SectionBF = () => {
   const [section10, setSection10] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
 
+  const [day, setDay] = useState("");
+
+  useEffect(() => {
+    // Function to get the current day of the week in GMT+5:30
+    const updateDay = () => {
+      const nowUtc = new Date(); // Current time in UTC
+      // Manually adjust for GMT+5:30
+      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
+      const dayOfWeek = getDayOfWeek(gmtPlus530);
+      setDay(dayOfWeek);
+      console.log(dayOfWeek, "day");
+    };
+
+    // Initial call to set the day immediately on mount
+    updateDay();
+
+    // Set up an interval to update every minute
+    const timer = setInterval(updateDay, 60000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(timer);
+  }, []);
+
+  // Function to get the day of the week from a Date object
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -31,7 +60,7 @@ const SectionBF = () => {
         setDocuments(tokenDocuments);
         
         const sectionOneTokens = tokenDocuments.slice(0, 5);
-        const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setSection1(selectedSOT);
 
         const sectionTowTokens=tokenDocuments.slice(5, 10);

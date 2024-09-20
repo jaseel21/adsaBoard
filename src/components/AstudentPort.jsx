@@ -73,9 +73,26 @@ function AstudentPort() {
         password: stdata.password,
         tokenNo: stdata.tokenNo,
         block:blocked  ,
-        obj: {
-          lunch: lunch,
-          breakfast: breakfast,
+        obj:{
+
+          lunch: {
+            su:lsu,
+            mo:lmo,
+            tu:ltu,
+            we:lwe,
+            th:lth,
+            fr:lfr,
+            sa:lsa
+          },
+          breakfast:{
+            su:bsu,
+            mo:bmo,
+            tu:btu,
+            we:bwe,
+            th:bth,
+            fr:bfr,
+            sa:bsa
+          },
         },
         obj2: {
           beef: beef,
@@ -145,9 +162,26 @@ function AstudentPort() {
         password: stdata.password,
         tokenNo: stdata.tokenNo,
         block:true,
-        obj: {
-          lunch: lunch,
-          breakfast: breakfast,
+        obj:{
+
+          lunch: {
+            su:lsu,
+            mo:lmo,
+            tu:ltu,
+            we:lwe,
+            th:lth,
+            fr:lfr,
+            sa:lsa
+          },
+          breakfast:{
+            su:bsu,
+            mo:bmo,
+            tu:btu,
+            we:bwe,
+            th:bth,
+            fr:bfr,
+            sa:bsa
+          },
         },
         obj2: {
           beef: beef,

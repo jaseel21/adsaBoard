@@ -21,6 +21,7 @@ import firebase from './firebase/config'
 import { AuthContext } from './store/AuthContext'
 import  "./App.css"
 
+
 function App() {
   const {user,setUser}=useContext(AuthContext)
   let isAdmin=location.pathname === "/admin"
@@ -28,7 +29,7 @@ function App() {
     isAdmin=location.pathname === "/alogin"
   }
 
-
+  
 
   useEffect(() => {
     firebase.auth().onAuthStateChanged((user) => {
@@ -56,7 +57,7 @@ function App() {
         <Route path='/admin'  Component={Admin} ></Route>
         <Route path='/astudent-port' element={user ? <AstudentPort /> : <Navigate to="/alogin" />}></Route>
         <Route path='/pdfg' Component={GeneratePdf}></Route>
-        <Route path='/alogin' Component={AdminLogin}></Route>
+        <Route path='/alogin' element={user ? <Admin /> : <AdminLogin />} />
       </Routes>
           </GetTokens>
         </PersonInfo>
