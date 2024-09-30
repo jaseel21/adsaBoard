@@ -94,16 +94,22 @@ const Navbar = ({ isAdmin }) => {
     
 
     return (
-        <nav className="bg-transparent py-4 md:p-4 flex">
-            <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+        <nav className="bg-white py-4 flex justify-between items-center border-b-2 border-gray-200">
+            <div className="max-w-7xl mx-auto flex items-center justify-between w-full px-4">
+            <div className="flex-shrink-0">
+                    <h1 className="text-3xl font-bold text-gray-700">
+                        <span className="text-green-700">ADSA</span> Online
+                    </h1>
+                </div>
                 <div className="relative flex items-center justify-between h-16">
                     {/* Navbar Links */}
+                    
                     <div className="justify-center items-center sm:block sm:ml-6 w-full sm:w-auto">
                         <div className="flex justify-center sm:justify-start sm:space-x-0 md:space-x-4">
                             {/* Home Button */}
                             <button
                                 onClick={handleHomeBtn}
-                                className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
                             >
                                 <FontAwesomeIcon icon={faHome} className="mr-1" />
                                 {isAdmin ? 'Admin' : 'Home'}
@@ -111,7 +117,7 @@ const Navbar = ({ isAdmin }) => {
                             {/* List Button */}
                             <button
                                 onClick={handleListBtn}
-                                className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
                             >
                                 <FontAwesomeIcon icon={faList} className="mr-1" />
                                 List
@@ -120,7 +126,7 @@ const Navbar = ({ isAdmin }) => {
                             <div className="relative" ref={tokenDropdownRef}>
                                 <button
                                     onClick={handleTokenDropdownToggle}
-                                    className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                    className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
                                 >
                                     <FontAwesomeIcon icon={faTicketAlt} className="mr-1" />
                                     Token
@@ -156,7 +162,7 @@ const Navbar = ({ isAdmin }) => {
                                 <div className="relative" ref={optionsDropdownRef}>
                                     <button
                                         onClick={handleOptionsDropdownToggle}
-                                        className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                        className="  rounded-md  flex items-center text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
                                         aria-expanded={optionsOpen}
                                         aria-haspopup="true"
                                     >
@@ -190,7 +196,7 @@ const Navbar = ({ isAdmin }) => {
                             ) : (
                                 <button
                                     onClick={handleMenueBtn}
-                                    className="text-white hover:bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                                    className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
                                 >
                                     <FontAwesomeIcon icon={faUtensils} className="mr-1" />
                                     Menu
