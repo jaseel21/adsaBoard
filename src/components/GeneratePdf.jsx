@@ -110,9 +110,15 @@ const FetchData = () => {
                 const section10Tokens=tokenDocuments.slice(45, 50);
                 const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection10(selectedS10T)
+
                 
                 // Similarly, set other sections as needed
                 // Example: setSection3, setSection4, ..., setSection8
+
+                console.log("secstoin one :"+section1);
+                console.log("section two :"+section2);
+                
+                
 
             } catch (error) {
                 console.error('Error fetching tokens:', error);
@@ -196,9 +202,14 @@ const FetchData = () => {
         const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection1(selectedSOT);
 
+        console.log('sectionBf One:'+Bsection1);
+        
+
         const sectionTowTokens=tokenDocuments.slice(5, 10);
         console.log(sectionTowTokens);
         const selectedSTT = sectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+
+        
         console.log(selectedSTT);
         setBsection2(selectedSTT)
 
