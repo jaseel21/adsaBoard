@@ -151,13 +151,13 @@ const Navbar = ({ isAdmin }) => {
           <div className="hidden md:flex md:space-x-6">
             <button
               onClick={handleHomeBtn}
-              className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
+              className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
             >
               {isAdmin ? 'Admin' : 'Home'}
             </button>
             <button
               onClick={handleListBtn}
-              className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
+              className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
             >
               List
             </button>
@@ -166,7 +166,7 @@ const Navbar = ({ isAdmin }) => {
             <div className="relative flex items-center" ref={tokenDropdownRef}>
               <button
                 onClick={handleTokenDropdownToggle}
-                className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
+                className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
               >
                 Token
               </button>
@@ -206,7 +206,7 @@ const Navbar = ({ isAdmin }) => {
 
                                             onClick={handleOptionsDropdownToggle}
 
-                                            className="pt-5  rounded-md  flex items-center text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
+                                            className="pt-5  rounded-md  flex items-center text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
 
                                             aria-expanded={optionsOpen}
 
@@ -274,7 +274,7 @@ const Navbar = ({ isAdmin }) => {
 
                                         onClick={handleMenueBtn}
 
-                                        className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
+                                        className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
 
                                     >
 
@@ -295,13 +295,13 @@ const Navbar = ({ isAdmin }) => {
           <div className="space-y-1 px-2 pb-3 sm:px-3">
             <button
               onClick={handleHomeBtn}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+              className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
             >
               {isAdmin ? 'Admin' : 'Home'}
             </button>
             <button
               onClick={handleListBtn}
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+              className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
             >
               List
             </button>
@@ -310,7 +310,7 @@ const Navbar = ({ isAdmin }) => {
             <div className="relative " ref={tokenDropdownRef}>
               <button
                 onClick={handleTokenDropdownToggle}
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100 "
+                className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100 "
               >
                 Token
               </button>
@@ -350,7 +350,7 @@ const Navbar = ({ isAdmin }) => {
 
                                             onClick={handleOptionsDropdownToggle}
 
-                                            className=" block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+                                            className=" block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
 
                                             aria-expanded={optionsOpen}
 
@@ -419,7 +419,7 @@ const Navbar = ({ isAdmin }) => {
 
                                         onClick={handleMenueBtn}
 
-                                        className="text-gray-700 hover:text-green-700 px-3 py-2 text-lg font-medium"
+                                        className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
 
                                     >
 

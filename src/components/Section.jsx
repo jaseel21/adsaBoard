@@ -126,7 +126,7 @@ const Section = () => {
   return (
     <div className=" min-h-screen py-8 flex">
       <div className="max-w-7xl  mx-auto px-4  sm:px-6 lg:px-8">
-          <div className="flex justify-center text-white  pb-5 items-center">
+          <div className="flex justify-center text-black  pb-5 items-center">
             {/* <FontAwesomeIcon icon={faFileMagnifyingGlass} /> */}
           <FontAwesomeIcon icon={faSearchMinus} className="text-lg pr-1" />
             <h1 className='font-normal underline   rounded-lg text-1xl'>Lunch Sections</h1>

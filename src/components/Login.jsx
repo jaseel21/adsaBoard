@@ -211,14 +211,14 @@ endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); //
 
   
   return (
-    <div className=" flex items-center justify-center bg-white">
+    <div className=" flex items-center h-[600px] justify-center bg-white">
       <div className="max-w-md w-full  space-y-8">
         <div className="flex flex-col items-center">
           {/* Logo or app name (optional) */}
           {/* <h1 className="text-3xl font-bold text-gray-800">ADSA Online</h1> */}
           
         </div>
-        <div className="max-w-md w-full space-y-8">
+        <div className="max-w-md w-full  space-y-8">
           <div className="bg-gray-100 p-8 rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-4"> LOG IN</h2>
 
@@ -268,18 +268,18 @@ endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); //
                   <input type="checkbox" className="form-checkbox text-blue-500" />
                   <span className="ml-2">Remember Me</span>
                 </label>
-                <a href="/" className="text-blue-500 text-sm">Forgot Password?</a>
+                <a href="/" className="text-green-500 text-sm">Forgot Password?</a>
               </div>
               <button
                 type="submit"
                 onClick={togglePasswordVisibility}
-                className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
+                className="w-full bg-emerald-500 text-white py-2 rounded-md hover:bg-emerald-500 transition duration-200"
               >
                 LOGIN
               </button>
             </form>
             <div className="mt-6 text-center">
-              <a href="/" className="text-sm text-blue-500">Create New Account</a>
+              <a href="/" className="text-sm text-green-500">Create New Account</a>
             </div>
           </div>
         </div>

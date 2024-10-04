@@ -156,29 +156,80 @@ function Admin() {
     <div>
       <div className="p-10">
      
-        <div className="flex justify-center items-center pb-4 text-white">
+        <div className="flex justify-center items-center  text-white">
           <FontAwesomeIcon icon={faScrewdriverWrench} className='px-1' />
           <h1 className="text-center text-2xl font-bold">Admin panel</h1>
         </div>
-        <div className="text-left p-3 rounded-lg w-3/5 md:w-2/12 justify-center items-center flex bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
-          <div className="flex p-1 items-center space-x-2 justify-start">
-            <h1 className='text-gray-500 text-sm font-bold'>Token Board</h1>
-            <button
-              className={`w-12 h-6 flex items-center rounded-full p-1 duration-300 ${
-                isChecked ? 'bg-green-600' : 'bg-red-600'
-              }`}
-              onClick={toggleSwitch1}
-             
+        <div className="flex flex-col items-center p-4 justify-center  shadow-lg rounded-md w-1/3 md:w-1/12 ">
+  {/* <h1 className="text-gray-800 text-lg font-semibold mb-4">Token Board</h1> */}
+  <div className="flex flex-col items-center">
+    <span className="text-sm text-gray-500 font-medium mb-2">
+      {isChecked ? 'Unlocked' : 'Locked'}
+    </span>
+    <div className="relative">
+      {/* Outer metallic ring */}
+      <div
+        className={`w-16 h-16 rounded-full bg-gray-800 border-4 shadow-inner flex items-center justify-center relative duration-300 ${
+          isChecked ? 'border-green-500' : 'border-red-500'
+        }`}
+        style={{
+          boxShadow: `0 0 15px ${isChecked ? 'green' : 'red'}`,
+          background: 'linear-gradient(145deg, #3a3a3a, #1a1a1a)', // Metallic gradient
+        }}
+      >
+        {/* Inner dial with lock/unlock icon */}
+        <div
+          className={`w-10 h-10 bg-gray-700 rounded-full shadow-md flex items-center justify-center`}
+        >
+          {/* Lock/Unlock SVG icon */}
+          {isChecked ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-green-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <div
-                className={`w-5 h-5 rounded-full shadow-md transform duration-300 ${
-                  isChecked ? 'translate-x-6 bg-white' : 'translate-x-0 bg-white'
-                }`}
-              ></div>
-            </button>
-            <span className="text-sm">{isChecked ? 'ON' : 'OFF'}</span>
-          </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 17v-1m-4-4v-4a4 4 0 118 0v4m4 4v4H4v-4h16z"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 12V9a4 4 0 00-8 0v3m-4 4v4h16v-4m-4-4h-4m4 0h-4"
+              />
+            </svg>
+          )}
         </div>
+      </div>
+      {/* Clickable button */}
+      <button
+        className="absolute inset-0 rounded-full focus:outline-none"
+        onClick={toggleSwitch1}
+      ></button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
       </div>
 
 

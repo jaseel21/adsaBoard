@@ -205,6 +205,8 @@ const FetchData = () => {
         console.log('sectionBf One:'+Bsection1);
         
 
+        
+
         const sectionTowTokens=tokenDocuments.slice(5, 10);
         console.log(sectionTowTokens);
         const selectedSTT = sectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);

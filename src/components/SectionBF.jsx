@@ -121,7 +121,7 @@ const SectionBF = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen py-8 flex">
+    <div className=" min-h-screen py-8 flex">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex justify-center items-center pb-5">
       <FontAwesomeIcon icon={faSearchMinus} className="text-lg pr-1" />
