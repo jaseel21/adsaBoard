@@ -51,6 +51,17 @@ function StudentPort() {
   const [lfr,setLfr]=useState(stdata.obj.lunch["fr"])
   const [lsa,setLsa]=useState(stdata.obj.lunch["sa"])
 
+  const [checkedL, setChackedL] = useState(false);
+
+  useEffect(() => {
+    // Check if all lunch states are true
+    if (lsu && lmo && ltu && lwe && lth && lfr && lsa) {
+      setChackedL(true);  // Set lunch state to true
+    } else {
+      setChackedL(false); // Set lunch state to false
+    }
+  }, [lsu, lmo, ltu, lwe, lth, lfr, lsa]);
+
   const [bsu,setBsu]=useState(stdata.obj.breakfast['su'] )
   const [bmo,setBmo]=useState(stdata.obj.breakfast["mo"])
   const [btu,setBtu]=useState(stdata.obj.breakfast["tu"])
@@ -59,8 +70,23 @@ function StudentPort() {
   const [bfr,setBfr]=useState(stdata.obj.breakfast["fr"])
   const [bsa,setBsa]=useState(stdata.obj.breakfast["sa"])
 
+  const [checkedBF,setChackedBF]=useState(false)
+
+  useEffect(() => {
+    // Check if all lunch states are true
+    if (bsu && bmo && btu && bwe && bth && bfr && bsa) {
+      setChackedBF(true);  // Set breakfast state to true
+    } else {
+      setChackedBF(false); // Set breakfast state to false
+    }
+  }, [bsu, bmo, btu, bwe, bth, bfr, bsa]);
+
 
   
+
+
+
+
 
   // Function to get the day of the week from a Date object
   const getDayOfWeek = (date) => {
@@ -340,6 +366,7 @@ function StudentPort() {
                 className="form-checkbox h-5 w-5 text-blue-500"
                 
                 onChange={lunchSelectAll}
+                checked={checkedL}
               />
               <span className='ml-2'>select all</span>
               {/* <span
@@ -439,6 +466,7 @@ function StudentPort() {
                 className="form-checkbox h-5 w-5 text-blue-500"
                
                 onChange={selectBreackfastAll}
+                checked={checkedBF}
               /> 
               <span className='ml-2'>select all</span>
               {/* <span
@@ -538,7 +566,7 @@ function StudentPort() {
           </div>
           {showCheckoutOptions && (
             <div className="mb-4">
-              <h2 className="text-xl font-bold mb-2">Checkout Options</h2>
+              <h2 className="text-xl font-bold mb-2">Dietary Preferences</h2>
               <div className="flex flex-wrap">
                 <label className="inline-flex items-center mr-2">
                   <input
@@ -580,7 +608,7 @@ function StudentPort() {
             </div>
           )}
           <button
-            className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             type="submit"
           >
             Submit

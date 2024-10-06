@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext,useEffect, useState } from 'react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useNavigate } from 'react-router-dom';
@@ -133,6 +133,17 @@ function AstudentPort() {
   const [lfr,setLfr]=useState(stdata.obj.lunch["fr"])
   const [lsa,setLsa]=useState(stdata.obj.lunch["sa"])
 
+  const [checkedL, setChackedL] = useState(false);
+
+  useEffect(() => {
+    // Check if all lunch states are true
+    if (lsu && lmo && ltu && lwe && lth && lfr && lsa) {
+      setChackedL(true);  // Set lunch state to true
+    } else {
+      setChackedL(false); // Set lunch state to false
+    }
+  }, [lsu, lmo, ltu, lwe, lth, lfr, lsa]);
+
   const [bsu,setBsu]=useState(stdata.obj.breakfast['su'] )
   const [bmo,setBmo]=useState(stdata.obj.breakfast["mo"])
   const [btu,setBtu]=useState(stdata.obj.breakfast["tu"])
@@ -140,6 +151,17 @@ function AstudentPort() {
   const [bth,setBth]=useState(stdata.obj.breakfast["th"])
   const [bfr,setBfr]=useState(stdata.obj.breakfast["fr"])
   const [bsa,setBsa]=useState(stdata.obj.breakfast["sa"])
+
+  const [checkedBF,setChackedBF]=useState(false)
+
+  useEffect(() => {
+    // Check if all lunch states are true
+    if (bsu && bmo && btu && bwe && bth && bfr && bsa) {
+      setChackedBF(true);  // Set breakfast state to true
+    } else {
+      setChackedBF(false); // Set breakfast state to false
+    }
+  }, [bsu, bmo, btu, bwe, bth, bfr, bsa]);
 
 
 
@@ -493,6 +515,7 @@ function AstudentPort() {
                 className="form-checkbox h-5 w-5 text-blue-500"
                 
                 onChange={lunchSelectAll}
+                checked={checkedL}
               />
               <span className='ml-2'>select all</span>
               {/* <span
@@ -590,8 +613,9 @@ function AstudentPort() {
               <input
                 type="checkbox"
                 className="form-checkbox h-5 w-5 text-blue-500"
-                checked={breakfast}
+                
                 onChange={selectBreackfastAll}
+                checked={checkedBF}
               />
              <span className='ml-2'>select all</span>
               {/* <span
@@ -733,7 +757,7 @@ function AstudentPort() {
             </div>
           )}
           <button
-            className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             type="submit"
           >
             Submit

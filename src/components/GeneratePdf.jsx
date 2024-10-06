@@ -17,6 +17,17 @@ const FetchData = () => {
     const [section9, setSection9] = useState([]);
     const [section10, setSection10] = useState([]);
 
+    const [Bsection1, setBsection1] = useState([]);
+  const [Bsection2, setBsection2] = useState([]);
+  const [Bsection3, setBsection3] = useState([]);
+  const [Bsection4, setBsection4] = useState([]);
+  const [Bsection5, setBsection5] = useState([]);
+  const [Bsection6, setBsection6] = useState([]);
+  const [Bsection7, setBsection7] = useState([]);
+  const [Bsection8, setBsection8] = useState([]);
+  const [Bsection9, setBsection9] = useState([]);
+  const [Bsection10, setBsection10] = useState([]);
+
 
     
     
@@ -54,6 +65,37 @@ const FetchData = () => {
   };
 
  console.log(day);
+
+
+ useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const querySnapshot = await firebase.firestore().collection('students').get();
+        const tokenDocuments = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
+        setDocuments(tokenDocuments);
+        
+        
+
+        console.log(day);
+        
+
+      } catch (error) {
+        console.error('Error fetching tokens:', error);
+      }
+    };
+
+    fetchData();
+
+  }, []);
+
+
+
+
+
     useEffect(() => {
         
         const fetchData = async () => {
@@ -110,6 +152,60 @@ const FetchData = () => {
                 const section10Tokens=tokenDocuments.slice(45, 50);
                 const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection10(selectedS10T)
+
+                // -----------------------------------------------------
+
+
+
+                const BsectionOneTokens = tokenDocuments.slice(0, 5);
+        const BselectedSOT = BsectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection1(BselectedSOT);
+
+        console.log('sectionBf One:'+Bsection1);
+        
+
+        
+
+        const BsectionTowTokens=tokenDocuments.slice(5, 10);
+        console.log(BsectionTowTokens);
+        const BselectedSTT = BsectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+
+        
+        console.log(selectedSTT);
+        setBsection2(BselectedSTT)
+
+        const Bsection3Tokens=tokenDocuments.slice(10, 15);
+        const BselectedS3T = Bsection3Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection3(BselectedS3T)
+
+        const Bsection4Tokens=tokenDocuments.slice(15, 20);
+        const BselectedS4T = Bsection4Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection4(BselectedS4T)
+
+        const Bsection5Tokens=tokenDocuments.slice(20, 25);
+        const BselectedS5T = Bsection5Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection5(BselectedS5T)
+
+        const Bsection6Tokens=tokenDocuments.slice(25, 30);
+        const BselectedS6T = Bsection6Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection6(BselectedS6T)
+
+        const Bsection7Tokens=tokenDocuments.slice(30, 35);
+        const BselectedS7T = Bsection7Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection7(BselectedS7T)
+
+        const Bsection8Tokens=tokenDocuments.slice(35, 40);
+        const BselectedS8T = Bsection8Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection8(BselectedS8T)
+
+        const Bsection9Tokens=tokenDocuments.slice(40, 45);
+        const BselectedS9T = Bsection9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection9(BselectedS9T)
+
+        const Bsection10Tkens=tokenDocuments.slice(45, 50);
+        const BselectedS10T= Bsection10Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        setBsection10(BselectedS10T)
+               
 
                 
                 // Similarly, set other sections as needed
@@ -175,90 +271,10 @@ const FetchData = () => {
   
   }, []);
 
-  const [Bsection1, setBsection1] = useState([]);
-  const [Bsection2, setBsection2] = useState([]);
-  const [Bsection3, setBsection3] = useState([]);
-  const [Bsection4, setBsection4] = useState([]);
-  const [Bsection5, setBsection5] = useState([]);
-  const [Bsection6, setBsection6] = useState([]);
-  const [Bsection7, setBsection7] = useState([]);
-  const [Bsection8, setBsection8] = useState([]);
-  const [Bsection9, setBsection9] = useState([]);
-  const [Bsection10, setBsection10] = useState([]);
-
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const querySnapshot = await firebase.firestore().collection('students').get();
-        const tokenDocuments = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-        setDocuments(tokenDocuments);
-        
-        const sectionOneTokens = tokenDocuments.slice(0, 5);
-        const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection1(selectedSOT);
-
-        console.log('sectionBf One:'+Bsection1);
-        
-
-        
-
-        const sectionTowTokens=tokenDocuments.slice(5, 10);
-        console.log(sectionTowTokens);
-        const selectedSTT = sectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-
-        
-        console.log(selectedSTT);
-        setBsection2(selectedSTT)
-
-        const section3Tokens=tokenDocuments.slice(10, 15);
-        const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection3(selectedS3T)
-
-        const section4Tokens=tokenDocuments.slice(15, 20);
-        const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection4(selectedS4T)
-
-        const section5Tokens=tokenDocuments.slice(20, 25);
-        const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection5(selectedS5T)
-
-        const section6Tokens=tokenDocuments.slice(25, 30);
-        const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection6(selectedS6T)
-
-        const section7Tokens=tokenDocuments.slice(30, 35);
-        const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection7(selectedS7T)
-
-        const section8Tokens=tokenDocuments.slice(35, 40);
-        const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection8(selectedS8T)
-
-        const section9Tokens=tokenDocuments.slice(40, 45);
-        const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection9(selectedS9T)
-
-        const section10Tkens=tokenDocuments.slice(45, 50);
-        const selectedS10T= section10Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection10(selectedS10T)
-
-        console.log(day);
-        
   
 
-      } catch (error) {
-        console.error('Error fetching tokens:', error);
-      }
-    };
 
-    fetchData();
-
-  }, []);
+  
 
 
 
@@ -458,7 +474,7 @@ const FetchData = () => {
 </button>
 
             <div className="flex flex-col w-full max-w-full mx-auto overflow-x-auto">
-                <h1 className='p-5 text-center text-xl font-bold text-white underline'>Lunch Token Canceled List</h1>
+                <h1 className='p-5 text-center text-xl font-bold text-black underline'>Lunch Token Canceled List</h1>
                 <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -545,7 +561,7 @@ const FetchData = () => {
                     </table>
                 </div>
 
-                <h1 className='p-5 text-center text-xl text-white font-bold underline'>Breakfast Token Canceled List</h1>
+                <h1 className='p-5 text-center text-xl text-black font-bold underline'>Breakfast Token Canceled List</h1>
                 <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">

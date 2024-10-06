@@ -19,7 +19,9 @@ const SectionBF = () => {
   const [section10, setSection10] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
 
+   
   const [day, setDay] = useState("");
+ 
 
   useEffect(() => {
     // Function to get the current day of the week in GMT+5:30
@@ -31,24 +33,8 @@ const SectionBF = () => {
       setDay(dayOfWeek);
       console.log(dayOfWeek, "day");
     };
-
-    // Initial call to set the day immediately on mount
-    updateDay();
-
-    // Set up an interval to update every minute
-    const timer = setInterval(updateDay, 60000);
-
-    // Clean up interval on component unmount
-    return () => clearInterval(timer);
-  }, []);
-
-  // Function to get the day of the week from a Date object
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
-  };
-
-  useEffect(() => {
+  
+    // Function to fetch data from Firestore and update sections
     const fetchData = async () => {
       try {
         const querySnapshot = await firebase.firestore().collection('students').get();
@@ -58,58 +44,69 @@ const SectionBF = () => {
         }));
         tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
         setDocuments(tokenDocuments);
-        
+  
         const sectionOneTokens = tokenDocuments.slice(0, 5);
         const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setSection1(selectedSOT);
-
-        const sectionTowTokens=tokenDocuments.slice(5, 10);
+  
+        const sectionTowTokens = tokenDocuments.slice(5, 10);
         const selectedSTT = sectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
         console.log(selectedSTT);
-        setSection2(selectedSTT)
-
-
-        const section3Tokens=tokenDocuments.slice(10, 15);
-        const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection3(selectedS3T)
-
-        const section4Tokens=tokenDocuments.slice(15, 20);
-        const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection4(selectedS4T)
-
-        const section5Tokens=tokenDocuments.slice(20, 25);
-        const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection5(selectedS5T)
-
-        const section6Tokens=tokenDocuments.slice(25, 30);
-        const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection6(selectedS6T)
-
-        const section7Tokens=tokenDocuments.slice(30, 35);
-        const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection7(selectedS7T)
-
-        const section8Tokens=tokenDocuments.slice(35, 40);
-        const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection8(selectedS8T)
-
-        const section9Tokens=tokenDocuments.slice(40, 45);
-        const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection9(selectedS9T)
-
-        const section10Tkens=tokenDocuments.slice(45, 50);
-        const selectedS10T= section10Tkens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection10(selectedS10T)
+        setSection2(selectedSTT);
   
-
+        const section3Tokens = tokenDocuments.slice(10, 15);
+        const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection3(selectedS3T);
+  
+        const section4Tokens = tokenDocuments.slice(15, 20);
+        const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection4(selectedS4T);
+  
+        const section5Tokens = tokenDocuments.slice(20, 25);
+        const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection5(selectedS5T);
+  
+        const section6Tokens = tokenDocuments.slice(25, 30);
+        const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection6(selectedS6T);
+  
+        const section7Tokens = tokenDocuments.slice(30, 35);
+        const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection7(selectedS7T);
+  
+        const section8Tokens = tokenDocuments.slice(35, 40);
+        const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection8(selectedS8T);
+  
+        const section9Tokens = tokenDocuments.slice(40, 45);
+        const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection9(selectedS9T);
+  
+        const section10Tkens = tokenDocuments.slice(45, 50);
+        const selectedS10T = section10Tkens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
+        setSection10(selectedS10T);
       } catch (error) {
         console.error('Error fetching tokens:', error);
       }
     };
-
+  
+    // Initial call to set the day and fetch data immediately on mount
+    updateDay();
     fetchData();
-
-  }, []);
+  
+    // Set up an interval to update the day every minute
+    const timer = setInterval(updateDay, 60000);
+  
+    // Clean up interval on component unmount
+    return () => clearInterval(timer);
+  }, [day]); // Dependency array should include 'day' to ensure fetchData updates when the day changes
+  
+  // Function to get the day of the week from a Date object
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
+  };
+  
 
   // Function to toggle active section
   const toggleSection = (sectionIndex) => {

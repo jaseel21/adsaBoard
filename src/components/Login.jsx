@@ -272,7 +272,7 @@ endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); //
               </div>
               <button
                 type="submit"
-                onClick={togglePasswordVisibility}
+               
                 className="w-full bg-emerald-500 text-white py-2 rounded-md hover:bg-emerald-500 transition duration-200"
               >
                 LOGIN
