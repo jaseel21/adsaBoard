@@ -271,6 +271,39 @@ const FetchData = () => {
   
   }, []);
 
+    const [formattedDate, setFormattedDate] = useState("");
+
+  useEffect(() => {
+    // Function to get the formatted date in "day/month/year" format in GMT+5:30
+    const updateFormattedDate = () => {
+      const nowUtc = new Date(); // Current time in UTC
+      // Manually adjust for GMT+5:30
+      const gmtPlus530 = new Date(nowUtc.getTime() + 5.5 * 60 * 60 * 1000);
+
+      // Get date, month, and year
+      const date = gmtPlus530.getDate(); // Day of the month (1-31)
+      const month = gmtPlus530.getMonth() + 1; // Months are zero-indexed, so +1 (1-12)
+      const year = gmtPlus530.getFullYear(); // Get the full year (e.g., 2024)
+
+      // Format the date as "day/month/year"
+      const formatted = `${date}/${month}/${year}`;
+
+      // Update state
+      setFormattedDate(formatted);
+
+      console.log(formatted, "formatted date");
+    };
+
+    // Initial call to set the date immediately on mount
+    updateFormattedDate();
+
+    // Set up an interval to update every minute
+    const timer = setInterval(updateFormattedDate, 60000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(timer);
+  }, []);
+
   
 
 
@@ -283,7 +316,7 @@ const FetchData = () => {
 
     // Add the current date at the top of the document
     const today = new Date();
-    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+    const dateStr = formattedDate;
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0); // Black color for the date
     doc.text(`Date: ${dateStr}`, 14, 10);
@@ -414,50 +447,50 @@ const FetchData = () => {
     });
 
     // Define y position for the third table after some margin from the second table
-    const yAfterSecondTable = doc.lastAutoTable.finalY + 10; // Add some margin
+    // const yAfterSecondTable = doc.lastAutoTable.finalY + 10; // Add some margin
 
-    // Define the columns for the third table
-    const columns3 = [
-        { header: 'Beef', dataKey: 'beef' },
-        { header: 'Chicken', dataKey: 'chicken' },
-        { header: 'Fish', dataKey: 'fish' },
-        { header: 'Mutton', dataKey: 'mutton' },
-    ];
+    // // Define the columns for the third table
+    // const columns3 = [
+    //     { header: 'Beef', dataKey: 'beef' },
+    //     { header: 'Chicken', dataKey: 'chicken' },
+    //     { header: 'Fish', dataKey: 'fish' },
+    //     { header: 'Mutton', dataKey: 'mutton' },
+    // ];
 
-    // Prepare the data for the third table
-    const tableData3 = Array.from({ length: Math.max(
-        beef.length,
-        chicken.length,
-        fish.length,
-        mutton.length
-    ) }).map((_, index) => ({
-        beef: index === 0 && beef.length === 0 ? 'empty' : (index < beef.length ? beef[index] : ''),
-        chicken: index === 0 && chicken.length === 0 ? 'empty' : (index < chicken.length ? chicken[index] : ''),
-        fish: index === 0 && fish.length === 0 ? 'empty' : (index < fish.length ? fish[index] : ''),
-        mutton: index === 0 && mutton.length === 0 ? 'empty' : (index < mutton.length ? mutton[index] : ''),
-    }));
+    // // Prepare the data for the third table
+    // const tableData3 = Array.from({ length: Math.max(
+    //     beef.length,
+    //     chicken.length,
+    //     fish.length,
+    //     mutton.length
+    // ) }).map((_, index) => ({
+    //     beef: index === 0 && beef.length === 0 ? 'empty' : (index < beef.length ? beef[index] : ''),
+    //     chicken: index === 0 && chicken.length === 0 ? 'empty' : (index < chicken.length ? chicken[index] : ''),
+    //     fish: index === 0 && fish.length === 0 ? 'empty' : (index < fish.length ? fish[index] : ''),
+    //     mutton: index === 0 && mutton.length === 0 ? 'empty' : (index < mutton.length ? mutton[index] : ''),
+    // }));
 
-    // Add the title for the third table
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0); // Black color for the title
-    doc.text('Beef, Chicken, Mutton Avoiders', 14, yAfterSecondTable + 10);
+    // // Add the title for the third table
+    // doc.setFontSize(16);
+    // doc.setTextColor(0, 0, 0); // Black color for the title
+    // doc.text('Beef, Chicken, Mutton Avoiders', 14, yAfterSecondTable + 10);
 
-    // Add the third table to the PDF
-    doc.autoTable({
-        columns: columns3,
-        body: tableData3,
-        startY: yAfterSecondTable + 15, // Start after the title of the third table
-        theme: 'striped',
-        headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
-        bodyStyles: { fontSize: 9, padding: 3 },
-        margin: { top: 10 }, // Add top margin for the table
-        didDrawPage: (data) => {
-            // Ensure title is added before drawing tables
-            if (data.pageCount === 1) {
-                doc.text('Beef, Chicken, Mutton Avoiders', 14, yAfterSecondTable + 10);
-            }
-        }
-    });
+    // // Add the third table to the PDF
+    // doc.autoTable({
+    //     columns: columns3,
+    //     body: tableData3,
+    //     startY: yAfterSecondTable + 15, // Start after the title of the third table
+    //     theme: 'striped',
+    //     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
+    //     bodyStyles: { fontSize: 9, padding: 3 },
+    //     margin: { top: 10 }, // Add top margin for the table
+    //     didDrawPage: (data) => {
+    //         // Ensure title is added before drawing tables
+    //         if (data.pageCount === 1) {
+    //             doc.text('Beef, Chicken, Mutton Avoiders', 14, yAfterSecondTable + 10);
+    //         }
+    //     }
+    // });
 
     // Save the PDF
     doc.save('adsa-token-list.pdf');
@@ -468,7 +501,7 @@ const FetchData = () => {
 
     return (
         <div className="p-14">
-            <button onClick={generatePDF} class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center">
+            <button onClick={generatePDF} class="bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-bold py-2 px-4 rounded inline-flex items-center">
   <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
   <span>Download</span>
 </button>
@@ -650,7 +683,7 @@ const FetchData = () => {
 
 
             </div>
-            <h1 className='p-5 text-center text-xl text-white font-bold underline'>Beef, Chicken, Mutton Avoiders</h1>
+            <h1 className='p-5 text-center text-xl text-black font-bold underline'>Beef, Chicken, Mutton Avoiders</h1>
             <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
         <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
           <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">

@@ -106,7 +106,7 @@ const Navbar = ({ isAdmin }) => {
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
             <h1 className="text-2xl font-bold text-gray-700">
-              <span className="text-green-700">ADSA</span> Online
+              <span className="text-green-700">ADSA</span> T-board
             </h1>
           </div>
 
@@ -188,7 +188,7 @@ const Navbar = ({ isAdmin }) => {
               <div className="relative" ref={optionsDropdownRef}>
                 <button
                   onClick={handleOptionsDropdownToggle}
-                  className="pt-5 rounded-md flex items-center text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
+                  className=" rounded-md flex items-center text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
                   aria-expanded={optionsOpen}
                   aria-haspopup="true"
                 >
@@ -300,7 +300,7 @@ const Navbar = ({ isAdmin }) => {
 
                 {/* Options Dropdown Menu */}
                 {optionsOpen && (
-                  <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                  <div className="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                     <div className="py-1">
                       <button
                         onClick={() => {
@@ -310,6 +310,7 @@ const Navbar = ({ isAdmin }) => {
                             navigate("/alogin");
                           }
                           closeDropdowns();
+                          setMenuOpen(false)
                         }}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       >

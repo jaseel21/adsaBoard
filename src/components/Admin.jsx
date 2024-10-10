@@ -154,13 +154,10 @@ function Admin() {
  
   return (
     <div>
-      <div className="p-10">
+      <div className="p-2">
      
-        <div className="flex justify-center items-center  text-white">
-          <FontAwesomeIcon icon={faScrewdriverWrench} className='px-1' />
-          <h1 className="text-center text-2xl font-bold">Admin panel</h1>
-        </div>
-        <div className="flex flex-col items-center p-4 justify-center  shadow-lg rounded-md w-1/3 md:w-1/12 ">
+      
+        <div className="flex flex-col items-center p-2 justify-center  rounded-md w-1/3 md:w-1/12 ">
   {/* <h1 className="text-gray-800 text-lg font-semibold mb-4">Token Board</h1> */}
   <div className="flex flex-col items-center">
     <span className="text-sm text-gray-500 font-medium mb-2">
@@ -237,12 +234,12 @@ function Admin() {
       <div className="flex items-center justify-center">
       <button
         onClick={toggleStatus}
-        className={`relative flex items-center justify-center w-60 h-10 bg-yellow-500 rounded-md focus:outline-none transition-all duration-300 ${
-          isLunch ? 'bg-blue-500' : 'bg-gary-400'
+        className={`relative flex items-center justify-center w-60 h-10 bg-[#79AEB2] rounded-lg focus:outline-none transition-all duration-300 shadow-lg ${
+          isLunch ? "bg-[#79AEB2]" : 'bg-[#79AEB2]'
         }`}
       >
         <span
-          className={`absolute left-0 w-1/2 h-full bg-gray-500 rounded-md transition-transform duration-300 transform ${
+          className={`absolute left-0 w-1/2 h-full bg-[#E2725A] rounded-lg transition-transform duration-300 transform ${
             isLunch ? 'translate-x-0' : 'translate-x-full'
           }`}
         ></span>

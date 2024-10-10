@@ -246,36 +246,37 @@ onClick={handleUpdateBtn}
 
       <div className="flex items-center justify-center">
       <button
-        onClick={toggleStatus}
-        className={`relative flex items-center justify-center w-60 h-10 bg-yellow-500 rounded-md focus:outline-none transition-all duration-300 ${
-          isLunch ? 'bg-blue-400' : 'bg-gary-400'
-        }`}
-      >
-        <span
-          className={`absolute left-0 w-1/2 h-full bg-gray-500 rounded-md transition-transform duration-300 transform ${
-            isLunch ? 'translate-x-0' : 'translate-x-full'
-          }`}
-        ></span>
-        <span className="absolute inset-0 flex items-center justify-center text-white font-bold">
-          {isLunch ? 'Lunch' : 'Breakfast'}
-        </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-6 w-6 text-white absolute ${
-            isLunch ? 'left-3' : 'right-3'
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d={isLunch ? "M17 8l4 4m0 0l-4 4m4-4H3" : "M7 16l-4-4m0 0l4-4m-4 4h18"}
-          />
-        </svg>
-      </button>
+  onClick={toggleStatus}
+  className={`relative flex items-center justify-center w-60 h-10 bg-[#79AEB2] rounded-lg focus:outline-none transition-all duration-300 shadow-lg ${
+    isLunch ? "bg-[#79AEB2]" : 'bg-[#79AEB2]'
+  }`}
+>
+  <span
+    className={`absolute left-0 w-1/2 h-full bg-[#E2725A] rounded-lg transition-transform duration-300 transform ${
+      isLunch ? 'translate-x-0' : 'translate-x-full'
+    }`}
+  ></span>
+  <span className="absolute inset-0 flex items-center justify-center text-white font-semibold">
+    {isLunch ? 'Lunch' : 'Breakfast'}
+  </span>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={`h-6 w-6 text-white absolute ${
+      isLunch ? 'left-3' : 'right-3'
+    }`}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d={isLunch ? "M17 8l4 4m0 0l-4 4m4-4H3" : "M7 16l-4-4m0 0l4-4m-4 4h18"}
+    />
+  </svg>
+</button>
+
     </div>
       {
         isLunch ?

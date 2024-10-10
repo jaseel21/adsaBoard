@@ -17,17 +17,14 @@ function Login() {
   const navigate = useNavigate();
 
   // Create start time as 2:00 AM GMT+05:30
-const startTime = new Date();
-startTime.setHours(5, 0, 0); // 6:00 AM
-startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
-
-// Create end time as 8:00 PM GMT+05:30
-const endTime = new Date();
-endTime.setHours(22, 0, 0); // 2:00 PM
-endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
-
-
-
+  const startTime = new Date();
+  startTime.setHours(14, 0, 0); // 12:00 AM
+  startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
+  
+  // Create end time as 2:00 AM GMT+05:30
+  const endTime = new Date();
+  endTime.setHours(22, 0, 0); // 2:00 AM
+  endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
 
 
 
@@ -268,7 +265,7 @@ endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); //
                   <input type="checkbox" className="form-checkbox text-blue-500" />
                   <span className="ml-2">Remember Me</span>
                 </label>
-                <a href="/" className="text-green-500 text-sm">Forgot Password?</a>
+                <a  className="text-green-500 text-sm">Forgot Password?</a>
               </div>
               <button
                 type="submit"
@@ -279,7 +276,7 @@ endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); //
               </button>
             </form>
             <div className="mt-6 text-center">
-              <a href="/" className="text-sm text-green-500">Create New Account</a>
+              <a  className="text-sm text-green-500">Create New Account</a>
             </div>
           </div>
         </div>
