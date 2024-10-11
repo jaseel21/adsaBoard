@@ -2,8 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faListCheck } from '@fortawesome/free-solid-svg-icons';
-import { faBowlFood, faPrint } from '@fortawesome/free-solid-svg-icons';
+import { faBowlFood, faPrint,faCalendarDay } from '@fortawesome/free-solid-svg-icons';
 import "./Home.css"
 
 
@@ -186,17 +185,30 @@ const SwitchPage = () => {
 
   }
 
+  const fullDayName = {
+    sun: 'Sunday',
+    mo: 'Monday',
+    tu: 'Tuesday',
+    we: 'Wednesday',
+    th: 'Thursday',
+    fr: 'Friday',
+    sa: 'Saturday'
+  };
 
   return (
     <div className='text-center'>
        {/* <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
         add student
       </button> */}
-<div className="pb-5 flex justify-center items-center ">
+<div className="pb-5 flex justify-end mr-10 p-4 items-end  ">
   
+<div className='flex items-center'>
 
-<FontAwesomeIcon icon={faListCheck} className="text-lg text-gray-50 pr-1 " />
-          <h1 class="text-1xl underline text-center text-gray-50 ">ADSA TOEKN BOARD{day}</h1>
+<FontAwesomeIcon icon={faCalendarDay} className="text-lg text-gray-500 pr-1 " />
+          <h1  class="text-1xl uppercase text-center text-gray-500 ">
+            {fullDayName[day] || ''}
+          </h1>
+</div>
 
         </div>
       <div className="flex px-2 md:px-64 pb-10 justify-between">

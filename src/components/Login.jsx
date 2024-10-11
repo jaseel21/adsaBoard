@@ -16,53 +16,46 @@ function Login() {
   const { setStdata } = useContext(DataOfOne);
   const navigate = useNavigate();
 
-  // Create start time as 2:00 AM GMT+05:30
   const startTime = new Date();
-  startTime.setHours(14, 0, 0); // 12:00 AM
-  startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
-  
-  // Create end time as 2:00 AM GMT+05:30
-  const endTime = new Date();
-  endTime.setHours(22, 0, 0); // 2:00 AM
-  endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Convert to GMT+05:30
+startTime.setDate(startTime.getDate() - 1); // Move to the previous day
+startTime.setHours(3, 0, 0, 0); // Set start time to 2:00 PM of the previous day
+startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
 
+// Set end time to 6:00 AM today
+const endTime = new Date();
+endTime.setHours(-5, 0, 0, 0); // Set end time to 6:00 AM of the current day
+endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
 
+useEffect(() => {
+  const updateClock = () => setTime(new Date());
+  updateClock(); // Set initial time
 
+  const intervalId = setInterval(updateClock, 1000); // Update every second
+  return () => clearInterval(intervalId); // Clean up on component unmount
+}, []);
 
-
-
-
-  useEffect(() => {
-    const updateClock = () => setTime(new Date());
-    updateClock(); // Set initial time
-
-    const intervalId = setInterval(updateClock, 1000); // Update every second
-    return () => clearInterval(intervalId); // Clean up on component unmount
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = convertToGMTPlus530(new Date());
-     
-      
-      setCanClick(now >= startTime && now <= endTime);
-    }, 60000); // Update every minute
-
-    return () => clearInterval(timer);
-  }, [startTime, endTime]);
-
-  const convertToGMTPlus530 = (date) => {
-    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-    return new Date(utc + (3600000 * 5.5)); // Add 5 hours 30 minutes
-  };
-
-  const isCurrentTimeInRange = () => {
+useEffect(() => {
+  const timer = setInterval(() => {
     const now = convertToGMTPlus530(new Date());
-    console.log(now);
-    console.log(now,startTime,endTime);
-    
-    return now >= startTime && now <= endTime;
-  };
+    setCanClick(now >= startTime && now <= endTime);
+  }, 60000); // Update every minute
+
+  return () => clearInterval(timer);
+}, [startTime, endTime]);
+
+const convertToGMTPlus530 = (date) => {
+  const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+  return new Date(utc + 3600000 * 5.5); // Add 5 hours 30 minutes
+};
+
+const isCurrentTimeInRange = () => {
+  const now = convertToGMTPlus530(new Date());
+  console.log(now);
+  console.log(now, startTime, endTime);
+  return now >= startTime && now <= endTime;
+};
+
+ 
 
   const LoginWith = async () => {
     try {
