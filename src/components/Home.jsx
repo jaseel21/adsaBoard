@@ -144,27 +144,27 @@ const SwitchPage = () => {
       //   mutton:true
       // }
 
-      uname:"MUHAMMED SHAHAD",
-      tokenNo:3,
-      password:"3",
+      uname:"82 MUHAMMED SUHAIL N CHOLODE",
+      tokenNo:81,
+      password:"133",
       block:false,
       obj:{
         lunch:{
           su:true,
           mo:true,
           tu:true,
-          we:false,
+          we:true,
           th:true,
           fr:true,
-          sa:false
+          sa:true
         },
         breakfast:{
-          su:false,
+          su:true,
           mo:true,
           tu:true,
-          we:false,
+          we:true,
           th:true,
-          fr:false,
+          fr:true,
           sa:true
         }
       },
@@ -195,11 +195,33 @@ const SwitchPage = () => {
     sa: 'Saturday'
   };
 
+//   const deleteStudent = async () => {
+//     try {
+//         const querySnapshot = await firebase.firestore()
+//             .collection("students")
+//             .where("tokenNo", ">=", 72)
+//             .where("tokenNo", "<=", 81)
+//             .get();
+
+//         const batch = firebase.firestore().batch();
+
+//         querySnapshot.forEach((doc) => {
+//             batch.delete(doc.ref);
+//         });
+
+//         await batch.commit();
+//         console.log("Documents successfully deleted!");
+//     } catch (error) {
+//         console.error("Error removing documents: ", error);
+//     }
+// };
+
   return (
     <div className='text-center'>
-       {/* <button onClick={addStudent} className='bg-white text-black font-bold p-5'>
+       <button onClick={addStudent} className='bg-black text-white font-bold p-5'>
         add student
-      </button> */}
+      </button>
+      {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
 <div className="pb-5 flex justify-end mr-10 p-4 items-end  ">
   
 <div className='flex items-center'>
@@ -293,6 +315,8 @@ onClick={handleUpdateBtn}
       {
         isLunch ?
         <>
+        <div className='md:px-28 '>
+
       <h1 className='text-3xl  font-bold mb-8'></h1>
       <div className="flex flex-wrap justify-center">
         {documents.map((doc, index) => (
@@ -305,8 +329,11 @@ onClick={handleUpdateBtn}
           />
         ))}
       </div> 
+        </div>
         </> : 
         <>
+        <div className='md:px-28'>
+
         <h1 className='text-3xl  font-bold mb-8'></h1>
         <div className="flex flex-wrap justify-center">
           {documents.map((doc, index) => (
@@ -319,6 +346,7 @@ onClick={handleUpdateBtn}
             />
           ))}
         </div> 
+        </div>
           </>
       }
       

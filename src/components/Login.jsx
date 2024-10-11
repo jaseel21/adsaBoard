@@ -17,12 +17,13 @@ function Login() {
   const navigate = useNavigate();
 
   const startTime = new Date();
-startTime.setDate(startTime.getDate() - 1); // Move to the previous day
+startTime.setDate(startTime.getDate() ); // Move to the previous day
 startTime.setHours(3, 0, 0, 0); // Set start time to 2:00 PM of the previous day
 startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
 
 // Set end time to 6:00 AM today
 const endTime = new Date();
+endTime.setDate(endTime.getDate()+1 )
 endTime.setHours(-5, 0, 0, 0); // Set end time to 6:00 AM of the current day
 endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
 
