@@ -72,6 +72,7 @@ function AstudentPort() {
         uname: stdata.uname,
         password: stdata.password,
         tokenNo: stdata.tokenNo,
+        
         block: blocked,
         obj: {
 
@@ -422,6 +423,8 @@ function AstudentPort() {
         <form onSubmit={handleSubmit}>
           <h2 className="text-2xl font-bold mb-4 text-center">Student Portal</h2>
           <div className="flex">
+
+            
             <div className='block w-full p-2'>
 
               <div className=" mb-4">

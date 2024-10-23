@@ -267,21 +267,29 @@ function Admin() {
 
       <h1 className='text-3xl font-bold mb-8'></h1>
       <div className="flex flex-wrap justify-center">
-
         
 
-        {isLunch ? (
-          documents.map((doc, index) => (
-            <SwitchButton
-              key={index}
-              number={doc.tokenNo}
-              block={doc.block}
-              isOn={doc.obj && doc.obj.lunch[day]}
-              toggleSwitch={() => toggleSwitch(index)}
-            />
-          ))
-        ) : (
-          documents.map((doc, index) => (
+        {isLunch ? <>
+        <div className="md:px-28">
+        <div className="flex flex-wrap justify-center">
+          {documents.map((doc, index) => (
+
+              <SwitchButton
+                key={index}
+                number={doc.tokenNo}
+                block={doc.block}
+                isOn={doc.obj && doc.obj.lunch[day]}
+                toggleSwitch={() => toggleSwitch(index)}
+              />
+          ))}
+          </div>
+          </div>
+        </>
+           
+         : <>
+         <div className="md:px-28">
+         <div className="flex flex-wrap justify-center">
+         { documents.map((doc, index) => (
             <SwitchButton
               key={index}
               number={doc.tokenNo}
@@ -289,8 +297,12 @@ function Admin() {
               isOn={doc.obj && doc.obj.breakfast[day]}
               toggleSwitch={() => toggleSwitch(index)}
             />
-          ))
-        )}
+          ))}
+          </div>
+          </div>
+         </>
+        }
+         
       </div>
     </div>
   );

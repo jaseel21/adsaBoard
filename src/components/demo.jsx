@@ -154,7 +154,6 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 
                 }
 
-        
 
                 // Check if the click is outside the options dropdown
 

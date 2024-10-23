@@ -144,9 +144,9 @@ const SwitchPage = () => {
       //   mutton:true
       // }
 
-      uname:"82 MUHAMMED SUHAIL N CHOLODE",
-      tokenNo:81,
-      password:"133",
+      uname:"MUHAMMED SWALIH PANDIKKAD",
+      tokenNo:104,
+      password:"085",
       block:false,
       obj:{
         lunch:{
@@ -218,9 +218,9 @@ const SwitchPage = () => {
 
   return (
     <div className='text-center'>
-       <button onClick={addStudent} className='bg-black text-white font-bold p-5'>
+       {/* <button onClick={addStudent} className='bg-black text-white font-bold p-5'>
         add student
-      </button>
+      </button> */}
       {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
 <div className="pb-5 flex justify-end mr-10 p-4 items-end  ">
   
@@ -326,7 +326,7 @@ onClick={handleUpdateBtn}
             block={doc.block}
             isOn={doc.obj && doc.obj.lunch[day]}
             toggleSwitch={() => toggleSwitch(index)}
-          />
+          />                                          
         ))}
       </div> 
         </div>
