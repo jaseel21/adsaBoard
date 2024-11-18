@@ -254,7 +254,7 @@ const MenuTable = () => {
     // Add the title for the third table
     doc.setFontSize(16);
     doc.setTextColor(0, 0, 0); // Black color for the title
-    doc.text('Beef, Chicken, Mutton Avoiders', 14,  20);
+    doc.text('Beef, Chicken,Fish,Mutton Avoiders', 14,  20);
 
     
     // Add the third table to the PDF
@@ -285,7 +285,7 @@ const MenuTable = () => {
       <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
         <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
           <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-          <h1 className='p-5 text-center text-xl text-black font-bold underline'>Beef, Chicken, Mutton Avoiders</h1>
+          <h1 className='p-5 text-center text-xl text-black font-bold underline'>Beef, Chicken, Fish, Mutton Avoiders</h1>
         <button onClick={generatePDF} class=" mb-5 ml-3   bg-white hover:bg-gray-200 text-black    border border-gray-400 font-bold py-2 px-4 rounded inline-flex items-center">
   <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
   <span className='text-sm'>PDF</span>

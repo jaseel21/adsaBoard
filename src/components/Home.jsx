@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBowlFood, faPrint,faCalendarDay } from '@fortawesome/free-solid-svg-icons';
+import {  faPrint,faCalendarDay } from '@fortawesome/free-solid-svg-icons';
 import "./Home.css"
 
 
