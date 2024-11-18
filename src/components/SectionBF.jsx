@@ -17,6 +17,9 @@ const SectionBF = () => {
   const [section8, setSection8] = useState(null);
   const [section9, setSection9] = useState(null);
   const [section10, setSection10] = useState(null);
+  const [section11, setSection11] = useState([]);
+  const [section12, setSection12] = useState([]);
+
   const [activeSection, setActiveSection] = useState(null);
 
    
@@ -45,46 +48,58 @@ const SectionBF = () => {
         tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
         setDocuments(tokenDocuments);
   
-        const sectionOneTokens = tokenDocuments.slice(0, 5);
-        const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setSection1(selectedSOT);
-  
-        const sectionTowTokens = tokenDocuments.slice(5, 10);
-        const selectedSTT = sectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        console.log(selectedSTT);
-        setSection2(selectedSTT);
-  
-        const section3Tokens = tokenDocuments.slice(10, 15);
-        const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection3(selectedS3T);
-  
-        const section4Tokens = tokenDocuments.slice(15, 20);
-        const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection4(selectedS4T);
-  
-        const section5Tokens = tokenDocuments.slice(20, 25);
-        const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection5(selectedS5T);
-  
-        const section6Tokens = tokenDocuments.slice(25, 30);
-        const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection6(selectedS6T);
-  
-        const section7Tokens = tokenDocuments.slice(30, 35);
-        const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection7(selectedS7T);
-  
-        const section8Tokens = tokenDocuments.slice(35, 40);
-        const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection8(selectedS8T);
-  
-        const section9Tokens = tokenDocuments.slice(40, 45);
-        const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection9(selectedS9T);
-  
-        const section10Tkens = tokenDocuments.slice(45, 50);
-        const selectedS10T = section10Tkens.filter(doc => doc.obj && !doc.obj.breakfast).map(doc => doc.tokenNo);
-        setSection10(selectedS10T);
+        const sectionOneTokens = tokenDocuments.slice(0, 17);
+                const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection1(selectedSOT);
+      
+                
+                
+               const sectionTwoTokens = tokenDocuments.slice(17, 34);
+               const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+               setSection2(selectedSTT);
+                
+
+                const section3Tokens=tokenDocuments.slice(34, 51);
+                const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                console.log(selectedS3T);
+                setSection3(selectedS3T)
+            
+                const section4Tokens=tokenDocuments.slice(51, 68);
+                const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection4(selectedS4T)
+            
+                const section5Tokens=tokenDocuments.slice(68, 85);
+                const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection5(selectedS5T)
+            
+                const section6Tokens=tokenDocuments.slice(85, 102);
+                const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection6(selectedS6T)
+            
+                const section7Tokens=tokenDocuments.slice(102, 119);
+                const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection7(selectedS7T)
+            
+                const section8Tokens=tokenDocuments.slice(119, 136);
+                const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection8(selectedS8T)
+            
+                const section9Tokens=tokenDocuments.slice(136,153 );
+                const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection9(selectedS9T)
+            
+                const section10Tokens=tokenDocuments.slice(153, 170);
+                const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection10(selectedS10T)
+
+                const section11Tokens=tokenDocuments.slice(170, 187);
+                const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection11(selectedS11T)
+
+                const section12Tokens=tokenDocuments.slice(187, 200);
+                const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                setSection12(selectedS12T)
+               
       } catch (error) {
         console.error('Error fetching tokens:', error);
       }
@@ -138,7 +153,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 1
-              <span className='text-sm font-normal'>1-5</span>
+              <span className='text-sm font-normal'>1-17</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 1 && (
@@ -163,7 +178,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 2
-              <span className='text-sm font-normal'>6-10</span>
+              <span className='text-sm font-normal'>18-34</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 2 && (
@@ -190,7 +205,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 3
-              <span className='text-sm font-normal'>11-15</span>
+              <span className='text-sm font-normal'>34-51</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 3 && (
@@ -216,7 +231,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 4
-              <span className='text-sm font-normal'>16-20</span>
+              <span className='text-sm font-normal'>52-68</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 4 && (
@@ -243,7 +258,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 5
-              <span className='text-sm font-normal'>21-25</span>
+              <span className='text-sm font-normal'>69-85</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 5 && (
@@ -271,7 +286,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 6
-              <span className='text-sm font-normal'>26-30</span>
+              <span className='text-sm font-normal'>86-102</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 6 && (
@@ -299,7 +314,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 7
-              <span className='text-sm font-normal'>31-35</span>
+              <span className='text-sm font-normal'>103-119</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 7 && (
@@ -327,7 +342,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 8
-              <span className='text-sm font-normal'>36-40</span>
+              <span className='text-sm font-normal'>120-136</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 8 && (
@@ -354,7 +369,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 9
-              <span className='text-sm font-normal'>41-45</span>
+              <span className='text-sm font-normal'>137-153</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 9 && (
@@ -381,13 +396,67 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 10
-              <span className='text-sm font-normal'>46-50</span>
+              <span className='text-sm font-normal'>154-170</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 10 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
                  {
                    section10.map((item,index)=>(
+     
+                     <li key={index} className="text-gray-700"> {item}</li>
+                   ))
+                 }
+                 {/* Add additional fields as needed */}
+               </ul>
+            )}
+          </div>
+
+          <div>
+            <button
+              onClick={() => toggleSection(11)}
+              className={`focus:outline-none ${
+                activeSection === 11
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-gray-900'
+              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
+            >
+              <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
+              Section 11
+              <span className='text-sm font-normal'>171-187</span>
+            </button>
+            {/* Display list for active section */}
+            {activeSection === 11 && (
+                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                 {
+                   section11.map((item,index)=>(
+     
+                     <li key={index} className="text-gray-700"> {item}</li>
+                   ))
+                 }
+                 {/* Add additional fields as needed */}
+               </ul>
+            )}
+          </div>
+
+          <div>
+            <button
+              onClick={() => toggleSection(12)}
+              className={`focus:outline-none ${
+                activeSection === 12
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-gray-900'
+              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
+            >
+              <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
+              Section 12
+              <span className='text-sm font-normal'>188-200</span>
+            </button>
+            {/* Display list for active section */}
+            {activeSection === 12 && (
+                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                 {
+                   section12.map((item,index)=>(
      
                      <li key={index} className="text-gray-700"> {item}</li>
                    ))

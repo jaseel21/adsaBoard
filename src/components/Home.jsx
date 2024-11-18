@@ -144,9 +144,9 @@ const SwitchPage = () => {
       //   mutton:true
       // }
 
-      uname:"MUHAMMED SWALIH PANDIKKAD",
-      tokenNo:104,
-      password:"085",
+      uname:"NAFIH NANDI",
+      tokenNo:200,
+      password:"155",
       block:false,
       obj:{
         lunch:{

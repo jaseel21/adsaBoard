@@ -269,7 +269,7 @@ const MenuTable = () => {
         didDrawPage: (data) => {
             // Ensure title is added before drawing tables
             if (data.pageCount === 1) {
-                doc.text('Beef, Chicken, Mutton Avoiders', 14, 20);
+                doc.text('', 14, 20);
             }
         }
     });
