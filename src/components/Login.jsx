@@ -203,7 +203,7 @@ const isCurrentTimeInRange = () => {
   
   return (
     <div className=" flex items-center h-[600px] justify-center bg-white">
-      <div className="max-w-md w-full  space-y-8">
+      <div className="max-w-md w-full p-5  space-y-8">
         <div className="flex flex-col items-center">
           {/* Logo or app name (optional) */}
           {/* <h1 className="text-3xl font-bold text-gray-800">ADSA Online</h1> */}

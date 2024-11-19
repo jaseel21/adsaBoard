@@ -531,15 +531,15 @@ const FetchData = () => {
 
 
     return (
-        <div className="p-14">
-            <button onClick={generatePDF} class="bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-bold py-2 px-4 rounded inline-flex items-center">
+        <div className="pt-5 px-3">
+            <button  onClick={generatePDF} class="bg-gray-300 mb-4 hover:bg-gray-400 text-gray-800 text-sm font-bold py-2 px-4 rounded inline-flex items-center">
   <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
   <span>Download</span>
 </button>
 
             <div className="flex flex-col w-full max-w-full mx-auto overflow-x-auto">
-                <h1 className='p-5 text-center text-xl font-bold text-black underline'>Lunch Token Canceled List</h1>
-                <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                <h1 className=' text-center text-xl font-bold text-black underline'>Lunch Token Canceled List</h1>
+                <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
@@ -640,7 +640,7 @@ const FetchData = () => {
                 </div>
 
                 <h1 className='p-5 text-center text-xl text-black font-bold underline'>Breakfast Token Canceled List</h1>
-                <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
