@@ -161,6 +161,65 @@ function Admin() {
     console.log("Number 1:", number1);
     console.log("Number 2:", number2);
   };
+
+
+  const updateStudentMeals = async () => {
+    try {
+        // Fetch documents where tokenNo is between 72 and 81
+        const querySnapshot = await firebase.firestore()
+            .collection("students")
+            .where("tokenNo", ">=", 1)
+            .where("tokenNo", "<=", 3)
+            .get();
+
+        // Create a batch to update documents
+        const batch = firebase.firestore().batch();
+
+        // Loop through each document in the query result
+        querySnapshot.forEach((doc) => {
+            // Get the current document data
+            const docData = doc.data();
+
+            // Prepare the updated data: set lunch and breakfast to false for all days
+            const updatedData = {
+                ...docData, // Merge the existing data
+                obj: { // Update the obj field
+                    lunch: {
+                        su: true,
+                        mo: true,
+                        tu: true,
+                        we: true,
+                        th: true,
+                        fr: true,
+                        sa: true,
+                    },
+                    breakfast: {
+                        su: true,
+                        mo: true,
+                        tu: true,
+                        we: true,
+                        th: true,
+                        fr: true,
+                        sa: true,
+                    }
+                },
+            };
+
+            // Add the update operation to the batch
+            batch.update(doc.ref, updatedData);
+        });
+
+        // Commit the batch to apply all the updates
+        await batch.commit();
+
+        console.log("Documents successfully updated!");
+        fetchData()
+    } catch (error) {
+        console.error("Error updating documents: ", error);
+    }
+};
+
+
   return (
     <div>
       <div className="p-2">

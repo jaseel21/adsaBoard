@@ -129,20 +129,6 @@ const SwitchPage = () => {
 
   const addStudent=()=>{
     firebase.firestore().collection('students').add({
-      // uname:"MUHAMMED MUSTHSFA",
-      // tokenNo:31,
-      // password:"191",
-      // block:false,
-      // obj:{
-      //   lunch:true,
-      //   breakfast:true
-      // },
-      // obj2:{
-      //   beef:true,
-      //   chicken:true,
-      //   fish:true,
-      //   mutton:true
-      // }
 
       uname:"NAFIH NANDI",
       tokenNo:200,
@@ -195,32 +181,15 @@ const SwitchPage = () => {
     sa: 'Saturday'
   };
 
-//   const deleteStudent = async () => {
-//     try {
-//         const querySnapshot = await firebase.firestore()
-//             .collection("students")
-//             .where("tokenNo", ">=", 72)
-//             .where("tokenNo", "<=", 81)
-//             .get();
+  
 
-//         const batch = firebase.firestore().batch();
 
-//         querySnapshot.forEach((doc) => {
-//             batch.delete(doc.ref);
-//         });
-
-//         await batch.commit();
-//         console.log("Documents successfully deleted!");
-//     } catch (error) {
-//         console.error("Error removing documents: ", error);
-//     }
-// };
 
   return (
     <div className='text-center'>
-       {/* <button onClick={addStudent} className='bg-black text-white font-bold p-5'>
-        add student
-      </button> */}
+       {/* <button onClick={updateStudentMeals} className='bg-black text-white font-bold p-5'>
+        update st
+      </button>  */}
       {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
 <div className="pb-5 flex justify-end mr-10 p-4 items-end  ">
   
