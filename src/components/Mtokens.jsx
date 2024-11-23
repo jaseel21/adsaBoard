@@ -61,64 +61,68 @@ const [tNO,settNO]=useState(0)
 
 const updateStudentMeals = async (e) => {
     e.preventDefault();
+    const SubmitConfirm=window.confirm("Are you sure you want to apply this change?")
+    if(SubmitConfirm){
 
-    if (fNO >= tNO) {
-        alert('Invalid range: "From" token number must be less than "To" token number.');
-        return; // Exit function if range is invalid
-      }
-
-    try {
-        // Fetch documents where tokenNo is between 72 and 81
-        const querySnapshot = await firebase.firestore()
-            .collection("students")
-            .where("tokenNo", ">=", parseInt(fNO))
-            .where("tokenNo", "<=", parseInt(tNO))
-            .get();
-
-        // Create a batch to update documents
-        const batch = firebase.firestore().batch();
-
-        // Loop through each document in the query result
-        querySnapshot.forEach((doc) => {
-            // Get the current document data
-            const docData = doc.data();
-
-            // Prepare the updated data: set lunch and breakfast to false for all days
-            const updatedData = {
-                ...docData, // Merge the existing data
-                obj: { // Update the obj field
-                    lunch: {
-                        su: lunch,
-                        mo: lunch,
-                        tu: lunch,
-                        we: lunch,
-                        th: lunch,
-                        fr: lunch,
-                        sa: lunch,
-                    },
-                    breakfast: {
-                        su: breakfast,
-                        mo: breakfast,
-                        tu: breakfast,
-                        we: breakfast,
-                        th: breakfast,
-                        fr: breakfast,
-                        sa: breakfast,
-                    }
-                },
-            };
-
-            // Add the update operation to the batch
-            batch.update(doc.ref, updatedData);
-        });
-
-        // Commit the batch to apply all the updates
-        await batch.commit();
-
-        console.log("Documents successfully updated!");
-        navigate('/admin')
-    } catch (error) {
-        console.error("Error updating documents: ", error);
+        
+            if (fNO >= tNO) {
+                alert('Invalid range: "From" token number must be less than "To" token number.');
+                return; // Exit function if range is invalid
+              }
+        
+            try {
+                // Fetch documents where tokenNo is between 72 and 81
+                const querySnapshot = await firebase.firestore()
+                    .collection("students")
+                    .where("tokenNo", ">=", parseInt(fNO))
+                    .where("tokenNo", "<=", parseInt(tNO))
+                    .get();
+        
+                // Create a batch to update documents
+                const batch = firebase.firestore().batch();
+        
+                // Loop through each document in the query result
+                querySnapshot.forEach((doc) => {
+                    // Get the current document data
+                    const docData = doc.data();
+        
+                    // Prepare the updated data: set lunch and breakfast to false for all days
+                    const updatedData = {
+                        ...docData, // Merge the existing data
+                        obj: { // Update the obj field
+                            lunch: {
+                                su: lunch,
+                                mo: lunch,
+                                tu: lunch,
+                                we: lunch,
+                                th: lunch,
+                                fr: lunch,
+                                sa: lunch,
+                            },
+                            breakfast: {
+                                su: breakfast,
+                                mo: breakfast,
+                                tu: breakfast,
+                                we: breakfast,
+                                th: breakfast,
+                                fr: breakfast,
+                                sa: breakfast,
+                            }
+                        },
+                    };
+        
+                    // Add the update operation to the batch
+                    batch.update(doc.ref, updatedData);
+                });
+        
+                // Commit the batch to apply all the updates
+                await batch.commit();
+        
+                console.log("Documents successfully updated!");
+                navigate('/admin')
+            } catch (error) {
+                console.error("Error updating documents: ", error);
+            }
     }
 };
 
@@ -128,73 +132,71 @@ console.log(fNO,tNO);
 
 
     return (
-        <div className="container mx-auto p-4 md:p-6">
+        <div className="container mx-auto p-6">
 
-        <div className="max-w-md mx-auto bg-white rounded shadow-md p-4 border border-gray-500 border-l-8 border-b-2 border-r-2">
-          <h1 className="text-2xl text-center font- mb-4">Manage Tokens</h1>
-    
-          <form onSubmit={updateStudentMeals}>
+  <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-500">
+    <h1 className="text-3xl text-center font-semibold text-gray-800 mb-6">Manage Tokens</h1>
 
-            <div className="flex  flex-col">
+    <form onSubmit={updateStudentMeals}>
+      <div className="space-y-6">
 
-            <div className="flex flex-row">
-                
-
-                <input type="checkbox" 
-                onClick={handleBreakfast}
-                checked={breakfast}/>
-                <label className='px-4' htmlFor="">breakfast</label>
-                </div>
-
-                <div className=" flex flex-row">
-
-                <input type="checkbox"
-                checked={lunch}
-                onChange={handleLunch} />
-                <label className='px-4' htmlFor="">lunch</label>
-
-                </div>              
-
-            </div>
-            <div className="flex flex-col space-y-4 items-center justify-center">
-              <div className="flex items-center">
-                <label htmlFor="lunchInput" className="mr-2">From:</label>
-                <input
-                  type="number"
-                  id="lunchInput"
-                  
-                 onChange={(e)=>{setfNO(e.target.value)}}
-                  className="border border-gray-300 rounded px-4 py-2"
-                />
-              </div>
-    
-              <div className="flex items-center">
-                <label htmlFor="breakfastInput" className="mr-8">To:</label>
-                <input
-                  type="number"
-                  id="breakfastInput"
-                  onChange={(e)=>{settNO(e.target.value)}}
-                 
-                 
-                  className="border border-gray-300 rounded px-4 py-2"
-                />
-              </div>
-    
-              <button
-                type="submit"
-               
-                className="bg-emerald-500 hover:bg-emerald-700   text-white  font-bold py-2 px-4 rounded"
-              >
-                Update   
-    
-              </button>   
-    
-            </div>
-          </form>
-    
-          
+        <div className="flex items-center space-x-4">
+          <input
+            type="checkbox"
+            onClick={handleBreakfast}
+            checked={breakfast}
+            className="text-emerald-500 border-2 border-gray-400 rounded-lg focus:ring-emerald-500"
+          />
+          <label className="text-gray-700 text-lg font-medium">Breakfast</label>
         </div>
+
+        <div className="flex items-center space-x-4">
+          <input
+            type="checkbox"
+            checked={lunch}
+            onChange={handleLunch}
+            className="text-emerald-500 border-2 border-gray-400 rounded-lg focus:ring-emerald-500"
+          />
+          <label className="text-gray-700 text-lg font-medium">Lunch</label>
         </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4 justify-center">
+            <label htmlFor="lunchInput" className="text-gray-700 font-medium">From:</label>
+            <input
+              type="number"
+              id="lunchInput"
+              onChange={(e) => { setfNO(e.target.value) }}
+              className="border-2 border-gray-300 rounded-lg px-4 py-2 text-gray-700 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center space-x-4 justify-center">
+            <label htmlFor="breakfastInput" className="text-gray-700 pl-4 font-medium">To :</label>
+            <input
+              type="number"
+              id="breakfastInput"
+              onChange={(e) => { settNO(e.target.value) }}
+              className="border-2 ml-4 border-gray-300 rounded-lg px-4 py-2 text-gray-700 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-center mt-6">
+          <button
+            type="submit"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 ease-in-out transform hover:scale-105"
+          >
+            Update
+          </button>
+        </div>
+
+      </div>
+    </form>
+
+  </div>
+</div>
+
       );
 }
 

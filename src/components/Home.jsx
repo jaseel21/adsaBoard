@@ -172,7 +172,7 @@ const SwitchPage = () => {
   }
 
   const fullDayName = {
-    sun: 'Sunday',
+    su: 'Sunday',
     mo: 'Monday',
     tu: 'Tuesday',
     we: 'Wednesday',
@@ -180,7 +180,7 @@ const SwitchPage = () => {
     fr: 'Friday',
     sa: 'Saturday'
   };
-
+  
   
 
 
@@ -212,7 +212,7 @@ const SwitchPage = () => {
         <div className=" justify-center mt-4">
           <button
             onClick={supplyList}
-            className="bg-green-500 text-white rounded-lg shadow-md p-2 text-sm font-semibold flex items-center space-x-2 transition duration-300 ease-in-out hover:bg-green-600"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg shadow-md border border-emerald-500 hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
           >
             <FontAwesomeIcon icon={faPrint} className="text-xl" />
             <span>Supply List</span>
@@ -232,7 +232,7 @@ const SwitchPage = () => {
 </button> */}<button
 onClick={handleUpdateBtn}
       
-      class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-4  inline-flex items-center border border-gray-400"
+      class=" bg-emerald-500 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg border-none transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
     >
 <svg className="fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 

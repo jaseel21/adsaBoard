@@ -202,15 +202,12 @@ const isCurrentTimeInRange = () => {
 
   
   return (
-    <div className=" flex items-center h-[600px] justify-center bg-white">
-      <div className="max-w-md w-full p-5  space-y-8">
+    <div className=" flex items-center h-[600px] justify-center  bg-white">
+      <div className=" max-w-md w-full p-5  space-y-8">
         <div className="flex flex-col items-center">
-          {/* Logo or app name (optional) */}
-          {/* <h1 className="text-3xl font-bold text-gray-800">ADSA Online</h1> */}
-          
         </div>
         <div className="max-w-md w-full  space-y-8">
-          <div className="bg-gray-100 p-8 rounded-lg shadow-md">
+          <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-500">
             <h2 className="text-2xl font-bold text-gray-800 mb-4"> LOG IN</h2>
 
             {err && (
@@ -222,7 +219,7 @@ const isCurrentTimeInRange = () => {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
+                  className="block text-gray-700 text-sm  mb-2"
                   htmlFor="username"
                 >
                   Username
@@ -240,7 +237,7 @@ const isCurrentTimeInRange = () => {
               </div>
               <div className="mb-6">
                 <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
+                  className="block text-gray-700 text-sm  mb-2"
                   htmlFor="password"
                 >
                   Password

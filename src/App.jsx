@@ -59,7 +59,7 @@ function App() {
         <Route path='/astudent-port' element={user ? <AstudentPort /> : <Navigate to="/alogin" />}></Route>
         <Route path='/pdfg' Component={GeneratePdf}></Route>
         <Route path='/alogin' element={user ? <Admin /> : <AdminLogin />} />
-        <Route path='/m-tokens' Component={Mtokens} />
+        <Route path='/m-tokens' element={user ? <Mtokens/> : <Navigate to="/alogin"/>} />
       </Routes>
           </GetTokens>
         </PersonInfo>

@@ -334,88 +334,19 @@ const FetchData = () => {
   
 
 
-
   const generatePDF = () => {
     const doc = new jsPDF('p', 'mm', 'a4');
 
     // Add the current date at the top of the document
     const today = new Date();
     const dateStr = formattedDate;
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0); // Black color for the date
     doc.text(`Date: ${dateStr}`, 14, 10);
+    
 
     // Define the columns for the first table
     const columns1 = [
-        { header: 'Sec 1', dataKey: 'section1' },
-        { header: 'Sec 2', dataKey: 'section2' },
-        { header: 'Sec 3', dataKey: 'section3' },
-        { header: 'Sec 4', dataKey: 'section4' },
-        { header: 'Sec 5', dataKey: 'section5' },
-        { header: 'Sec 6', dataKey: 'section6' },
-        { header: 'Sec 7', dataKey: 'section7' },
-        { header: 'Sec 8', dataKey: 'section8' },
-        { header: 'Sec 9', dataKey: 'section9' },
-        { header: 'Sec 10', dataKey: 'section10' },
-        { header: 'Sec 11', dataKey: 'section11' },
-        { header: 'Sec 12', dataKey: 'section12' }
-    ];
-
-    // Prepare the data for the first table
-    const tableData1 = Array.from({ length: Math.max(
-        section1.length,
-        section2.length,
-        section3.length,
-        section4.length,
-        section5.length,
-        section6.length,
-        section7.length,
-        section8.length,
-        section9.length,
-        section11.length,
-        section12.length
-    ) }).map((_, index) => ({
-        section1: index === 0 && section1.length === 0 ? 'empty' : index < section1.length ? section1[index] : '',
-        section2: index === 0 && section2.length === 0 ? 'empty' : index < section2.length ? section2[index] : '',
-        section3: index === 0 && section3.length === 0 ? 'empty' : index < section3.length ? section3[index] : '',
-        section4: index === 0 && section4.length === 0 ? 'empty' : index < section4.length ? section4[index] : '',
-        section5: index === 0 && section5.length === 0 ? 'empty' : index < section5.length ? section5[index] : '',
-        section6: index === 0 && section6.length === 0 ? 'empty' : index < section6.length ? section6[index] : '',
-        section7: index === 0 && section7.length === 0 ? 'empty' : index < section7.length ? section7[index] : '',
-        section8: index === 0 && section8.length === 0 ? 'empty' : index < section8.length ? section8[index] : '',
-        section9: index === 0 && section9.length === 0 ? 'empty' : index < section9.length ? section9[index] : '',
-        section10: index === 0 && section10.length === 0 ? 'empty' : index < section10.length ? section10[index] : '',
-        section11: index === 0 && section11.length === 0 ? 'empty' : index < section11.length ? section11[index] : '',
-        section12: index === 0 && section12.length === 0 ? 'empty' : index < section12.length ? section12[index] : '',
-    }));
-
-    // Add the title for the first table
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0); // Black color for the title
-    doc.text('Lunch Token Canceled List', 14, 20);
-
-    // Add the first table to the PDF
-    doc.autoTable({
-        columns: columns1,
-        body: tableData1,
-        startY: 25,
-        theme: 'striped',
-        headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
-        bodyStyles: { fontSize: 9, padding: 3 },
-        margin: { top: 10 }, // Add top margin for the table
-        didDrawPage: (data) => {
-            // Ensure title is added before drawing tables
-            if (data.pageCount === 1) {
-                doc.text('Lunch Token Canceled List', 14, 20);
-            }
-        }
-    });
-
-    // Get the y-coordinate of the bottom of the first table
-    const yAfterFirstTable = doc.lastAutoTable.finalY + 10; // add some margin
-
-    // Define the columns for the second table
-    const columns2 = [
         { header: 'Sec1', dataKey: 'Bsection1' },
         { header: 'Sec 2', dataKey: 'Bsection2' },
         { header: 'Sec 3', dataKey: 'Bsection3' },
@@ -430,8 +361,8 @@ const FetchData = () => {
         { header: 'Sec 12', dataKey: 'Bsection12' }
     ];
 
-    // Prepare the data for the second table
-    const tableData2 = Array.from({ length: Math.max(
+    // Prepare the data for the first table
+    const tableData1 = Array.from({ length: Math.max(
         Bsection1.length,
         Bsection2.length,
         Bsection3.length,
@@ -459,24 +390,96 @@ const FetchData = () => {
         Bsection12: index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')
     }));
 
-    // Add the title for the second table
-    doc.setFontSize(16);
+    // Add the title for the first table
+    doc.setFontSize(11);
     doc.setTextColor(0, 0, 0); // Black color for the title
-    doc.text('Breakfast Token Canceled List', 14, yAfterFirstTable + 10);
+    doc.text('Breakfast Token Canceled List', 14, 15);
+
+    // Add the first table to the PDF
+    doc.autoTable({
+        columns: columns1,
+        body: tableData1,
+        startY: 15,
+        theme: 'striped',
+        headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
+        bodyStyles: { fontSize: 8, padding: 3 },
+        margin: { top: 10 }, // Add top margin for the table
+        didDrawPage: (data) => {
+            // Ensure title is added before drawing tables
+            if (data.pageCount === 1) {
+                doc.text('Breakfast Token Canceled List', 14, 15);
+            }
+        }
+    });
+
+    // Get the y-coordinate of the bottom of the first table
+    const yAfterFirstTable = doc.lastAutoTable.finalY + 10; // add some margin
+
+    // Define the columns for the second table
+    
+    const columns2 = [
+        { header: 'Sec 1', dataKey: 'section1' },
+        { header: 'Sec 2', dataKey: 'section2' },
+        { header: 'Sec 3', dataKey: 'section3' },
+        { header: 'Sec 4', dataKey: 'section4' },
+        { header: 'Sec 5', dataKey: 'section5' },
+        { header: 'Sec 6', dataKey: 'section6' },
+        { header: 'Sec 7', dataKey: 'section7' },
+        { header: 'Sec 8', dataKey: 'section8' },
+        { header: 'Sec 9', dataKey: 'section9' },
+        { header: 'Sec 10', dataKey: 'section10' },
+        { header: 'Sec 11', dataKey: 'section11' },
+        { header: 'Sec 12', dataKey: 'section12' }
+    ];
+    
+
+    // Prepare the data for the second table
+   
+    const tableData2 = Array.from({ length: Math.max(
+        section1.length,
+        section2.length,
+        section3.length,
+        section4.length,
+        section5.length,
+        section6.length,
+        section7.length,
+        section8.length,
+        section9.length,
+        section11.length,
+        section12.length
+    ) }).map((_, index) => ({
+        section1: index === 0 && section1.length === 0 ? 'empty' : index < section1.length ? section1[index] : '',
+        section2: index === 0 && section2.length === 0 ? 'empty' : index < section2.length ? section2[index] : '',
+        section3: index === 0 && section3.length === 0 ? 'empty' : index < section3.length ? section3[index] : '',
+        section4: index === 0 && section4.length === 0 ? 'empty' : index < section4.length ? section4[index] : '',
+        section5: index === 0 && section5.length === 0 ? 'empty' : index < section5.length ? section5[index] : '',
+        section6: index === 0 && section6.length === 0 ? 'empty' : index < section6.length ? section6[index] : '',
+        section7: index === 0 && section7.length === 0 ? 'empty' : index < section7.length ? section7[index] : '',
+        section8: index === 0 && section8.length === 0 ? 'empty' : index < section8.length ? section8[index] : '',
+        section9: index === 0 && section9.length === 0 ? 'empty' : index < section9.length ? section9[index] : '',
+        section10: index === 0 && section10.length === 0 ? 'empty' : index < section10.length ? section10[index] : '',
+        section11: index === 0 && section11.length === 0 ? 'empty' : index < section11.length ? section11[index] : '',
+        section12: index === 0 && section12.length === 0 ? 'empty' : index < section12.length ? section12[index] : '',
+    }));
+
+    // Add the title for the second table
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0); // Black color for the title
+    doc.text('Lunch Token Canceled List', 14, yAfterFirstTable + 15);
 
     // Add the second table to the PDF
     doc.autoTable({
         columns: columns2,
         body: tableData2,
-        startY: yAfterFirstTable + 20, // Start after the title of the second table
+        startY: yAfterFirstTable + 5, // Start after the title of the second table
         theme: 'striped',
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
-        bodyStyles: { fontSize: 9, padding: 3 },
+        bodyStyles: { fontSize: 8, padding: 3 },
         margin: { top: 10 }, // Add top margin for the table
         didDrawPage: (data) => {
             // Ensure title is added before drawing tables
             if (data.pageCount === 1) {
-                doc.text('Breakfast Token Canceled List', 14, yAfterFirstTable + 10);
+                doc.text('Lunch Token Canceled List', 14, yAfterFirstTable + 5);
             }
         }
     });
@@ -528,7 +531,7 @@ const FetchData = () => {
     // });
 
     // Save the PDF
-    doc.save('adsa-token-list.pdf');
+    doc.save('supply-list.pdf');
 };
 
 
@@ -542,6 +545,108 @@ const FetchData = () => {
 </button>
 
             <div className="flex flex-col w-full max-w-full mx-auto overflow-x-auto">
+
+            <h1 className='p-5 text-center text-xl text-black font-bold underline'>Breakfast Token Canceled List</h1>
+                <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 1
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 2
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 3
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 4
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 5
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 6
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 7
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 8
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 9
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 10
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 11
+                                </th>
+                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                    Sec 12
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {Array.from({ length: Math.max(
+                                Bsection1.length,
+                                Bsection2.length,
+                                Bsection3.length,
+                                Bsection4.length,
+                                Bsection5.length,
+                                Bsection6.length,
+                                Bsection7.length,
+                                Bsection8.length,
+                                Bsection9.length,
+                                Bsection10.length,
+                                Bsection11.length,
+                                Bsection12.length
+                            ) }).map((_, index) => (
+                                <tr key={index}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                       {index === 0 && Bsection1.length === 0 ? 'empty' : (index < Bsection1.length ? Bsection1[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        {index === 0 && Bsection2.length === 0 ? 'empty' : (index < Bsection2.length ? Bsection2[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        {index === 0 && Bsection3.length === 0 ? 'empty' : (index < Bsection3.length ? Bsection3[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                       {index === 0 && Bsection4.length === 0 ? 'empty' : (index < Bsection4.length ? Bsection4[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection5.length === 0 ? 'empty' : (index < Bsection5.length ? Bsection5[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection6.length === 0 ? 'empty' : (index < Bsection6.length ? Bsection6[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection7.length === 0 ? 'empty' : (index < Bsection7.length ? Bsection7[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection8.length === 0 ? 'empty' : (index < Bsection8.length ? Bsection8[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection10.length === 0 ? 'empty' : (index < Bsection10.length ? Bsection10[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection11.length === 0 ? 'empty' : (index < Bsection11.length ? Bsection11[index] : '')}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
                 <h1 className=' text-center text-xl font-bold text-black underline'>Lunch Token Canceled List</h1>
                 <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -643,106 +748,7 @@ const FetchData = () => {
                     </table>
                 </div>
 
-                <h1 className='p-5 text-center text-xl text-black font-bold underline'>Breakfast Token Canceled List</h1>
-                <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 1
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 2
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 3
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 4
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 5
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 6
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 7
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 8
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 9
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 10
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 11
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 12
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {Array.from({ length: Math.max(
-                                Bsection1.length,
-                                Bsection2.length,
-                                Bsection3.length,
-                                Bsection4.length,
-                                Bsection5.length,
-                                Bsection6.length,
-                                Bsection7.length,
-                                Bsection8.length,
-                                Bsection9.length,
-                                Bsection10.length,
-                                Bsection11.length,
-                                Bsection12.length
-                            ) }).map((_, index) => (
-                                <tr key={index}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                       {index === 0 && Bsection1.length === 0 ? 'empty' : (index < Bsection1.length ? Bsection1[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {index === 0 && Bsection2.length === 0 ? 'empty' : (index < Bsection2.length ? Bsection2[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {index === 0 && Bsection3.length === 0 ? 'empty' : (index < Bsection3.length ? Bsection3[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                       {index === 0 && Bsection4.length === 0 ? 'empty' : (index < Bsection4.length ? Bsection4[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection5.length === 0 ? 'empty' : (index < Bsection5.length ? Bsection5[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection6.length === 0 ? 'empty' : (index < Bsection6.length ? Bsection6[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection7.length === 0 ? 'empty' : (index < Bsection7.length ? Bsection7[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection8.length === 0 ? 'empty' : (index < Bsection8.length ? Bsection8[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection10.length === 0 ? 'empty' : (index < Bsection10.length ? Bsection10[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection11.length === 0 ? 'empty' : (index < Bsection11.length ? Bsection11[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                
 
 
             </div>

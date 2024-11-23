@@ -97,7 +97,7 @@ function StudentPort() {
   const lunchSelectAll = (event) => {
 
     const { checked } = event.target;
-    const LunchSelectConfirm = window.confirm('Are you wnat to select all');
+    const LunchSelectConfirm = window.confirm('Are you sure you want to apply this change?');
     if (LunchSelectConfirm) {
       if (checked) {
 
@@ -123,7 +123,7 @@ function StudentPort() {
 
   const selectBreackfastAll = (event) => {
     const { checked } = event.target;
-    const breackFastConfirm = window.confirm('Are you sure you want to change the settings');
+    const breackFastConfirm = window.confirm('Are you sure you want to apply this change?');
     if (breackFastConfirm) {
       if (checked) {
         setBsu(true)
@@ -236,49 +236,49 @@ function StudentPort() {
   };
 
   const handleCkeckedlsu = () => {
-    const conFirmOfLsu = window.confirm("are you want to change the settings  ")
+    const conFirmOfLsu = window.confirm("Are you sure you want to apply this change?")
     if (conFirmOfLsu) {
       setLsu(!lsu)
     }
   }
 
   const handleCkeckedLmo = () => {
-    const confirmOFLmo = window.confirm("are you want to change the setting ")
+    const confirmOFLmo = window.confirm("Are you sure you want to apply this change?")
     if (confirmOFLmo) {
       setLmo(!lmo)
     }
   }
 
   const handleCkeckedLtu = () => {
-    const confirmOfLtu = window.confirm("are you wnat to change the token")
+    const confirmOfLtu = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLtu) {
       setLtu(!ltu)
     }
   }
 
   const handleCkeckedLwe = () => {
-    const confirmOfLwe = window.confirm("are you wnat to change the token")
+    const confirmOfLwe = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLwe) {
       setLwe(!lwe)
     }
   }
 
   const handleCkeckedLth = () => {
-    const confirmOfLth = window.confirm("are you wnat to change the token")
+    const confirmOfLth = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLth) {
       setLth(!lth)
     }
   }
 
   const handleCkeckedLfr = () => {
-    const confirmOfLfr = window.confirm("are you wnat to change the token")
+    const confirmOfLfr = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLfr) {
       setLfr(!lfr)
     }
   }
 
   const handleCheckedLsa = () => {
-    const confrimOfLsa = window.confirm("are you want to change the token")
+    const confrimOfLsa = window.confirm("Are you sure you want to apply this change?")
     if (confrimOfLsa) {
       setLsa(!lsa)
     }
@@ -286,49 +286,49 @@ function StudentPort() {
 
 
   const handleCheckedBsu = () => {
-    const conFirmOfLsu = window.confirm("are you want to change the settings  ")
+    const conFirmOfLsu = window.confirm("Are you sure you want to apply this change?")
     if (conFirmOfLsu) {
       setBsu(!bsu)
     }
   }
 
   const handleCheckedBmo = () => {
-    const confirmOFLmo = window.confirm("are you want to change the setting ")
+    const confirmOFLmo = window.confirm("Are you sure you want to apply this change?")
     if (confirmOFLmo) {
       setBmo(!bmo)
     }
   }
 
   const handleCheckedBtu = () => {
-    const confirmOfLtu = window.confirm("are you wnat to change the token")
+    const confirmOfLtu = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLtu) {
       setBtu(!btu)
     }
   }
 
   const handleCheckedBwe = () => {
-    const confirmOfLwe = window.confirm("are you wnat to change the token")
+    const confirmOfLwe = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLwe) {
       setBwe(!bwe)
     }
   }
 
   const handleCheckedBth = () => {
-    const confirmOfLth = window.confirm("are you wnat to change the token")
+    const confirmOfLth = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLth) {
       setBth(!bth)
     }
   }
 
   const handleCheckedBfr = () => {
-    const confirmOfLfr = window.confirm("are you wnat to change the token")
+    const confirmOfLfr = window.confirm("Are you sure you want to apply this change?")
     if (confirmOfLfr) {
       setBfr(!bfr)
     }
   }
 
   const handleCheckedBsa = () => {
-    const confrimOfLsa = window.confirm("are you want to change the token")
+    const confrimOfLsa = window.confirm("Are you sure you want to apply this change?")
     if (confrimOfLsa) {
       setBsa(!bsa)
     }
@@ -367,116 +367,7 @@ function StudentPort() {
 
           <div className='border border-gray-300 rounded-lg shadow-sm bg-white'>
 
-            <div className="mb-4 p-4 ">
-              <label className="block text-gray-800 text-sm font-semibold mb-2">
-                Lunch
-              </label>
-              <label className="inline-flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  onChange={lunchSelectAll}
-                  checked={checkedL}
-                />
-                <span className="text-sm text-gray-700">Select All</span>
-              </label>
-
-              <div className="grid grid-cols-7 gap-0 mt-3">
-                {/* Sunday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="su" className="text-xs text-gray-600">Su</label>
-                  <input
-                    type="checkbox"
-                    id="su"
-                    name="day"
-                    checked={lsu}
-                    onChange={handleCkeckedlsu}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-
-                {/* Monday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="mo" className="text-xs text-gray-600">Mo</label>
-                  <input
-                    type="checkbox"
-                    id="mo"
-                    name="day"
-                    checked={lmo}
-                    onChange={handleCkeckedLmo}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-
-                {/* Tuesday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="tu" className="text-xs text-gray-600">Tu</label>
-                  <input
-                    type="checkbox"
-                    id="tu"
-                    name="day"
-                    checked={ltu}
-                    onChange={handleCkeckedLtu}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-
-                {/* Wednesday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="we" className="text-xs text-gray-600">We</label>
-                  <input
-                    type="checkbox"
-                    id="we"
-                    name="day"
-                    checked={lwe}
-                    onChange={handleCkeckedLwe}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-
-                {/* Thursday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="th" className="text-xs text-gray-600">Th</label>
-                  <input
-                    type="checkbox"
-                    id="th"
-                    name="day"
-                    checked={lth}
-                    onChange={handleCkeckedLth}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-
-                {/* Friday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="fr" className="text-xs text-gray-600">Fr</label>
-                  <input
-                    type="checkbox"
-                    id="fr"
-                    name="day"
-                    checked={lfr}
-                    onChange={handleCkeckedLfr}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-
-                {/* Saturday */}
-                <div className="flex flex-col items-center">
-                  <label htmlFor="sa" className="text-xs text-gray-600">Sa</label>
-                  <input
-                    type="checkbox"
-                    id="sa"
-                    name="day"
-                    checked={lsa}
-                    onChange={handleCheckedLsa}
-                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="border-t border-gray-300 my-4"></div>
-
-            <div className="mb-4 p-4 pt-1">
+          <div className="mb-4 p-4 ">
               <label className="block text-gray-800 text-sm font-semibold mb-2">
                 Breakfast
               </label>
@@ -583,6 +474,119 @@ function StudentPort() {
                 </div>
               </div>
             </div>
+
+            <div class="border-t border-gray-300 my-4"></div>
+
+            <div className="mb-4 p-4 pt-1">
+              <label className="block text-gray-800 text-sm font-semibold mb-2">
+                Lunch
+              </label>
+              <label className="inline-flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  onChange={lunchSelectAll}
+                  checked={checkedL}
+                />
+                <span className="text-sm text-gray-700">Select All</span>
+              </label>
+
+              <div className="grid grid-cols-7 gap-0 mt-3">
+                {/* Sunday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="su" className="text-xs text-gray-600">Su</label>
+                  <input
+                    type="checkbox"
+                    id="su"
+                    name="day"
+                    checked={lsu}
+                    onChange={handleCkeckedlsu}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+
+                {/* Monday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="mo" className="text-xs text-gray-600">Mo</label>
+                  <input
+                    type="checkbox"
+                    id="mo"
+                    name="day"
+                    checked={lmo}
+                    onChange={handleCkeckedLmo}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+
+                {/* Tuesday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="tu" className="text-xs text-gray-600">Tu</label>
+                  <input
+                    type="checkbox"
+                    id="tu"
+                    name="day"
+                    checked={ltu}
+                    onChange={handleCkeckedLtu}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+
+                {/* Wednesday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="we" className="text-xs text-gray-600">We</label>
+                  <input
+                    type="checkbox"
+                    id="we"
+                    name="day"
+                    checked={lwe}
+                    onChange={handleCkeckedLwe}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+
+                {/* Thursday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="th" className="text-xs text-gray-600">Th</label>
+                  <input
+                    type="checkbox"
+                    id="th"
+                    name="day"
+                    checked={lth}
+                    onChange={handleCkeckedLth}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+
+                {/* Friday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="fr" className="text-xs text-gray-600">Fr</label>
+                  <input
+                    type="checkbox"
+                    id="fr"
+                    name="day"
+                    checked={lfr}
+                    onChange={handleCkeckedLfr}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+
+                {/* Saturday */}
+                <div className="flex flex-col items-center">
+                  <label htmlFor="sa" className="text-xs text-gray-600">Sa</label>
+                  <input
+                    type="checkbox"
+                    id="sa"
+                    name="day"
+                    checked={lsa}
+                    onChange={handleCheckedLsa}
+                    className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 checked:bg-indigo-600 checked:border-indigo-600"
+                  />
+                </div>
+              </div>
+            </div>
+            
+
+            
           </div>
 
           {/* <div className="mb-4">

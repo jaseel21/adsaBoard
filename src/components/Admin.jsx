@@ -235,7 +235,7 @@ const handleTokens =()=>{
 </div>
 
 <div className='flex ml-auto'>
-<button onClick={handleTokens} className='bg-white hover:bg-gray-200 text-gary-600 font-bold py-2 px-4 m-9 inline-flex items-center border border-gray-400' >Manage Tokens</button>
+<button onClick={handleTokens} className='bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg shadow-md border border-emerald-500 hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 m-9 inline-flex items-center' >Manage Tokens</button>
 </div>
 
 
