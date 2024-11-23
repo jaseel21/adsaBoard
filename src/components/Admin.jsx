@@ -153,76 +153,17 @@ function Admin() {
   };
  
 
-  const [number1, setNumber1] = useState("");
-  const [number2, setNumber2] = useState("");
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Number 1:", number1);
-    console.log("Number 2:", number2);
-  };
+ 
 
 
-  const updateStudentMeals = async () => {
-    try {
-        // Fetch documents where tokenNo is between 72 and 81
-        const querySnapshot = await firebase.firestore()
-            .collection("students")
-            .where("tokenNo", ">=", 1)
-            .where("tokenNo", "<=", 3)
-            .get();
-
-        // Create a batch to update documents
-        const batch = firebase.firestore().batch();
-
-        // Loop through each document in the query result
-        querySnapshot.forEach((doc) => {
-            // Get the current document data
-            const docData = doc.data();
-
-            // Prepare the updated data: set lunch and breakfast to false for all days
-            const updatedData = {
-                ...docData, // Merge the existing data
-                obj: { // Update the obj field
-                    lunch: {
-                        su: true,
-                        mo: true,
-                        tu: true,
-                        we: true,
-                        th: true,
-                        fr: true,
-                        sa: true,
-                    },
-                    breakfast: {
-                        su: true,
-                        mo: true,
-                        tu: true,
-                        we: true,
-                        th: true,
-                        fr: true,
-                        sa: true,
-                    }
-                },
-            };
-
-            // Add the update operation to the batch
-            batch.update(doc.ref, updatedData);
-        });
-
-        // Commit the batch to apply all the updates
-        await batch.commit();
-
-        console.log("Documents successfully updated!");
-        fetchData()
-    } catch (error) {
-        console.error("Error updating documents: ", error);
-    }
-};
+const handleTokens =()=>{
+  navigate("/m-tokens")
+}
 
 
   return (
     <div>
-      <div className="p-2">
+      <div className="p-2 flex">
 
      
       
@@ -293,39 +234,11 @@ function Admin() {
   </div>
 </div>
 
-{/* <div className="p-6 w-2/12 bg-white shadow-md rounded-lg">
-        <h1 className="text-xl font-bold mb-4">TokenOps</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Number 1
-            </label>
-            <input
-              type="number"
-              value={number1}
-              onChange={(e) => setNumber1(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Number 2
-            </label>
-            <input
-              type="number"
-              value={number2}
-              onChange={(e) => setNumber2(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition"
-          >
-            Submit
-          </button>
-        </form>
-      </div> */}
+<div className='flex ml-auto'>
+<button onClick={handleTokens} className='bg-white hover:bg-gray-200 text-gary-600 font-bold py-2 px-4 m-9 inline-flex items-center border border-gray-400' >Manage Tokens</button>
+</div>
+
+
 
 
 

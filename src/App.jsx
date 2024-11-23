@@ -6,6 +6,7 @@ import StudentPort from './components/StudentPort'
 import Navbar from './components/NavBar'
 import List from "./components/List"
 import Section from './components/Section'
+import Mtokens from './components/Mtokens'
 
 import Fmenu from "./components/Fmenu"
 import {Route,Routes,generatePath,useLocation,Navigate} from 'react-router-dom'
@@ -58,6 +59,7 @@ function App() {
         <Route path='/astudent-port' element={user ? <AstudentPort /> : <Navigate to="/alogin" />}></Route>
         <Route path='/pdfg' Component={GeneratePdf}></Route>
         <Route path='/alogin' element={user ? <Admin /> : <AdminLogin />} />
+        <Route path='m-tokens' Component={Mtokens} />
       </Routes>
           </GetTokens>
         </PersonInfo>
