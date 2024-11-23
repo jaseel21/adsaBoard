@@ -71,8 +71,8 @@ const updateStudentMeals = async (e) => {
         // Fetch documents where tokenNo is between 72 and 81
         const querySnapshot = await firebase.firestore()
             .collection("students")
-            .where("tokenNo", ">=", fNO)
-            .where("tokenNo", "<=", tNO)
+            .where("tokenNo", ">=", parseInt(fNO))
+            .where("tokenNo", "<=", parseInt(tNO))
             .get();
 
         // Create a batch to update documents
@@ -122,7 +122,7 @@ const updateStudentMeals = async (e) => {
     }
 };
 
-console.log(tNO,fNO);
+console.log(fNO,tNO);
 
 
 
@@ -136,15 +136,8 @@ console.log(tNO,fNO);
           <form onSubmit={updateStudentMeals}>
 
             <div className="flex  flex-col">
-                <div className=" flex flex-row">
 
-                <input type="checkbox"
-                checked={lunch}
-                onChange={handleLunch} />
-                <label className='px-4' htmlFor="">lunch</label>
-
-                </div>
-                <div className="flex flex-row">
+            <div className="flex flex-row">
                 
 
                 <input type="checkbox" 
@@ -152,6 +145,15 @@ console.log(tNO,fNO);
                 checked={breakfast}/>
                 <label className='px-4' htmlFor="">breakfast</label>
                 </div>
+
+                <div className=" flex flex-row">
+
+                <input type="checkbox"
+                checked={lunch}
+                onChange={handleLunch} />
+                <label className='px-4' htmlFor="">lunch</label>
+
+                </div>              
 
             </div>
             <div className="flex flex-col space-y-4 items-center justify-center">
