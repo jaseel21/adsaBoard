@@ -431,6 +431,7 @@ function AstudentPort() {
                 <div className="flex items-center space-x-2 p-2 bg-white border border-gray-200 rounded-md shadow-sm">
                   <i className="fas fa-user text-blue-500 text-lg"></i>
                   <div className="flex flex-col">
+                    
                     <span className="text-gray-500 text-xs">Name</span>
                     <span className="text-gray-800 text-sm font-medium">{stdata.uname}</span>
                   </div>

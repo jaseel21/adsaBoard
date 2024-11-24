@@ -135,7 +135,7 @@ console.log(fNO,tNO);
         <div className="container mx-auto p-6">
 
   <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-500">
-    <h1 className="text-3xl text-center font-semibold text-gray-800 mb-6">Manage Tokens</h1>
+    <h1 className="text-lg text-center font-medium text-gray-800 mb-6">Manage Tokens</h1>
 
     <form onSubmit={updateStudentMeals}>
       <div className="space-y-6">
@@ -147,7 +147,7 @@ console.log(fNO,tNO);
             checked={breakfast}
             className="text-emerald-500 border-2 border-gray-400 rounded-lg focus:ring-emerald-500"
           />
-          <label className="text-gray-700 text-lg font-medium">Breakfast</label>
+          <label className="text-gray-700 text-sm font-medium">Breakfast</label>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -157,12 +157,12 @@ console.log(fNO,tNO);
             onChange={handleLunch}
             className="text-emerald-500 border-2 border-gray-400 rounded-lg focus:ring-emerald-500"
           />
-          <label className="text-gray-700 text-lg font-medium">Lunch</label>
+          <label className="text-gray-700 text-sm font-medium">Lunch</label>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center space-x-4 justify-center">
-            <label htmlFor="lunchInput" className="text-gray-700 font-medium">From:</label>
+            <label htmlFor="lunchInput" className="text-gray-700 font-sm">From:</label>
             <input
               type="number"
               id="lunchInput"
@@ -172,7 +172,7 @@ console.log(fNO,tNO);
           </div>
 
           <div className="flex items-center space-x-4 justify-center">
-            <label htmlFor="breakfastInput" className="text-gray-700 pl-4 font-medium">To :</label>
+            <label htmlFor="breakfastInput" className="text-gray-700 pl-4 font-sm">To:</label>
             <input
               type="number"
               id="breakfastInput"

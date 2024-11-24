@@ -11,7 +11,7 @@ const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   return (
     <button
       onClick={toggleSwitch}
-      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-red-600 glossy-button1 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-[#E2725A] glossy-button1 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
     >
       {number}
     </button>
@@ -127,49 +127,49 @@ const SwitchPage = () => {
     navigate("/pdfg")
   }
 
-  const addStudent=()=>{
-    firebase.firestore().collection('students').add({
+  // const addStudent=()=>{
+  //   firebase.firestore().collection('students').add({
 
-      uname:"NAFIH NANDI",
-      tokenNo:200,
-      password:"155",
-      block:false,
-      obj:{
-        lunch:{
-          su:true,
-          mo:true,
-          tu:true,
-          we:true,
-          th:true,
-          fr:true,
-          sa:true
-        },
-        breakfast:{
-          su:true,
-          mo:true,
-          tu:true,
-          we:true,
-          th:true,
-          fr:true,
-          sa:true
-        }
-      },
-      obj2:{
-        beef:true,
-        chicken:true,
-        fish:true,
-        mutton:true
-      }
+  //     uname:"NAFIH NANDI",
+  //     tokenNo:200,
+  //     password:"155",
+  //     block:false,
+  //     obj:{
+  //       lunch:{
+  //         su:true,
+  //         mo:true,
+  //         tu:true,
+  //         we:true,
+  //         th:true,
+  //         fr:true,
+  //         sa:true
+  //       },
+  //       breakfast:{
+  //         su:true,
+  //         mo:true,
+  //         tu:true,
+  //         we:true,
+  //         th:true,
+  //         fr:true,
+  //         sa:true
+  //       }
+  //     },
+  //     obj2:{
+  //       beef:true,
+  //       chicken:true,
+  //       fish:true,
+  //       mutton:true
+  //     }
   
-    }
-  ).then(()=>{
-      window.location.href = "/";
-    }).catch((error) => {
-      console.error("Error adding document: ", error);
-    })
+  //   }
+  // ).then(()=>{
+  //     window.location.href = "/";
+  //   }).catch((error) => {
+  //     console.error("Error adding document: ", error);
+  //   })
 
 
-  }
+  // }
 
   const fullDayName = {
     su: 'Sunday',
