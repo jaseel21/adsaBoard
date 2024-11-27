@@ -16,6 +16,8 @@ function AstudentPort() {
   const [fish, setFish] = useState(stdata.obj2.fish);
   const [mutton, setMutton] = useState(stdata.obj2.mutton);
 
+  
+
 
   const navigate = useNavigate();
   const [showCheckoutOptions, setShowCheckoutOptions] = useState(false);
@@ -415,6 +417,10 @@ function AstudentPort() {
       }
     }
   };
+
+  
+  
+  
 
 
   return (

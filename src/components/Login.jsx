@@ -262,7 +262,7 @@ const isCurrentTimeInRange = () => {
               <button
                 type="submit"
                
-                className="w-full bg-emerald-500 text-white py-2 rounded-md hover:bg-emerald-500 transition duration-200"
+                className="w-full bg-emerald-500 text-white py-2 rounded-md hover:bg-emerald-700 transition duration-200"
               >
                 LOGIN
               </button>

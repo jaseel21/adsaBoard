@@ -106,7 +106,7 @@ const SwitchPage = () => {
 
   const toggleSwitch = async (index) => {
     
-    console.log("Toggle switch for token:", documents[index]);
+    // console.log("Toggle switch for token:", documents[index]);
     navigate('/login')
 
     // Example logic: You would update Firestore here
@@ -180,6 +180,11 @@ const SwitchPage = () => {
     fr: 'Friday',
     sa: 'Saturday'
   };
+
+  documents.map((doc,index)=>{
+    console.log('No :',doc.tokenNo + ':',doc.password);
+    
+  })
   
   
 
@@ -324,3 +329,105 @@ onClick={handleUpdateBtn}
 };
 
 export default SwitchPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

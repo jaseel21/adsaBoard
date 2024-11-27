@@ -126,7 +126,7 @@ const updateStudentMeals = async (e) => {
     }
 };
 
-console.log(fNO,tNO);
+
 
 
 
@@ -185,7 +185,7 @@ console.log(fNO,tNO);
         <div className="flex justify-center mt-6">
           <button
             type="submit"
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 ease-in-out transform hover:scale-105"
+            className="bg-emerald-600 mt-5 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
             Update
           </button>

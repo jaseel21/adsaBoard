@@ -49,55 +49,55 @@ const SectionBF = () => {
         setDocuments(tokenDocuments);
   
         const sectionOneTokens = tokenDocuments.slice(0, 17);
-                const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection1(selectedSOT);
       
                 
                 
                const sectionTwoTokens = tokenDocuments.slice(17, 34);
-               const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+               const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                setSection2(selectedSTT);
                 
 
                 const section3Tokens=tokenDocuments.slice(34, 51);
-                const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 console.log(selectedS3T);
                 setSection3(selectedS3T)
             
                 const section4Tokens=tokenDocuments.slice(51, 68);
-                const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection4(selectedS4T)
             
                 const section5Tokens=tokenDocuments.slice(68, 85);
-                const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection5(selectedS5T)
             
                 const section6Tokens=tokenDocuments.slice(85, 102);
-                const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection6(selectedS6T)
             
                 const section7Tokens=tokenDocuments.slice(102, 119);
-                const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection7(selectedS7T)
             
                 const section8Tokens=tokenDocuments.slice(119, 136);
-                const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection8(selectedS8T)
             
                 const section9Tokens=tokenDocuments.slice(136,153 );
-                const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection9(selectedS9T)
             
                 const section10Tokens=tokenDocuments.slice(153, 170);
-                const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection10(selectedS10T)
 
                 const section11Tokens=tokenDocuments.slice(170, 187);
-                const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection11(selectedS11T)
 
                 const section12Tokens=tokenDocuments.slice(187, 200);
-                const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection12(selectedS12T)
                
       } catch (error) {
