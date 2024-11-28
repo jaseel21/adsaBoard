@@ -157,6 +157,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 1 && (
               <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                 <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section1.length}</h2>
+                  </div>
                 {/* Map over section1 state */}
                 {section1.map((item, index) => (
                   <li key={index} className="text-gray-700">{item}</li>
@@ -182,6 +185,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 2 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section2.length}</h2>
+                  </div>
                  {
                    section2.map((item,index)=>(
      
@@ -209,6 +215,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 3 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section3.length}</h2>
+                  </div>
                  {
                    section3.map((item,index)=>(
      
@@ -235,6 +244,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 4 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section4.length}</h2>
+                  </div>
                  {
                    section4.map((item,index)=>(
      
@@ -262,6 +274,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 5 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section5.length}</h2>
+                  </div>
                  {
                    section5.map((item,index)=>(
      
@@ -290,6 +305,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 6 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section6.length}</h2>
+                  </div>
                  {
                    section6.map((item,index)=>(
      
@@ -318,6 +336,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 7 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section7.length}</h2>
+                  </div>
                  {
                    section7.map((item,index)=>(
      
@@ -346,6 +367,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 8 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section8.length}</h2>
+                  </div>
                  {
                    section8.map((item,index)=>(
      
@@ -373,6 +397,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 9 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section9.length}</h2>
+                  </div>
                  {
                    section9.map((item,index)=>(
      
@@ -400,6 +427,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 10 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section10.length}</h2>
+                  </div>
                  {
                    section10.map((item,index)=>(
      
@@ -427,6 +457,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 11 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section11.length}</h2>
+                  </div>
                  {
                    section11.map((item,index)=>(
      
@@ -454,6 +487,9 @@ const Section = () => {
             {/* Display list for active section */}
             {activeSection === 12 && (
                  <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
+                   <div className='flex justify-end items-end'>
+                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section12.length}</h2>
+                  </div>
                  {
                    section12.map((item,index)=>(
      

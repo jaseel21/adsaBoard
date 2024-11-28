@@ -130,7 +130,6 @@ function Admin() {
   };
 
   const toggleSwitch = async (index) => {
-    console.log("Toggle switch for token:", documents[index]);
 
     let StInfo = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(documents[index].tokenNo)).get();
     if (!StInfo.empty) {
@@ -151,8 +150,6 @@ function Admin() {
   const toggleStatus = () => {
     setIsLunch(!isLunch);
   };
- 
-
  
 
 

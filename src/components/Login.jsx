@@ -113,11 +113,9 @@ const isCurrentTimeInRange = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (time) {
+  
       await checkTimeAndHandleClick();
-    }else{
-      alert("not captuar time ")
-    }
+   
   };
 
   const handleUsernameChange = (e) => {

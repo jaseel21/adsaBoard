@@ -181,11 +181,7 @@ const SwitchPage = () => {
     sa: 'Saturday'
   };
 
-  documents.map((doc,index)=>{
-    console.log('No :',doc.tokenNo + ':',doc.password);
-    
-  })
-  
+
   
 
 
