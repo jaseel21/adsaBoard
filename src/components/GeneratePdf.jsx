@@ -14,10 +14,10 @@ const FetchData = () => {
     const [section6, setSection6] = useState([]);
     const [section7, setSection7] = useState([]);
     const [section8, setSection8] = useState([]);
-    const [section9, setSection9] = useState([]);
-    const [section10, setSection10] = useState([]);
-    const [section11, setSection11] = useState([]);
-    const [section12, setSection12] = useState([]);
+    // const [section9, setSection9] = useState([]);
+    // const [section10, setSection10] = useState([]);
+    // const [section11, setSection11] = useState([]);
+    // const [section12, setSection12] = useState([]);
 
     const [Bsection1, setBsection1] = useState([]);
   const [Bsection2, setBsection2] = useState([]);
@@ -27,10 +27,10 @@ const FetchData = () => {
   const [Bsection6, setBsection6] = useState([]);
   const [Bsection7, setBsection7] = useState([]);
   const [Bsection8, setBsection8] = useState([]);
-  const [Bsection9, setBsection9] = useState([]);
-  const [Bsection10, setBsection10] = useState([]);
-  const [Bsection11, setBsection11] = useState([]);
-  const [Bsection12, setBsection12] = useState([]);
+  // const [Bsection9, setBsection9] = useState([]);
+  // const [Bsection10, setBsection10] = useState([]);
+  // const [Bsection11, setBsection11] = useState([]);
+  // const [Bsection12, setBsection12] = useState([]);
 
 
     
@@ -113,63 +113,63 @@ const FetchData = () => {
                 setDocuments(tokenDocuments);
 
 
-                const sectionOneTokens = tokenDocuments.slice(0, 17);
+                const sectionOneTokens = tokenDocuments.slice(0, 25);
                 const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection1(selectedSOT);
       
                 
                 
-               const sectionTwoTokens = tokenDocuments.slice(17, 34);
+               const sectionTwoTokens = tokenDocuments.slice(26, 50);
                const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                setSection2(selectedSTT);
                 
 
-                const section3Tokens=tokenDocuments.slice(34, 51);
+                const section3Tokens=tokenDocuments.slice(51, 75);
                 const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 console.log(selectedS3T);
                 setSection3(selectedS3T)
             
-                const section4Tokens=tokenDocuments.slice(51, 68);
+                const section4Tokens=tokenDocuments.slice(76, 100);
                 const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection4(selectedS4T)
             
-                const section5Tokens=tokenDocuments.slice(68, 85);
+                const section5Tokens=tokenDocuments.slice(101, 125);
                 const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection5(selectedS5T)
             
-                const section6Tokens=tokenDocuments.slice(85, 102);
+                const section6Tokens=tokenDocuments.slice(126, 150);
                 const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection6(selectedS6T)
             
-                const section7Tokens=tokenDocuments.slice(102, 119);
+                const section7Tokens=tokenDocuments.slice(151, 175);
                 const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection7(selectedS7T)
             
-                const section8Tokens=tokenDocuments.slice(119, 136);
+                const section8Tokens=tokenDocuments.slice(176, 200);
                 const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
                 setSection8(selectedS8T)
             
-                const section9Tokens=tokenDocuments.slice(136,153 );
-                const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                setSection9(selectedS9T)
+                // const section9Tokens=tokenDocuments.slice(136,153 );
+                // const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                // setSection9(selectedS9T)
             
-                const section10Tokens=tokenDocuments.slice(153, 170);
-                const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                setSection10(selectedS10T)
+                // const section10Tokens=tokenDocuments.slice(153, 170);
+                // const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                // setSection10(selectedS10T)
 
-                const section11Tokens=tokenDocuments.slice(170, 187);
-                const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                setSection11(selectedS11T)
+                // const section11Tokens=tokenDocuments.slice(170, 187);
+                // const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                // setSection11(selectedS11T)
 
-                const section12Tokens=tokenDocuments.slice(187, 200);
-                const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                setSection12(selectedS12T)
+                // const section12Tokens=tokenDocuments.slice(187, 200);
+                // const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
+                // setSection12(selectedS12T)
 
                 // -----------------------------------------------------
 
 
 
-                const BsectionOneTokens = tokenDocuments.slice(0, 17);
+                const BsectionOneTokens = tokenDocuments.slice(0, 25);
         const BselectedSOT = BsectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection1(BselectedSOT);
 
@@ -178,7 +178,7 @@ const FetchData = () => {
 
         
 
-        const BsectionTowTokens=tokenDocuments.slice(17, 34);
+        const BsectionTowTokens=tokenDocuments.slice(26, 50);
         console.log(BsectionTowTokens);
         const BselectedSTT = BsectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
 
@@ -186,49 +186,45 @@ const FetchData = () => {
         console.log(selectedSTT);
         setBsection2(BselectedSTT)
 
-        const Bsection3Tokens=tokenDocuments.slice(34, 51);
+        const Bsection3Tokens=tokenDocuments.slice(51, 75);
         const BselectedS3T = Bsection3Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection3(BselectedS3T)
 
-        const Bsection4Tokens=tokenDocuments.slice(51, 68);
+        const Bsection4Tokens=tokenDocuments.slice(76, 100);
         const BselectedS4T = Bsection4Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection4(BselectedS4T)
 
-        const Bsection5Tokens=tokenDocuments.slice(68, 85);
+        const Bsection5Tokens=tokenDocuments.slice(101, 125);
         const BselectedS5T = Bsection5Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection5(BselectedS5T)
 
-        const Bsection6Tokens=tokenDocuments.slice(85, 102);
+        const Bsection6Tokens=tokenDocuments.slice(126, 150);
         const BselectedS6T = Bsection6Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection6(BselectedS6T)
 
-        const Bsection7Tokens=tokenDocuments.slice(102, 119);
+        const Bsection7Tokens=tokenDocuments.slice(151, 175);
         const BselectedS7T = Bsection7Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection7(BselectedS7T)
 
-        const Bsection8Tokens=tokenDocuments.slice(119, 136);
+        const Bsection8Tokens=tokenDocuments.slice(176, 200);
         const BselectedS8T = Bsection8Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
         setBsection8(BselectedS8T)
 
-        const Bsection9Tokens=tokenDocuments.slice(136, 153
+        // const Bsection9Tokens=tokenDocuments.slice(136, 153);
+        // const BselectedS9T = Bsection9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        // setBsection9(BselectedS9T)
 
+        // const Bsection10Tkens=tokenDocuments.slice(153, 170);
+        // const BselectedS10T= Bsection10Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        // setBsection10(BselectedS10T)
 
-          
-        );
-        const BselectedS9T = Bsection9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection9(BselectedS9T)
+        // const Bsection11Tkens=tokenDocuments.slice(170, 187);
+        // const BselectedS11T= Bsection11Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        // setBsection11(BselectedS11T)
 
-        const Bsection10Tkens=tokenDocuments.slice(153, 170);
-        const BselectedS10T= Bsection10Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection10(BselectedS10T)
-
-        const Bsection11Tkens=tokenDocuments.slice(170, 187);
-        const BselectedS11T= Bsection11Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection11(BselectedS11T)
-
-        const Bsection12Tkens=tokenDocuments.slice(187, 200);
-        const BselectedS12T= Bsection12Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        setBsection12(BselectedS12T)
+        // const Bsection12Tkens=tokenDocuments.slice(187, 200);
+        // const BselectedS12T= Bsection12Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+        // setBsection12(BselectedS12T)
                
 
                 
@@ -355,10 +351,10 @@ const FetchData = () => {
         { header: 'Sec 6', dataKey: 'Bsection6' },
         { header: 'Sec 7', dataKey: 'Bsection7' },
         { header: 'Sec 8', dataKey: 'Bsection8' },
-        { header: 'Sec 9', dataKey: 'Bsection9' },
-        { header: 'Sec 10', dataKey: 'Bsection10' },
-        { header: 'Sec 11', dataKey: 'Bsection11' },
-        { header: 'Sec 12', dataKey: 'Bsection12' }
+        // { header: 'Sec 9', dataKey: 'Bsection9' },
+        // { header: 'Sec 10', dataKey: 'Bsection10' },
+        // { header: 'Sec 11', dataKey: 'Bsection11' },
+        // { header: 'Sec 12', dataKey: 'Bsection12' }
     ];
 
     // Prepare the data for the first table
@@ -371,10 +367,10 @@ const FetchData = () => {
         Bsection6.length,
         Bsection7.length,
         Bsection8.length,
-        Bsection9.length,
-        Bsection10.length,
-        Bsection11.length,
-        Bsection12.length
+        // Bsection9.length,
+        // Bsection10.length,
+        // Bsection11.length,
+        // Bsection12.length
     ) }).map((_, index) => ({
         Bsection1: index === 0 && Bsection1.length === 0 ? 'empty' : (index < Bsection1.length ? Bsection1[index] : ''),
         Bsection2: index === 0 && Bsection2.length === 0 ? 'empty' : (index < Bsection2.length ? Bsection2[index] : ''),
@@ -384,10 +380,10 @@ const FetchData = () => {
         Bsection6: index === 0 && Bsection6.length === 0 ? 'empty' : (index < Bsection6.length ? Bsection6[index] : ''),
         Bsection7: index === 0 && Bsection7.length === 0 ? 'empty' : (index < Bsection7.length ? Bsection7[index] : ''),
         Bsection8: index === 0 && Bsection8.length === 0 ? 'empty' : (index < Bsection8.length ? Bsection8[index] : ''),
-        Bsection9: index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : ''),
-        Bsection10: index === 0 && Bsection10.length === 0 ? 'empty' : (index < Bsection10.length ? Bsection10[index] : ''),
-        Bsection11: index === 0 && Bsection11.length === 0 ? 'empty' : (index < Bsection11.length ? Bsection11[index] : ''),
-        Bsection12: index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')
+        // Bsection9: index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : ''),
+        // Bsection10: index === 0 && Bsection10.length === 0 ? 'empty' : (index < Bsection10.length ? Bsection10[index] : ''),
+        // Bsection11: index === 0 && Bsection11.length === 0 ? 'empty' : (index < Bsection11.length ? Bsection11[index] : ''),
+        // Bsection12: index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')
     }));
 
     // Add the title for the first table
@@ -426,10 +422,10 @@ const FetchData = () => {
         { header: 'Sec 6', dataKey: 'section6' },
         { header: 'Sec 7', dataKey: 'section7' },
         { header: 'Sec 8', dataKey: 'section8' },
-        { header: 'Sec 9', dataKey: 'section9' },
-        { header: 'Sec 10', dataKey: 'section10' },
-        { header: 'Sec 11', dataKey: 'section11' },
-        { header: 'Sec 12', dataKey: 'section12' }
+        // { header: 'Sec 9', dataKey: 'section9' },
+        // { header: 'Sec 10', dataKey: 'section10' },
+        // { header: 'Sec 11', dataKey: 'section11' },
+        // { header: 'Sec 12', dataKey: 'section12' }
     ];
     
 
@@ -444,9 +440,9 @@ const FetchData = () => {
         section6.length,
         section7.length,
         section8.length,
-        section9.length,
-        section11.length,
-        section12.length
+        // section9.length,
+        // section11.length,
+        // section12.length
     ) }).map((_, index) => ({
         section1: index === 0 && section1.length === 0 ? 'empty' : index < section1.length ? section1[index] : '',
         section2: index === 0 && section2.length === 0 ? 'empty' : index < section2.length ? section2[index] : '',
@@ -456,10 +452,10 @@ const FetchData = () => {
         section6: index === 0 && section6.length === 0 ? 'empty' : index < section6.length ? section6[index] : '',
         section7: index === 0 && section7.length === 0 ? 'empty' : index < section7.length ? section7[index] : '',
         section8: index === 0 && section8.length === 0 ? 'empty' : index < section8.length ? section8[index] : '',
-        section9: index === 0 && section9.length === 0 ? 'empty' : index < section9.length ? section9[index] : '',
-        section10: index === 0 && section10.length === 0 ? 'empty' : index < section10.length ? section10[index] : '',
-        section11: index === 0 && section11.length === 0 ? 'empty' : index < section11.length ? section11[index] : '',
-        section12: index === 0 && section12.length === 0 ? 'empty' : index < section12.length ? section12[index] : '',
+        // section9: index === 0 && section9.length === 0 ? 'empty' : index < section9.length ? section9[index] : '',
+        // section10: index === 0 && section10.length === 0 ? 'empty' : index < section10.length ? section10[index] : '',
+        // section11: index === 0 && section11.length === 0 ? 'empty' : index < section11.length ? section11[index] : '',
+        // section12: index === 0 && section12.length === 0 ? 'empty' : index < section12.length ? section12[index] : '',
     }));
 
     // Add the title for the second table
@@ -575,7 +571,7 @@ const FetchData = () => {
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                                     Sec 8
                                 </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                {/* <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                                     Sec 9
                                 </th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
@@ -586,7 +582,7 @@ const FetchData = () => {
                                 </th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                                     Sec 12
-                                </th>
+                                </th> */}
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -599,10 +595,10 @@ const FetchData = () => {
                                 Bsection6.length,
                                 Bsection7.length,
                                 Bsection8.length,
-                                Bsection9.length,
-                                Bsection10.length,
-                                Bsection11.length,
-                                Bsection12.length
+                                // Bsection9.length,
+                                // Bsection10.length,
+                                // Bsection11.length,
+                                // Bsection12.length
                             ) }).map((_, index) => (
                                 <tr key={index}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -629,7 +625,7 @@ const FetchData = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     {index === 0 && Bsection8.length === 0 ? 'empty' : (index < Bsection8.length ? Bsection8[index] : '')}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     {index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : '')}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -640,7 +636,7 @@ const FetchData = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     {index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')}
-                                    </td>
+                                    </td> */}
                                 </tr>
                             ))}
                         </tbody>
@@ -676,7 +672,7 @@ const FetchData = () => {
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                                     Sec 8
                                 </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
+                                {/* <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                                     Sec 9
                                 </th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
@@ -687,7 +683,7 @@ const FetchData = () => {
                                 </th>
                                 <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                                     Sec 12
-                                </th>
+                                </th> */}
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -700,10 +696,10 @@ const FetchData = () => {
                                 section6.length,
                                 section7.length,
                                 section8.length,
-                                section9.length,
-                                section10.length,
-                                section11.length,
-                                section12.length
+                                // section9.length,
+                                // section10.length,
+                                // section11.length,
+                                // section12.length
                             ) }).map((_, index) => (
                                 <tr key={index}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -730,7 +726,7 @@ const FetchData = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     {index === 0 && section8.length === 0 ? 'empty' : (index < section8.length ? section8[index] : '')}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     {index === 0 && section9.length === 0 ? 'empty' : (index < section9.length ? section9[index] : '')}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -741,7 +737,7 @@ const FetchData = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     {index === 0 && section12.length === 0 ? 'empty' : (index < section12.length ? section12[index] : '')}
-                                    </td>
+                                    </td> */}
                                 </tr>
                             ))}
                         </tbody>

@@ -417,10 +417,6 @@ function AstudentPort() {
       }
     }
   };
-
-  
-  
-  console.log(stdata.password);
   
 
 

@@ -9,16 +9,16 @@ const SectionBF = () => {
   const [documents, setDocuments] = useState([]);
   const [section1, setSection1] = useState([]);
   const [section2, setSection2] = useState([]);
-  const [section3, setSection3] = useState(null);
-  const [section4, setSection4] = useState(null);
-  const [section5, setSection5] = useState(null);
-  const [section6, setSection6] = useState(null);
-  const [section7, setSection7] = useState(null);
-  const [section8, setSection8] = useState(null);
-  const [section9, setSection9] = useState(null);
-  const [section10, setSection10] = useState(null);
-  const [section11, setSection11] = useState([]);
-  const [section12, setSection12] = useState([]);
+  const [section3, setSection3] = useState([]);
+  const [section4, setSection4] = useState([]);
+  const [section5, setSection5] = useState([]);
+  const [section6, setSection6] = useState([]);
+  const [section7, setSection7] = useState([]);
+  const [section8, setSection8] = useState([]);
+  // const [section9, setSection9] = useState([]);
+  // const [section10, setSection10] = useState([]);
+  // const [section11, setSection11] = useState([]);
+  // const [section12, setSection12] = useState([]);
 
   const [activeSection, setActiveSection] = useState(null);
 
@@ -48,57 +48,57 @@ const SectionBF = () => {
         tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
         setDocuments(tokenDocuments);
   
-        const sectionOneTokens = tokenDocuments.slice(0, 17);
+        const sectionOneTokens = tokenDocuments.slice(0, 25);
                 const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection1(selectedSOT);
       
                 
                 
-               const sectionTwoTokens = tokenDocuments.slice(17, 34);
+               const sectionTwoTokens = tokenDocuments.slice(26, 50);
                const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                setSection2(selectedSTT);
                 
 
-                const section3Tokens=tokenDocuments.slice(34, 51);
+                const section3Tokens=tokenDocuments.slice(51, 75);
                 const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 console.log(selectedS3T);
                 setSection3(selectedS3T)
             
-                const section4Tokens=tokenDocuments.slice(51, 68);
+                const section4Tokens=tokenDocuments.slice(76, 100);
                 const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection4(selectedS4T)
             
-                const section5Tokens=tokenDocuments.slice(68, 85);
+                const section5Tokens=tokenDocuments.slice(101, 125);
                 const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection5(selectedS5T)
             
-                const section6Tokens=tokenDocuments.slice(85, 102);
+                const section6Tokens=tokenDocuments.slice(126, 150);
                 const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection6(selectedS6T)
             
-                const section7Tokens=tokenDocuments.slice(102, 119);
+                const section7Tokens=tokenDocuments.slice(151, 175);
                 const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection7(selectedS7T)
             
-                const section8Tokens=tokenDocuments.slice(119, 136);
+                const section8Tokens=tokenDocuments.slice(176, 200);
                 const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 setSection8(selectedS8T)
             
-                const section9Tokens=tokenDocuments.slice(136,153 );
-                const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-                setSection9(selectedS9T)
+                // const section9Tokens=tokenDocuments.slice(136,153 );
+                // const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+                // setSection9(selectedS9T)
             
-                const section10Tokens=tokenDocuments.slice(153, 170);
-                const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-                setSection10(selectedS10T)
+                // const section10Tokens=tokenDocuments.slice(153, 170);
+                // const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+                // setSection10(selectedS10T)
 
-                const section11Tokens=tokenDocuments.slice(170, 187);
-                const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-                setSection11(selectedS11T)
+                // const section11Tokens=tokenDocuments.slice(170, 187);
+                // const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+                // setSection11(selectedS11T)
 
-                const section12Tokens=tokenDocuments.slice(187, 200);
-                const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-                setSection12(selectedS12T)
+                // const section12Tokens=tokenDocuments.slice(187, 200);
+                // const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
+                // setSection12(selectedS12T)
                
       } catch (error) {
         console.error('Error fetching tokens:', error);
@@ -153,7 +153,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 1
-              <span className='text-sm font-normal'>1-17</span>
+              <span className='text-sm font-normal'>1-25</span>
             </button>
             {/* Display list for active section */}
             
@@ -184,7 +184,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 2
-              <span className='text-sm font-normal'>18-34</span>
+              <span className='text-sm font-normal'>26-50</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 2 && (
@@ -214,7 +214,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 3
-              <span className='text-sm font-normal'>34-51</span>
+              <span className='text-sm font-normal'>51-75</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 3 && (
@@ -243,7 +243,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 4
-              <span className='text-sm font-normal'>52-68</span>
+              <span className='text-sm font-normal'>76-100</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 4 && (
@@ -273,7 +273,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 5
-              <span className='text-sm font-normal'>69-85</span>
+              <span className='text-sm font-normal'>101-125</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 5 && (
@@ -304,7 +304,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 6
-              <span className='text-sm font-normal'>86-102</span>
+              <span className='text-sm font-normal'>126-150</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 6 && (
@@ -335,7 +335,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 7
-              <span className='text-sm font-normal'>103-119</span>
+              <span className='text-sm font-normal'>151-175</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 7 && (
@@ -366,7 +366,7 @@ const SectionBF = () => {
             >
               <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
               Section 8
-              <span className='text-sm font-normal'>120-136</span>
+              <span className='text-sm font-normal'>176-200</span>
             </button>
             {/* Display list for active section */}
             {activeSection === 8 && (
@@ -385,125 +385,7 @@ const SectionBF = () => {
             )}
           </div>
 
-          <div>
-            <button
-              onClick={() => toggleSection(9)}
-              className={`focus:outline-none ${
-                activeSection === 9
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
-              Section 9
-              <span className='text-sm font-normal'>137-153</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 9 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section9.length}</h2>
-                  </div>
-                 {
-                   section9.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-
-          <div>
-            <button
-              onClick={() => toggleSection(10)}
-              className={`focus:outline-none ${
-                activeSection === 10
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
-              Section 10
-              <span className='text-sm font-normal'>154-170</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 10 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section10.length}</h2>
-                  </div>
-                 {
-                   section10.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-
-          <div>
-            <button
-              onClick={() => toggleSection(11)}
-              className={`focus:outline-none ${
-                activeSection === 11
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
-              Section 11
-              <span className='text-sm font-normal'>171-187</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 11 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section11.length}</h2>
-                  </div>
-                 {
-                   section11.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-
-          <div>
-            <button
-              onClick={() => toggleSection(12)}
-              className={`focus:outline-none ${
-                activeSection === 12
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faHamburger} className="text-xl mb-2" />
-              Section 12
-              <span className='text-sm font-normal'>188-200</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 12 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section12.length}</h2>
-                  </div>
-                 {
-                   section12.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
+         
 
         </div>
       </div>

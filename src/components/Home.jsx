@@ -127,6 +127,10 @@ const SwitchPage = () => {
     navigate("/pdfg")
   }
 
+
+
+
+
   // const addStudent=()=>{
   //   firebase.firestore().collection('students').add({
 
