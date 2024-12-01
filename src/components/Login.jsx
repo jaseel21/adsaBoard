@@ -49,6 +49,7 @@ const convertToGMTPlus530 = (date) => {
   return new Date(utc + 3600000 * 5.5); // Add 5 hours 30 minutes
 };
 
+
 const isCurrentTimeInRange = () => {
   const now = convertToGMTPlus530(new Date());
   console.log(now);
