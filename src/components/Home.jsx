@@ -25,22 +25,58 @@ const SwitchPage = () => {
   const [lunchCount, setLunchCount] = useState(0);
   const [breakfastCount, setBreakfastCount] = useState(0);
 
-
   
 
   const navigate=useNavigate()
 
   const [day, setDay] = useState("");
+  const [day1,setDay1]=useState("");
+
+  const getISTTime = () => {
+    const options = {
+      timeZone: 'Asia/Kolkata',
+      hour12: false, // Use 24-hour format
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    };
+  
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    return formatter.format(new Date());
+  };
+   
+  
+  
+   
+
+  const getDayOfWeek = (date) => {
+    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
+  };
+
 
   useEffect(() => {
-    // Function to get the current day of the week in GMT+5:30
     const updateDay = () => {
       const nowUtc = new Date(); // Current time in UTC
-      // Manually adjust for GMT+5:30
-      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
-      const dayOfWeek = getDayOfWeek(gmtPlus530);
-      setDay(dayOfWeek);
-      console.log(dayOfWeek, "day");
+      const gmtPlus530 = new Date(nowUtc.getTime() + 5.5 * 60 * 60 * 1000);
+      const dayOfWeek = getDayOfWeek(gmtPlus530); // Calculate the day of the week
+      setDay1(dayOfWeek); // Update the state with the current day of the week
+      console.log("Calculated Day of Week:", dayOfWeek);
+      console.log("Current IST Time:", getISTTime());
+
+      const currentTime = getISTTime();
+      console.log(currentTime);
+
+      
+      // Use the local variable `dayOfWeek` instead of `day1`
+      if (currentTime > "18:00:00") {
+        const days = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+        const currentIndex = days.indexOf(dayOfWeek);
+        const nextDay = days[(currentIndex + 1) % 7]; // Get the next day in a circular manner
+        setDay(nextDay);
+      } else {
+        setDay(dayOfWeek); // Keep the same day if time is not past 14:00:00
+      }
     };
 
     // Initial call to set the day immediately on mount
@@ -49,16 +85,16 @@ const SwitchPage = () => {
     // Set up an interval to update every minute
     const timer = setInterval(updateDay, 60000);
 
-    // Clean up interval on component unmount
+    // Clean up the interval on component unmount
     return () => clearInterval(timer);
   }, []);
+ 
+  
+
+
 
   // Function to get the day of the week from a Date object
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
-  };
-
+ 
 
   useEffect(() => {
   

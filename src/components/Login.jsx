@@ -16,16 +16,37 @@ function Login() {
   const { setStdata } = useContext(DataOfOne);
   const navigate = useNavigate();
 
-  const startTime = new Date();
-startTime.setDate(startTime.getDate() ); // Move to the previous day
-startTime.setHours(3, 0, 0, 0); // Set start time to 2:00 PM of the previous day
-startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
+  const getISTTime = () => {
+    const options = {
+      timeZone: 'Asia/Kolkata',
+      hour12: false, // Use 24-hour format
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    };
+  
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    return formatter.format(new Date());
+  };
+   
 
-// Set end time to 6:00 AM today
-const endTime = new Date();
-endTime.setDate(endTime.getDate()+1 )
-endTime.setHours(-5, 0, 0, 0); // Set end time to 6:00 AM of the current day
-endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
+  const startTime="14:00:00"
+  const endTime="24:00:00"
+
+  const startTimeA='00:00:00'
+  const endTimeA="06:00:00"
+
+//   const startTime = new Date();
+// startTime.setDate(startTime.getDate() ); // Move to the previous day
+// startTime.setHours(3, 0, 0, 0); // Set start time to 2:00 PM of the previous day
+// startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
+
+// // Set end time to 6:00 AM today
+// const endTime = new Date();
+// endTime.setDate(endTime.getDate()+1 )
+// endTime.setHours(-5, 0, 0, 0); // Set end time to 6:00 AM of the current day
+// endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
+
 
 useEffect(() => {
   const updateClock = () => setTime(new Date());
@@ -44,17 +65,18 @@ useEffect(() => {
   return () => clearInterval(timer);
 }, [startTime, endTime]);
 
-const convertToGMTPlus530 = (date) => {
-  const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-  return new Date(utc + 3600000 * 5.5); // Add 5 hours 30 minutes
-};
+// const convertToGMTPlus530 = (date) => {
+//   const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+//   return new Date(utc + 3600000 * 5.5); // Add 5 hours 30 minutes
+// };
 
 
 const isCurrentTimeInRange = () => {
-  const now = convertToGMTPlus530(new Date());
+  // const now = convertToGMTPlus530(new Date());
+  const now =getISTTime()
   console.log(now);
   console.log(now, startTime, endTime);
-  return now >= startTime && now <= endTime;
+  return now >= startTime && now <= endTime || now >=startTimeA && now<=endTimeA;
 };
 
  
@@ -114,7 +136,6 @@ const isCurrentTimeInRange = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
       await checkTimeAndHandleClick();
    
   };
@@ -207,7 +228,7 @@ const isCurrentTimeInRange = () => {
         </div>
         <div className="max-w-md w-full  space-y-8">
           <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-500">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4"> LOG IN</h2>
+            <h2 className="text-2xl  font-bold text-gray-800 font-mono mb-4"> Login</h2>
 
             {err && (
           <div className="flex items-center pb-3">
