@@ -34,9 +34,27 @@ const FetchData = () => {
 
 
     
-    
   const [day, setDay] = useState("");
- 
+  const [day1,setDay1]=useState("");
+
+  const getISTTime = () => {
+    const options = {
+      timeZone: 'Asia/Kolkata',
+      hour12: false, // Use 24-hour format
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    };
+  
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    return formatter.format(new Date());
+  };
+   
+  
+  
+   
+
+
 
   useEffect(() => {
   
@@ -68,7 +86,7 @@ const FetchData = () => {
     
   };
 
- console.log(day);
+ 
 
 
  useEffect(() => {
