@@ -266,9 +266,9 @@ const updateStudentMeals = async (e) => {
           />
  
 
-          <label className="text-gray-700 text-sm font-medium">Breakfast</label>
+          <label className="text-gray-700 text-sm">Breakfast</label>
          
-          <div className="mb-4 p-2 pt-1 w-full">
+          {/* <div className="mb-4 p-2 pt-1 w-full">
     
 
               <div className="grid grid-cols-7 gap-0 mt-3">
@@ -363,7 +363,7 @@ const updateStudentMeals = async (e) => {
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
 
         </div>
         
@@ -469,9 +469,9 @@ const updateStudentMeals = async (e) => {
             onChange={handleLunch}
             className="text-emerald-500 border-2 border-gray-400 rounded-lg focus:ring-emerald-500"
           />
-          <label className="text-gray-700 text-sm font-medium">Lunch</label>
+          <label className="text-gray-700 text-sm ">Lunch</label>
 
-          <div className="mb-4 p-2 pt-1 w-full">
+          {/* <div className="mb-4 p-2 pt-1 w-full">
     
 
               <div className="grid grid-cols-7 gap-0 mt-3">
@@ -566,7 +566,7 @@ const updateStudentMeals = async (e) => {
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
         </div>
 
         <div className="mb-4 p-4 pt-1">
