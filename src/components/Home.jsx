@@ -249,8 +249,8 @@ const SwitchPage = () => {
       <div className="">
         <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
 
-          <h1 className='text-1xl text-gray-950 font-bold '>Lunch : {lunchCount}</h1>
-          <h1 className='text-1xl text-gray-950 font-bold '>Breakfast : {breakfastCount}</h1>
+          <h1 className='text-1xl text-gray-950  '>Lunch : <span className='text-1xl text-gray-950 font-bold'>{lunchCount}</span> </h1>
+          <h1 className='text-1xl text-gray-950  '>Breakfast : <span className='text-1xl text-gray-950 font-bold'>{breakfastCount}</span></h1>
         <div className=" justify-center mt-4">
           <button
             onClick={supplyList}

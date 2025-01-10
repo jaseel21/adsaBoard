@@ -254,7 +254,7 @@ const Navbar = ({ isAdmin }) => {
                 onClick={handleTokenDropdownToggle}
                 className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
               >
-                Token
+                Supply
               </button>
 
               {/* Token Dropdown Menu */}
