@@ -101,7 +101,7 @@ const Navbar = ({ isAdmin }) => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200" ref={navbarRef}>
+    <nav className="bg-white border-b  border-gray-200" ref={navbarRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
@@ -112,25 +112,44 @@ const Navbar = ({ isAdmin }) => {
 
           {/* Hamburger menu for mobile */}
           <div className="flex md:hidden">
-            <button
-              onClick={toggleMenu}
-              className="text-gray-700 hover:text-green-700 focus:outline-none"
-            >
-              <svg
-                className="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
-            </button>
+          <button
+        onClick={toggleMenu}
+        className="text-gray-700 hover:text-green-700 focus:outline-none"
+      >
+        {menuOpen ? (
+           <svg
+           className="h-6 w-6"
+           xmlns="http://www.w3.org/2000/svg"
+           fill="none"
+           viewBox="0 0 24 24"
+           stroke="currentColor"
+         >
+           <path
+             strokeLinecap="round"
+             strokeLinejoin="round"
+             strokeWidth="2"
+             d="M6 18L18 6M6 6l12 12"
+           />
+         </svg>
+        ) : (
+         
+        <svg
+        className="h-6 w-6"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M4 6h16M4 12h16m-7 6h7"
+        />
+      </svg>
+        
+        )}
+      </button>
           </div>
 
           {/* Links for larger screens */}
@@ -233,17 +252,18 @@ const Navbar = ({ isAdmin }) => {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden">
+        <div className="md:hidden w-4/12 text-white rounded-md  bg-gray-200 ml-auto absolute right-1 top-20 z-50">
+
           <div className="space-y-1 px-2 pb-3 sm:px-3">
             <button
               onClick={handleHomeBtn}
-              className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+              className="block px-3 py-2 text-sm font-medium text-gray-800  hover:text-green-700 "
             >
               {isAdmin ? 'Admin' : 'Home'}
             </button>
             <button
               onClick={handleListBtn}
-              className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+              className="block px-3 py-2 text-sm font-medium text-gray-800  hover:text-green-700 "
             >
               List
             </button>
@@ -252,21 +272,21 @@ const Navbar = ({ isAdmin }) => {
             <div className="relative " ref={tokenDropdownRef}>
               <button
                 onClick={handleTokenDropdownToggle}
-                className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+                className="block px-3 py-2 text-sm font-medium text-gray-800 hover:text-green-700 "
               >
                 Supply
               </button>
 
               {/* Token Dropdown Menu */}
               {isOpen && (
-                <div className="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                <div className="absolute left-0 mt-1 w-38 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                   <div className="py-1">
                     <button
                       onClick={() => {
                         lunchRoute();
                         closeDropdowns();
                       }}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
                     >
                       Lunch
                     </button>
@@ -275,7 +295,7 @@ const Navbar = ({ isAdmin }) => {
                         breakfastRoute();
                         closeDropdowns();
                       }}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100  text-left"
                     >
                       Breakfast
                     </button>
@@ -288,12 +308,12 @@ const Navbar = ({ isAdmin }) => {
               <div className="relative" ref={optionsDropdownRef}>
                 <button
                   onClick={handleOptionsDropdownToggle}
-                  className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+                  className="block px-3 py-2 text-sm font-medium text-gray-800  hover:text-green-700 "
                   aria-expanded={optionsOpen}
                   aria-haspopup="true"
                 >
                   {user ? "ADSA" : "Login"}
-                  <svg className="-mr-1 h-5 w-5 text-gray-400 ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <svg className="-mr-1 h-5 w-5  ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                   </svg>
                 </button>
@@ -323,7 +343,7 @@ const Navbar = ({ isAdmin }) => {
             ) : (
               <button
                 onClick={handleMenueBtn}
-                className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-gray-100"
+                className="block px-3 py-2 text-sm font-medium text-gray-800  hover:text-green-700 "
               >
                 Menu
               </button>

@@ -3,6 +3,7 @@ import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {  faPrint,faCalendarDay } from '@fortawesome/free-solid-svg-icons';
+import {motion} from "framer-motion"
 import "./Home.css"
 
 
@@ -11,7 +12,7 @@ const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   return (
     <button
       onClick={toggleSwitch}
-      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-[#E2725A] glossy-button1 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white  px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-red-500 text-white px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
     >
       {number}
     </button>
@@ -24,6 +25,8 @@ const SwitchPage = () => {
   const [documents, setDocuments] = useState([]);
   const [lunchCount, setLunchCount] = useState(0);
   const [breakfastCount, setBreakfastCount] = useState(0);
+  const [loading, setLoading] = useState(true); // Add loading state
+
 
   
 
@@ -110,6 +113,8 @@ const SwitchPage = () => {
         
       } catch (error) {
         console.error('Error fetching tokens:', error);
+      }finally{
+        setLoading(false)
       }
     };
 
@@ -223,6 +228,29 @@ const SwitchPage = () => {
   };
 
 
+  if (loading) {
+    // Loading screen
+
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-green-100">
+      <motion.div
+        className="rounded-full border-4 border-t-4 border-green-200 h-16 w-16 shadow-lg"
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+        style={{ borderTopColor: "#22C55E" }}
+      ></motion.div>
+      <motion.p
+        className="mt-4 text-green-700 font-bold text-lg"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ repeat: Infinity, duration: 1.5 }}
+      >
+        Loading...
+      </motion.p>
+    </div>
+  );
+}
+
   
 
 
@@ -244,20 +272,20 @@ const SwitchPage = () => {
 </div>
 
         </div>
-      <div className="flex px-2 md:px-64 pb-10 justify-between">
+      <div className="flex px-2 md:px-64 pb-5 justify-between">
         
       <div className="">
-        <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-l-8 border-b-2 border-r-2">
+        <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-1">
 
           <h1 className='text-1xl text-gray-950  '>Lunch : <span className='text-1xl text-gray-950 font-bold'>{lunchCount}</span> </h1>
           <h1 className='text-1xl text-gray-950  '>Breakfast : <span className='text-1xl text-gray-950 font-bold'>{breakfastCount}</span></h1>
         <div className=" justify-center mt-4">
           <button
             onClick={supplyList}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg shadow-md border border-emerald-500 hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-1 px-2 rounded-lg shadow-md  hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
           >
-            <FontAwesomeIcon icon={faPrint} className="text-xl" />
-            <span>Supply List</span>
+            <FontAwesomeIcon icon={faPrint} className="text-xl h-4 w-4 pr-1" />
+            <span className='text-[15px]'>supply list</span>
           </button>
         </div>
         </div>
@@ -276,51 +304,80 @@ onClick={handleUpdateBtn}
       
       class=" bg-emerald-500 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg border-none transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
     >
-<svg className="fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<svg className="fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 
   <path d="M14.12 2.62a2.5 2.5 0 0 0-3.54 0L7.29 6.56a1 1 0 0 0-.29.71v8.59a1 1 0 0 0 1 1h8.59a1 1 0 0 0 .71-.29l3.29-3.29a2.5 2.5 0 0 0 0-3.54l-6.46-6.46zM12 4.13l3.88 3.88-1.41 1.41L10.59 5.54 12 4.13zM7 15.59V12h4v4H8.41L7 15.59zM17.29 16.29l-1.41-1.41 2.12-2.12 1.41 1.41-2.12 2.12z"/>
 </svg>
 
 
 
-      <span>Update token</span>
+      <span className='text-[15px]' >Update token</span>
     </button>
 
  </div>
       </div>  
 
       <div className="flex items-center justify-center">
-      <button
+ <button
   onClick={toggleStatus}
-  className={`relative flex items-center justify-center w-60 h-10 bg-[#79AEB2] rounded-lg focus:outline-none transition-all duration-300 shadow-lg ${
-    isLunch ? "bg-[#79AEB2]" : 'bg-[#79AEB2]'
-  }`}
+  className={`relative flex items-center justify-center w-60 h-12 bg-gray-500 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_5px_rgba(0,255,0,0.6)]`}
+  style={{
+    background: "#6c6c6c", // Professional gray
+    boxShadow: "inset -4px -4px 8px #7f7f7f, inset 4px 4px 8px #2a2a2a", // Metallic look
+  }}
 >
+  {/* Animated toggle circle */}
   <span
-    className={`absolute left-0 w-1/2 h-full bg-[#E2725A] rounded-lg transition-transform duration-300 transform ${
-      isLunch ? 'translate-x-0' : 'translate-x-full'
+    className={`absolute top-0 bottom-0 my-auto w-12 h-12 bg-gray-800 rounded-full transition-all duration-1000 ease-in-out ${
+      isLunch ? "left-0" : "left-[calc(100%-3rem)]"
     }`}
+    style={{
+      boxShadow: "0 0 15px 5px rgba(0, 255, 0, 0.8)", // Persistent glow
+    }}
   ></span>
-  <span className="absolute inset-0 flex items-center justify-center text-white font-semibold">
-    {isLunch ? 'Lunch' : 'Breakfast'}
+
+  {/* Text */}
+  <div className="flex flex-col items-center">
+  <span className="text-white font-semibold tracking-wide">
+    {isLunch ? "Lunch" : "Breakfast"}
   </span>
+  <span className="text-[11px] text-white ">
+  {isLunch ? "swipe to breakfast" : "swipe to lunch"}
+  </span>
+</div>
+
+
+  {/* Icon */}
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className={`h-6 w-6 text-white absolute ${
-      isLunch ? 'left-3' : 'right-3'
+    className={`h-6 w-6 text-white absolute transition-all duration-1000 ease-in-out ${
+      isLunch ? "left-4 rotate-180" : "right-4 rotate-180"
     }`}
-    fill="none"
     viewBox="0 0 24 24"
+    fill="none"
     stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   >
     <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d={isLunch ? "M17 8l4 4m0 0l-4 4m4-4H3" : "M7 16l-4-4m0 0l4-4m-4 4h18"}
+      d={
+        isLunch
+          ? "M7 16l-4-4m0 0l4-4m-4 4h18" // Arrow pointing left
+          : "M17 8l4 4m0 0l-4 4m4-4H3" // Arrow pointing right
+      }
     />
   </svg>
 </button>
+
+
+
+
+ 
+
+
+
+
 
     </div>
       {
