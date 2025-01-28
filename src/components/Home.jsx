@@ -233,7 +233,7 @@ const SwitchPage = () => {
 
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] bg-green-100">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] ">
   {/* Bouncing Dots */}
   <div className="flex space-x-2">
     {[...Array(3)].map((_, index) => (

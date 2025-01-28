@@ -272,41 +272,98 @@ const Navbar = ({ isAdmin }) => {
      
 
       <AnimatePresence>
-  {menuOpen && (
-    <motion.div
-      className="md:hidden w-3/5 text-white rounded-lg bg-gray-900/80 backdrop-blur-md ml-auto absolute right-2 top-16 z-50 shadow-lg"
-      initial={{ opacity: 0, y: -15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-    >
-      <div className="space-y-3 px-4 py-5">
-        {/* Home Button */}
-        <button
-          onClick={handleHomeBtn}
-          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
-        >
-          {isAdmin ? "Admin" : "Home"}
-        </button>
+      {menuOpen && (
+  <motion.div
+    className="md:hidden w-3/5 text-white rounded-lg bg-gray-600/70 backdrop-blur-md ml-auto absolute right-2 top-16 z-50 shadow-lg"
+    initial={{ opacity: 0, y: -15 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -15 }}
+    transition={{ duration: 0.3, ease: "easeInOut" }}
+  >
+    <div className="space-y-3 px-4 py-5">
+      {/* Home Button */}
+      <button
+        onClick={handleHomeBtn}
+        className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
+      >
+        {isAdmin ? "Admin" : "Home"}
+      </button>
 
-        {/* List Button */}
-        <button
-          onClick={handleListBtn}
-          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
-        >
-          List
-        </button>
+      {/* List Button */}
+      <button
+        onClick={handleListBtn}
+        className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
+      >
+        List
+      </button>
 
-        {/* Supply Dropdown */}
-        <div className="relative" ref={tokenDropdownRef}>
+      {/* Supply Dropdown */}
+      <div className="relative" ref={tokenDropdownRef}>
+        <button
+          onClick={handleTokenDropdownToggle}
+          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
+        >
+          Supply
+        </button>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              className="absolute left-0 mt-2 w-full bg-gray-600 border border-gray-700 rounded-lg shadow-lg z-10"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    lunchRoute();
+                    closeDropdowns();
+                  }}
+                  className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left rounded-lg border-b border-gray-100"
+                >
+                  Lunch
+                </button>
+                <button
+                  onClick={() => {
+                    breakfastRoute();
+                    closeDropdowns();
+                  }}
+                  className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
+                >
+                  Breakfast
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Admin Options */}
+      {isAdmin ? (
+        <div className="relative" ref={optionsDropdownRef}>
           <button
-            onClick={handleTokenDropdownToggle}
-            className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
+            onClick={handleOptionsDropdownToggle}
+            className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg flex items-center justify-between border-b border-gray-600"
+            aria-expanded={optionsOpen}
+            aria-haspopup="true"
           >
-            Supply
+            {user ? "ADSA" : "Login"}
+            <svg
+              className="w-5 h-5 ml-2 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
           </button>
           <AnimatePresence>
-            {isOpen && (
+            {optionsOpen && (
               <motion.div
                 className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
                 initial={{ opacity: 0, y: -5 }}
@@ -314,94 +371,38 @@ const Navbar = ({ isAdmin }) => {
                 exit={{ opacity: 0, y: -5 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
-                <div className="py-2">
+                <div>
                   <button
                     onClick={() => {
-                      lunchRoute();
+                      if (user) {
+                        handleLogout();
+                      } else {
+                        navigate("/alogin");
+                      }
                       closeDropdowns();
+                      setMenuOpen(false);
                     }}
                     className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
                   >
-                    Lunch
-                  </button>
-                  <button
-                    onClick={() => {
-                      breakfastRoute();
-                      closeDropdowns();
-                    }}
-                    className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
-                  >
-                    Breakfast
+                    {user ? "Logout" : "Login"}
                   </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+      ) : (
+        <button
+          onClick={handleMenueBtn}
+          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
+        >
+          Menu
+        </button>
+      )}
+    </div>
+  </motion.div>
+)}
 
-        {/* Admin Options */}
-        {isAdmin ? (
-          <div className="relative" ref={optionsDropdownRef}>
-            <button
-              onClick={handleOptionsDropdownToggle}
-              className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg flex items-center justify-between"
-              aria-expanded={optionsOpen}
-              aria-haspopup="true"
-            >
-              {user ? "ADSA" : "Login"}
-              <svg
-                className="w-5 h-5 ml-2 text-gray-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-            <AnimatePresence>
-              {optionsOpen && (
-                <motion.div
-                  className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                >
-                  <div>
-                    <button
-                      onClick={() => {
-                        if (user) {
-                          handleLogout();
-                        } else {
-                          navigate("/alogin");
-                        }
-                        closeDropdowns();
-                        setMenuOpen(false);
-                      }}
-                      className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
-                    >
-                      {user ? "Logout" : "Login"}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <button
-            onClick={handleMenueBtn}
-            className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
-          >
-            Menu
-          </button>
-        )}
-      </div>
-    </motion.div>
-  )}
 </AnimatePresence>
 
 

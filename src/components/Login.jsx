@@ -235,7 +235,7 @@ const isCurrentTimeInRange = () => {
         </div>
         <div className="max-w-md w-full  space-y-8">
           <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-600">
-            <h2 className="text-[25px]   font-extrabold text-gray-700  font-serif  mb-4"> Login</h2>
+            <h2 className="text-[25px]   font-extrabold text-gray-600  font-serif  mb-4"> Login</h2>
 
             {err && (
           <div className="flex items-center pb-3">
@@ -249,7 +249,7 @@ const isCurrentTimeInRange = () => {
                   className="block  text-gray-500 text-sm  mb-2"
                   htmlFor="username"
                 >
-                  Token Number
+                  Username
                 </label>
               
                 <input
@@ -258,7 +258,7 @@ const isCurrentTimeInRange = () => {
                   type="number"
                   value={token}
                   onChange={handleUsernameChange}
-                  placeholder="Enter your toekn number"
+                  placeholder="Enter your username"
                   required
                 />
               </div>
@@ -285,7 +285,7 @@ const isCurrentTimeInRange = () => {
                
                 className="w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 transition duration-200"
               >
-                LOGIN
+                Login
               </button>
             </form>
             <div className="mt-6 text-center">
