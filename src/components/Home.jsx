@@ -233,32 +233,33 @@ const SwitchPage = () => {
 
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-green-100">
-    {/* Bouncing Dots */}
-    <div className="flex space-x-2">
-      {[...Array(3)].map((_, index) => (
-        <motion.div
-          key={index}
-          className="w-4 h-4 rounded-full bg-green-500"
-          animate={{
-            y: [0, -10, 0],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 0.6,
-            delay: index * 0.2,
-          }}
-        ></motion.div>
-      ))}
-    </div>
-    <motion.p
-      className="mt-4 text-green-700 font-bold text-lg"
-      animate={{ opacity: [0.5, 1, 0.5] }}
-      transition={{ repeat: Infinity, duration: 1.5 }}
-    >
-      Loading...
-    </motion.p>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] bg-green-100">
+  {/* Bouncing Dots */}
+  <div className="flex space-x-2">
+    {[...Array(3)].map((_, index) => (
+      <motion.div
+        key={index}
+        className="w-4 h-4 rounded-full bg-green-500"
+        animate={{
+          y: [0, -10, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 0.6,
+          delay: index * 0.2,
+        }}
+      ></motion.div>
+    ))}
   </div>
+  <motion.p
+    className="mt-4 text-green-700 font-bold text-lg"
+    animate={{ opacity: [0.5, 1, 0.5] }}
+    transition={{ repeat: Infinity, duration: 1.5 }}
+  >
+    Loading...
+  </motion.p>
+</div>
+
 
   );
 }
@@ -273,7 +274,7 @@ const SwitchPage = () => {
         update st
       </button>  */}
       {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
-<div className=" flex justify-end mr-5 py-1 items-end  ">
+<div className=" flex justify-end mr-5 py-1 items-end md:mr-36  ">
   
 <div className='flex  items-center'>
 
@@ -284,7 +285,7 @@ const SwitchPage = () => {
 </div>
 
         </div>
-      <div className="flex px-2 md:px-64 pb-5 justify-between">
+      <div className="flex px-5 md:px-36 pb-5 justify-between">
         
       <div className="">
         <div className="text-left p-3 rounded-lg bg-white border border-gray-500 border-1">
@@ -332,7 +333,7 @@ onClick={handleUpdateBtn}
       <div className="flex items-center justify-center">
  <button
   onClick={toggleStatus}
-  className={`relative flex items-center justify-center w-60 h-12 bg-gray-700 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_5px_rgba(0,255,0,0.6)]`}
+  className={`relative flex items-center justify-center w-60 h-12 bg-gray-700 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_10px_3px_rgba(0,255,0,0.6)]`}
   
 >
   {/* Animated toggle circle */}
@@ -341,7 +342,7 @@ onClick={handleUpdateBtn}
       isLunch ? "left-0" : "left-[calc(100%-3rem)]"
     }`}
     style={{
-      boxShadow: "0 0 15px 5px rgba(0, 255, 0, 0.8)", // Persistent glow
+      boxShadow: "0 0 10px 3px rgba(0, 255, 0, 0.8)", // Persistent glow
     }}
   ></span>
 

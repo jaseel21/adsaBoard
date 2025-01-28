@@ -251,7 +251,7 @@ const updateStudentMeals = async (e) => {
     return (
         <div className="container mx-auto p-6">
 
-  <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-500">
+  <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-600">
     <h1 className="text-lg text-center font-medium text-gray-800 mb-6">Manage Tokens</h1>
 
     <form onSubmit={updateStudentMeals}>

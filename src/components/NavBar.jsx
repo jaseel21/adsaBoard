@@ -271,55 +271,56 @@ const Navbar = ({ isAdmin }) => {
       {/* Mobile menu */}
      
 
-<AnimatePresence>
+      <AnimatePresence>
   {menuOpen && (
     <motion.div
-      className="md:hidden w-4/12 text-white rounded-md bg-gray-200 ml-auto absolute right-1 top-15 z-50"
-      initial={{ opacity: 0, y: -10 }}
+      className="md:hidden w-3/5 text-white rounded-lg bg-gray-900/80 backdrop-blur-md ml-auto absolute right-2 top-16 z-50 shadow-lg"
+      initial={{ opacity: 0, y: -15 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      exit={{ opacity: 0, y: -15 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      <div className="space-y-1 px-2 pb-3 sm:px-3">
+      <div className="space-y-3 px-4 py-5">
+        {/* Home Button */}
         <button
           onClick={handleHomeBtn}
-          className="block px-3 py-2 text-sm font-medium text-gray-800 hover:text-green-700"
+          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
         >
           {isAdmin ? "Admin" : "Home"}
         </button>
+
+        {/* List Button */}
         <button
           onClick={handleListBtn}
-          className="block px-3 py-2 text-sm font-medium text-gray-800 hover:text-green-700"
+          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
         >
           List
         </button>
 
-        {/* Token Dropdown Button */}
+        {/* Supply Dropdown */}
         <div className="relative" ref={tokenDropdownRef}>
           <button
             onClick={handleTokenDropdownToggle}
-            className="block px-3 py-2 text-sm font-medium text-gray-800 hover:text-green-700"
+            className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
           >
             Supply
           </button>
-
-          {/* Token Dropdown Menu */}
           <AnimatePresence>
             {isOpen && (
               <motion.div
-                className="absolute left-0 mt-1 w-38 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10"
-                initial={{ opacity: 0, y: -10 }}
+                className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
+                initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                exit={{ opacity: 0, y: -5 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
-                <div className="py-1">
+                <div className="py-2">
                   <button
                     onClick={() => {
                       lunchRoute();
                       closeDropdowns();
                     }}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                    className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
                   >
                     Lunch
                   </button>
@@ -328,7 +329,7 @@ const Navbar = ({ isAdmin }) => {
                       breakfastRoute();
                       closeDropdowns();
                     }}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                    className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
                   >
                     Breakfast
                   </button>
@@ -338,17 +339,18 @@ const Navbar = ({ isAdmin }) => {
           </AnimatePresence>
         </div>
 
+        {/* Admin Options */}
         {isAdmin ? (
           <div className="relative" ref={optionsDropdownRef}>
             <button
               onClick={handleOptionsDropdownToggle}
-              className="block px-3 py-2 text-sm font-medium text-gray-800 hover:text-green-700"
+              className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg flex items-center justify-between"
               aria-expanded={optionsOpen}
               aria-haspopup="true"
             >
               {user ? "ADSA" : "Login"}
               <svg
-                className="-mr-1 h-5 w-5 ml-2"
+                className="w-5 h-5 ml-2 text-gray-400"
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 aria-hidden="true"
@@ -360,18 +362,16 @@ const Navbar = ({ isAdmin }) => {
                 />
               </svg>
             </button>
-
-            {/* Options Dropdown Menu */}
             <AnimatePresence>
               {optionsOpen && (
                 <motion.div
-                  className="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10"
-                  initial={{ opacity: 0, y: -10 }}
+                  className="absolute left-0 mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10"
+                  initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  exit={{ opacity: 0, y: -5 }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                  <div className="">
+                  <div>
                     <button
                       onClick={() => {
                         if (user) {
@@ -382,7 +382,7 @@ const Navbar = ({ isAdmin }) => {
                         closeDropdowns();
                         setMenuOpen(false);
                       }}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                      className="block w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white text-left"
                     >
                       {user ? "Logout" : "Login"}
                     </button>
@@ -394,7 +394,7 @@ const Navbar = ({ isAdmin }) => {
         ) : (
           <button
             onClick={handleMenueBtn}
-            className="block px-3 py-2 text-sm font-medium text-gray-800 hover:text-green-700"
+            className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg"
           >
             Menu
           </button>
@@ -403,6 +403,7 @@ const Navbar = ({ isAdmin }) => {
     </motion.div>
   )}
 </AnimatePresence>
+
 
 
     </nav>

@@ -235,7 +235,7 @@ const isCurrentTimeInRange = () => {
         </div>
         <div className="max-w-md w-full  space-y-8">
           <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-600">
-            <h2 className="text-[25px]   font-extrabold text-gray-700 text-center font-serif  mb-4"> Login</h2>
+            <h2 className="text-[25px]   font-extrabold text-gray-700  font-serif  mb-4"> Login</h2>
 
             {err && (
           <div className="flex items-center pb-3">
@@ -246,10 +246,10 @@ const isCurrentTimeInRange = () => {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label
-                  className="block text-gray-700 text-sm  mb-2"
+                  className="block  text-gray-500 text-sm  mb-2"
                   htmlFor="username"
                 >
-                  Token No
+                  Token Number
                 </label>
               
                 <input
@@ -264,7 +264,7 @@ const isCurrentTimeInRange = () => {
               </div>
               <div className="mb-6">
                 <label
-                  className="block text-gray-700 text-sm  mb-2"
+                  className="block text-gray-500 text-sm  mb-2"
                   htmlFor="password"
                 >
                   Password
