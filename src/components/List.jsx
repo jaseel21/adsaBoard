@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import firebase from '../firebase/config'
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import {motion} from "framer-motion"
 
 const MenuTable = () => {
   const [document,setDocuments]=useState([])
@@ -9,6 +10,7 @@ const MenuTable = () => {
   const [chicken,setChicken]=useState([])
   const [fish,setFish]=useState([])
   const [mutton,setMutton]=useState([])
+  const [loading,setLoading]=useState(true)
   
 
   useEffect(() => {
@@ -24,6 +26,7 @@ const MenuTable = () => {
         
         // Now that documents are fetched, call fetchBeef to process them
         fetchRejections(tokenDocuments);
+        setLoading(false)
         
         
       } catch (error) {
@@ -278,7 +281,40 @@ const MenuTable = () => {
     doc.save('adsa-token-list.pdf');
 };
 
-  
+if (loading) {
+  // Loading screen
+
+
+return (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-green-100">
+  {/* Bouncing Dots */}
+  <div className="flex space-x-2">
+    {[...Array(3)].map((_, index) => (
+      <motion.div
+        key={index}
+        className="w-4 h-4 rounded-full bg-green-500"
+        animate={{
+          y: [0, -10, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 0.6,
+          delay: index * 0.2,
+        }}
+      ></motion.div>
+    ))}
+  </div>
+  <motion.p
+    className="mt-4 text-green-700 font-bold text-lg"
+    animate={{ opacity: [0.5, 1, 0.5] }}
+    transition={{ repeat: Infinity, duration: 1.5 }}
+  >
+    Loading...
+  </motion.p>
+</div>
+
+);
+}
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto">

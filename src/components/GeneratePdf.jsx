@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import firebase from '../firebase/config';  // Update the path to your Firebase configuration file
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { motion } from 'framer-motion';
 
 const FetchData = () => {
     const [data, setData] = useState([]);
@@ -35,7 +36,7 @@ const FetchData = () => {
 
     
   const [day, setDay] = useState("");
-  const [day1,setDay1]=useState("");
+  const [loading,setLoading]=useState(true)
 
   const getISTTime = () => {
     const options = {
@@ -246,7 +247,7 @@ const FetchData = () => {
                 // Example: setSection3, setSection4, ..., setSection8
 
           
-
+                setLoading(false)
             } catch (error) {
                 console.error('Error fetching tokens:', error);
             }
@@ -541,6 +542,40 @@ const FetchData = () => {
     doc.save('supply-list.pdf');
 };
 
+if (loading) {
+  // Loading screen
+
+
+return (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-green-100">
+  {/* Bouncing Dots */}
+  <div className="flex space-x-2">
+    {[...Array(3)].map((_, index) => (
+      <motion.div
+        key={index}
+        className="w-4 h-4 rounded-full bg-green-500"
+        animate={{
+          y: [0, -10, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 0.6,
+          delay: index * 0.2,
+        }}
+      ></motion.div>
+    ))}
+  </div>
+  <motion.p
+    className="mt-4 text-green-700 font-bold text-lg"
+    animate={{ opacity: [0.5, 1, 0.5] }}
+    transition={{ repeat: Infinity, duration: 1.5 }}
+  >
+    Loading...
+  </motion.p>
+</div>
+
+);
+}
 
 
 

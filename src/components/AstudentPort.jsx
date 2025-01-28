@@ -424,7 +424,7 @@ function AstudentPort() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 ">
-      <div className="max-w-md mx-auto bg-white rounded shadow-md p-4 border border-gray-500 border-l-8 border-b-2 border-r-2 ">
+      <div className="max-w-md mx-auto bg-white rounded shadow-md p-4 border border-gray-500 border-1 ">
         <form onSubmit={handleSubmit}>
           <h2 className="text-2xl font-bold mb-4 text-center">Student Portal</h2>
           <div className="flex">
@@ -511,7 +511,7 @@ function AstudentPort() {
 
 
               {blocked && (
-                <span className="ml-2 text-red-500 text-[0.70rem]  underline">Token is locked</span>
+                <span className="ml-2 text-red-500 text-[0.70rem]  underline">Token is blocked</span>
               )}
             </div>
 
@@ -742,7 +742,7 @@ function AstudentPort() {
 
             
           </div>
-          <div className="mb-4">
+          <div className="">
             <button
               type="button"
               onClick={toggleCheckoutOptions}
@@ -794,12 +794,14 @@ function AstudentPort() {
               </div>
             </div>
           )}
-          <button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-          >
-            Submit
-          </button>
+           <div className="flex items-center justify-end">
+  <button
+    className="bg-emerald-800 mt-3 hover:bg-emerald-900 text-white font-bold py-2  w-full rounded focus:outline-none focus:shadow-outline"
+    type="submit"
+  >
+    Submit
+  </button>
+</div>
         </form>
       </div>
     </div>

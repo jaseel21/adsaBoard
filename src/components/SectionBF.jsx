@@ -4,6 +4,7 @@ import { faHamburger } from '@fortawesome/free-solid-svg-icons';
 
 import firebase from "../firebase/config";
 import { faSearchMinus } from '@fortawesome/free-solid-svg-icons';
+import { motion } from 'framer-motion';
 
 const SectionBF = () => {
   const [documents, setDocuments] = useState([]);
@@ -24,6 +25,7 @@ const SectionBF = () => {
 
    
   const [day, setDay] = useState("");
+  const [loading,setLoading]=useState(true)
  
 
   useEffect(() => {
@@ -99,6 +101,8 @@ const SectionBF = () => {
                 // const section12Tokens=tokenDocuments.slice(187, 200);
                 // const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
                 // setSection12(selectedS12T)
+
+                setLoading(false)
                
       } catch (error) {
         console.error('Error fetching tokens:', error);
@@ -131,6 +135,41 @@ const SectionBF = () => {
       setActiveSection(sectionIndex); // Expand section if not active
     }
   };
+
+  if (loading) {
+    // Loading screen
+  
+  
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-green-100">
+    {/* Bouncing Dots */}
+    <div className="flex space-x-2">
+      {[...Array(3)].map((_, index) => (
+        <motion.div
+          key={index}
+          className="w-4 h-4 rounded-full bg-green-500"
+          animate={{
+            y: [0, -10, 0],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 0.6,
+            delay: index * 0.2,
+          }}
+        ></motion.div>
+      ))}
+    </div>
+    <motion.p
+      className="mt-4 text-green-700 font-bold text-lg"
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ repeat: Infinity, duration: 1.5 }}
+    >
+      Loading...
+    </motion.p>
+  </div>
+  
+  );
+  }
 
   return (
     <div className=" min-h-screen py-8 flex">

@@ -234,20 +234,32 @@ const SwitchPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-green-100">
-      <motion.div
-        className="rounded-full border-4 border-t-4 border-green-200 h-16 w-16 shadow-lg"
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-        style={{ borderTopColor: "#22C55E" }}
-      ></motion.div>
-      <motion.p
-        className="mt-4 text-green-700 font-bold text-lg"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ repeat: Infinity, duration: 1.5 }}
-      >
-        Loading...
-      </motion.p>
+    {/* Bouncing Dots */}
+    <div className="flex space-x-2">
+      {[...Array(3)].map((_, index) => (
+        <motion.div
+          key={index}
+          className="w-4 h-4 rounded-full bg-green-500"
+          animate={{
+            y: [0, -10, 0],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 0.6,
+            delay: index * 0.2,
+          }}
+        ></motion.div>
+      ))}
     </div>
+    <motion.p
+      className="mt-4 text-green-700 font-bold text-lg"
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ repeat: Infinity, duration: 1.5 }}
+    >
+      Loading...
+    </motion.p>
+  </div>
+
   );
 }
 
@@ -261,12 +273,12 @@ const SwitchPage = () => {
         update st
       </button>  */}
       {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
-<div className="pb-5 flex justify-end mr-10 p-4 items-end  ">
+<div className=" flex justify-end mr-5 py-1 items-end  ">
   
-<div className='flex items-center'>
+<div className='flex  items-center'>
 
-<FontAwesomeIcon icon={faCalendarDay} className="text-lg text-gray-500 pr-1 " />
-          <h1  class="text-1xl uppercase text-center text-gray-500 ">
+<FontAwesomeIcon icon={faCalendarDay} className="text-sm text-gray-500 pr-1 " />
+          <h1  class="text-sm  uppercase text-center text-gray-500 ">
             {fullDayName[day] || ''}
           </h1>
 </div>
@@ -282,7 +294,7 @@ const SwitchPage = () => {
         <div className=" justify-center mt-4">
           <button
             onClick={supplyList}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-1 px-2 rounded-lg shadow-md  hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-2 rounded-lg shadow-md  hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
           >
             <FontAwesomeIcon icon={faPrint} className="text-xl h-4 w-4 pr-1" />
             <span className='text-[15px]'>supply list</span>
@@ -302,7 +314,7 @@ const SwitchPage = () => {
 </button> */}<button
 onClick={handleUpdateBtn}
       
-      class=" bg-emerald-500 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg border-none transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
+      class=" bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg border-none transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
     >
 <svg className="fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 
@@ -311,7 +323,7 @@ onClick={handleUpdateBtn}
 
 
 
-      <span className='text-[15px]' >Update token</span>
+      <span className='text-sm' >Update token</span>
     </button>
 
  </div>
@@ -320,11 +332,8 @@ onClick={handleUpdateBtn}
       <div className="flex items-center justify-center">
  <button
   onClick={toggleStatus}
-  className={`relative flex items-center justify-center w-60 h-12 bg-gray-500 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_5px_rgba(0,255,0,0.6)]`}
-  style={{
-    background: "#6c6c6c", // Professional gray
-    boxShadow: "inset -4px -4px 8px #7f7f7f, inset 4px 4px 8px #2a2a2a", // Metallic look
-  }}
+  className={`relative flex items-center justify-center w-60 h-12 bg-gray-700 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_5px_rgba(0,255,0,0.6)]`}
+  
 >
   {/* Animated toggle circle */}
   <span
@@ -341,7 +350,7 @@ onClick={handleUpdateBtn}
   <span className="text-white font-semibold tracking-wide">
     {isLunch ? "Lunch" : "Breakfast"}
   </span>
-  <span className="text-[11px] text-white ">
+  <span className="text-[11px] text-gray-400 ">
   {isLunch ? "swipe to breakfast" : "swipe to lunch"}
   </span>
 </div>

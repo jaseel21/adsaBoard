@@ -34,9 +34,9 @@ function AdminLogin() {
   }
 
   return (
-    <div className="flex items-center justify-center pt-32  ">
+    <div className="flex items-center justify-center pt-10  ">
     <div className="w-full max-w-md bg-white p-10 rounded-lg shadow-lg space-y-8">
-      <h1 className="text-2xl font-semibold text-gray-700 text-center">Login to Admin</h1>
+      <h1 className="text-2xl font-semibold text-gray-700 text-center">Admin</h1>
       <form onSubmit={handleLogin} className="space-y-6">
         <div className="relative">
           <input

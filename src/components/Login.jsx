@@ -83,19 +83,26 @@ const isCurrentTimeInRange = () => {
 
   const LoginWith = async () => {
     try {
+      
+     
+        
+      
       const StInfo = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(token)).where('password', '==', pass).get();
       if (!StInfo.empty) {
         const studentData = StInfo.docs[0].data();
         studentData.documentId = StInfo.docs[0].id;
         setStdata(studentData);
         navigate('/student-portal');
-      } else {
-        setErr('Invalid entry');
+      }else 
+       {
+        setErr('somthig went wrong');
       }
     } catch (error) {
       console.error('Error during login:', error);
       setErr('Error during login');
     }
+
+    
   };
 
   const SubmitForm = async () => {
@@ -222,13 +229,13 @@ const isCurrentTimeInRange = () => {
 
   
   return (
-    <div className=" flex items-center h-[600px] justify-center  bg-white">
-      <div className=" max-w-md w-full p-5  space-y-8">
+    <div className=" flex items-center pt-10 justify-center  bg-white">
+      <div className=" max-w-md w-full px-5   space-y-8">
         <div className="flex flex-col items-center">
         </div>
         <div className="max-w-md w-full  space-y-8">
-          <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-500">
-            <h2 className="text-2xl  font-bold text-gray-800 font-mono mb-4"> Login</h2>
+          <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-600">
+            <h2 className="text-[25px]   font-extrabold text-gray-700 text-center font-serif  mb-4"> Login</h2>
 
             {err && (
           <div className="flex items-center pb-3">
@@ -242,7 +249,7 @@ const isCurrentTimeInRange = () => {
                   className="block text-gray-700 text-sm  mb-2"
                   htmlFor="username"
                 >
-                  Username
+                  Token No
                 </label>
               
                 <input
@@ -251,7 +258,7 @@ const isCurrentTimeInRange = () => {
                   type="number"
                   value={token}
                   onChange={handleUsernameChange}
-                  placeholder="Enter your username"
+                  placeholder="Enter your toekn number"
                   required
                 />
               </div>
@@ -272,23 +279,17 @@ const isCurrentTimeInRange = () => {
                   required
                 />
               </div>
-              <div className="flex items-center justify-between mb-6">
-                <label className="inline-flex items-center text-gray-700 text-sm">
-                  <input type="checkbox" className="form-checkbox text-blue-500" />
-                  <span className="ml-2">Remember Me</span>
-                </label>
-                <a  className="text-green-500 text-sm">Forgot Password?</a>
-              </div>
+              
               <button
                 type="submit"
                
-                className="w-full bg-emerald-500 text-white py-2 rounded-md hover:bg-emerald-700 transition duration-200"
+                className="w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 transition duration-200"
               >
                 LOGIN
               </button>
             </form>
             <div className="mt-6 text-center">
-              <a  className="text-sm text-green-500">Create New Account</a>
+              <a  className="text-sm text-emerald-500">Create New Account</a>
             </div>
           </div>
         </div>

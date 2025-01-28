@@ -337,7 +337,7 @@ function StudentPort() {
 
   return (
     <div className="container mx-auto p-4 md:p-6">
-      <div className="max-w-md mx-auto bg-white  shadow-md p-4 text-left rounded-lg  border border-gray-500 border-l-8 border-b-2 border-r-2">
+      <div className="max-w-md mx-auto bg-white  shadow-md p-4 text-left rounded-lg  border border-gray-500 border-1">
         <form onSubmit={handleSubmit}>
           <h2 className="text-2xl font-bold mb-4 text-center">Student Portal</h2>
           <div className="mb-4">
@@ -641,12 +641,15 @@ function StudentPort() {
               </div>
             </div>
           )} */}
-          <button
-            className="bg-emerald-600 mt-5 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-          >
-            Submit
-          </button>
+        <div className="flex items-center justify-end">
+  <button
+    className="bg-emerald-800 mt-4 hover:bg-emerald-900 text-white font-bold py-2  w-full rounded focus:outline-none focus:shadow-outline"
+    type="submit"
+  >
+    Submit
+  </button>
+</div>
+
         </form>
       </div>
     </div>
