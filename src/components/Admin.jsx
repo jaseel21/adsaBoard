@@ -310,7 +310,7 @@ const fullDayName = {
 
       <button
   onClick={toggleStatus}
-  className={`relative flex items-center justify-center w-60 h-12 bg-gray-700 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_15px_5px_rgba(0,255,0,0.6)]`}
+  className={`relative flex items-center justify-center w-60 h-12 bg-gray-700 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_10px_3px_rgba(0,255,0,0.6)]`}
   
 >
   {/* Animated toggle circle */}
@@ -319,7 +319,7 @@ const fullDayName = {
       isLunch ? "left-0" : "left-[calc(100%-3rem)]"
     }`}
     style={{
-      boxShadow: "0 0 15px 5px rgba(0, 255, 0, 0.8)", // Persistent glow
+      boxShadow: "0 0 10px 3px rgba(0, 255, 0, 0.8)", // Persistent glow
     }}
   ></span>
 

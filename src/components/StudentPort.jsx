@@ -226,7 +226,7 @@ function StudentPort() {
             content: 'swal2-content-padding'
           },
         });
-        navigate('/login');
+        navigate('/');
 
       });
   };
