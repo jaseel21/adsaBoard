@@ -1,6 +1,7 @@
-import React, { useContext, useState, useEffect } from 'react';
+
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
@@ -8,250 +9,206 @@ import { DataOfOne } from '../store/StudentData';
 function Login() {
   const [token, setToken] = useState('');
   const [pass, setPass] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState('');
-  const [time, setTime] = useState(new Date());
-  const [canClick, setCanClick] = useState(true);
+  const [currentTime, setCurrentTime] = useState(null);
+  const [canClick, setCanClick] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { setStdata } = useContext(DataOfOne);
   const navigate = useNavigate();
 
-  const getISTTime = () => {
-    const options = {
-      timeZone: 'Asia/Kolkata',
-      hour12: false, // Use 24-hour format
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
+  const startTime = "14:00:00";
+  const endTime = "24:00:00";
+  const startTimeA = "00:00:00";
+  const endTimeA = "06:00:00";
+
+  // Fetch current IST time from API with retry logic
+  const fetchISTTime = useCallback(async (retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        return `${data.hour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')}:${data.seconds.toString().padStart(2, '0')}`;
+      } catch (error) {
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        console.error('Error fetching time from API after retries:', error);
+        return null;
+      }
+    }
+  }, []);
+
+  // Combined useEffect for time fetching and canClick state
+  useEffect(() => {
+    let isMounted = true;
+
+    const updateTime = async () => {
+      const time = await fetchISTTime();
+      if (isMounted && time) {
+        setCurrentTime(time);
+        setCanClick(
+          (time >= startTime && time <= endTime) ||
+          (time >= startTimeA && time <= endTimeA)
+        );
+      } else if (isMounted) {
+        setCanClick(false);
+      }
     };
-  
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    return formatter.format(new Date());
-  };
+
+    updateTime(); // Initial fetch
+    const intervalId = setInterval(updateTime, 60000); // Update every minute
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [fetchISTTime, startTime, endTime, startTimeA, endTimeA]);
+
+  // Check if current time is in allowed range
+  const isCurrentTimeInRange = useCallback(() => {
+    if (!currentTime) return false;
+    return (
+      (currentTime >= startTime && currentTime <= endTime) ||
+      (currentTime >= startTimeA && currentTime <= endTimeA)
+    );
+  }, [currentTime, startTime, endTime, startTimeA, endTimeA]);
+
+  // Handle login logic
+  const loginWith = useCallback(async () => {
    
-
-  const startTime="14:00:00"
-  const endTime="24:00:00"
-
-  const startTimeA='00:00:00'
-  const endTimeA="06:00:00"
-
-//   const startTime = new Date();
-// startTime.setDate(startTime.getDate() ); // Move to the previous day
-// startTime.setHours(3, 0, 0, 0); // Set start time to 2:00 PM of the previous day
-// startTime.setMinutes(startTime.getMinutes() - startTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
-
-// // Set end time to 6:00 AM today
-// const endTime = new Date();
-// endTime.setDate(endTime.getDate()+1 )
-// endTime.setHours(-5, 0, 0, 0); // Set end time to 6:00 AM of the current day
-// endTime.setMinutes(endTime.getMinutes() - endTime.getTimezoneOffset() + 330); // Adjust for GMT+5:30
-
-
-useEffect(() => {
-  const updateClock = () => setTime(new Date());
-  updateClock(); // Set initial time
-
-  const intervalId = setInterval(updateClock, 1000); // Update every second
-  return () => clearInterval(intervalId); // Clean up on component unmount
-}, []);
-
-useEffect(() => {
-  const timer = setInterval(() => {
-    const now = convertToGMTPlus530(new Date());
-    setCanClick(now >= startTime && now <= endTime);
-  }, 60000); // Update every minute
-
-  return () => clearInterval(timer);
-}, [startTime, endTime]);
-
-// const convertToGMTPlus530 = (date) => {
-//   const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-//   return new Date(utc + 3600000 * 5.5); // Add 5 hours 30 minutes
-// };
-
-
-const isCurrentTimeInRange = () => {
-  // const now = convertToGMTPlus530(new Date());
-  const now =getISTTime()
-  console.log(now);
-  console.log(now, startTime, endTime);
-  return now >= startTime && now <= endTime || now >=startTimeA && now<=endTimeA;
-};
-
- 
-
-  const LoginWith = async () => {
     try {
-      
-     
-        
-      
-      const StInfo = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(token)).where('password', '==', pass).get();
+      const StInfo = await firebase.firestore()
+        .collection('students')
+        .where('tokenNo', '==', parseInt(token))
+        .where('password', '==', pass)
+        .get();
+
       if (!StInfo.empty) {
         const studentData = StInfo.docs[0].data();
         studentData.documentId = StInfo.docs[0].id;
         setStdata(studentData);
         navigate('/student-portal');
-      }else 
-       {
-        setErr('somthig went wrong');
+      } else {
+        setErr('Invalid username or password');
       }
     } catch (error) {
-      console.error('Error during login:', error);
-      setErr('Error during login');
+      console.error('Login error:', error);
+      setErr('Failed to login. Please try again.');
     }
+  }, [token, pass, setStdata, navigate]);
 
-    
-  };
-
-  const SubmitForm = async () => {
+  // Check tokenboard status and proceed with login
+  const submitForm = useCallback(async () => {
     try {
-      const doc = await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get();
+      setIsLoading(true);
+      const time = await fetchISTTime();
+      if (!time) {
+        setErr('Unable to verify time. Please try again later.');
+        return;
+      }
+
+      const doc = await firebase.firestore()
+        .collection("tokenboard")
+        .doc("g8iJVNn2RQkysjMAvX1h")
+        .get();
+
       if (doc.exists) {
         const tbStatus = doc.data().status;
         if (isCurrentTimeInRange() || tbStatus === true) {
-          await LoginWith();
+          await loginWith();
         } else {
-          alert('Your login attempt has been prevented');
+          alert('Login is restricted outside allowed time (2:00PM to 6:00 AM).');
         }
       } else {
-        console.log("No such document!");
+        setErr('System error: Configuration not found.');
       }
     } catch (error) {
       console.error('Error checking tokenboard status:', error);
+      setErr('Error checking system status. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isCurrentTimeInRange, loginWith]);
 
-  const checkTimeAndHandleClick = async () => {
+  // Check token block status before submission
+  const checkTimeAndHandleClick = useCallback(async () => {
     try {
-      const blockStatus = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(token)).get();
+      setIsLoading(true);
+      if (!token || isNaN(parseInt(token))) {
+        setErr('Please enter a valid numeric token.');
+        return;
+      }
+
+      const blockStatus = await firebase.firestore()
+        .collection('students')
+        .where('tokenNo', '==', parseInt(token))
+        .get();
+
       if (!blockStatus.empty) {
         const statusData = blockStatus.docs[0].data().block;
         if (statusData === false) {
-          await SubmitForm();
+          await submitForm();
         } else {
-          alert('Your token has been blocked');
+          alert('Your token has been blocked.');
         }
       } else {
-        console.log('No document found for token:', token);
+        setErr('Invalid token. Please check and try again.');
       }
     } catch (error) {
       console.error('Error fetching block status:', error);
+      setErr('Error checking token status. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [token, submitForm]);
 
-  const handleSubmit = async (e) => {
+  // Form submission handler
+  const handleSubmit = useCallback(async (e) => {
+    
     e.preventDefault();
-      await checkTimeAndHandleClick();
-   
-  };
+    setErr('');
+    await checkTimeAndHandleClick();
+  }, [checkTimeAndHandleClick]);
 
+  // Simplified input handlers
   const handleUsernameChange = (e) => {
+    console.log('Username input:', e.target.value); // Debugging log
     setToken(e.target.value);
+    setErr('');
   };
 
   const handlePasswordChange = (e) => {
+    console.log('Password input:', e.target.value); // Debugging log
     setPass(e.target.value);
+    setErr('');
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-
-//   return (
-//     <div className="flex justify-center items-center h-auto md:pt-24 sm:pt-20">
-//       <div className="max-w-md w-full p-8 mt-8 bg-white rounded shadow-md">
-//         <h2 className="text-3xl font-bold mb-4 text-gray-800">Student Login</h2>
-
-//         {err && (
-//           <div className="flex items-center pb-3">
-//             <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger mr-2 text-red-700" />
-//             <p className="text-red-600">{err}</p>
-//           </div>
-//         )}
-
-//         <form onSubmit={handleSubmit}>
-//           <div className="mb-4">
-//             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
-//               Username
-//             </label>
-//             <input
-//               required
-//               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-//               id="username"
-//               type="number"
-//               value={token}
-//               onChange={handleUsernameChange}
-//               placeholder="Enter your username"
-//             />
-//           </div>
-//           <div className="mb-6">
-//             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-//               Password
-//             </label>
-//             <div className="relative">
-//               <input
-//                 required
-//                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
-//                 id="password"
-//                 type={showPassword ? 'text' : 'password'}
-//                 value={pass}
-//                 onChange={handlePasswordChange}
-//                 placeholder="Enter your password"
-//               />
-//               <button
-//                 type="button"
-//                 className="absolute inset-y-0 right-0 px-3 py-2"
-//                 onClick={togglePasswordVisibility}
-//               >
-//                 <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-//               </button>
-//             </div>
-//           </div>
-//           <button
-//             className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded"
-//             type="submit"
-//             disabled={!canClick}
-//           >
-//             Sign In
-//           </button>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default Login;
-
-
-
-  
   return (
-    <div className=" flex items-center pt-10 justify-center  bg-white">
-      <div className=" max-w-md w-full px-5   space-y-8">
-        <div className="flex flex-col items-center">
-        </div>
-        <div className="max-w-md w-full  space-y-8">
+    <div className="flex items-center pt-10 justify-center bg-white min-h-screen">
+      <div className="max-w-md w-full px-5 space-y-8">
+        <div className="max-w-md w-full space-y-8">
           <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 border-t-4 border-emerald-600">
-            <h2 className="text-[25px]   font-extrabold text-gray-600  font-serif  mb-4"> Login</h2>
+            <h2 className="text-[25px] font-extrabold text-gray-600 font-serif mb-4">Login</h2>
 
             {err && (
-          <div className="flex items-center pb-3">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="text-danger mr-2 text-red-700" />
-            <p className="text-red-600">{err}</p>
-          </div>
-        )}
-            <form onSubmit={handleSubmit}>
+              <div className="flex items-center pb-3" role="alert">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-700 mr-2" aria-hidden="true" />
+                <p className="text-red-600">{err}</p>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} aria-label="Student Login Form">
               <div className="mb-4">
                 <label
-                  className="block  text-gray-500 text-sm  mb-2"
+                  className="block text-gray-500 text-sm mb-2"
                   htmlFor="username"
                 >
                   Username
                 </label>
-              
                 <input
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   id="username"
@@ -260,44 +217,46 @@ const isCurrentTimeInRange = () => {
                   onChange={handleUsernameChange}
                   placeholder="Enter your username"
                   required
+                  aria-required="true"
+                  aria-describedby="username-error"
                 />
               </div>
               <div className="mb-6">
                 <label
-                  className="block text-gray-500 text-sm  mb-2"
+                  className="block text-gray-500 text-sm mb-2"
                   htmlFor="password"
                 >
                   Password
                 </label>
                 <input
-                 id="password"
-                 type={showPassword ? 'text' : 'password'}
-                 value={pass}
+                  id="password"
+                  type="password"
+                  value={pass}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your password"
                   onChange={handlePasswordChange}
                   required
+                  aria-required="true"
+                  aria-describedby="password-error"
                 />
               </div>
-              
               <button
                 type="submit"
+                className="w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 transition duration-200 disabled:bg-emerald-400 disabled:cursor-not-allowed"
                
-                className="w-full bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 transition duration-200"
+                aria-busy={isLoading}
               >
-                Login
+                {isLoading ? 'Logging in...' : 'Login'}
               </button>
             </form>
             <div className="mt-6 text-center">
-              <a  className="text-sm text-emerald-500">Create New Account</a>
+              <a href="/signup" className="text-sm text-emerald-500 hover:underline">Create New Account</a>
             </div>
           </div>
         </div>
-        
-      
       </div>
     </div>
   );
-};
+}
 
 export default Login;
