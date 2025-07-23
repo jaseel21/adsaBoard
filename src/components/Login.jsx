@@ -1,10 +1,9 @@
-// pages/login.js
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useCallback, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationTriangle, faUser, faLock, faClock, faShieldAlt, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from 'react-router-dom'; // Adjust if using Next.js navigation
-import firebase from '../firebase/config'; // Adjust path as per your setup
-import { DataOfOne } from '../store/StudentData'; // Adjust path as per your setup
+import { useNavigate } from 'react-router-dom';
+import firebase from '../firebase/config';
+import { DataOfOne } from '../store/StudentData';
 
 function Login() {
   const [token, setToken] = useState('');
@@ -17,48 +16,33 @@ function Login() {
   const [formFocused, setFormFocused] = useState(false);
 
   const { setStdata } = useContext(DataOfOne);
-  const navigate = useNavigate(); // Replace with Next.js useRouter if needed
+  const navigate = useNavigate();
 
   const startTime = "14:00:00";
   const endTime = "24:00:00";
   const startTimeA = "00:00:00";
-  const endTimeA = "09:00:00";
+  const endTimeA = "06:00:00";
 
-  // Fetch current IST time from API with retry logic
-  const fetchISTTime = useCallback(async (retries = 3, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        const response = await fetch('https://www.timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata');
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        return `${data.hour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')}:${data.seconds.toString().padStart(2, '0')}`;
-      } catch (error) {
-        if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        console.error('Error fetching time from API after retries:', error);
-        return null;
-      }
-    }
+  // Get current IST time
+  const getISTTime = useCallback(() => {
+    const now = new Date();
+    const options = { timeZone: 'Asia/Kolkata', hour12: false };
+    const timeString = now.toLocaleTimeString('en-IN', options);
+    return timeString.padStart(8, '0'); // Ensure HH:mm:ss format
   }, []);
 
-  // Combined useEffect for time fetching and canClick state
+  // Update time and canClick state
   useEffect(() => {
     let isMounted = true;
 
-    const updateTime = async () => {
-      const time = await fetchISTTime();
-      if (isMounted && time) {
+    const updateTime = () => {
+      const time = getISTTime();
+      if (isMounted) {
         setCurrentTime(time);
         setCanClick(
           (time >= startTime && time <= endTime) ||
           (time >= startTimeA && time <= endTimeA)
         );
-      } else if (isMounted) {
-        setCanClick(false);
       }
     };
 
@@ -69,7 +53,7 @@ function Login() {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [fetchISTTime, startTime, endTime, startTimeA, endTimeA]);
+  }, [getISTTime, startTime, endTime, startTimeA, endTimeA]);
 
   // Check if current time is in allowed range
   const isCurrentTimeInRange = useCallback(() => {
@@ -107,9 +91,9 @@ function Login() {
   const submitForm = useCallback(async () => {
     try {
       setIsLoading(true);
-      const time = await fetchISTTime();
+      const time = getISTTime();
       if (!time) {
-        setErr('Unable to verify time. Please try again later.');
+        setErr('Unable to get time. Please try again.');
         return;
       }
 
@@ -134,9 +118,9 @@ function Login() {
     } finally {
       setIsLoading(false);
     }
-  }, [isCurrentTimeInRange, loginWith]);
+  }, [isCurrentTimeInRange, loginWith, getISTTime]);
 
-  // Check token block status before submission
+  // Check token block status
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -188,14 +172,11 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-blue-50 to-gray-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-4000"></div>
       </div>
-
-      {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
           <div
@@ -210,9 +191,7 @@ function Login() {
           />
         ))}
       </div>
-
       <div className="relative w-full max-w-md">
-        {/* Status indicator */}
         <div className="mb-6 flex items-center justify-center">
           <div className={`flex items-center space-x-2 px-4 py-2 rounded-full backdrop-blur-sm border transition-all duration-300 ${
             canClick 
@@ -228,12 +207,9 @@ function Login() {
             )}
           </div>
         </div>
-
-        {/* Main login card */}
         <div className={`backdrop-blur-lg bg-white/90 border border-gray-200 rounded-2xl shadow-2xl p-8 transition-all duration-500 ${
           formFocused ? 'scale-105 shadow-blue-300/25' : ''
         }`}>
-          {/* Logo and header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-2xl mb-4 shadow-lg">
               <FontAwesomeIcon icon={faShieldAlt} className="w-8 h-8 text-white" />
@@ -241,8 +217,6 @@ function Login() {
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to your student portal</p>
           </div>
-
-          {/* Error message */}
           {err && (
             <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-xl backdrop-blur-sm animate-shake">
               <div className="flex items-center space-x-2">
@@ -251,9 +225,7 @@ function Login() {
               </div>
             </div>
           )}
-
           <form onSubmit={handleSubmit} aria-label="Student Login Form" className="space-y-6">
-            {/* Username field */}
             <div className="relative group">
               <label className="block text-sm font-medium text-gray-600 mb-2" htmlFor="username">
                 Username
@@ -277,8 +249,6 @@ function Login() {
                 />
               </div>
             </div>
-
-            {/* Password field */}
             <div className="relative group">
               <label className="block text-sm font-medium text-gray-600 mb-2" htmlFor="password">
                 Password
@@ -309,8 +279,6 @@ function Login() {
                 </button>
               </div>
             </div>
-
-            {/* Login button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -330,42 +298,24 @@ function Login() {
               </span>
             </button>
           </form>
-
-          {/* Footer */}
-          {/* <div className="mt-8 text-center">
-            <a 
-              href="/signup" 
-              className="text-emerald-500 hover:text-emerald-600 text-sm font-medium transition-colors duration-300 hover:underline"
-            >
-              Don't have an account? Create one
-            </a>
-          </div> */}
-
-          {/* Demo credentials */}
-         
         </div>
       </div>
-
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-20px) rotate(180deg); }
         }
-        
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
           20%, 40%, 60%, 80% { transform: translateX(2px); }
         }
-        
         .animate-shake {
           animation: shake 0.5s ease-in-out;
         }
-        
         .animation-delay-2000 {
           animation-delay: 2s;
         }
-        
         .animation-delay-4000 {
           animation-delay: 4s;
         }

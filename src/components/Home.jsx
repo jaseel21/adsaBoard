@@ -340,7 +340,7 @@ onClick={handleUpdateBtn}
       <div className="flex items-center justify-center">
   <button
         onClick={toggleStatus}
-        className={`group relative flex items-center justify-center w-56 h-14 bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/30 transition-all duration-700 ease-out shadow-lg hover:shadow-2xl hover:shadow-emerald-500/20 border border-slate-600/50 backdrop-blur-sm`}
+        className={`group relative flex items-center justify-center w-56 h-14 bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl focus:outline-none ring-4 ring-emerald-500/30 transition-all duration-700 ease-out shadow-lg shadow-2xl shadow-emerald-500/20 border border-slate-600/50 backdrop-blur-sm`}
       >
         {/* Animated toggle circle */}
         <span
