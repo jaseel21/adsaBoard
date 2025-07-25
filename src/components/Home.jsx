@@ -48,6 +48,20 @@ const SwitchPage = () => {
     return formatter.format(new Date());
   };
    
+
+   // New function to get IST date
+  const getISTDate = () => {
+    const options = {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    return formatter.format(new Date());
+  };
+
+
   
   
    
@@ -276,12 +290,16 @@ const SwitchPage = () => {
       {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
 <div className=" flex justify-end mr-5 py-1 items-end md:mr-36  ">
   
-<div className='flex  items-center'>
-
-<FontAwesomeIcon icon={faCalendarDay} className="text-sm text-gray-500 pr-1 " />
-          <h1  class="text-sm  uppercase text-center text-gray-500 ">
-            {fullDayName[day] || ''}
-          </h1>
+<div className="flex flex-col items-center">
+  <div className="flex flex-row items-center">
+    <FontAwesomeIcon icon={faCalendarDay} className="text-sm text-gray-500 pr-1" />
+    <h1 className="text-sm uppercase text-center text-gray-500">
+      {fullDayName[day] || ''}
+    </h1>
+  </div>
+  <h2 className="text-sm uppercase text-center text-gray-500 mt-1">
+    {getISTDate()}
+  </h2>
 </div>
 
         </div>
