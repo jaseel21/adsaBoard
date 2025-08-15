@@ -21,6 +21,7 @@ import firebase from './firebase/config'
 
 import { AuthContext } from './store/AuthContext'
 import  "./App.css"
+import AddStudentsCSV from './components/AddStudentsCSV'
 
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
         <Route path='/pdfg' Component={GeneratePdf}></Route>
         <Route path='/alogin' element={user ? <Admin /> : <AdminLogin />} />
         <Route path='/m-tokens' element={user ? <Mtokens/> : <Navigate to="/alogin"/>} />
+        <Route path='/add-students' element={user ? <AddStudentsCSV/> : <Navigate to="/alogin"/>} />
       </Routes>
           </GetTokens>
         </PersonInfo>

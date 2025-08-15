@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = ({ isAdmin }) => {
   const { user } = useContext(AuthContext);
+  const  [email,setEmail]=useState("")
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false); // For token dropdown
   const [optionsOpen, setOptionsOpen] = useState(false); // For options dropdown
@@ -21,6 +22,15 @@ const Navbar = ({ isAdmin }) => {
 
   const handleHomeBtn = ()=> {
     navigate(isAdmin ? '/admin' : '/')
+    setMenuOpen(false)
+  } 
+
+   const AddStudentsCSV = ()=> {
+    navigate(email=="alathurpadidars@gmail.com"&&"/add-students")
+    if(!email=="alathurpadidars@gmail.com"){
+      setIsOpen(!isOpen);
+    }
+    // navigate(isAdmin ? '/add-students' : '/')
     setMenuOpen(false)
   } 
 
@@ -57,7 +67,32 @@ const Navbar = ({ isAdmin }) => {
   };
 
   // Close dropdowns and menu when clicking outside
+
+  // Close dropdowns and menu when clicking outside
+useEffect(() => {
+  if (user && user.bc && user.bc.email) {
+    console.log('User email:', user.bc.email);
+    setEmail(user.bc.email);
+  } else {
+    console.log('No user or email found');
+    setEmail('');
+  }
+
+  const handleClickOutside = (event) => {
+    if (navbarRef.current && !navbarRef.current.contains(event.target)) {
+      closeDropdowns();
+      setMenuOpen(false);
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, [user]);
   useEffect(() => {
+    
+   
     const handleClickOutside = (event) => {
       if (
         navbarRef.current && // Check if click is outside the navbar
@@ -171,10 +206,10 @@ const Navbar = ({ isAdmin }) => {
             {/* Token Dropdown Button */}
             <div className="relative flex items-center" ref={tokenDropdownRef}>
               <button
-                onClick={handleTokenDropdownToggle}
+                onClick={AddStudentsCSV}
                 className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
               >
-                Supply
+                {email=="alathurpadidars@gmail.com" ? "AddStudent" : "supply"}
               </button>
 
               {/* Token Dropdown Menu */}
@@ -300,10 +335,11 @@ const Navbar = ({ isAdmin }) => {
       {/* Supply Dropdown */}
       <div className="relative" ref={tokenDropdownRef}>
         <button
-          onClick={handleTokenDropdownToggle}
+          onClick={AddStudentsCSV}
           className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
         >
-          Supply
+         {email=="alathurpadidars@gmail.com" ? "AddStudent" : "supply"}
+         
         </button>
         <AnimatePresence>
           {isOpen && (
