@@ -6,10 +6,15 @@ import Swal from 'sweetalert2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import './StudentPort.css';
+import { AuthContext } from '../store/AuthContext';
+
 
 function AstudentPort() {
+    const { user } = useContext(AuthContext);
+  
   const { stdata } = useContext(DataOfOne);
 
+  const [email,setEmail]=useState('');
   const [lunch, setLunch] = useState(stdata.obj.lunch);
   const [breakfast, setBreakfast] = useState(stdata.obj.breakfast);
   const [beef, setBeef] = useState(stdata.obj2.beef);
@@ -20,6 +25,36 @@ function AstudentPort() {
 
   const navigate = useNavigate();
   const [showCheckoutOptions, setShowCheckoutOptions] = useState(false);
+
+  useEffect(() => {
+    if (user && user.bc && user.bc.email) {
+      console.log('User email:', user.bc.email);
+      setEmail(user.bc.email);
+    } else {
+      console.log('No user or email found');
+      setEmail('');
+    }
+  
+    const handleClickOutside = (event) => {
+      if (navbarRef.current && !navbarRef.current.contains(event.target)) {
+        closeDropdowns();
+        setMenuOpen(false);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [user]);
+  
+    const handleClickOutside = (event) => {
+      if (navbarRef.current && !navbarRef.current.contains(event.target)) {
+        closeDropdowns();
+        setMenuOpen(false);
+      }
+    };
+  
 
   const handleLunchToggle = () => {
     const LunchConfirm = window.confirm('Are you sure you want to change the settings');
@@ -492,86 +527,93 @@ function AstudentPort() {
                 </h3>
 
                 {/* Breakfast Section */}
-                <div className="bg-white border border-gray-200 rounded-lg mb-6 overflow-hidden">
-                  <div className="bg-orange-50 px-4 py-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-md font-semibold text-gray-800">Breakfast</h4>
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-orange-600 focus:ring-orange-500 rounded"
-                          onChange={selectBreackfastAll}
-                          checked={checkedBF}
-                        />
-                        <span className="text-sm font-medium text-gray-700">Select All</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="grid grid-cols-7 gap-4">
-                      {[
-                        { key: 'su', label: 'Sun', state: bsu, handler: handleCheckedBsu },
-                        { key: 'mo', label: 'Mon', state: bmo, handler: handleCheckedBmo },
-                        { key: 'tu', label: 'Tue', state: btu, handler: handleCheckedBtu },
-                        { key: 'we', label: 'Wed', state: bwe, handler: handleCheckedBwe },
-                        { key: 'th', label: 'Thu', state: bth, handler: handleCheckedBth },
-                        { key: 'fr', label: 'Fri', state: bfr, handler: handleCheckedBfr },
-                        { key: 'sa', label: 'Sat', state: bsa, handler: handleCheckedBsa }
-                      ].map(day => (
-                        <div key={day.key} className="flex flex-col items-center space-y-2">
-                          <label className="text-sm font-medium text-gray-600">{day.label}</label>
-                          <input
-                            type="checkbox"
-                            checked={day.state}
-                            onChange={day.handler}
-                            className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                
 
                 {/* Lunch Section */}
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-green-50 px-4 py-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-md font-semibold text-gray-800">Lunch</h4>
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-green-600 focus:ring-green-500 rounded"
-                          onChange={lunchSelectAll}
-                          checked={checkedL}
-                        />
-                        <span className="text-sm font-medium text-gray-700">Select All</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="grid grid-cols-7 gap-4">
-                      {[
-                        { key: 'su', label: 'Sun', state: lsu, handler: handleCkeckedlsu },
-                        { key: 'mo', label: 'Mon', state: lmo, handler: handleCkeckedLmo },
-                        { key: 'tu', label: 'Tue', state: ltu, handler: handleCkeckedLtu },
-                        { key: 'we', label: 'Wed', state: lwe, handler: handleCkeckedLwe },
-                        { key: 'th', label: 'Thu', state: lth, handler: handleCkeckedLth },
-                        { key: 'fr', label: 'Fri', state: lfr, handler: handleCkeckedLfr },
-                        { key: 'sa', label: 'Sat', state: lsa, handler: handleCheckedLsa }
-                      ].map(day => (
-                        <div key={day.key} className="flex flex-col items-center space-y-2">
-                          <label className="text-sm font-medium text-gray-600">{day.label}</label>
-                          <input
-                            type="checkbox"
-                            checked={day.state}
-                            onChange={day.handler}
-                            className="w-5 h-5 text-green-600 focus:ring-green-500 rounded"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <div className="bg-white border border-gray-200 rounded-lg mb-6 overflow-hidden">
+  <div className="bg-orange-50 px-4 py-3 border-b border-gray-200">
+    <div className="flex items-center justify-between">
+      <h4 className="text-md font-semibold text-gray-800">Breakfast</h4>
+      <label className="flex items-center space-x-2 cursor-pointer">
+        <input
+          type="checkbox"
+          className="w-4 h-4 text-orange-600 focus:ring-orange-500 rounded"
+          onChange={selectBreackfastAll}
+          checked={checkedBF}
+          disabled={email === "adsacanteen@gmail.com"}
+        />
+        <span className="text-sm font-medium text-gray-700">Select All</span>
+      </label>
+    </div>
+  </div>
+  <div className="p-4">
+    <div className="grid grid-cols-7 gap-4">
+      {[
+        { key: 'su', label: 'Sun', state: bsu, handler: handleCheckedBsu },
+        { key: 'mo', label: 'Mon', state: bmo, handler: handleCheckedBmo },
+        { key: 'tu', label: 'Tue', state: btu, handler: handleCheckedBtu },
+        { key: 'we', label: 'Wed', state: bwe, handler: handleCheckedBwe },
+        { key: 'th', label: 'Thu', state: bth, handler: handleCheckedBth },
+        { key: 'fr', label: 'Fri', state: bfr, handler: handleCheckedBfr },
+        { key: 'sa', label: 'Sat', state: bsa, handler: handleCheckedBsa }
+      ].map(day => (
+        <div key={day.key} className="flex flex-col items-center space-y-2">
+          <label className="text-sm font-medium text-gray-600">{day.label}</label>
+          <input
+            type="checkbox"
+            checked={day.state}
+            onChange={day.handler}
+            className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
+            disabled={email === "adsacanteen@gmail.com"} // disable condition here
+          />
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+{/* Lunch Section */}
+<div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+  <div className="bg-green-50 px-4 py-3 border-b border-gray-200">
+    <div className="flex items-center justify-between">
+      <h4 className="text-md font-semibold text-gray-800">Lunch</h4>
+      <label className="flex items-center space-x-2 cursor-pointer">
+        <input
+          type="checkbox"
+          className="w-4 h-4 text-green-600 focus:ring-green-500 rounded"
+          onChange={lunchSelectAll}
+          checked={checkedL}
+          disabled={email === "adsacanteen@gmail.com"}
+        />
+        <span className="text-sm font-medium text-gray-700">Select All</span>
+      </label>
+    </div>
+  </div>
+  <div className="p-4">
+    <div className="grid grid-cols-7 gap-4">
+      {[
+        { key: 'su', label: 'Sun', state: lsu, handler: handleCkeckedlsu },
+        { key: 'mo', label: 'Mon', state: lmo, handler: handleCkeckedLmo },
+        { key: 'tu', label: 'Tue', state: ltu, handler: handleCkeckedLtu },
+        { key: 'we', label: 'Wed', state: lwe, handler: handleCkeckedLwe },
+        { key: 'th', label: 'Thu', state: lth, handler: handleCkeckedLth },
+        { key: 'fr', label: 'Fri', state: lfr, handler: handleCkeckedLfr },
+        { key: 'sa', label: 'Sat', state: lsa, handler: handleCheckedLsa }
+      ].map(day => (
+        <div key={day.key} className="flex flex-col items-center space-y-2">
+          <label className="text-sm font-medium text-gray-600">{day.label}</label>
+          <input
+            type="checkbox"
+            checked={day.state}
+            onChange={day.handler}
+            className="w-5 h-5 text-green-600 focus:ring-green-500 rounded"
+            disabled={email === "adsacanteen@gmail.com"} // disable condition here
+          />
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
               </div>
 
               {/* Dietary Preferences Toggle */}

@@ -137,14 +137,19 @@ useEffect(() => {
   };
 
   return (
-    <nav className="bg-white border-b  border-gray-200" ref={navbarRef}>
+    <nav className="bg-white border-b border-gray-200" ref={navbarRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-gray-700">
-              <span className="text-green-700">ADSA</span> T-board
-            </h1>
-          </div>
+         <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+  <img
+    src="https://alathurpadidars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png"
+    alt="Dars Site Logo"
+    className="h-20 w-20 sm:h-22 sm:w-22 md:h-24 md:w-24 object-contain rounded-md bg-white"
+  />
+  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-700">
+    <span className="text-green-700">ADSA</span> T-board
+  </h1>
+</div>
 
           {/* Hamburger menu for mobile */}
           <div className="flex md:hidden">
@@ -209,7 +214,7 @@ useEffect(() => {
                 onClick={AddStudentsCSV}
                 className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
               >
-                {email=="alathurpadidars@gmail.com" ? "AddStudent" : "supply"}
+              {email === "alathurpadidars@gmail.com" && isAdmin ? "AddStudent" : "supply"}
               </button>
 
               {/* Token Dropdown Menu */}
@@ -338,7 +343,7 @@ useEffect(() => {
           onClick={AddStudentsCSV}
           className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
         >
-         {email=="alathurpadidars@gmail.com" ? "AddStudent" : "supply"}
+{email === "alathurpadidars@gmail.com" && isAdmin ? "AddStudent" : "supply"}
          
         </button>
         <AnimatePresence>
