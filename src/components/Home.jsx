@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {  faPrint,faCalendarDay } from '@fortawesome/free-solid-svg-icons';
+import {  faPrint,faCalendarDay, faTimes } from '@fortawesome/free-solid-svg-icons';
 import {motion} from "framer-motion"
 import "./Home.css"
 
@@ -26,6 +26,7 @@ const SwitchPage = () => {
   const [lunchCount, setLunchCount] = useState(0);
   const [breakfastCount, setBreakfastCount] = useState(0);
   const [loading, setLoading] = useState(true); // Add loading state
+  const [serverDateTime, setServerDateTime] = useState(null)
 
 
   
@@ -35,31 +36,82 @@ const SwitchPage = () => {
   const [day, setDay] = useState("");
   const [day1,setDay1]=useState("");
 
+  const [showAlert, setShowAlert] = useState(false);
+
+  // Get time string HH:mm:ss using server time if available, otherwise fallback to Intl
   const getISTTime = () => {
-    const options = {
-      timeZone: 'Asia/Kolkata',
-      hour12: false, // Use 24-hour format
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-    };
-  
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    return formatter.format(new Date());
+    try {
+      if (serverDateTime) {
+        // serverDateTime example: 2025-10-20T12:34:56.789123+05:30
+        return serverDateTime.slice(11, 19);
+      }
+
+      const options = {
+        timeZone: 'Asia/Kolkata',
+        hour12: false, // Use 24-hour format
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+      };
+
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      return formatter.format(new Date());
+    } catch (err) {
+      console.error('Error getting time:', err);
+      return new Date().toLocaleTimeString('en-GB');
+    }
   };
    
 
-   // New function to get IST date
+  // New function to get IST date (e.g. October 20, 2025) using server time when available
   const getISTDate = () => {
-    const options = {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    };
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    return formatter.format(new Date());
+    try {
+      if (serverDateTime) {
+        const datePart = serverDateTime.slice(0, 10); // YYYY-MM-DD
+        const [y, m, d] = datePart.split('-').map(Number);
+        const months = [
+          'January','February','March','April','May','June','July','August','September','October','November','December'
+        ];
+        return `${months[m-1]} ${d}, ${y}`;
+      }
+
+      const options = {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      };
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      return formatter.format(new Date());
+    } catch (err) {
+      console.error('Error getting date:', err);
+      return new Date().toLocaleDateString();
+    }
   };
+
+  // Fetch server time from worldtimeapi and refresh periodically
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchServerTime = async () => {
+      try {
+        const resp = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata');
+        if (!resp.ok) throw new Error('Time API not ok')
+        const data = await resp.json();
+        if (!cancelled) setServerDateTime(data.datetime);
+      } catch (err) {
+        console.warn('Failed to fetch server time, falling back to local time:', err);
+      }
+    }
+
+    // Initial fetch
+    fetchServerTime()
+
+    // Refresh every 60 seconds so displayed time stays accurate
+    const id = setInterval(fetchServerTime, 60000)
+
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
 
 
   
@@ -136,6 +188,11 @@ const SwitchPage = () => {
   }, []);
 
   useEffect(() => {
+    // Show alert on every component mount/reload
+    setShowAlert(true);
+  }, []);
+
+  useEffect(() => {
     calculateCounts();
   }, [documents]);
 
@@ -183,6 +240,14 @@ const SwitchPage = () => {
     navigate("/pdfg")
   }
 
+  const handleCloseAlert = () => {
+    setShowAlert(false);
+  };
+
+  const message = `പ്രിയ ഉപഭോക്താവേ adsaTboard'ന്‍റെ സർവീസിൽ തങ്ങൾ സംതൃപ്തവനാണെന്ന് പ്രതീക്ഷിക്കുന്നു.
+ALZAHRA അറബിക് മാഗസീനിലേക്ക് തങ്ങേളുടെ കൃതികൾ എത്രെയും പെട്ടെന്നുതന്നെ സമർപ്പിക്കുക അല്ലാത്തപക്ഷം adsaTboard മുകേനായുള്ള ചോറ് സർവിസ് ബ്ലോക്ക് ചെയ്യപ്പെട്ടെക്കാം `
+
+  const footer = `തടസ്സങ്ങളില്ലാത്ത സേവനകൾക്കായി കൃതികൾ സമർപ്പിക്കൂ ....`
 
 
 
@@ -290,17 +355,19 @@ const SwitchPage = () => {
       {/* <button className='bg-black text-white' onClick={deleteStudent}>delete</button> */}
 <div className=" flex justify-end mr-5 py-1 items-end md:mr-36  ">
   
-<div className="flex flex-col items-center">
-  <div className="flex flex-row items-center">
-    <FontAwesomeIcon icon={faCalendarDay} className="text-sm text-gray-500 pr-1" />
-    <h1 className="text-sm uppercase text-center text-gray-500">
-      {fullDayName[day] || ''}
-    </h1>
-  </div>
-  <h2 className="text-sm uppercase text-center text-gray-500 mt-1">
-    {getISTDate()}
-  </h2>
-</div>
+
+
+<div className="flex justify-end mb-6 pt-2 ">
+          <div className="bg-white rounded-xl shadow-md px-6 py-3 border border-gray-200">
+            <div className="flex items-center space-x-2 mb-1">
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h1 className="text-sm font-semibold text-gray-700 uppercase">{fullDayName[day]}</h1>
+            </div>
+            <h2 className="text-xs text-gray-500 text-center">{getISTDate()}</h2>
+          </div>
+        </div>
 
         </div>
       <div className="flex px-5 md:px-36 pb-5 justify-between">
@@ -495,111 +562,103 @@ onClick={handleUpdateBtn}
         </div>
           </>
       }
-      
+      {showAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCloseAlert} />
+
+ <motion.div
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  exit={{ y: -20, opacity: 0 }}
+  transition={{ duration: 0.25 }}
+  className="relative z-10 max-w-md w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden mx-4"
+>
+  {/* Top Accent Bar */}
+  <div className="h-1.5 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"></div>
+
+  {/* Content */}
+  <div className="p-6">
+    
+    {/* Header with Close Button */}
+    <div className="flex items-start justify-between mb-5">
+      <div className="flex items-center space-x-3">
+        {/* Icon */}
+        <div className="flex-shrink-0">
+          <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+        </div>
+        
+        {/* Title */}
+        <div>
+          <h2 
+            className="text-xl font-bold text-gray-900"
+            style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
+          >
+            പ്രധാന അറിയിപ്പ്
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">Important Notice</p>
+        </div>
+      </div>
+
+      {/* Close Button */}
+      <button
+        onClick={handleCloseAlert}
+        className="flex-shrink-0 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        <FontAwesomeIcon icon={faTimes} className="w-4 h-4 text-gray-400" />
+      </button>
+    </div>
+
+    {/* Message */}
+    <div className="mb-5">
+      <p 
+        className="text-gray-700 text-[15px] leading-relaxed"
+        style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
+      >
+        {message}
+      </p>
+    </div>
+
+    {/* Deadline Chip */}
+    <div className="mb-5">
+      <div className="inline-flex items-center bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <svg className="w-4 h-4 text-red-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span 
+          className="text-xs font-semibold text-gray-600 mr-2"
+          style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
+        >
+          അവസാന തീയതി:
+        </span>
+        <span className="text-sm font-bold text-red-600">21/10/2025</span>
+      </div>
+    </div>
+
+    {/* Footer Attribution */}
+    <div className="pt-4 border-t border-gray-100">
+      <div className="flex items-center space-x-2">
+        <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p 
+          className="text-sm text-green-700 font-medium"
+          style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
+        >
+          {footer}
+        </p>
+      </div>
+    </div>
+  </div>
+</motion.div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default SwitchPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

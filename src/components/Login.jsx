@@ -10,6 +10,7 @@ function Login() {
   const [pass, setPass] = useState('');
   const [err, setErr] = useState('');
   const [currentTime, setCurrentTime] = useState(null);
+  const [serverDateTime, setServerDateTime] = useState(null);
   const [canClick, setCanClick] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -25,10 +26,20 @@ function Login() {
 
   // Get current IST time
   const getISTTime = useCallback(() => {
-    const now = new Date();
-    const options = { timeZone: 'Asia/Kolkata', hour12: false };
-    const timeString = now.toLocaleTimeString('en-IN', options);
-    return timeString.padStart(8, '0'); // Ensure HH:mm:ss format
+    try {
+      if (serverDateTime) {
+        // serverDateTime e.g. 2025-10-20T12:34:56.789123+05:30
+        const t = serverDateTime.slice(11, 19);
+        return t.padStart(8, '0');
+      }
+      const now = new Date();
+      const options = { timeZone: 'Asia/Kolkata', hour12: false };
+      const timeString = now.toLocaleTimeString('en-IN', options);
+      return timeString.padStart(8, '0'); // Ensure HH:mm:ss format
+    } catch (err) {
+      console.warn('Error getting IST time, falling back to local:', err);
+      return new Date().toLocaleTimeString('en-GB');
+    }
   }, []);
 
   // Update time and canClick state
@@ -46,14 +57,39 @@ function Login() {
       }
     };
 
+    // Initial update
     updateTime();
-    const intervalId = setInterval(updateTime, 60000);
+    // Update displayed time every second for accurate UI
+    const intervalId = setInterval(updateTime, 1000);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
     };
   }, [getISTTime, startTime, endTime, startTimeA, endTimeA]);
+
+  // Fetch server time (Asia/Kolkata) and refresh every 60s. If failed, keep using local time.
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchServerTime = async () => {
+      try {
+        const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata');
+        if (!response.ok) throw new Error('Time API response not OK');
+        const data = await response.json();
+        if (!cancelled && data && data.datetime) {
+          setServerDateTime(data.datetime);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch server time:', err);
+      }
+    };
+
+    fetchServerTime();
+    const id = setInterval(fetchServerTime, 60000);
+
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
 
   // Check if current time is in allowed range
   const isCurrentTimeInRange = useCallback(() => {
