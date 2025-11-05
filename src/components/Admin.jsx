@@ -310,35 +310,44 @@ const fullDayName = {
 
       <button
   onClick={toggleStatus}
-  className={`relative flex items-center justify-center w-60 h-12 bg-gray-700 rounded-full focus:outline-none transition-all duration-1000 ease-in-out shadow-[0_0_10px_3px_rgba(0,255,0,0.6)]`}
-  
+  className={`group relative flex items-center justify-center w-60 h-12 bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl focus:outline-none ring-4 ring-emerald-500/30 transition-all duration-700 ease-out shadow-lg shadow-2xl shadow-emerald-500/20 border border-slate-600/50 backdrop-blur-sm`}
 >
   {/* Animated toggle circle */}
   <span
-    className={`absolute top-0 bottom-0 my-auto w-12 h-12 bg-gray-800 rounded-full transition-all duration-1000 ease-in-out ${
-      isLunch ? "left-0" : "left-[calc(100%-3rem)]"
+    className={`absolute top-1 bottom-1 my-auto w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl transition-all duration-700 ease-out border border-slate-500/30 ${
+      isLunch ? "left-1" : "left-[calc(100%-3.25rem)]"
     }`}
     style={{
-      boxShadow: "0 0 10px 3px rgba(0, 255, 0, 0.8)", // Persistent glow
+      boxShadow: isLunch 
+        ? "0 0 20px 4px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)" 
+        : "0 0 20px 4px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
     }}
-  ></span>
-
-  {/* Text */}
-  <div className="flex flex-col items-center">
-  <span className="text-white font-semibold tracking-wide">
-    {isLunch ? "Lunch" : "Breakfast"}
+  >
+    {/* Inner glow indicator */}
+    <div 
+      className={`absolute inset-1 rounded-lg transition-all duration-700 ${
+        isLunch ? 'bg-emerald-500/20' : 'bg-blue-500/20'
+      }`}
+    />
   </span>
-  <span className="text-[11px] text-gray-400 ">
-  {isLunch ? "swipe to breakfast" : "swipe to lunch"}
-  </span>
-</div>
-
-
-  {/* Icon */}
+  
+  {/* Text Content */}
+  <div className="flex flex-col items-center z-10">
+    <span className={`font-bold text-lg tracking-wide transition-colors duration-700 ${
+      isLunch ? 'text-emerald-100' : 'text-blue-100'
+    }`}>
+      {isLunch ? "Lunch" : "Breakfast"}
+    </span>
+    <span className="text-xs text-slate-400 font-medium mt-0.5 group-hover:text-slate-300 transition-colors duration-300">
+      {isLunch ? "Switch to breakfast" : "Switch to lunch"}
+    </span>
+  </div>
+  
+  {/* Arrow Icon */}
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className={`h-6 w-6 text-white absolute transition-all duration-1000 ease-in-out ${
-      isLunch ? "left-4 rotate-180" : "right-4 rotate-180"
+    className={`h-6 w-6 text-white absolute transition-all duration-700 ease-out z-10 ${
+      isLunch ? "left-5 rotate-180" : "right-5 rotate-180"
     }`}
     viewBox="0 0 24 24"
     fill="none"
@@ -355,6 +364,40 @@ const fullDayName = {
       }
     />
   </svg>
+  
+  {/* Decorative wave pattern */}
+  <div className={`absolute inset-0 rounded-2xl overflow-hidden pointer-events-none transition-opacity duration-700 ${
+    isLunch ? 'opacity-30' : 'opacity-20'
+  }`}>
+    <svg 
+      className="absolute top-0 left-0 w-full h-full" 
+      viewBox="0 0 288 56" 
+      preserveAspectRatio="none"
+    >
+      <path
+        d={isLunch 
+          ? "M0,28 Q72,10 144,28 T288,28 L288,56 L0,56 Z"
+          : "M0,28 Q72,46 144,28 T288,28 L288,0 L0,0 Z"
+        }
+        fill={isLunch ? "rgba(16, 185, 129, 0.1)" : "rgba(59, 130, 246, 0.1)"}
+        className="transition-all duration-700 ease-out"
+      />
+    </svg>
+  </div>
+  
+  {/* Background gradient overlay */}
+  <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+    isLunch 
+      ? 'bg-gradient-to-r from-emerald-500/5 to-green-500/5' 
+      : 'bg-gradient-to-r from-blue-500/5 to-indigo-500/5'
+  }`} />
+  
+  {/* Animated border glow */}
+  <div className={`absolute inset-0 rounded-2xl transition-all duration-700 ${
+    isLunch 
+      ? 'shadow-[0_0_0_1px_rgba(16,185,129,0.3)]' 
+      : 'shadow-[0_0_0_1px_rgba(59,130,246,0.3)]'
+  } opacity-0 group-hover:opacity-100`} />
 </button>
     </div>
 

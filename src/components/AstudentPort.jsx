@@ -138,19 +138,47 @@ function AstudentPort() {
       })
       .then(() => {
         Swal.fire({
-          position: 'center',
-          icon: 'success',
-          title: 'Your token updated',
+          html: `
+            <div class="flex flex-col items-center justify-center p-6">
+              <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4 border-2 border-green-200">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">Token Updated Successfully</h2>
+              <p class="text-gray-600 text-center mb-6 text-sm leading-relaxed">Your authentication token has been updated and is now active.</p>
+              <button id="continueBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                Continue to Admin
+              </button>
+            </div>
+          `,
           showConfirmButton: false,
-          timer: 1500,
+          showCloseButton: false,
+          allowOutsideClick: false,
+          background: '#ffffff',
+          padding: 0,
+          width: '420px',
           customClass: {
-            popup: 'swal2-center swal2-small',
-            title: 'swal2-title-center',
-            icon: 'swal2-icon-small',
-            content: 'swal2-content-padding'
+            popup: 'rounded-xl shadow-xl border border-gray-100',
           },
+          didOpen: () => {
+            const continueBtn = document.getElementById('continueBtn');
+           
+            // Auto-close after 3 seconds
+            const timeout = setTimeout(() => {
+              Swal.close();
+              navigate('/admin', { state: { isLunch: stdata.isLunch } });
+            }, 3000);
+           
+            if (continueBtn) {
+              continueBtn.addEventListener('click', () => {
+                clearTimeout(timeout);
+                Swal.close();
+                navigate('/admin', { state: { isLunch: stdata.isLunch } });
+              });
+            }
+          }
         });
-        navigate('/admin', { state: { isLunch: stdata.isLunch } });
       });
   };
 

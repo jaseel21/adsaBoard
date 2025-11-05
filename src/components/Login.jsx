@@ -1,46 +1,30 @@
 import React, { useContext, useState, useCallback, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationTriangle, faUser, faLock, faClock, faShieldAlt, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationTriangle, faUsers, faLock, faClock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
+import { useWorldTime } from '../utils/time';
 
 function Login() {
   const [token, setToken] = useState('');
   const [pass, setPass] = useState('');
   const [err, setErr] = useState('');
   const [currentTime, setCurrentTime] = useState(null);
-  const [serverDateTime, setServerDateTime] = useState(null);
   const [canClick, setCanClick] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formFocused, setFormFocused] = useState(false);
+  const { timeHms } = useWorldTime('Asia/Kolkata');
 
   const { setStdata } = useContext(DataOfOne);
   const navigate = useNavigate();
 
   const startTime = "14:00:00";
-  const endTime = "24:00:00";
-  const startTimeA = "00:00:00";
-  const endTimeA = "06:00:00";
+  const endTime = "23:00:00";
 
-  // Get current IST time
-  const getISTTime = useCallback(() => {
-    try {
-      if (serverDateTime) {
-        // serverDateTime e.g. 2025-10-20T12:34:56.789123+05:30
-        const t = serverDateTime.slice(11, 19);
-        return t.padStart(8, '0');
-      }
-      const now = new Date();
-      const options = { timeZone: 'Asia/Kolkata', hour12: false };
-      const timeString = now.toLocaleTimeString('en-IN', options);
-      return timeString.padStart(8, '0'); // Ensure HH:mm:ss format
-    } catch (err) {
-      console.warn('Error getting IST time, falling back to local:', err);
-      return new Date().toLocaleTimeString('en-GB');
-    }
-  }, []);
+  // Get current IST time strictly from worldtimeapi hook
+  const getISTTime = useCallback(() => timeHms.padStart(8, '0'), [timeHms]);
 
   // Update time and canClick state
   useEffect(() => {
@@ -51,8 +35,7 @@ function Login() {
       if (isMounted) {
         setCurrentTime(time);
         setCanClick(
-          (time >= startTime && time <= endTime) ||
-          (time >= startTimeA && time <= endTimeA)
+          (time >= startTime && time <= endTime)
         );
       }
     };
@@ -66,39 +49,17 @@ function Login() {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [getISTTime, startTime, endTime, startTimeA, endTimeA]);
+  }, [getISTTime, startTime, endTime]);
 
-  // Fetch server time (Asia/Kolkata) and refresh every 60s. If failed, keep using local time.
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchServerTime = async () => {
-      try {
-        const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata');
-        if (!response.ok) throw new Error('Time API response not OK');
-        const data = await response.json();
-        if (!cancelled && data && data.datetime) {
-          setServerDateTime(data.datetime);
-        }
-      } catch (err) {
-        console.warn('Failed to fetch server time:', err);
-      }
-    };
-
-    fetchServerTime();
-    const id = setInterval(fetchServerTime, 60000);
-
-    return () => { cancelled = true; clearInterval(id); };
-  }, []);
+  // Time fetching is centralized in useWorldTime
 
   // Check if current time is in allowed range
   const isCurrentTimeInRange = useCallback(() => {
     if (!currentTime) return false;
     return (
-      (currentTime >= startTime && currentTime <= endTime) ||
-      (currentTime >= startTimeA && currentTime <= endTimeA)
+      (currentTime >= startTime && currentTime <= endTime)
     );
-  }, [currentTime, startTime, endTime, startTimeA, endTimeA]);
+  }, [currentTime, startTime, endTime]);
 
   // Handle login logic
   const loginWith = useCallback(async () => {
@@ -143,7 +104,7 @@ function Login() {
         if (isCurrentTimeInRange() || tbStatus === true) {
           await loginWith();
         } else {
-          alert('Login is restricted outside allowed time (2:00PM to 6:00 AM).');
+          alert('Login is restricted outside allowed time (2:00 PM to 11:00 PM).');
         }
       } else {
         setErr('System error: Configuration not found.');
@@ -207,91 +168,103 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-blue-50 to-gray-100 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background Blobs - Green Theme */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-4000"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-pulse animation-delay-4000"></div>
       </div>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-gray-400 rounded-full opacity-30"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animation: `float 6s ease-in-out infinite alternate`
-            }}
-          />
-        ))}
-      </div>
-      <div className="relative w-full max-w-md">
+
+      <div className="relative w-full max-w-md z-10">
+        {/* Time Status Banner - Green Theme */}
         <div className="mb-6 flex items-center justify-center">
-          <div className={`flex items-center space-x-2 px-4 py-2 rounded-full backdrop-blur-sm border transition-all duration-300 ${
+          <div className={`flex items-center space-x-3 px-5 py-3 rounded-2xl backdrop-blur-lg border-2 shadow-lg transition-all duration-300 ${
             canClick 
-              ? 'bg-emerald-100 border-emerald-300 text-emerald-700' 
-              : 'bg-red-100 border-red-300 text-red-700'
+              ? 'bg-emerald-50/90 border-emerald-300 text-emerald-700 shadow-emerald-200/50' 
+              : 'bg-red-50/90 border-red-300 text-red-700 shadow-red-200/50'
           }`}>
-            <FontAwesomeIcon icon={faClock} className="w-4 h-4" />
-            <span className="text-sm font-medium">
-              {canClick ? 'Login Available' : 'Outside Login Hours'}
-            </span>
-            {currentTime && (
-              <span className="text-xs opacity-75">({currentTime})</span>
-            )}
+            <div className={`w-2 h-2 rounded-full ${canClick ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse`}></div>
+            <FontAwesomeIcon icon={faClock} className="w-5 h-5" />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold">
+                {canClick ? 'Login Available' : 'Outside Login Hours'}
+              </span>
+              {currentTime && (
+                <span className="text-xs opacity-80 font-medium">{currentTime} IST</span>
+              )}
+            </div>
           </div>
         </div>
-        <div className={`backdrop-blur-lg bg-white/90 border border-gray-200 rounded-2xl shadow-2xl p-8 transition-all duration-500 ${
-          formFocused ? 'scale-105 shadow-blue-300/25' : ''
+
+        {/* Logo and Title outside card */}
+        <div className="text-center mb-8">
+          {/* <div className="relative inline-block mb-5 mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl blur opacity-40 animate-pulse"></div>
+            <img className='h-auto w-40 relative z-10' src="https://alathurpadidars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png" alt="Institution Logo" />
+          </div> */}
+          <h1 className="text-3xl font-bold text-gray-800 mb-2 tracking-tight">Student Login</h1>
+          <p className="text-gray-600 font-semibold">Welcome back! Please sign in to your team account.</p>
+        </div>
+
+        {/* Login Card - Enhanced Glass Effect - Only form fields */}
+        <div className={`backdrop-blur-2xl bg-white/80 border border-white/30 rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
+          formFocused ? 'scale-[1.02] shadow-emerald-300/30 ring-1 ring-emerald-200/50' : 'shadow-lg shadow-green-200/20'
         }`}>
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-2xl mb-4 shadow-lg">
-              <FontAwesomeIcon icon={faShieldAlt} className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to your student portal</p>
-          </div>
+          
+          {/* Error Message - Green Theme Accent */}
           {err && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-xl backdrop-blur-sm animate-shake">
-              <div className="flex items-center space-x-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <p className="text-red-600 text-sm">{err}</p>
+            <div className="mb-6 p-4 bg-red-50/80 border-l-4 border-red-400 rounded-xl backdrop-blur-sm animate-shake shadow-md">
+              <div className="flex items-start space-x-3">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700 text-sm font-medium">{err}</p>
               </div>
             </div>
           )}
-          <form onSubmit={handleSubmit} aria-label="Student Login Form" className="space-y-6">
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} aria-label="Team Login Form" className="space-y-6">
+            
+            {/* Select Team Field - Glass Input with Chevron */}
             <div className="relative group">
-              <label className="block text-sm font-medium text-gray-600 mb-2" htmlFor="username">
-                Username
+              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="team">
+                Select Team
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FontAwesomeIcon icon={faUser} className="h-5 w-5 text-gray-500 group-focus-within:text-emerald-500 transition-colors" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FontAwesomeIcon 
+                    icon={faUsers} 
+                    className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" 
+                  />
                 </div>
                 <input
                   type="number"
-                  id="username"
+                  id="team"
                   value={token}
                   onChange={handleUsernameChange}
                   onFocus={() => setFormFocused(true)}
                   onBlur={() => setFormFocused(false)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 transition-all duration-300 backdrop-blur-sm"
-                  placeholder="Enter your token number"
+                  className="w-full pl-12 pr-12 py-4 bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all duration-300 font-medium shadow-sm hover:shadow-md appearance-none"
+                  placeholder="Enter your token No"
                   required
                   aria-required="true"
-                  aria-describedby="username-error"
+                  aria-describedby="team-error"
                 />
+                
               </div>
             </div>
+
+            {/* Password Field - Glass Input */}
             <div className="relative group">
-              <label className="block text-sm font-medium text-gray-600 mb-2" htmlFor="password">
+              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="password">
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FontAwesomeIcon icon={faLock} className="h-5 w-5 text-gray-500 group-focus-within:text-emerald-500 transition-colors" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FontAwesomeIcon 
+                    icon={faLock} 
+                    className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" 
+                  />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
@@ -300,7 +273,7 @@ function Login() {
                   onChange={handlePasswordChange}
                   onFocus={() => setFormFocused(true)}
                   onBlur={() => setFormFocused(false)}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 transition-all duration-300 backdrop-blur-sm"
+                  className="w-full pl-12 pr-14 py-4 bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all duration-300 font-medium shadow-sm hover:shadow-md"
                   placeholder="Enter your password"
                   required
                   aria-required="true"
@@ -309,24 +282,26 @@ function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-emerald-500 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-emerald-600 transition-colors duration-300"
                 >
                   <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="h-5 w-5" />
                 </button>
               </div>
             </div>
+
+            {/* Submit Button - Green Theme */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full relative bg-gradient-to-r from-emerald-500 to-blue-500 text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:shadow-emerald-400/25 focus:outline-none focus:ring-2 focus:ring-emerald-400 transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed overflow-hidden group"
+              className="w-full relative bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white py-4 px-6 rounded-xl font-semibold text-base shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 focus:outline-none focus:ring-4 focus:ring-emerald-500/50 transform hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-60 disabled:transform-none disabled:cursor-not-allowed overflow-hidden group"
               aria-busy={isLoading}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-700 to-green-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center justify-center space-x-2">
                 {isLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Logging in...</span>
+                    <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Signing in...</span>
                   </>
                 ) : (
                   <span>Sign In</span>
@@ -334,17 +309,31 @@ function Login() {
               </span>
             </button>
           </form>
+
+          {/* Register Link */}
+          <div className="text-center mt-6">
+            <a href="#" className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition-colors duration-300">
+              Don't have a team account? Register here
+            </a>
+          </div>
+
+          {/* Footer Info - Official Note */}
+          <div className="mt-6 text-center pt-4 border-t border-gray-200/50">
+            <p className="text-xs text-gray-500">
+              Login hours: <span className="font-semibold text-gray-700">2:00 PM - 11:00 PM IST</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Secure • Official • Confidential
+            </p>
+          </div>
         </div>
       </div>
+
       <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-          20%, 40%, 60%, 80% { transform: translateX(2px); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+          20%, 40%, 60%, 80% { transform: translateX(4px); }
         }
         .animate-shake {
           animation: shake 0.5s ease-in-out;

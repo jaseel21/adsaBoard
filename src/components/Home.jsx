@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useWorldTime } from '../utils/time';
 import firebase from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {  faPrint,faCalendarDay, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {  faPrint,faCalendarDay } from '@fortawesome/free-solid-svg-icons';
 import {motion} from "framer-motion"
+import { faTimes, faCheck, faSun, faUtensils,faBowlFood } from '@fortawesome/free-solid-svg-icons';
+
 import "./Home.css"
 
 
@@ -26,7 +29,7 @@ const SwitchPage = () => {
   const [lunchCount, setLunchCount] = useState(0);
   const [breakfastCount, setBreakfastCount] = useState(0);
   const [loading, setLoading] = useState(true); // Add loading state
-  const [serverDateTime, setServerDateTime] = useState(null)
+  const { timeHms, longDate, dayShort, dayFull } = useWorldTime('Asia/Kolkata')
 
 
   
@@ -36,115 +39,38 @@ const SwitchPage = () => {
   const [day, setDay] = useState("");
   const [day1,setDay1]=useState("");
 
-  const [showAlert, setShowAlert] = useState(false);
+  // const [showAlert, setShowAlert] = useState(false);
 
-  // Get time string HH:mm:ss using server time if available, otherwise fallback to Intl
-  const getISTTime = () => {
-    try {
-      if (serverDateTime) {
-        // serverDateTime example: 2025-10-20T12:34:56.789123+05:30
-        return serverDateTime.slice(11, 19);
-      }
-
-      const options = {
-        timeZone: 'Asia/Kolkata',
-        hour12: false, // Use 24-hour format
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-      };
-
-      const formatter = new Intl.DateTimeFormat('en-US', options);
-      return formatter.format(new Date());
-    } catch (err) {
-      console.error('Error getting time:', err);
-      return new Date().toLocaleTimeString('en-GB');
-    }
-  };
+  // All time and date values use worldtimeapi hook (useWorldTime) for device-independent time
    
 
-  // New function to get IST date (e.g. October 20, 2025) using server time when available
-  const getISTDate = () => {
-    try {
-      if (serverDateTime) {
-        const datePart = serverDateTime.slice(0, 10); // YYYY-MM-DD
-        const [y, m, d] = datePart.split('-').map(Number);
-        const months = [
-          'January','February','March','April','May','June','July','August','September','October','November','December'
-        ];
-        return `${months[m-1]} ${d}, ${y}`;
-      }
+  // Derive current IST date string from worldtimeapi hook
+  // Removed getISTDate - use longDate directly from useWorldTime hook
 
-      const options = {
-        timeZone: 'Asia/Kolkata',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      };
-      const formatter = new Intl.DateTimeFormat('en-US', options);
-      return formatter.format(new Date());
-    } catch (err) {
-      console.error('Error getting date:', err);
-      return new Date().toLocaleDateString();
-    }
-  };
-
-  // Fetch server time from worldtimeapi and refresh periodically
-  useEffect(() => {
-    let cancelled = false
-
-    const fetchServerTime = async () => {
-      try {
-        const resp = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata');
-        if (!resp.ok) throw new Error('Time API not ok')
-        const data = await resp.json();
-        if (!cancelled) setServerDateTime(data.datetime);
-      } catch (err) {
-        console.warn('Failed to fetch server time, falling back to local time:', err);
-      }
-    }
-
-    // Initial fetch
-    fetchServerTime()
-
-    // Refresh every 60 seconds so displayed time stays accurate
-    const id = setInterval(fetchServerTime, 60000)
-
-    return () => { cancelled = true; clearInterval(id) }
-  }, [])
+  // worldtimeapi fetching is centralized in useWorldTime
 
 
   
   
    
 
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
-  };
+  // Removed getDayOfWeek - use dayShort directly from useWorldTime hook
 
 
   useEffect(() => {
     const updateDay = () => {
-      const nowUtc = new Date(); // Current time in UTC
-      const gmtPlus530 = new Date(nowUtc.getTime() + 5.5 * 60 * 60 * 1000);
-      const dayOfWeek = getDayOfWeek(gmtPlus530); // Calculate the day of the week
-      setDay1(dayOfWeek); // Update the state with the current day of the week
-      console.log("Calculated Day of Week:", dayOfWeek);
-      console.log("Current IST Time:", getISTTime());
-
-      const currentTime = getISTTime();
-      console.log(currentTime);
-
-      
-      // Use the local variable `dayOfWeek` instead of `day1`
+      // Use dayShort directly from worldtimeapi hook
+      const dayOfWeek = dayShort;
+      setDay1(dayOfWeek);
+      // Use timeHms directly from worldtimeapi hook
+      const currentTime = timeHms;
       if (currentTime > "18:00:00") {
         const days = ["su", "mo", "tu", "we", "th", "fr", "sa"];
         const currentIndex = days.indexOf(dayOfWeek);
-        const nextDay = days[(currentIndex + 1) % 7]; // Get the next day in a circular manner
+        const nextDay = days[(currentIndex + 1) % 7];
         setDay(nextDay);
       } else {
-        setDay(dayOfWeek); // Keep the same day if time is not past 14:00:00
+        setDay(dayOfWeek);
       }
     };
 
@@ -156,7 +82,7 @@ const SwitchPage = () => {
 
     // Clean up the interval on component unmount
     return () => clearInterval(timer);
-  }, []);
+  }, [timeHms, dayShort]);
  
   
 
@@ -187,10 +113,10 @@ const SwitchPage = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    // Show alert on every component mount/reload
-    setShowAlert(true);
-  }, []);
+  // useEffect(() => {
+  //   // Show alert on every component mount/reload
+  //   setShowAlert(true);
+  // }, []);
 
   useEffect(() => {
     calculateCounts();
@@ -218,14 +144,12 @@ const SwitchPage = () => {
   };
 
   const toggleSwitch = async (index) => {
-    
-    // console.log("Toggle switch for token:", documents[index]);
-    navigate('/login')
-
-    // Example logic: You would update Firestore here
+    const doc = documents[index];
+    setDetailsDoc(doc);
   };
 
   const [isLunch, setIsLunch] = useState(true); // State to track current status, default is lunch
+  const [detailsDoc, setDetailsDoc] = useState(null);
 
   const toggleStatus = () => {
     setIsLunch(!isLunch); // Toggle between lunch and breakfast
@@ -244,10 +168,12 @@ const SwitchPage = () => {
     setShowAlert(false);
   };
 
-  const message = `പ്രിയ ഉപഭോക്താവേ adsaTboard'ന്‍റെ സർവീസിൽ തങ്ങൾ സംതൃപ്തവനാണെന്ന് പ്രതീക്ഷിക്കുന്നു.
-ALZAHRA അറബിക് മാഗസീനിലേക്ക് തങ്ങേളുടെ കൃതികൾ എത്രെയും പെട്ടെന്നുതന്നെ സമർപ്പിക്കുക അല്ലാത്തപക്ഷം adsaTboard മുകേനായുള്ള ചോറ് സർവിസ് ബ്ലോക്ക് ചെയ്യപ്പെട്ടെക്കാം `
+//   const message = `പ്രിയ ഉപഭോക്താവേ,
+// adsaTboard'ന്‍റെ സർവീസിൽ താങ്കൾ സംതൃപ്തനാണെന്ന് പ്രതീക്ഷിക്കുന്നു.
+// ALZAHRA അറബിക് മാഗസിനിലേക്ക് താങ്കളുടെ കൃതികൾ എത്രയും പെട്ടെന്ന് സമർപ്പിക്കുക.
+// അല്ലാത്തപക്ഷം, adsaTboard മുഖേനയുള്ള ചോറ് സർവീസ് ബ്ലോക്ക് ചെയ്യപ്പെട്ടേക്കാം `
 
-  const footer = `തടസ്സങ്ങളില്ലാത്ത സേവനകൾക്കായി കൃതികൾ സമർപ്പിക്കൂ ....`
+//   const footer = `തടസ്സങ്ങളില്ലാത്ത സേവനകൾക്കായി കൃതികൾ സമർപ്പിക്കൂ ....`
 
 
 
@@ -304,6 +230,16 @@ ALZAHRA അറബിക് മാഗസീനിലേക്ക് തങ്ങ�
     th: 'Thursday',
     fr: 'Friday',
     sa: 'Saturday'
+  };
+
+  const dayOrder = ['su','mo','tu','we','th','fr','sa'];
+  const splitDays = (dayObj) => {
+    const on = [];
+    const off = [];
+    dayOrder.forEach(k => {
+      if (dayObj && dayObj[k]) on.push(k); else off.push(k);
+    });
+    return { on, off };
   };
 
 
@@ -365,7 +301,7 @@ ALZAHRA അറബിക് മാഗസീനിലേക്ക് തങ്ങ�
               </svg>
               <h1 className="text-sm font-semibold text-gray-700 uppercase">{fullDayName[day]}</h1>
             </div>
-            <h2 className="text-xs text-gray-500 text-center">{getISTDate()}</h2>
+            <h2 className="text-xs text-gray-500 text-center">{longDate}</h2>
           </div>
         </div>
 
@@ -404,10 +340,10 @@ ALZAHRA അറബിക് മാഗസീനിലേക്ക് തങ്ങ�
         
         {/* <button onClick={handleUpdateBtn} className="bg-green-500	 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-md border border-blue-500 hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
   Update Token
-</button> */}<button
+//</button> */}<button
 onClick={handleUpdateBtn}
       
-      class=" bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg border-none transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
+      className=" bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg border-none transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 inline-flex items-center"
     >
 <svg className="fill-current w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 
@@ -562,100 +498,150 @@ onClick={handleUpdateBtn}
         </div>
           </>
       }
-      {showAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCloseAlert} />
-
- <motion.div
-  initial={{ y: -20, opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
-  exit={{ y: -20, opacity: 0 }}
-  transition={{ duration: 0.25 }}
-  className="relative z-10 max-w-md w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden mx-4"
->
-  {/* Top Accent Bar */}
-  <div className="h-1.5 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"></div>
-
-  {/* Content */}
-  <div className="p-6">
-    
-    {/* Header with Close Button */}
-    <div className="flex items-start justify-between mb-5">
-      <div className="flex items-center space-x-3">
-        {/* Icon */}
-        <div className="flex-shrink-0">
-          <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
+      
+      
+      {/* Details Modal */}
+      {detailsDoc && (
+      <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 animate-in fade-in duration-200"
+      onClick={() => setDetailsDoc(null)}
+    >
+      <div
+        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with Gradient */}
+        <div className="relative bg-gradient-to-r from-emerald-600 to-green-600 px-6 py-5">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="text-2xl font-bold text-white">Token Details</h3>
+      <div className="flex items-center mt-2 space-x-2">
+        <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+          <p className="text-sm font-semibold text-white">NO : {detailsDoc.tokenNo}</p>
         </div>
-        
-        {/* Title */}
-        <div>
-          <h2 
-            className="text-xl font-bold text-gray-900"
-            style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
-          >
-            പ്രധാന അറിയിപ്പ്
-          </h2>
-          <p className="text-xs text-gray-500 mt-0.5">Important Notice</p>
+        <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+          <p className="text-xs text-white/90">{detailsDoc.uname}</p>
         </div>
       </div>
-
-      {/* Close Button */}
-      <button
-        onClick={handleCloseAlert}
-        className="flex-shrink-0 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-      >
-        <FontAwesomeIcon icon={faTimes} className="w-4 h-4 text-gray-400" />
-      </button>
     </div>
-
-    {/* Message */}
-    <div className="mb-5">
-      <p 
-        className="text-gray-700 text-[15px] leading-relaxed"
-        style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
-      >
-        {message}
-      </p>
-    </div>
-
-    {/* Deadline Chip */}
-    <div className="mb-5">
-      <div className="inline-flex items-center bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-        <svg className="w-4 h-4 text-red-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <span 
-          className="text-xs font-semibold text-gray-600 mr-2"
-          style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
-        >
-          അവസാന തീയതി:
-        </span>
-        <span className="text-sm font-bold text-red-600">21/10/2025</span>
-      </div>
-    </div>
-
-    {/* Footer Attribution */}
-    <div className="pt-4 border-t border-gray-100">
-      <div className="flex items-center space-x-2">
-        <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p 
-          className="text-sm text-green-700 font-medium"
-          style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
-        >
-          {footer}
-        </p>
-      </div>
-    </div>
+    <button
+      className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all duration-200 backdrop-blur-sm"
+      onClick={() => setDetailsDoc(null)}
+    >
+      <FontAwesomeIcon icon={faTimes} className="text-lg" />
+    </button>
   </div>
-</motion.div>
+ 
+  {/* Decorative Wave */}
+  <div className="absolute bottom-0 left-0 right-0 h-4 bg-white" style={{ clipPath: 'ellipse(100% 100% at 50% 100%)' }}></div>
+</div>
+    
+        {/* Content */}
+        <div className="p-6 space-y-6 bg-gray-50">
+         
+          {/* Breakfast Section */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Section Header */}
+            <div className="px-5 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <FontAwesomeIcon icon={faUtensils} className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-900">Breakfast</h4>
+              </div>
+            </div>
+           
+            {/* Days Grid */}
+            <div className="p-5">
+              <div className="grid grid-cols-7 gap-3">
+                {[
+                  { label: 'Sun', key: 'su' },
+                  { label: 'Mon', key: 'mo' },
+                  { label: 'Tue', key: 'tu' },
+                  { label: 'Wed', key: 'we' },
+                  { label: 'Thu', key: 'th' },
+                  { label: 'Fri', key: 'fr' },
+                  { label: 'Sat', key: 'sa' },
+                ].map(({ label, key }) => {
+                  const isChecked = detailsDoc?.obj?.breakfast?.[key] === true;
+                  return (
+                    <div key={key} className="flex flex-col items-center space-y-2">
+                      <span className="text-xs font-semibold text-gray-500">{label}</span>
+                      <div
+                        onClick={() => navigate('/login')}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm ${
+                          isChecked
+                            ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-2 border-blue-400 scale-105 shadow-blue-200'
+                            : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {isChecked ? (
+                          <FontAwesomeIcon icon={faCheck} className="text-white text-lg font-bold" />
+                        ) : (
+                          <span className="text-gray-300 text-xl">-</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+    
+          {/* Lunch Section */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Section Header */}
+            <div className="px-5 py-3 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <FontAwesomeIcon icon={faBowlFood} className="w-4 h-4 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-900">Lunch</h4>
+              </div>
+            </div>
+           
+            {/* Days Grid */}
+            <div className="p-5">
+              <div className="grid grid-cols-7 gap-3">
+                {[
+                  { label: 'Sun', key: 'su' },
+                  { label: 'Mon', key: 'mo' },
+                  { label: 'Tue', key: 'tu' },
+                  { label: 'Wed', key: 'we' },
+                  { label: 'Thu', key: 'th' },
+                  { label: 'Fri', key: 'fr' },
+                  { label: 'Sat', key: 'sa' },
+                ].map(({ label, key }) => {
+                  const isChecked = detailsDoc?.obj?.lunch?.[key] === true;
+                  return (
+                    <div key={key} className="flex flex-col items-center space-y-2">
+                      <span className="text-xs font-semibold text-gray-500">{label}</span>
+                      <div
+                        onClick={() => navigate('/login')}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm ${
+                          isChecked
+                            ? 'bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400 scale-105 shadow-emerald-200'
+                            : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {isChecked ? (
+                          <FontAwesomeIcon icon={faCheck} className="text-white text-lg font-bold" />
+                        ) : (
+                          <span className="text-gray-300 text-xl">-</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+    
+          {/* Footer Info */}
+          
         </div>
+      </div>
+    </div>
       )}
     </div>
   );

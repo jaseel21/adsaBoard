@@ -3,6 +3,7 @@ import firebase from '../firebase/config';  // Update the path to your Firebase 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { motion } from 'framer-motion';
+import { useWorldTime } from '../utils/time';
 
 const FetchData = () => {
     const [data, setData] = useState([]);
@@ -37,37 +38,29 @@ const FetchData = () => {
     
   const [day, setDay] = useState("");
   const [loading,setLoading]=useState(true)
-
-  const getISTTime = () => {
-    const options = {
-      timeZone: 'Asia/Kolkata',
-      hour12: false, // Use 24-hour format
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-    };
   
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    return formatter.format(new Date());
-  };
-   
-  
-  
-   
+  // Get time and date from worldtimeapi hook (device-independent)
+  const { timeHms, dayShort, nowDate } = useWorldTime('Asia/Kolkata');
 
 
 
+  // Update day from worldtimeapi hook (same pattern as Home.jsx)
   useEffect(() => {
-  
-   
-    // Function to get the current day of the week in GMT+5:30
     const updateDay = () => {
-      const nowUtc = new Date(); // Current time in UTC
-      // Manually adjust for GMT+5:30
-      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
-      const dayOfWeek = getDayOfWeek(gmtPlus530);
-      setDay(dayOfWeek);
-      console.log(dayOfWeek, "day");
+      // Use dayShort directly from worldtimeapi hook
+      const dayOfWeek = dayShort;
+      // Use timeHms directly from worldtimeapi hook
+      const currentTime = timeHms;
+      
+      // Calculate day based on time (after 6 PM, show next day)
+      if (currentTime > "18:00:00") {
+        const days = ["su", "mo", "tu", "we", "th", "fr", "sa"];
+        const currentIndex = days.indexOf(dayOfWeek);
+        const nextDay = days[(currentIndex + 1) % 7];
+        setDay(nextDay);
+      } else {
+        setDay(dayOfWeek);
+      }
     };
 
     // Initial call to set the day immediately on mount
@@ -78,14 +71,7 @@ const FetchData = () => {
 
     // Clean up interval on component unmount
     return () => clearInterval(timer);
-  }, []);
-
-  // Function to get the day of the week from a Date object
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
-    
-  };
+  }, [timeHms, dayShort]);
 
  
 
@@ -305,25 +291,22 @@ const FetchData = () => {
 
     const [formattedDate, setFormattedDate] = useState("");
 
+  // Update formatted date from worldtimeapi hook
   useEffect(() => {
-    // Function to get the formatted date in "day/month/year" format in GMT+5:30
     const updateFormattedDate = () => {
-      const nowUtc = new Date(); // Current time in UTC
-      // Manually adjust for GMT+5:30
-      const gmtPlus530 = new Date(nowUtc.getTime() + 5.5 * 60 * 60 * 1000);
+      // Use nowDate from worldtimeapi hook (device-independent)
+      if (nowDate) {
+        // Get date, month, and year from worldtimeapi date
+        const date = nowDate.getDate(); // Day of the month (1-31)
+        const month = nowDate.getMonth() + 1; // Months are zero-indexed, so +1 (1-12)
+        const year = nowDate.getFullYear(); // Get the full year (e.g., 2024)
 
-      // Get date, month, and year
-      const date = gmtPlus530.getDate(); // Day of the month (1-31)
-      const month = gmtPlus530.getMonth() + 1; // Months are zero-indexed, so +1 (1-12)
-      const year = gmtPlus530.getFullYear(); // Get the full year (e.g., 2024)
+        // Format the date as "day/month/year"
+        const formatted = `${date}/${month}/${year}`;
 
-      // Format the date as "day/month/year"
-      const formatted = `${date}/${month}/${year}`;
-
-      // Update state
-      setFormattedDate(formatted);
-
-      console.log(formatted, "formatted date");
+        // Update state
+        setFormattedDate(formatted);
+      }
     };
 
     // Initial call to set the date immediately on mount
@@ -334,7 +317,7 @@ const FetchData = () => {
 
     // Clean up interval on component unmount
     return () => clearInterval(timer);
-  }, []);
+  }, [nowDate]);
 
   
 
@@ -345,8 +328,7 @@ const FetchData = () => {
   const generatePDF = () => {
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    // Add the current date at the top of the document
-    const today = new Date();
+    // Add the current date at the top of the document (from worldtimeapi)
     const dateStr = formattedDate;
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0); // Black color for the date

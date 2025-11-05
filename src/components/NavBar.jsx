@@ -209,13 +209,14 @@ useEffect(() => {
             </button>
 
             {/* Token Dropdown Button */}
-            <div className="relative flex items-center" ref={tokenDropdownRef}>
-              <button
-                onClick={AddStudentsCSV}
-                className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
-              >
-              {email === "alathurpadidars@gmail.com" && isAdmin ? "AddStudent" : "supply"}
-              </button>
+            {email !== "alathurpadidars@gmail.com" && (
+              <div className="relative flex items-center" ref={tokenDropdownRef}>
+                <button
+                  onClick={handleTokenDropdownToggle}
+                  className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
+                >
+                  supply
+                </button>
 
               {/* Token Dropdown Menu */}
               <AnimatePresence>
@@ -250,7 +251,17 @@ useEffect(() => {
               </motion.div>
             )}
           </AnimatePresence>
-            </div>
+              </div>
+            )}
+
+            {email === "alathurpadidars@gmail.com" && isAdmin && (
+              <button
+                onClick={AddStudentsCSV}
+                className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium"
+              >
+                AddStudent
+              </button>
+            )}
 
             {isAdmin ? (
               <div className="relative" ref={optionsDropdownRef}>
@@ -338,14 +349,14 @@ useEffect(() => {
       </button>
 
       {/* Supply Dropdown */}
-      <div className="relative" ref={tokenDropdownRef}>
-        <button
-          onClick={AddStudentsCSV}
-          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
-        >
-{email === "alathurpadidars@gmail.com" && isAdmin ? "AddStudent" : "supply"}
-         
-        </button>
+      {email !== "alathurpadidars@gmail.com" && (
+        <div className="relative" ref={tokenDropdownRef}>
+          <button
+            onClick={handleTokenDropdownToggle}
+            className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
+          >
+            supply
+          </button>
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -378,7 +389,17 @@ useEffect(() => {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+        </div>
+      )}
+
+      {email === "alathurpadidars@gmail.com" && isAdmin && (
+        <button
+          onClick={AddStudentsCSV}
+          className="block w-full px-4 py-2 text-left text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg border-b border-gray-100"
+        >
+          AddStudent
+        </button>
+      )}
 
       {/* Admin Options */}
       {isAdmin ? (
