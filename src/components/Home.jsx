@@ -13,12 +13,45 @@ import "./Home.css"
 
 const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   return (
-    <button
-      onClick={toggleSwitch}
-      className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white  px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-red-500 text-white px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
-    >
-      {number}
-    </button>
+ <button
+  onClick={toggleSwitch}
+  className={`
+    relative overflow-hidden
+    flex items-center justify-center
+    w-12 h-12 rounded-xl
+    font-bold text-sm
+    transition-all duration-300 ease-out
+    hover:scale-105 active:scale-95
+    focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
+    shadow-md hover:shadow-lg
+    ${block
+      ? 'bg-gray-800 text-white cursor-not-allowed shadow-gray-500/30'
+      : isOn
+      ? 'bg-green-600 text-white shadow-green-500/40 hover:shadow-green-500/60'
+      : 'bg-red-600 text-white shadow-red-500/40 hover:shadow-red-500/60'
+    }
+  `}
+  style={{
+    textShadow: block ? 'none' : '0 1px 2px rgba(0,0,0,0.3)'
+  }}
+>
+  {/* Shine overlay for non-blocked */}
+  {!block && (
+    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-100 transition-opacity duration-300"></div>
+  )}
+  
+  {/* Number */}
+  <span className="relative z-10">{number}</span>
+  
+  {/* Blocked X overlay */}
+  {block && (
+    <div className="absolute inset-0 flex items-center justify-center bg-gray-800/80 rounded-xl">
+      <div className="w-8 h-8 flex items-center justify-center">
+        <FontAwesomeIcon icon={faTimes} className="text-red-400 text-xl" />
+      </div>
+    </div>
+  )}
+</button>
   );
 };
 
@@ -308,29 +341,49 @@ const SwitchPage = () => {
         </div>
       <div className="flex px-5 md:px-36 pb-5 justify-between">
         
-      <div className="">
-       <div className="text-left p-3 rounded-lg bg-white border border-gray-200 shadow-lg shadow-emerald-100/20 relative overflow-hidden">
-  <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-transparent pointer-events-none" />
-  <div className="relative space-y-2">
-    <h1 className="text-1xl font-semibold text-gray-900 tracking-tight">
-      Lunch: <span className="text-1xl text-emerald-600 font-bold">{lunchCount}</span>
+      <div className="text-left p-4 rounded-2xl bg-white/90 backdrop-blur-sm border border-emerald-100 shadow-xl shadow-emerald-100/30 relative overflow-hidden transition-all duration-300 hover:shadow-emerald-200/50 hover:scale-[1.01]">
+  {/* Gentle background gradient */}
+  <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-white/40 to-transparent pointer-events-none" />
+
+  {/* Content */}
+  <div className="relative space-y-3">
+    <h1 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+      <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-sm" />
+      Lunch:
+      <span className="text-emerald-600 font-bold tracking-tight">{lunchCount}</span>
     </h1>
-    <h1 className="text-1xl font-semibold text-gray-900 tracking-tight">
-      Breakfast: <span className="text-1xl text-emerald-600 font-bold">{breakfastCount}</span>
+
+    <h1 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+      <span className="w-2 h-2 bg-amber-500 rounded-full shadow-sm" />
+      Breakfast:
+      <span className="text-amber-600 font-bold tracking-tight">{breakfastCount}</span>
     </h1>
   </div>
+
+  {/* Action Button */}
   <div className="flex justify-center mt-4">
     <button
       onClick={supplyList}
-      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-2 rounded-lg shadow-md hover:shadow-emerald-400/25 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 flex items-center space-x-1 transform hover:scale-105 transition-all duration-200 ease-in-out relative overflow-hidden group"
+      className="
+        relative inline-flex items-center gap-2
+        px-4 py-2
+        bg-gradient-to-r from-emerald-600 to-green-600
+        hover:from-emerald-700 hover:to-green-700
+        text-white font-semibold text-sm rounded-lg
+        shadow-md hover:shadow-emerald-400/30 border border-emerald-500/30
+        focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
+        transform hover:scale-[1.04] active:scale-[0.97]
+        transition-all duration-200 ease-in-out overflow-hidden group
+      "
     >
-      <span className="absolute inset-0 bg-emerald-800/20 scale-0 group-hover:scale-100 rounded-lg transition-transform duration-300 ease-out" />
+      {/* Soft hover glow overlay */}
+      <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <FontAwesomeIcon icon={faPrint} className="h-4 w-4 z-10" />
-      <span className="text-[15px] z-10">Supply List</span>
+      <span className="z-10">Supply List</span>
     </button>
   </div>
 </div>
-        </div>
+
 
 
         
@@ -467,7 +520,7 @@ onClick={handleUpdateBtn}
         <div className='md:px-28 '>
 
       <h1 className='text-3xl  font-bold mb-8'></h1>
-      <div className="flex flex-wrap justify-center">
+      <div className="flex flex-wrap justify-center gap-4">
         {documents.map((doc, index) => (
           <SwitchButton
             key={index}
@@ -484,7 +537,7 @@ onClick={handleUpdateBtn}
         <div className='md:px-28'>
 
         <h1 className='text-3xl  font-bold mb-8'></h1>
-        <div className="flex flex-wrap justify-center">
+        <div className="flex flex-wrap justify-center gap-4">
           {documents.map((doc, index) => (
             <SwitchButton
               key={index}
