@@ -13,45 +13,45 @@ import "./Home.css"
 
 const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   return (
- <button
+<button
   onClick={toggleSwitch}
-  className={`
-    relative overflow-hidden
+  disabled={block}
+  className={`relative overflow-hidden
     flex items-center justify-center
-    w-12 h-12 rounded-xl
-    font-bold text-sm
+    w-16 h-16 rounded-2xl select-none
+    font-semibold text-lg tracking-wide
     transition-all duration-300 ease-out
-    hover:scale-105 active:scale-95
-    focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
-    shadow-md hover:shadow-lg
+    hover:scale-[1.03] active:scale-95
+    shadow-lg
+    focus:outline-none focus:ring-4 focus:ring-white/30
     ${block
-      ? 'bg-gray-800 text-white cursor-not-allowed shadow-gray-500/30'
+      ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white cursor-not-allowed shadow-gray-800/40"
       : isOn
-      ? 'bg-green-600 text-white shadow-green-500/40 hover:shadow-green-500/60'
-      : 'bg-red-600 text-white shadow-red-500/40 hover:shadow-red-500/60'
+       ? "bg-gradient-to-b from-green-500 to-green-700 text-white shadow-black/20 hover:shadow-black/30"
+      : "bg-gradient-to-b from-red-500 to-red-700 text-white shadow-black/20 hover:shadow-black/30"
     }
   `}
   style={{
-    textShadow: block ? 'none' : '0 1px 2px rgba(0,0,0,0.3)'
+    textShadow: !block ? "0 2px 4px rgba(0,0,0,0.25)" : "none",
   }}
 >
-  {/* Shine overlay for non-blocked */}
+  {/* Shine Animated Overlay */}
   {!block && (
-    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-100 transition-opacity duration-300"></div>
-  )}
-  
-  {/* Number */}
-  <span className="relative z-10">{number}</span>
-  
-  {/* Blocked X overlay */}
-  {block && (
-    <div className="absolute inset-0 flex items-center justify-center bg-gray-800/80 rounded-xl">
-      <div className="w-8 h-8 flex items-center justify-center">
-        <FontAwesomeIcon icon={faTimes} className="text-red-400 text-xl" />
-      </div>
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-60"></div>
+      <div className="absolute -top-16 -left-20 w-40 h-40 bg-white/20 blur-2xl rounded-full animate-pulse"></div>
     </div>
   )}
+
+  {/* Number */}
+  <span className="relative z-10">{number}</span>
+
+  {/* Blocked overlay */}
+  {block && (
+    <div className="absolute inset-0 z-20   rounded-2xl"></div>
+  )}
 </button>
+
   );
 };
 
@@ -520,7 +520,7 @@ onClick={handleUpdateBtn}
         <div className='md:px-28 '>
 
       <h1 className='text-3xl  font-bold mb-8'></h1>
-      <div className="flex flex-wrap justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-3">
         {documents.map((doc, index) => (
           <SwitchButton
             key={index}
@@ -537,7 +537,7 @@ onClick={handleUpdateBtn}
         <div className='md:px-28'>
 
         <h1 className='text-3xl  font-bold mb-8'></h1>
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-3">
           {documents.map((doc, index) => (
             <SwitchButton
               key={index}
@@ -567,7 +567,6 @@ onClick={handleUpdateBtn}
         <div className="relative bg-gradient-to-r from-emerald-600 to-green-600 px-6 py-5">
   <div className="flex items-center justify-between">
     <div>
-      <h3 className="text-2xl font-bold text-white">Token Details</h3>
       <div className="flex items-center mt-2 space-x-2">
         <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
           <p className="text-sm font-semibold text-white">NO : {detailsDoc.tokenNo}</p>
@@ -590,109 +589,112 @@ onClick={handleUpdateBtn}
 </div>
     
         {/* Content */}
-        <div className="p-6 space-y-6 bg-gray-50">
-         
-          {/* Breakfast Section */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Section Header */}
-            <div className="px-5 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-100">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-sm">
-                  <FontAwesomeIcon icon={faUtensils} className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="font-bold text-gray-900">Breakfast</h4>
-              </div>
-            </div>
-           
-            {/* Days Grid */}
-            <div className="p-5">
-              <div className="grid grid-cols-7 gap-3">
-                {[
-                  { label: 'Sun', key: 'su' },
-                  { label: 'Mon', key: 'mo' },
-                  { label: 'Tue', key: 'tu' },
-                  { label: 'Wed', key: 'we' },
-                  { label: 'Thu', key: 'th' },
-                  { label: 'Fri', key: 'fr' },
-                  { label: 'Sat', key: 'sa' },
-                ].map(({ label, key }) => {
-                  const isChecked = detailsDoc?.obj?.breakfast?.[key] === true;
-                  return (
-                    <div key={key} className="flex flex-col items-center space-y-2">
-                      <span className="text-xs font-semibold text-gray-500">{label}</span>
-                      <div
-                        onClick={() => navigate('/login')}
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm ${
-                          isChecked
-                            ? 'bg-gradient-to-br from-blue-500 to-cyan-500 border-2 border-blue-400 scale-105 shadow-blue-200'
-                            : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
-                        }`}
-                      >
-                        {isChecked ? (
-                          <FontAwesomeIcon icon={faCheck} className="text-white text-lg font-bold" />
-                        ) : (
-                          <span className="text-gray-300 text-xl">-</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-    
-          {/* Lunch Section */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Section Header */}
-            <div className="px-5 py-3 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-sm">
-                  <FontAwesomeIcon icon={faBowlFood} className="w-4 h-4 text-white" />
-                </div>
-                <h4 className="font-bold text-gray-900">Lunch</h4>
-              </div>
-            </div>
-           
-            {/* Days Grid */}
-            <div className="p-5">
-              <div className="grid grid-cols-7 gap-3">
-                {[
-                  { label: 'Sun', key: 'su' },
-                  { label: 'Mon', key: 'mo' },
-                  { label: 'Tue', key: 'tu' },
-                  { label: 'Wed', key: 'we' },
-                  { label: 'Thu', key: 'th' },
-                  { label: 'Fri', key: 'fr' },
-                  { label: 'Sat', key: 'sa' },
-                ].map(({ label, key }) => {
-                  const isChecked = detailsDoc?.obj?.lunch?.[key] === true;
-                  return (
-                    <div key={key} className="flex flex-col items-center space-y-2">
-                      <span className="text-xs font-semibold text-gray-500">{label}</span>
-                      <div
-                        onClick={() => navigate('/login')}
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm ${
-                          isChecked
-                            ? 'bg-gradient-to-br from-emerald-500 to-green-500 border-2 border-emerald-400 scale-105 shadow-emerald-200'
-                            : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
-                        }`}
-                      >
-                        {isChecked ? (
-                          <FontAwesomeIcon icon={faCheck} className="text-white text-lg font-bold" />
-                        ) : (
-                          <span className="text-gray-300 text-xl">-</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-    
-          {/* Footer Info */}
-          
+        <div className="p-4 space-y-5 bg-gray-50">
+
+  {/* Breakfast Section */}
+  <div className="bg-white rounded-xl shadow-sm border border-yellow-100 overflow-hidden">
+
+    {/* Header */}
+    <div className="px-4 py-2.5 bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-yellow-200">
+      <div className="flex items-center space-x-2">
+        <div className="w-7 h-7 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-md flex items-center justify-center shadow-sm">
+          <FontAwesomeIcon icon={faUtensils} className="w-3.5 h-3.5 text-white" />
         </div>
+        <h4 className="font-semibold text-gray-900 text-sm">Breakfast</h4>
+      </div>
+    </div>
+
+    {/* Days Grid */}
+    <div className="p-4">
+      <div className="grid grid-cols-7 gap-2">
+        {[
+          { label: "Sun", key: "su" },
+          { label: "Mon", key: "mo" },
+          { label: "Tue", key: "tu" },
+          { label: "Wed", key: "we" },
+          { label: "Thu", key: "th" },
+          { label: "Fri", key: "fr" },
+          { label: "Sat", key: "sa" },
+        ].map(({ label, key }) => {
+          const isChecked = detailsDoc?.obj?.breakfast?.[key] === true;
+          return (
+            <div key={key} className="flex flex-col items-center space-y-1.5">
+              <span className="text-[10px] font-medium text-yellow-700">{label}</span>
+
+              <div
+                onClick={() => navigate("/login")}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer ${
+                  isChecked
+                    ? "bg-gradient-to-br from-yellow-400 to-amber-500 border border-amber-300 scale-105 shadow-sm"
+                    : "bg-yellow-50 border border-yellow-200 hover:border-yellow-300 hover:bg-yellow-100"
+                }`}
+              >
+                {isChecked ? (
+                  <FontAwesomeIcon icon={faCheck} className="text-white text-base" />
+                ) : (
+                  <span className="text-yellow-300 text-lg">-</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+
+  {/* Lunch Section */}
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+    {/* Header */}
+    <div className="px-4 py-2.5 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100">
+      <div className="flex items-center space-x-2">
+        <div className="w-7 h-7 bg-gradient-to-br from-emerald-500 to-green-500 rounded-md flex items-center justify-center shadow-sm">
+          <FontAwesomeIcon icon={faBowlFood} className="w-3.5 h-3.5 text-white" />
+        </div>
+        <h4 className="font-semibold text-gray-900 text-sm">Lunch</h4>
+      </div>
+    </div>
+
+    {/* Days Grid */}
+    <div className="p-4">
+      <div className="grid grid-cols-7 gap-2">
+        {[
+          { label: "Sun", key: "su" },
+          { label: "Mon", key: "mo" },
+          { label: "Tue", key: "tu" },
+          { label: "Wed", key: "we" },
+          { label: "Thu", key: "th" },
+          { label: "Fri", key: "fr" },
+          { label: "Sat", key: "sa" },
+        ].map(({ label, key }) => {
+          const isChecked = detailsDoc?.obj?.lunch?.[key] === true;
+          return (
+            <div key={key} className="flex flex-col items-center space-y-1.5">
+              <span className="text-[10px] font-medium text-gray-600">{label}</span>
+
+              <div
+                onClick={() => navigate("/login")}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer ${
+                  isChecked
+                    ? "bg-gradient-to-br from-emerald-500 to-green-500 border border-emerald-400 scale-105 shadow-sm"
+                    : "bg-gray-50 border border-gray-200 hover:border-gray-300 hover:bg-gray-100"
+                }`}
+              >
+                {isChecked ? (
+                  <FontAwesomeIcon icon={faCheck} className="text-white text-base" />
+                ) : (
+                  <span className="text-gray-300 text-lg">-</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+
+</div>
+
       </div>
     </div>
       )}
