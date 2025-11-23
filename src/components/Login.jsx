@@ -1,7 +1,7 @@
-import React, { useContext, useState, useCallback, useEffect } from 'react';
+import React, { useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationTriangle, faUsers, faLock, faClock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useWorldTime } from '../utils/time';
@@ -16,15 +16,35 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [formFocused, setFormFocused] = useState(false);
   const { timeHms } = useWorldTime('Asia/Kolkata');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const passwordRef = useRef(null);
 
   const { setStdata } = useContext(DataOfOne);
-  const navigate = useNavigate();
+
+  // Read token from URL params and set it
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tokenFromUrl = params.get('token');
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl);
+      // Auto-focus password field after token is set
+      setTimeout(() => {
+        if (passwordRef.current) {
+          passwordRef.current.focus();
+        }
+      }, 100);
+    }
+  }, [location.search]);
 
   const startTime = "14:00:00";
   const endTime = "23:00:00";
 
-  // Get current IST time strictly from worldtimeapi hook
-  const getISTTime = useCallback(() => timeHms.padStart(8, '0'), [timeHms]);
+  // Get current IST time from Firebase server via useWorldTime hook
+  const getISTTime = useCallback(() => {
+    if (!timeHms) return null; // Wait for Firebase time to load
+    return timeHms.padStart(8, '0');
+  }, [timeHms]);
 
   // Update time and canClick state
   useEffect(() => {
@@ -32,17 +52,20 @@ function Login() {
 
     const updateTime = () => {
       const time = getISTTime();
-      if (isMounted) {
-        setCurrentTime(time);
+      if (!isMounted) return;
+      setCurrentTime(time);
+      if (time) {
         setCanClick(
           (time >= startTime && time <= endTime)
         );
+      } else {
+        setCanClick(false); // Disable login until time is available
       }
     };
 
     // Initial update
     updateTime();
-    // Update displayed time every second for accurate UI
+    // Update displayed time every second for accurate UI (driven by Firebase server time)
     const intervalId = setInterval(updateTime, 1000);
 
     return () => {
@@ -267,6 +290,7 @@ function Login() {
                   />
                 </div>
                 <input
+                  ref={passwordRef}
                   type={showPassword ? "text" : "password"}
                   id="password"
                   value={pass}

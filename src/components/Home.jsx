@@ -18,8 +18,8 @@ const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   disabled={block}
   className={`relative overflow-hidden
     flex items-center justify-center
-    w-16 h-16 rounded-2xl select-none
-    font-semibold text-lg tracking-wide
+    w-14 h-14 rounded-2xl select-none
+    font-semibold text-md tracking-wide
     transition-all duration-300 ease-out
     hover:scale-[1.03] active:scale-95
     shadow-lg
@@ -27,8 +27,8 @@ const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
     ${block
       ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white cursor-not-allowed shadow-gray-800/40"
       : isOn
-       ? "bg-gradient-to-b from-green-500 to-green-700 text-white shadow-black/20 hover:shadow-black/30"
-      : "bg-gradient-to-b from-red-500 to-red-700 text-white shadow-black/20 hover:shadow-black/30"
+       ? "bg-gradient-to-b from-green-600 to-green-800 text-white shadow-black/20 hover:shadow-black/30"
+      : "bg-gradient-to-b from-red-600 to-red-800 text-white shadow-black/20 hover:shadow-black/30"
     }
   `}
   style={{
@@ -178,7 +178,7 @@ const SwitchPage = () => {
 
   const toggleSwitch = async (index) => {
     const doc = documents[index];
-    setDetailsDoc(doc);
+    navigate(`/login?token=${doc.tokenNo}`);
   };
 
   const [isLunch, setIsLunch] = useState(true); // State to track current status, default is lunch

@@ -2,6 +2,8 @@ import React, { useContext, useState, useEffect } from 'react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+
 import { User, CreditCard, Utensils, Coffee, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import './StudentPort.css';
 
@@ -69,7 +71,7 @@ function StudentPort() {
 
   const getDayOfWeek = (date) => {
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    return daysOfWeek[date.getUTCDay()].slice(0,3).toUpperCase();
+    return daysOfWeek[date.getUTCDay()].toUpperCase();
   };
 
   const lunchSelectAll = (event) => {
@@ -143,11 +145,39 @@ function StudentPort() {
         },
       })
       .then(() => {
-        setShowSuccess(true);
-        setTimeout(() => {
-          setShowSuccess(false);
-        }, 3000);
-      });
+  Swal.fire({
+    html: `
+      <div class="flex flex-col items-center justify-center p-6">
+        <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4 border-2 border-green-200">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Token Updated Successfully</h2>
+        <p class="text-gray-600 text-center mb-4 text-sm leading-relaxed">
+          Your authentication token has been updated and is now active.
+        </p>
+      </div>
+    `,
+    showConfirmButton: false,
+    showCloseButton: false,
+    allowOutsideClick: false,
+    background: '#ffffff',
+    padding: 0,
+    width: '420px',
+    customClass: {
+      popup: 'rounded-xl shadow-xl border border-gray-100',
+    },
+    didOpen: () => {
+      // Auto close after 2 seconds
+      setTimeout(() => {
+        Swal.close();
+        navigate('/');
+      }, 2000);
+    }
+  });
+});
+
   };
 
   const toggleCheckoutOptions = () => {
@@ -227,51 +257,33 @@ function StudentPort() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Success Alert */}
-      {showSuccess && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in">
-          <div className="bg-white rounded-xl shadow-2xl border border-green-200 p-4 flex items-center space-x-3 max-w-md">
-            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <Check className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Successfully Updated</p>
-              <p className="text-xs text-gray-600">Your meal preferences have been saved</p>
-            </div>
-          </div>
-        </div>
-      )}
-
+     
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header Card */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full -ml-24 -mb-24"></div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
-                    <User className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{stdata.uname}</h1>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <CreditCard className="w-4 h-4" />
-                      <span className="text-emerald-100 font-medium">Token: {stdata.tokenNo}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
-                  <p className="text-xs text-emerald-100 uppercase tracking-wider font-semibold">Current Day</p>
-                  <p className="text-2xl font-bold mt-1">{day.toUpperCase()}</p>
-                </div>
-              </div>
+       <div className="mb-4">
+  <div className="bg-white border border-emerald-200 rounded-lg shadow-sm p-3 text-emerald-600 relative">
+    <div className="relative z-10">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-emerald-50 rounded flex items-center justify-center">
+            <User className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold tracking-tight truncate">{stdata.uname}</h1>
+            <div className="flex items-center space-x-1 mt-0.5">
+              <CreditCard className="w-3 h-3 flex-shrink-0 text-emerald-500" />
+              <span className="text-emerald-500 text-xs font-medium truncate">Token #{stdata.tokenNo}</span>
             </div>
           </div>
         </div>
-
+        
+        <div className="bg-emerald-50/50 rounded px-3 py-1.5 flex-shrink-0">
+          <p className="text-sm font-semibold text-emerald-600">{day}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
         <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-2 gap-6 mb-6">

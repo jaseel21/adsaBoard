@@ -42,11 +42,20 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
       if (timeDoc.exists) {
         const serverTimestamp = timeDoc.data().updatedAt;
         const serverIsoStr = serverTimestamp.toDate().toISOString();
-        setServerIso(serverIsoStr);
-        // Compute offset using server millis and local now
         const serverMs = serverTimestamp.toMillis();
         const localNowMs = Date.now();
         offsetMsRef.current = serverMs - localNowMs;
+        
+        // Log REAL Firebase server time
+        const firebaseServerDate = new Date(serverMs);
+        console.log('📡 FIREBASE SERVER TIME (REAL)');
+        console.log('ISO:', serverIsoStr);
+        console.log('UTC:', firebaseServerDate.toUTCString());
+        console.log('HH:mm:ss (UTC):', formatHms(firebaseServerDate));
+        console.log('Milliseconds:', serverMs);
+        console.log('---');
+        
+        setServerIso(serverIsoStr);
       }
     } catch (e) {
       // Keep previous offset if any; expose the error for UI if needed
@@ -71,26 +80,66 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
     return () => clearInterval(id);
   }, []);
 
-  // Compute server-aligned Date (UTC first, then adjust for timezone)
+  // Compute server-aligned Date (use Firebase UTC, format for IST timezone)
   const nowDate = useMemo(() => {
+    // Firebase gives us UTC time, calculate current UTC based on stored offset
     const utcServerNow = new Date(Date.now() + offsetMsRef.current);
-    let timezoneAdjusted;
-    if (timezone === 'Asia/Kolkata') {
-      // IST is UTC + 5:30 (19800000 ms)
-      const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // 19800000
-      timezoneAdjusted = new Date(utcServerNow.getTime() + IST_OFFSET_MS);
-    } else {
-      // Fallback to UTC for unsupported timezones
-      timezoneAdjusted = utcServerNow;
-    }
-    return timezoneAdjusted;
+    
+    // For IST (Asia/Kolkata), we use toLocaleTimeString with the correct timezone
+    // This is more reliable than manually adding offsets
+    return utcServerNow;
   }, [tick, timezone]); // Depend on tick for second-by-second updates
 
-  // Derivations (now update every second via tick dep)
-  const timeHms = useMemo(() => formatHms(nowDate), [nowDate]);
-  const dayShort = useMemo(() => DAY_SHORT[nowDate.getDay()], [nowDate]);
-  const dayFull = useMemo(() => DAY_FULL[nowDate.getDay()], [nowDate]);
-  const longDate = useMemo(() => formatLongDate(nowDate), [nowDate]);
+  // Format time strings using proper timezone conversion
+  const timeHms = useMemo(() => {
+    if (timezone === 'Asia/Kolkata') {
+      // Use toLocaleTimeString to convert UTC to IST (Asia/Kolkata)
+      const istTime = nowDate.toLocaleTimeString('en-GB', { 
+        timeZone: 'Asia/Kolkata', 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      console.log('🕐 IST TIME:', istTime);
+      return istTime;
+    } else {
+      return formatHms(nowDate);
+    }
+  }, [nowDate, timezone]);
+  
+  const dayShort = useMemo(() => {
+    if (timezone === 'Asia/Kolkata') {
+      // Get day of week in IST
+      const istDate = new Date(nowDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      return DAY_SHORT[istDate.getDay()];
+    } else {
+      return DAY_SHORT[nowDate.getDay()];
+    }
+  }, [nowDate, timezone]);
+  
+  const dayFull = useMemo(() => {
+    if (timezone === 'Asia/Kolkata') {
+      const istDate = new Date(nowDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      return DAY_FULL[istDate.getDay()];
+    } else {
+      return DAY_FULL[nowDate.getDay()];
+    }
+  }, [nowDate, timezone]);
+  
+  const longDate = useMemo(() => {
+    if (timezone === 'Asia/Kolkata') {
+      const istDateStr = nowDate.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      return istDateStr;
+    } else {
+      return formatLongDate(nowDate);
+    }
+  }, [nowDate, timezone]);
 
   return {
     serverDateTimeISO: serverIso,
