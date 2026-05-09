@@ -12,9 +12,28 @@ import {faCalendarDay } from '@fortawesome/free-solid-svg-icons';
 const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
   return (
     <button
-    onClick={toggleSwitch}
-    className={`flex items-center justify-center ${block && 'glossy-button2 text-white px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300' } ${isOn ? 'bg-green-600 glossy-button text-white  px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300' : 'bg-red-500 text-white px-4 py-2 rounded-4xl shadow-md hover:shadow-lg transition-shadow duration-300'}  text-white font-bold text-center no-underline rounded-2xl w-14 h-14 m-2 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
-  >
+      onClick={toggleSwitch}
+      disabled={block}
+      className={`
+        relative overflow-hidden
+        flex items-center justify-center
+        w-14 h-14 m-2 rounded-2xl select-none
+        font-semibold text-md tracking-wide
+        transition-transform duration-300 ease-out
+        lg:hover:scale-[1.03] active:scale-95
+        shadow-lg
+        focus:outline-none focus:ring-4 focus:ring-white/30
+        ${block
+          ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white cursor-not-allowed shadow-gray-800/40"
+          : isOn
+            ? "bg-gradient-to-b from-green-600 to-green-800 text-white shadow-black/20 lg:hover:shadow-black/30"
+            : "bg-gradient-to-b from-red-600 to-red-800 text-white shadow-black/20 lg:hover:shadow-black/30"
+        }
+      `}
+      style={{
+        textShadow: !block ? "0 2px 4px rgba(0,0,0,0.25)" : "none",
+      }}
+    >
     {number}
   </button>
   );
@@ -291,7 +310,7 @@ const fullDayName = {
   </div>
   
           </div>
-<button onClick={handleTokens} className='bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-md border hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 m-9 inline-flex items-center' >Manage Tokens</button>
+{/* <button onClick={handleTokens} className='bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-md border hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 m-9 inline-flex items-center' >Manage Tokens</button> */}
 </div>
 
 

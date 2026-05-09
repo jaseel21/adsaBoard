@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "adsatboard"
-  }
+    "default": "adsatboard",
+    "food management": "adsatboard"
+  },
+  "targets": {},
+  "etags": {}
 }

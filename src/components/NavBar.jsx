@@ -325,7 +325,7 @@ const Navbar = ({ isAdmin }) => {
             <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 py-3">
               <p className="text-white font-semibold text-sm">Navigation Menu</p>
             </div>
-            
+
             <div className="space-y-1 px-3 py-3">
               <button
                 onClick={handleHomeBtn}

@@ -16,41 +16,46 @@ const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
 <button
   onClick={toggleSwitch}
   disabled={block}
-  className={`relative overflow-hidden
+  className={`
+    relative overflow-hidden
     flex items-center justify-center
     w-14 h-14 rounded-2xl select-none
     font-semibold text-md tracking-wide
-    transition-all duration-300 ease-out
-    hover:scale-[1.03] active:scale-95
+    transition-transform duration-300 ease-out
+    lg:hover:scale-[1.03] active:scale-95
     shadow-lg
     focus:outline-none focus:ring-4 focus:ring-white/30
     ${block
       ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white cursor-not-allowed shadow-gray-800/40"
       : isOn
-       ? "bg-gradient-to-b from-green-600 to-green-800 text-white shadow-black/20 hover:shadow-black/30"
-      : "bg-gradient-to-b from-red-600 to-red-800 text-white shadow-black/20 hover:shadow-black/30"
+        ? "bg-gradient-to-b from-green-600 to-green-800 text-white shadow-black/20 lg:hover:shadow-black/30"
+        : "bg-gradient-to-b from-red-600 to-red-800 text-white shadow-black/20 lg:hover:shadow-black/30"
     }
   `}
   style={{
     textShadow: !block ? "0 2px 4px rgba(0,0,0,0.25)" : "none",
   }}
 >
-  {/* Shine Animated Overlay */}
+
+  {/* Light Shine Overlay - Only Desktop */}
   {!block && (
-    <div className="absolute inset-0 pointer-events-none">
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-60"></div>
-      <div className="absolute -top-16 -left-20 w-40 h-40 bg-white/20 blur-2xl rounded-full animate-pulse"></div>
+    <div className="absolute inset-0 pointer-events-none hidden lg:block">
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40"></div>
+
+      {/* Lightweight glow (no blur, no pulse) */}
+      <div className="absolute -top-12 -left-12 w-24 h-24 bg-white/10 rounded-full"></div>
     </div>
   )}
 
   {/* Number */}
   <span className="relative z-10">{number}</span>
 
-  {/* Blocked overlay */}
+  {/* Block Overlay */}
   {block && (
-    <div className="absolute inset-0 z-20   rounded-2xl"></div>
+    <div className="absolute inset-0 z-20 rounded-2xl"></div>
   )}
 </button>
+
 
   );
 };
@@ -176,9 +181,9 @@ const SwitchPage = () => {
     }
   };
 
-  const toggleSwitch = async (index) => {
+  const toggleSwitch = (index) => {
     const doc = documents[index];
-    navigate(`/login?token=${doc.tokenNo}`);
+    setDetailsDoc(doc);
   };
 
   const [isLunch, setIsLunch] = useState(true); // State to track current status, default is lunch
@@ -507,6 +512,7 @@ onClick={handleUpdateBtn}
 
 
 
+
  
 
 
@@ -622,7 +628,7 @@ onClick={handleUpdateBtn}
               <span className="text-[10px] font-medium text-yellow-700">{label}</span>
 
               <div
-                onClick={() => navigate("/login")}
+                onClick={() => navigate(`/login?token=${detailsDoc.tokenNo}`)}
                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer ${
                   isChecked
                     ? "bg-gradient-to-br from-yellow-400 to-amber-500 border border-amber-300 scale-105 shadow-sm"
@@ -673,7 +679,7 @@ onClick={handleUpdateBtn}
               <span className="text-[10px] font-medium text-gray-600">{label}</span>
 
               <div
-                onClick={() => navigate("/login")}
+                onClick={() => navigate(`/login?token=${detailsDoc.tokenNo}`)}
                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer ${
                   isChecked
                     ? "bg-gradient-to-br from-emerald-500 to-green-500 border border-emerald-400 scale-105 shadow-sm"
