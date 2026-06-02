@@ -7,13 +7,13 @@ import { useNavigate,useLocation } from 'react-router-dom';
 import {AuthContext} from "../store/AuthContext"
 import { motion } from 'framer-motion';
 import {faCalendarDay } from '@fortawesome/free-solid-svg-icons';
+import { useWorldTime } from '../utils/time';
 
 
 const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
   return (
     <button
       onClick={toggleSwitch}
-      disabled={block}
       className={`
         relative overflow-hidden
         flex items-center justify-center
@@ -24,7 +24,7 @@ const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
         shadow-lg
         focus:outline-none focus:ring-4 focus:ring-white/30
         ${block
-          ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white cursor-not-allowed shadow-gray-800/40"
+          ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white shadow-gray-800/40"
           : isOn
             ? "bg-gradient-to-b from-green-600 to-green-800 text-white shadow-black/20 lg:hover:shadow-black/30"
             : "bg-gradient-to-b from-red-600 to-red-800 text-white shadow-black/20 lg:hover:shadow-black/30"
@@ -60,6 +60,9 @@ function Admin() {
     }
   }, [location.state]);
 
+  const { dayShort, error: timeError } = useWorldTime('Asia/Kolkata');
+  const [day, setDay] = useState("");
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -70,55 +73,29 @@ function Admin() {
         }));
         tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
         setDocuments(tokenDocuments);
-        setLoading(false)
 
-        await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get().then((doc=>{
-          if (doc.exists) {
-            
-            let tbStatus = doc.data(); // Assign doc.data() to tbStatus
-            console.log(tbStatus); // Optionally log tbStatus
-            setIsChecked(tbStatus.status)
-          } else {
-            console.log("No such document!");
-          }
-        }))
-
+        const doc = await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get();
+        if (doc.exists) {
+          let tbStatus = doc.data();
+          setIsChecked(tbStatus.status);
+        } else {
+          console.log("No such document!");
+        }
       } catch (error) {
-        console.error('Error fetching tokens:', error);
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
   }, []);
 
-  const [day, setDay] = useState("");
-
   useEffect(() => {
-    // Function to get the current day of the week in GMT+5:30
-    const updateDay = () => {
-      const nowUtc = new Date(); // Current time in UTC
-      // Manually adjust for GMT+5:30
-      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
-      const dayOfWeek = getDayOfWeek(gmtPlus530);
-      setDay(dayOfWeek);
-      console.log(dayOfWeek, "day");
-    };
-
-    // Initial call to set the day immediately on mount
-    updateDay();
-
-    // Set up an interval to update every minute
-    const timer = setInterval(updateDay, 60000);
-
-    // Clean up interval on component unmount
-    return () => clearInterval(timer);
-  }, []);
-
-  // Function to get the day of the week from a Date object
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
-  };
+    if (dayShort) {
+      setDay(dayShort);
+    }
+  }, [dayShort]);
 
 
 
@@ -182,7 +159,7 @@ const handleTokens =()=>{
 }
 
 
-if (loading) {
+if (loading || (!dayShort && !timeError) || (!timeError && day === "")) {
   // Loading screen
 
 
@@ -216,6 +193,18 @@ return (
 
 );
 
+}
+
+if (timeError) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)]">
+      <div className="bg-red-50 p-6 rounded-2xl border border-red-200 text-center max-w-md">
+        <FontAwesomeIcon icon={faScrewdriverWrench} className="text-red-500 text-4xl mb-3" />
+        <h2 className="text-red-700 font-bold text-xl mb-2">Time Sync Failed</h2>
+        <p className="text-red-600 text-sm">{timeError.message || 'Unable to get secure server time. Please check your connection or permissions.'}</p>
+      </div>
+    </div>
+  );
 }
 const fullDayName = {
   su: 'Sunday',

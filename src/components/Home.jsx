@@ -14,8 +14,13 @@ import "./Home.css"
 const SwitchButton = ({ number,block, isOn,  toggleSwitch }) => {
   return (
 <button
-  onClick={toggleSwitch}
-  disabled={block}
+  onClick={() => {
+    if (block) {
+      alert("a blocked message");
+    } else {
+      toggleSwitch();
+    }
+  }}
   className={`
     relative overflow-hidden
     flex items-center justify-center
@@ -67,7 +72,7 @@ const SwitchPage = () => {
   const [lunchCount, setLunchCount] = useState(0);
   const [breakfastCount, setBreakfastCount] = useState(0);
   const [loading, setLoading] = useState(true); // Add loading state
-  const { timeHms, longDate, dayShort, dayFull } = useWorldTime('Asia/Kolkata')
+  const { timeHms, longDate, dayShort, dayFull, error: timeError } = useWorldTime('Asia/Kolkata');
 
 
   
@@ -97,6 +102,7 @@ const SwitchPage = () => {
 
   useEffect(() => {
     const updateDay = () => {
+      if (!dayShort || !timeHms) return;
       // Use dayShort directly from worldtimeapi hook
       const dayOfWeek = dayShort;
       setDay1(dayOfWeek);
@@ -158,7 +164,7 @@ const SwitchPage = () => {
 
   useEffect(() => {
     calculateCounts();
-  }, [documents]);
+  }, [documents, day]);
 
   const calculateCounts = () => {
     try {
@@ -281,10 +287,8 @@ const SwitchPage = () => {
   };
 
 
-  if (loading) {
+  if (loading || (!timeHms && !timeError) || (!timeError && day === "")) {
     // Loading screen
-
-
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] ">
   {/* Bouncing Dots */}
@@ -317,7 +321,17 @@ const SwitchPage = () => {
   );
 }
 
-  
+  if (timeError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="bg-red-50 p-6 rounded-2xl border border-red-200 text-center max-w-md">
+          <FontAwesomeIcon icon={faTimes} className="text-red-500 text-4xl mb-3" />
+          <h2 className="text-red-700 font-bold text-xl mb-2">Time Sync Failed</h2>
+          <p className="text-red-600 text-sm">{timeError.message || 'Unable to get secure server time. Please check your connection or permissions.'}</p>
+        </div>
+      </div>
+    );
+  }
 
 
 

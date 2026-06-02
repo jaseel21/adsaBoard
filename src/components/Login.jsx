@@ -202,11 +202,10 @@ function Login() {
       <div className="relative w-full max-w-md z-10">
         {/* Time Status Banner - Green Theme */}
         <div className="mb-6 flex items-center justify-center">
-          <div className={`flex items-center space-x-3 px-5 py-3 rounded-2xl backdrop-blur-lg border-2 shadow-lg transition-all duration-300 ${
-            canClick 
-              ? 'bg-emerald-50/90 border-emerald-300 text-emerald-700 shadow-emerald-200/50' 
+          <div className={`flex items-center space-x-3 px-5 py-3 rounded-2xl backdrop-blur-lg border-2 shadow-lg transition-all duration-300 ${canClick
+              ? 'bg-emerald-50/90 border-emerald-300 text-emerald-700 shadow-emerald-200/50'
               : 'bg-red-50/90 border-red-300 text-red-700 shadow-red-200/50'
-          }`}>
+            }`}>
             <div className={`w-2 h-2 rounded-full ${canClick ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse`}></div>
             <FontAwesomeIcon icon={faClock} className="w-5 h-5" />
             <div className="flex flex-col">
@@ -231,10 +230,9 @@ function Login() {
         </div>
 
         {/* Login Card - Enhanced Glass Effect - Only form fields */}
-        <div className={`backdrop-blur-2xl bg-white/80 border border-white/30 rounded-3xl shadow-2xl p-8 transition-all duration-500 ${
-          formFocused ? 'scale-[1.02] shadow-emerald-300/30 ring-1 ring-emerald-200/50' : 'shadow-lg shadow-green-200/20'
-        }`}>
-          
+        <div className={`backdrop-blur-2xl bg-white/80 border border-white/30 rounded-3xl shadow-2xl p-8 transition-all duration-500 ${formFocused ? 'scale-[1.02] shadow-emerald-300/30 ring-1 ring-emerald-200/50' : 'shadow-lg shadow-green-200/20'
+          }`}>
+
           {/* Error Message - Green Theme Accent */}
           {err && (
             <div className="mb-6 p-4 bg-red-50/80 border-l-4 border-red-400 rounded-xl backdrop-blur-sm animate-shake shadow-md">
@@ -247,7 +245,7 @@ function Login() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} aria-label="Team Login Form" className="space-y-6">
-            
+
             {/* Select Team Field - Glass Input with Chevron */}
             <div className="relative group">
               <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="team">
@@ -255,9 +253,9 @@ function Login() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FontAwesomeIcon 
-                    icon={faUsers} 
-                    className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" 
+                  <FontAwesomeIcon
+                    icon={faUsers}
+                    className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300"
                   />
                 </div>
                 <input
@@ -273,7 +271,7 @@ function Login() {
                   aria-required="true"
                   aria-describedby="team-error"
                 />
-                
+
               </div>
             </div>
 
@@ -284,9 +282,9 @@ function Login() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FontAwesomeIcon 
-                    icon={faLock} 
-                    className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300" 
+                  <FontAwesomeIcon
+                    icon={faLock}
+                    className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-300"
                   />
                 </div>
                 <input
