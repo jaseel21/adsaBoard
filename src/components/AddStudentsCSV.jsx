@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import firebase from '../firebase/config';
 import Papa from 'papaparse';
 
 const AddStudentsCSV = () => {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -133,7 +135,7 @@ const AddStudentsCSV = () => {
           const studentsSnapshot = await db.collection('students').get();
           setStudentCount(studentsSnapshot.size);
           setTimeout(() => {
-            window.location.href = '/';
+            navigate('/');
           }, 1000);
         } catch (error) {
           setError(`Error adding students: ${error.message}`);
@@ -170,7 +172,7 @@ const AddStudentsCSV = () => {
       setSuccess('All students deleted successfully!');
       setStudentCount(0);
       setTimeout(() => {
-        window.location.href = '/';
+        navigate('/');
       }, 1000);
     } catch (error) {
       setError(`Error deleting students: ${error.message}`);
@@ -226,7 +228,7 @@ const AddStudentsCSV = () => {
       const studentsSnapshot = await db.collection('students').get();
       setStudentCount(studentsSnapshot.size);
       setTimeout(() => {
-        window.location.href = '/';
+        navigate('/');
       }, 1000);
     } catch (error) {
       setFormError(`Error adding student: ${error.message}`);
@@ -270,7 +272,7 @@ const AddStudentsCSV = () => {
       const studentsSnapshot = await db.collection('students').get();
       setStudentCount(studentsSnapshot.size);
       setTimeout(() => {
-        window.location.href = '/';
+        navigate('/');
       }, 1000);
     } catch (error) {
       setDeleteError(`Error deleting student: ${error.message}`);

@@ -1,6 +1,6 @@
 import React, { useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clock, KeyRound, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Clock, KeyRound, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, ArrowLeft } from 'lucide-react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useWorldTime } from '../utils/time';
@@ -235,6 +235,8 @@ function Login() {
               <div className="relative">
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   id="token"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
@@ -291,7 +293,19 @@ function Login() {
             </button>
           </form>
 
-          <div className="pt-2 text-center border-t border-gray-100 dark:border-white/5">
+          <div className="pt-3 flex flex-col items-center gap-2 border-t border-gray-100 dark:border-white/5">
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                navigate('/');
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Token Board</span>
+            </button>
+
             <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center justify-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
               <span>Official Alathurpadi Dars Canteen System</span>

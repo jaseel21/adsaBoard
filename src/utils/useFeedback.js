@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 export function useFeedback() {
   const audioCtxRef = useRef(null);
@@ -115,6 +115,7 @@ export function useFeedback() {
   const feedback = useCallback((type = 'tick') => {
     playSynthesizedSound(type);
     triggerVibration(type);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [soundEnabled, hapticsEnabled]);
 
   return {

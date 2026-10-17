@@ -12,6 +12,7 @@ import {
   Search,
   Check,
   X,
+  Users,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
@@ -25,13 +26,13 @@ const SwitchButton = ({ number, block, isOn, onClick }) => {
   return (
     <motion.button
       whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.94 }}
-      layout
+      whileTap={{ scale: 0.92 }}
       onClick={onClick}
       className={`
-        relative flex items-center justify-center
-        w-13 h-13 sm:w-14 sm:h-14 rounded-2xl select-none font-bold text-sm sm:text-base tracking-wide
-        shadow-sm transition-all duration-200 focus:outline-none
+        relative flex items-center justify-center flex-shrink-0
+        w-11 h-11 min-[380px]:w-12 min-[380px]:h-12 sm:w-14 sm:h-14 aspect-square rounded-2xl select-none font-extrabold
+        text-xs min-[380px]:text-sm sm:text-base tracking-tight font-mono
+        shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400/50
         ${
           block
             ? 'bg-gradient-to-b from-gray-700 to-gray-900 text-gray-300 border border-gray-600/40 shadow-inner'
@@ -41,7 +42,7 @@ const SwitchButton = ({ number, block, isOn, onClick }) => {
         }
       `}
     >
-      {block ? <Lock className="w-4 h-4 text-gray-400" /> : <span>{number}</span>}
+      {block ? <Lock className="w-4 h-4 text-gray-300" /> : <span className="leading-none">{number}</span>}
     </motion.button>
   );
 };
@@ -239,16 +240,27 @@ function Admin() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/student-management');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Students Console</span>
+            </button>
+
             <button
               onClick={() => {
                 feedback('tick');
                 navigate('/m-tokens');
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Manage Range</span>
+              <span>Range</span>
             </button>
 
             <div className="relative">
@@ -266,12 +278,12 @@ function Admin() {
       </div>
 
       {/* Token Matrix */}
-      <div className="rounded-3xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 p-6 shadow-sm backdrop-blur-xl">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+      <div className="rounded-3xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 p-4 sm:p-6 shadow-sm backdrop-blur-xl">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 text-center sm:text-left">
           Click on any student token below to edit individual preferences or lock/unlock their account.
         </p>
 
-        <motion.div layout className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
+        <div className="flex flex-wrap justify-center gap-2 min-[380px]:gap-2.5 sm:gap-3">
           {filteredDocuments.map((doc) => {
             const isOn = Boolean(
               isLunch ? doc.obj?.lunch?.[day] : doc.obj?.breakfast?.[day]
@@ -286,7 +298,7 @@ function Admin() {
               />
             );
           })}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

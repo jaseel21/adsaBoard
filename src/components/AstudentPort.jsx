@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -28,6 +28,28 @@ function AstudentPort() {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
+  // State declared unconditionally
+  const [blocked, setBlocked] = useState(() => Boolean(stdata?.block));
+  const [password, setPassword] = useState(() => stdata?.password || '');
+  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [lunch, setLunch] = useState(() => stdata?.obj?.lunch || {});
+  const [breakfast, setBreakfast] = useState(() => stdata?.obj?.breakfast || {});
+  const [dietary, setDietary] = useState(
+    () => stdata?.obj2 || { beef: true, chicken: true, fish: true, mutton: true }
+  );
+
+  useEffect(() => {
+    if (stdata?.obj) {
+      setBlocked(Boolean(stdata.block));
+      setPassword(stdata.password || '');
+      setLunch(stdata.obj.lunch || {});
+      setBreakfast(stdata.obj.breakfast || {});
+      setDietary(stdata.obj2 || { beef: true, chicken: true, fish: true, mutton: true });
+    }
+  }, [stdata]);
+
   if (!stdata || !stdata.obj) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
@@ -41,17 +63,6 @@ function AstudentPort() {
       </div>
     );
   }
-
-  const [blocked, setBlocked] = useState(Boolean(stdata.block));
-  const [password, setPassword] = useState(stdata.password || '');
-  const [showPassword, setShowPassword] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [lunch, setLunch] = useState(stdata.obj.lunch || {});
-  const [breakfast, setBreakfast] = useState(stdata.obj.breakfast || {});
-  const [dietary, setDietary] = useState(
-    stdata.obj2 || { beef: true, chicken: true, fish: true, mutton: true }
-  );
 
   const daysList = [
     { key: 'su', label: t('days').su },
@@ -146,7 +157,7 @@ function AstudentPort() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
             {stdata.tokenNo}
@@ -161,7 +172,7 @@ function AstudentPort() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={() => {
               feedback('tick');
@@ -229,31 +240,31 @@ function AstudentPort() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Breakfast */}
-          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-6 space-y-4">
+          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-4 sm:p-6 space-y-4">
             <div className="flex items-center gap-2">
               <Coffee className="w-5 h-5 text-amber-500" />
               <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
                 Breakfast Schedule
               </h2>
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {daysList.map(({ key, label }) => {
                 const active = Boolean(breakfast[key]);
                 return (
                   <div key={key} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate">
                       {label}
                     </span>
                     <button
                       type="button"
                       onClick={() => toggleBreakfastDay(key)}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                      className={`w-full max-w-[42px] h-10 sm:h-12 aspect-square rounded-xl flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${
                         active
                           ? 'bg-amber-500 text-white shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
                       }`}
                     >
-                      {active ? <Check className="w-4 h-4" /> : '-'}
+                      {active ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : '-'}
                     </button>
                   </div>
                 );
@@ -262,31 +273,31 @@ function AstudentPort() {
           </div>
 
           {/* Lunch */}
-          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-6 space-y-4">
+          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-4 sm:p-6 space-y-4">
             <div className="flex items-center gap-2">
               <Utensils className="w-5 h-5 text-emerald-500" />
               <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
                 Lunch Schedule
               </h2>
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {daysList.map(({ key, label }) => {
                 const active = Boolean(lunch[key]);
                 return (
                   <div key={key} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate">
                       {label}
                     </span>
                     <button
                       type="button"
                       onClick={() => toggleLunchDay(key)}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                      className={`w-full max-w-[42px] h-10 sm:h-12 aspect-square rounded-xl flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${
                         active
                           ? 'bg-emerald-500 text-white shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
                       }`}
                     >
-                      {active ? <Check className="w-4 h-4" /> : '-'}
+                      {active ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : '-'}
                     </button>
                   </div>
                 );
@@ -296,7 +307,7 @@ function AstudentPort() {
         </div>
 
         {/* Dietary Preferences */}
-        <div className="p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md space-y-4">
+        <div className="p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md space-y-4">
           <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
             Dietary Exclusions
           </h3>

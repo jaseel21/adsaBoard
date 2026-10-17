@@ -1,17 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Utensils, ChevronDown, Check, Users } from 'lucide-react';
+import { Utensils, ArrowLeft } from 'lucide-react';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
-import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 
 const Section = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [activeSection, setActiveSection] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const { t } = useLanguage();
   const { feedback } = useFeedback();
   const { timeHms, dayShort } = useWorldTime('Asia/Kolkata');
   const [day, setDay] = useState('');
@@ -99,18 +99,31 @@ const Section = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <Utensils className="w-5 h-5 text-emerald-500" />
-          Lunch Supply Distribution by Sections
-        </h1>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Each section manages batches of 25 students. Numbers shown inside are canceled/skipped tokens.
-        </p>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Utensils className="w-5 h-5 text-emerald-500" />
+            Lunch Supply Distribution by Sections
+          </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Each section manages batches of 25 students. Numbers shown inside are canceled/skipped tokens.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            feedback('tick');
+            navigate('/');
+          }}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors self-end sm:self-auto"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Board</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
         {sections.map((sec) => {
           const isOpen = activeSection === sec.id;
           return (

@@ -6,7 +6,7 @@ import { useFeedback } from '../utils/useFeedback';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ThemeSwitch = () => {
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const [open, setOpen] = useState(false);

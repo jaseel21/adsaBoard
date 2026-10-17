@@ -63,9 +63,8 @@ const TokenButton = ({ doc, isOn, onClick, onBlockedClick }) => {
   return (
     <motion.button
       whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.94 }}
-      layout
-      transition={{ type: 'spring', stiffness: 450, damping: 25 }}
+      whileTap={{ scale: 0.92 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 28 }}
       onClick={() => {
         if (isBlocked) {
           onBlockedClick(doc);
@@ -75,9 +74,10 @@ const TokenButton = ({ doc, isOn, onClick, onBlockedClick }) => {
       }}
       aria-label={`Token ${doc.tokenNo}`}
       className={`
-        relative group flex items-center justify-center
-        w-13 h-13 sm:w-14 sm:h-14 rounded-2xl select-none font-bold text-sm sm:text-base tracking-wide
-        shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/50
+        relative group flex items-center justify-center flex-shrink-0
+        w-11 h-11 min-[380px]:w-12 min-[380px]:h-12 sm:w-14 sm:h-14 aspect-square rounded-2xl select-none font-extrabold
+        text-xs min-[380px]:text-sm sm:text-base tracking-tight font-mono
+        shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400/50
         ${
           isBlocked
             ? 'bg-gradient-to-b from-gray-700 to-gray-900 text-gray-300 border border-gray-600/40 shadow-inner'
@@ -94,16 +94,16 @@ const TokenButton = ({ doc, isOn, onClick, onBlockedClick }) => {
 
       {/* Lock icon badge for blocked students */}
       {isBlocked ? (
-        <Lock className="w-4 h-4 text-gray-400" />
+        <Lock className="w-4 h-4 text-gray-300" />
       ) : (
-        <span className="relative z-10">{doc.tokenNo}</span>
+        <span className="relative z-10 leading-none">{doc.tokenNo}</span>
       )}
 
       {/* Mini indicator dot */}
       <span
         className={`absolute bottom-1 w-1 h-1 rounded-full ${
           isBlocked
-            ? 'bg-gray-500'
+            ? 'bg-gray-400'
             : isOn
             ? 'bg-white/80'
             : 'bg-white/60'
@@ -403,9 +403,9 @@ const SwitchPage = () => {
         </div>
 
         {/* Filter Chips & Search Input */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
-          {/* Status Filter Chips */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-white/5 text-xs font-semibold">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          {/* Status Filter Chips (horizontally scrollable without wrapping clumsily on mobile) */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 dark:bg-white/5 text-xs font-semibold overflow-x-auto whitespace-nowrap scrollbar-none max-w-full">
             {['all', 'active', 'off', 'blocked'].map((chip) => (
               <button
                 key={chip}
@@ -413,7 +413,7 @@ const SwitchPage = () => {
                   feedback('tick');
                   setStatusFilter(chip);
                 }}
-                className={`px-2.5 py-1 rounded-lg capitalize transition-colors ${
+                className={`px-3 py-1.5 rounded-lg capitalize transition-colors flex-shrink-0 ${
                   statusFilter === chip
                     ? 'bg-white dark:bg-[#192420] text-emerald-600 dark:text-emerald-400 shadow-xs'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
@@ -431,7 +431,7 @@ const SwitchPage = () => {
           </div>
 
           {/* Search Input */}
-          <div className="relative flex-1 sm:w-56">
+          <div className="relative w-full sm:w-56 md:w-60">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               type="text"
@@ -462,10 +462,7 @@ const SwitchPage = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            layout
-            className="flex flex-wrap justify-center gap-2.5 sm:gap-3 py-2"
-          >
+          <div className="flex flex-wrap justify-center gap-2 min-[380px]:gap-2.5 sm:gap-3 py-2">
             {filteredDocuments.map((doc) => {
               const isOn = Boolean(
                 isLunch ? doc.obj?.lunch?.[day] : doc.obj?.breakfast?.[day]
@@ -480,7 +477,7 @@ const SwitchPage = () => {
                 />
               );
             })}
-          </motion.div>
+          </div>
         )}
       </div>
 

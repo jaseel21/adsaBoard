@@ -17,6 +17,7 @@ import AstudentPort from './components/AstudentPort';
 import GeneratePdf from './components/GeneratePdf';
 import AdminLogin from './components/AdminLogin';
 import AddStudentsCSV from './components/AddStudentsCSV';
+import StudentManagement from './components/StudentManagement';
 import firebase from './firebase/config';
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
@@ -27,7 +28,12 @@ function AppContent() {
   const { user, setUser } = useContext(AuthContext);
   const location = useLocation();
 
-  const isAdmin = location.pathname === '/admin' || location.pathname === '/alogin';
+  const isAdmin =
+    location.pathname === '/admin' ||
+    location.pathname === '/alogin' ||
+    location.pathname === '/student-management' ||
+    location.pathname === '/add-students' ||
+    location.pathname === '/m-tokens';
 
   useEffect(() => {
     const unsubscribe = firebase.auth().onAuthStateChanged((currentUser) => {
@@ -49,6 +55,10 @@ function AppContent() {
           <Route path="/menu" element={<Fmenu />} />
           <Route path="/breakfast" element={<SectionBF />} />
           <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/student-management"
+            element={<StudentManagement />}
+          />
           <Route
             path="/astudent-port"
             element={user ? <AstudentPort /> : <Navigate to="/alogin" replace />}

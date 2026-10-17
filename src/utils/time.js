@@ -99,6 +99,7 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
   }, []);
 
   const nowDate = useMemo(() => {
+    void tick;
     const elapsedMs = performance.now() - basePerfTimeRef.current;
     return new Date(baseServerTimeRef.current + elapsedMs);
   }, [tick]);

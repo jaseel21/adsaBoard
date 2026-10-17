@@ -7,6 +7,10 @@ export default {
   ],
   theme: {
     extend: {
+      spacing: {
+        '13': '3.25rem',
+        '15': '3.75rem',
+      },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
         malayalam: ['"Anek Malayalam"', '"Noto Sans Malayalam"', 'sans-serif'],

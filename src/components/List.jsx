@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileDown, Sparkles, AlertCircle } from 'lucide-react';
+import { FileDown, Sparkles, ArrowLeft } from 'lucide-react';
 import firebase from '../firebase/config';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -8,6 +9,7 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 
 const MenuTable = () => {
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [beef, setBeef] = useState([]);
   const [chicken, setChicken] = useState([]);
@@ -118,7 +120,7 @@ const MenuTable = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-emerald-500" />
@@ -129,13 +131,26 @@ const MenuTable = () => {
           </p>
         </div>
 
-        <button
-          onClick={generatePDF}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all transform active:scale-95"
-        >
-          <FileDown className="w-4 h-4" />
-          <span>Export PDF</span>
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            onClick={() => {
+              feedback('tick');
+              navigate('/');
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Board</span>
+          </button>
+
+          <button
+            onClick={generatePDF}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all transform active:scale-95"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Export PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Table Card */}

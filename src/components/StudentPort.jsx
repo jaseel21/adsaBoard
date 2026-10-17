@@ -1,12 +1,9 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User,
-  CreditCard,
   Utensils,
   Coffee,
   Check,
-  Calendar,
   Save,
   ArrowLeft,
   Sparkles,
@@ -24,6 +21,20 @@ function StudentPort() {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
+  // Meal selections - unconditionally declared
+  const [lunch, setLunch] = useState(() => stdata?.obj?.lunch || {});
+  const [breakfast, setBreakfast] = useState(() => stdata?.obj?.breakfast || {});
+  const [dietary, setDietary] = useState(() => stdata?.obj2 || { beef: true, chicken: true, fish: true, mutton: true });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (stdata?.obj) {
+      setLunch(stdata.obj.lunch || {});
+      setBreakfast(stdata.obj.breakfast || {});
+      setDietary(stdata.obj2 || { beef: true, chicken: true, fish: true, mutton: true });
+    }
+  }, [stdata]);
+
   if (!stdata || !stdata.obj) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
@@ -37,12 +48,6 @@ function StudentPort() {
       </div>
     );
   }
-
-  // Meal selections
-  const [lunch, setLunch] = useState(stdata.obj.lunch || {});
-  const [breakfast, setBreakfast] = useState(stdata.obj.breakfast || {});
-  const [dietary, setDietary] = useState(stdata.obj2 || { beef: true, chicken: true, fish: true, mutton: true });
-  const [saving, setSaving] = useState(false);
 
   const daysList = [
     { key: 'su', label: t('days').su },
@@ -190,17 +195,17 @@ function StudentPort() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Breakfast Card */}
-          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-6 space-y-5">
+          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
                   <Coffee className="w-5 h-5" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-gray-900 dark:text-white">
                     {t('navBreakfast')}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                     Daily morning meal
                   </p>
                 </div>
@@ -215,18 +220,18 @@ function StudentPort() {
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {daysList.map(({ key, label }) => {
                 const active = Boolean(breakfast[key]);
                 return (
-                  <div key={key} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                  <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center">
                       {label}
                     </span>
                     <button
                       type="button"
                       onClick={() => toggleBreakfastDay(key)}
-                      className={`w-10 h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 ${
+                      className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 ${
                         active
                           ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-md'
                           : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
@@ -241,17 +246,17 @@ function StudentPort() {
           </div>
 
           {/* Lunch Card */}
-          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-6 space-y-5">
+          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Utensils className="w-5 h-5" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-gray-900 dark:text-white">
                     {t('navLunch')}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                     Daily afternoon meal
                   </p>
                 </div>
@@ -266,18 +271,18 @@ function StudentPort() {
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {daysList.map(({ key, label }) => {
                 const active = Boolean(lunch[key]);
                 return (
-                  <div key={key} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                  <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center">
                       {label}
                     </span>
                     <button
                       type="button"
                       onClick={() => toggleLunchDay(key)}
-                      className={`w-10 h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 ${
+                      className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 ${
                         active
                           ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-md'
                           : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'

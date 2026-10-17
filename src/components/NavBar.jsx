@@ -17,6 +17,9 @@ import {
   Sliders,
   Home,
   ShieldAlert,
+  Users,
+  KeyRound,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -99,33 +102,33 @@ const Navbar = ({ isAdmin }) => {
       className="sticky top-0 z-40 w-full bg-white/80 dark:bg-[#080d0b]/85 backdrop-blur-xl border-b border-gray-200/80 dark:border-white/10 transition-colors duration-300"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           
           {/* Brand Logo & Name */}
           <div
             onClick={() => handleNav(isAdmin ? '/admin' : '/')}
-            className="flex items-center gap-3 cursor-pointer group select-none"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group select-none"
           >
             <div className="relative">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl p-1 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/30 border border-emerald-300/60 dark:border-emerald-500/20 shadow-sm group-hover:scale-105 group-hover:shadow-glow-emerald transition-all duration-300 flex items-center justify-center">
+              <div className="w-10 h-10 sm:w-13 sm:h-13 rounded-2xl p-1 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/30 border border-emerald-300/60 dark:border-emerald-500/20 shadow-sm group-hover:scale-105 group-hover:shadow-glow-emerald transition-all duration-300 flex items-center justify-center">
                 <img
                   src="https://alathurpadidars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png"
                   alt="Alathurpadi Dars Logo"
-                  className="w-10 h-10 sm:w-11 sm:h-11 object-contain"
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                 />
               </div>
             </div>
 
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center gap-1">
+                <span className="font-extrabold text-lg sm:text-2xl tracking-tight text-emerald-600 dark:text-emerald-400">
                   ADSA
                 </span>
-                <span className="font-bold text-xl sm:text-2xl tracking-tight text-gray-800 dark:text-white">
+                <span className="font-bold text-lg sm:text-2xl tracking-tight text-gray-800 dark:text-white">
                   T-Board
                 </span>
               </div>
-              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 -mt-0.5 hidden sm:block">
+              <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 -mt-0.5 hidden sm:block">
                 {t('appSubtitle')}
               </span>
             </div>
@@ -153,6 +156,17 @@ const Navbar = ({ isAdmin }) => {
               }`}
             >
               {t('navList')}
+            </button>
+
+            <button
+              onClick={() => handleNav('/menu')}
+              className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                isActive('/menu')
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
+              }`}
+            >
+              {t('navMenu') || 'Menu'}
             </button>
 
             {/* Supply Dropdown */}
@@ -199,14 +213,45 @@ const Navbar = ({ isAdmin }) => {
                       <Coffee className="w-4 h-4 text-amber-500" />
                       <span>{t('navBreakfast')}</span>
                     </button>
+                    <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
+                    <button
+                      onClick={() => handleNav('/menu')}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                      <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                      <span>{t('navMenu') || 'Weekly Menu'}</span>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
+            {/* Non-Admin Direct Student Portal Link */}
+            {!isAdmin && (
+              <button
+                onClick={() => handleNav('/login')}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95 ml-1"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>{t('navStudentPortal') || 'Student Portal'}</span>
+              </button>
+            )}
+
             {/* Admin specific links */}
-            {email === 'alathurpadidars@gmail.com' && isAdmin && (
+            {isAdmin && (
               <>
+                <button
+                  onClick={() => handleNav('/student-management')}
+                  className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+                    isActive('/student-management')
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:bg-gray-100/60 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <Users className="w-4 h-4 text-emerald-500" />
+                  <span>{t('navStudentMgmt') || 'Students'}</span>
+                </button>
+
                 <button
                   onClick={() => handleNav('/add-students')}
                   className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
@@ -252,8 +297,26 @@ const Navbar = ({ isAdmin }) => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -6, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-44 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
+                      className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
                     >
+                      <button
+                        onClick={() => handleNav('/student-management')}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                      >
+                        <Users className="w-4 h-4 text-emerald-500" />
+                        <span>{t('navStudentMgmt') || 'Students Console'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleNav('/admin')}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                      >
+                        <Sliders className="w-4 h-4 text-emerald-500" />
+                        <span>Master Token Board</span>
+                      </button>
+
+                      <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
+
                       {user ? (
                         <button
                           onClick={handleLogout}
@@ -335,26 +398,54 @@ const Navbar = ({ isAdmin }) => {
                 <span>{t('navList')}</span>
               </button>
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => handleNav('/login')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold ${
+                  isActive('/login') || isActive('/student-portal')
+                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                }`}
+              >
+                <KeyRound className="w-4 h-4 text-emerald-500" />
+                <span>{t('navStudentPortal') || 'Student Portal'}</span>
+              </button>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
                 <button
                   onClick={() => handleNav('/lunch')}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20"
+                  className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20 active:scale-95 transition-transform"
                 >
-                  <Utensils className="w-4 h-4" />
+                  <Utensils className="w-3.5 h-3.5" />
                   <span>{t('navLunch')}</span>
                 </button>
 
                 <button
                   onClick={() => handleNav('/breakfast')}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-500/20"
+                  className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-500/20 active:scale-95 transition-transform"
                 >
-                  <Coffee className="w-4 h-4" />
+                  <Coffee className="w-3.5 h-3.5" />
                   <span>{t('navBreakfast')}</span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('/menu')}
+                  className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-500/20 active:scale-95 transition-transform"
+                >
+                  <UtensilsCrossed className="w-3.5 h-3.5" />
+                  <span>{t('navMenu') || 'Menu'}</span>
                 </button>
               </div>
 
-              {email === 'alathurpadidars@gmail.com' && isAdmin && (
+              {isAdmin && (
                 <>
+                  <button
+                    onClick={() => handleNav('/student-management')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                  >
+                    <Users className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navStudentMgmt') || 'Student Management'}</span>
+                  </button>
+
                   <button
                     onClick={() => handleNav('/add-students')}
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
