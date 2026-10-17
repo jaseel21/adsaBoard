@@ -253,6 +253,18 @@ const Navbar = ({ isAdmin }) => {
                 </button>
 
                 <button
+                  onClick={() => handleNav('/admin/menu')}
+                  className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 ${
+                    isActive('/admin/menu') || isActive('/menu-management')
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:bg-gray-100/60 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <Utensils className="w-4 h-4 text-emerald-500" />
+                  <span>{t('navMenuMgmt') || 'Menu'}</span>
+                </button>
+
+                <button
                   onClick={() => handleNav('/add-students')}
                   className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     isActive('/add-students')
@@ -305,6 +317,14 @@ const Navbar = ({ isAdmin }) => {
                       >
                         <Users className="w-4 h-4 text-emerald-500" />
                         <span>{t('navStudentMgmt') || 'Students Console'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleNav('/admin/menu')}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                      >
+                        <Utensils className="w-4 h-4 text-emerald-500" />
+                        <span>{t('navMenuMgmt') || 'Canteen Menu Console'}</span>
                       </button>
 
                       <button
@@ -444,6 +464,14 @@ const Navbar = ({ isAdmin }) => {
                   >
                     <Users className="w-4 h-4 text-emerald-500" />
                     <span>{t('navStudentMgmt') || 'Student Management'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleNav('/admin/menu')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                  >
+                    <Utensils className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navMenuMgmt') || 'Menu Management'}</span>
                   </button>
 
                   <button

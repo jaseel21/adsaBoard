@@ -249,7 +249,18 @@ function Admin() {
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all"
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Students Console</span>
+              <span>Students</span>
+            </button>
+
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/admin/menu');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            >
+              <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Food Menu</span>
             </button>
 
             <button

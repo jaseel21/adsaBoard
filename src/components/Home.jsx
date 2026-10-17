@@ -22,6 +22,7 @@ import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import NextMealSpotlight from './NextMealSpotlight';
 import './Home.css';
 
 // Animated Rolling Counter Component
@@ -351,6 +352,13 @@ const SwitchPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ================= CANTEEN MEAL SPOTLIGHT (TODAY / TOMORROW) ================= */}
+      <NextMealSpotlight
+        documents={documents}
+        lunchOrdersCount={lunchCount}
+        breakfastOrdersCount={breakfastCount}
+      />
 
       {/* ================= CONTROLS DOCK: MEAL TOGGLE & SEARCH ================= */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">

@@ -18,6 +18,7 @@ import GeneratePdf from './components/GeneratePdf';
 import AdminLogin from './components/AdminLogin';
 import AddStudentsCSV from './components/AddStudentsCSV';
 import StudentManagement from './components/StudentManagement';
+import MenuManagement from './components/MenuManagement';
 import firebase from './firebase/config';
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
@@ -29,9 +30,10 @@ function AppContent() {
   const location = useLocation();
 
   const isAdmin =
-    location.pathname === '/admin' ||
+    location.pathname.startsWith('/admin') ||
     location.pathname === '/alogin' ||
     location.pathname === '/student-management' ||
+    location.pathname === '/menu-management' ||
     location.pathname === '/add-students' ||
     location.pathname === '/m-tokens';
 
@@ -55,6 +57,8 @@ function AppContent() {
           <Route path="/menu" element={<Fmenu />} />
           <Route path="/breakfast" element={<SectionBF />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/menu" element={<MenuManagement />} />
+          <Route path="/menu-management" element={<MenuManagement />} />
           <Route
             path="/student-management"
             element={<StudentManagement />}
