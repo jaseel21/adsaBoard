@@ -1,491 +1,400 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../store/AuthContext';
 import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Utensils,
+  Coffee,
+  ChevronDown,
+  LogOut,
+  LogIn,
+  Menu,
+  X,
+  FileText,
+  UserPlus,
+  Sliders,
+  Home,
+  ShieldAlert,
+} from 'lucide-react';
+import { useLanguage } from '../store/LanguageContext';
+import { useFeedback } from '../utils/useFeedback';
+import ThemeSwitch from './ThemeSwitch';
+import LanguageSwitch from './LanguageSwitch';
 
 const Navbar = ({ isAdmin }) => {
   const { user } = useContext(AuthContext);
-  const [email, setEmail] = useState("")
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [optionsOpen, setOptionsOpen] = useState(false);
-  const tokenDropdownRef = useRef(null);
-  const optionsDropdownRef = useRef(null);
-  const navbarRef = useRef(null);
+  const { t } = useLanguage();
+  const { feedback } = useFeedback();
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const toggleMenu = () => setMenuOpen(!menuOpen);
+  const [email, setEmail] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [supplyDropdownOpen, setSupplyDropdownOpen] = useState(false);
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
 
-  const handleHomeBtn = () => {
-    navigate(isAdmin ? '/admin' : '/')
-    setMenuOpen(false)
-  }
+  const supplyDropdownRef = useRef(null);
+  const adminDropdownRef = useRef(null);
+  const navRef = useRef(null);
 
-  const AddStudentsCSV = () => {
-    navigate(email == "alathurpadidars@gmail.com" && "/add-students")
-    if (!email == "alathurpadidars@gmail.com") {
-      setIsOpen(!isOpen);
+  useEffect(() => {
+    if (user && user.email) {
+      setEmail(user.email);
+    } else if (user && user.bc && user.bc.email) {
+      setEmail(user.bc.email);
+    } else {
+      setEmail('');
     }
-    setMenuOpen(false)
-  }
+  }, [user]);
 
-  const handleListBtn = () => {
-    navigate('/list')
-    setMenuOpen(false);
-  }
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (supplyDropdownRef.current && !supplyDropdownRef.current.contains(event.target)) {
+        setSupplyDropdownOpen(false);
+      }
+      if (adminDropdownRef.current && !adminDropdownRef.current.contains(event.target)) {
+        setAdminDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleNav = (path) => {
+    feedback('tick');
+    navigate(path);
+    setMobileMenuOpen(false);
+    setSupplyDropdownOpen(false);
+    setAdminDropdownOpen(false);
+  };
 
   const handleLogout = () => {
+    feedback('warning');
     Swal.fire({
-      title: 'Logout',
+      title: t('navLogout'),
       text: 'Are you sure you want to log out?',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#f44336',
-      cancelButtonColor: '#2E8B57',
-      confirmButtonText: 'Logout',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#10b981',
+      confirmButtonText: t('navLogout'),
+      cancelButtonText: t('cancel'),
     }).then((result) => {
       if (result.isConfirmed) {
         firebase.auth().signOut();
+        feedback('pop');
         navigate('/alogin');
       }
     });
   };
 
-  const handleTokenDropdownToggle = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const closeDropdowns = () => {
-    setIsOpen(false);
-    setOptionsOpen(false);
-  };
-
-  useEffect(() => {
-    if (user && user.bc && user.bc.email) {
-      console.log('User email:', user.bc.email);
-      setEmail(user.bc.email);
-    } else {
-      console.log('No user or email found');
-      setEmail('');
-    }
-
-    const handleClickOutside = (event) => {
-      if (navbarRef.current && !navbarRef.current.contains(event.target)) {
-        closeDropdowns();
-        setMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [user]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        navbarRef.current &&
-        !navbarRef.current.contains(event.target)
-      ) {
-        closeDropdowns();
-        setMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const lunchRoute = () => {
-    navigate('/lunch');
-    setMenuOpen(false);
-  }
-
-  const breakfastRoute = () => {
-    navigate('/breakfast');
-    setMenuOpen(false);
-  }
-
-  const handleMenueBtn = () => {
-    navigate('/menu');
-    setMenuOpen(false);
-  };
-
-  const handleOptionsDropdownToggle = () => {
-    setOptionsOpen((prevState) => !prevState);
-  };
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-gradient-to-r from-white via-gray-50 to-white shadow-md border-b-2 border-green-600" ref={navbarRef}>
+    <header
+      ref={navRef}
+      className="sticky top-0 z-40 w-full bg-white/80 dark:bg-[#080d0b]/85 backdrop-blur-xl border-b border-gray-200/80 dark:border-white/10 transition-colors duration-300"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center justify-between h-20">
+          
+          {/* Brand Logo & Name */}
+          <div
+            onClick={() => handleNav(isAdmin ? '/admin' : '/')}
+            className="flex items-center gap-3 cursor-pointer group select-none"
+          >
             <div className="relative">
-              <img
-                src="https://alathurpadidars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png"
-                alt="Dars Site Logo"
-                className="relative h-14 w-14 sm:h-20 sm:w-20 md:h-36 md:w-36 object-contain rounded-xl  hover:scale-105 transition-transform duration-300"
-              />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl p-1 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/30 border border-emerald-300/60 dark:border-emerald-500/20 shadow-sm group-hover:scale-105 group-hover:shadow-glow-emerald transition-all duration-300 flex items-center justify-center">
+                <img
+                  src="https://alathurpadidars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png"
+                  alt="Alathurpadi Dars Logo"
+                  className="w-10 h-10 sm:w-11 sm:h-11 object-contain"
+                />
+              </div>
             </div>
+
             <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
-                <span className="text-green-700">ADSA</span>{' '}
-                <span className="text-gray-700">T-board</span>
-              </h1>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-emerald-600 dark:text-emerald-400">
+                  ADSA
+                </span>
+                <span className="font-bold text-xl sm:text-2xl tracking-tight text-gray-800 dark:text-white">
+                  T-Board
+                </span>
+              </div>
+              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 -mt-0.5 hidden sm:block">
+                {t('appSubtitle')}
+              </span>
             </div>
           </div>
 
-          {/* Hamburger menu for mobile */}
-          <div className="flex md:hidden">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
             <button
-              onClick={toggleMenu}
-              className="relative p-2 text-gray-700 hover:text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-lg transition-all duration-200"
+              onClick={() => handleNav(isAdmin ? '/admin' : '/')}
+              className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                isActive('/') || isActive('/admin')
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
+              }`}
             >
-              <div className="w-6 h-5 flex flex-col justify-between">
-                <motion.span
-                  animate={menuOpen ? { rotate: 45, y: 8 } : { rotate: 0, y: 0 }}
-                  className="w-full h-0.5 bg-current rounded-full"
-                />
-                <motion.span
-                  animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
-                  className="w-full h-0.5 bg-current rounded-full"
-                />
-                <motion.span
-                  animate={menuOpen ? { rotate: -45, y: -8 } : { rotate: 0, y: 0 }}
-                  className="w-full h-0.5 bg-current rounded-full"
-                />
-              </div>
-            </button>
-          </div>
-
-          {/* Links for larger screens */}
-          <div className="hidden md:flex md:items-center md:space-x-2">
-            <button
-              onClick={handleHomeBtn}
-              className="relative px-4 py-2 text-gray-700 hover:text-green-700 font-medium text-sm rounded-lg hover:bg-green-50 transition-all duration-200 group"
-            >
-              {isAdmin ? 'Admin' : 'Home'}
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-700 group-hover:w-full transition-all duration-300"></span>
+              {isAdmin ? t('navAdmin') : t('navHome')}
             </button>
 
             <button
-              onClick={handleListBtn}
-              className="relative px-4 py-2 text-gray-700 hover:text-green-700 font-medium text-sm rounded-lg hover:bg-green-50 transition-all duration-200 group"
+              onClick={() => handleNav('/list')}
+              className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                isActive('/list')
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
+              }`}
             >
-              List
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-700 group-hover:w-full transition-all duration-300"></span>
+              {t('navList')}
             </button>
 
-            {/* Token Dropdown Button */}
-            {email !== "alathurpadidars@gmail.com" && (
-              <div className="relative flex items-center" ref={tokenDropdownRef}>
-                <button
-                  onClick={handleTokenDropdownToggle}
-                  className="relative px-4 py-2 text-gray-700 hover:text-green-700 font-medium text-sm rounded-lg hover:bg-green-50 transition-all duration-200 group flex items-center gap-1"
-                >
-                  Supply
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            {/* Supply Dropdown */}
+            <div className="relative" ref={supplyDropdownRef}>
+              <button
+                onClick={() => {
+                  feedback('tick');
+                  setSupplyDropdownOpen(!supplyDropdownOpen);
+                }}
+                className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all duration-200 ${
+                  isActive('/lunch') || isActive('/breakfast')
+                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
+                }`}
+              >
+                <span>{t('navSupply')}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    supplyDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {supplyDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-700 group-hover:w-full transition-all duration-300"></span>
+                    <button
+                      onClick={() => handleNav('/lunch')}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                      <Utensils className="w-4 h-4 text-emerald-500" />
+                      <span>{t('navLunch')}</span>
+                    </button>
+                    <button
+                      onClick={() => handleNav('/breakfast')}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                    >
+                      <Coffee className="w-4 h-4 text-amber-500" />
+                      <span>{t('navBreakfast')}</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Admin specific links */}
+            {email === 'alathurpadidars@gmail.com' && isAdmin && (
+              <>
+                <button
+                  onClick={() => handleNav('/add-students')}
+                  className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    isActive('/add-students')
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:bg-gray-100/60 dark:hover:bg-white/5'
+                  }`}
+                >
+                  {t('navAddStudent')}
+                </button>
+
+                <button
+                  onClick={() => handleNav('/m-tokens')}
+                  className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    isActive('/m-tokens')
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:bg-gray-100/60 dark:hover:bg-white/5'
+                  }`}
+                >
+                  {t('navManageTokens')}
+                </button>
+              </>
+            )}
+
+            {/* Admin Login/Profile Button */}
+            {isAdmin && (
+              <div className="relative" ref={adminDropdownRef}>
+                <button
+                  onClick={() => {
+                    feedback('tick');
+                    setAdminDropdownOpen(!adminDropdownOpen);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold text-xs shadow-md transition-all"
+                >
+                  <span>{user ? 'ADSA Committee' : t('navLogin')}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 ${adminDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
-                  {isOpen && (
+                  {adminDropdownOpen && (
                     <motion.div
-                      className="absolute left-0 mt-44 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 z-10 overflow-hidden"
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      initial={{ opacity: 0, y: -6, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-44 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
                     >
-                      <div className="py-2">
+                      {user ? (
                         <button
-                          onClick={() => {
-                            lunchRoute();
-                            closeDropdowns();
-                          }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 text-left font-medium transition-colors duration-150 flex items-center gap-2"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                         >
-                          <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                          Lunch
+                          <LogOut className="w-4 h-4" />
+                          <span>{t('navLogout')}</span>
                         </button>
+                      ) : (
                         <button
-                          onClick={() => {
-                            breakfastRoute();
-                            closeDropdowns();
-                          }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 text-left font-medium transition-colors duration-150 flex items-center gap-2"
+                          onClick={() => handleNav('/alogin')}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                         >
-                          <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                          Breakfast
+                          <LogIn className="w-4 h-4" />
+                          <span>{t('navLogin')}</span>
                         </button>
-                      </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
             )}
+          </nav>
 
-            {email === "alathurpadidars@gmail.com" && isAdmin && (
+          {/* Right Action Island: Language + Theme Switches + Mobile Hamburger */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitch />
+            <ThemeSwitch />
+
+            {/* Mobile hamburger button */}
+            <div className="flex md:hidden">
               <button
-                onClick={AddStudentsCSV}
-                className="relative px-4 py-2 text-gray-700 hover:text-green-700 font-medium text-sm rounded-lg hover:bg-green-50 transition-all duration-200 group"
+                onClick={() => {
+                  feedback('pop');
+                  setMobileMenuOpen(!mobileMenuOpen);
+                }}
+                className="p-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/70 dark:border-white/10 transition-colors"
+                aria-label="Toggle navigation menu"
               >
-                AddStudent
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-700 group-hover:w-full transition-all duration-300"></span>
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-            )}
-
-            {isAdmin ? (
-              <div className="relative" ref={optionsDropdownRef}>
-                <button
-                  onClick={handleOptionsDropdownToggle}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg"
-                  aria-expanded={optionsOpen}
-                  aria-haspopup="true"
-                >
-                  {user ? "ADSA" : "Login"}
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-200 ${optionsOpen ? 'rotate-180' : ''}`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                  </svg>
-                </button>
-
-                <AnimatePresence>
-                  {optionsOpen && (
-                    <motion.div
-                      className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 z-10 overflow-hidden"
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                    >
-                      <div className="py-2">
-                        <button
-                          onClick={() => {
-                            if (user) {
-                              handleLogout();
-                            } else {
-                              navigate("/alogin");
-                            }
-                            closeDropdowns();
-                            setMenuOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 text-left font-medium transition-colors duration-150 flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          {user ? "Logout" : "Login"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <button
-                onClick={handleMenueBtn}
-                className="relative px-4 py-2 text-gray-700 hover:text-green-700 font-medium text-sm rounded-lg hover:bg-green-50 transition-all duration-200 group"
-              >
-                Menu
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-700 group-hover:w-full transition-all duration-300"></span>
-              </button>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
-        {menuOpen && (
+        {mobileMenuOpen && (
           <motion.div
-            className="md:hidden w-72 bg-white rounded-2xl ml-auto absolute right-4 top-24 z-50 shadow-2xl border border-gray-100 overflow-hidden"
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="md:hidden overflow-hidden border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#0b1210]/95 backdrop-blur-2xl"
           >
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 py-3">
-              <p className="text-white font-semibold text-sm">Navigation Menu</p>
-            </div>
-
-            <div className="space-y-1 px-3 py-3">
+            <div className="px-4 py-4 space-y-2">
               <button
-                onClick={handleHomeBtn}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-150 flex items-center gap-3"
+                onClick={() => handleNav(isAdmin ? '/admin' : '/')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold ${
+                  isActive('/') || isActive('/admin')
+                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                }`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                {isAdmin ? "Admin" : "Home"}
+                <Home className="w-4 h-4" />
+                <span>{isAdmin ? t('navAdmin') : t('navHome')}</span>
               </button>
 
               <button
-                onClick={handleListBtn}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-150 flex items-center gap-3"
+                onClick={() => handleNav('/list')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold ${
+                  isActive('/list')
+                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                }`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                List
+                <FileText className="w-4 h-4" />
+                <span>{t('navList')}</span>
               </button>
 
-              {email !== "alathurpadidars@gmail.com" && (
-                <div className="relative" ref={tokenDropdownRef}>
-                  <button
-                    onClick={handleTokenDropdownToggle}
-                    className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-150 flex items-center justify-between"
-                  >
-                    <span className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                      Supply
-                    </span>
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.div
-                        className="mt-1 ml-4 space-y-1"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <button
-                          onClick={() => {
-                            lunchRoute();
-                            closeDropdowns();
-                          }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-600 hover:text-green-700 hover:bg-green-50 text-left rounded-lg transition-all duration-150 flex items-center gap-2"
-                        >
-                          <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                          Lunch
-                        </button>
-                        <button
-                          onClick={() => {
-                            breakfastRoute();
-                            closeDropdowns();
-                          }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-600 hover:text-green-700 hover:bg-green-50 text-left rounded-lg transition-all duration-150 flex items-center gap-2"
-                        >
-                          <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                          Breakfast
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-
-              {email === "alathurpadidars@gmail.com" && isAdmin && (
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
-                  onClick={AddStudentsCSV}
-                  className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-150 flex items-center gap-3"
+                  onClick={() => handleNav('/lunch')}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  AddStudent
+                  <Utensils className="w-4 h-4" />
+                  <span>{t('navLunch')}</span>
                 </button>
-              )}
 
-              {isAdmin ? (
-                <div className="relative" ref={optionsDropdownRef}>
+                <button
+                  onClick={() => handleNav('/breakfast')}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-500/20"
+                >
+                  <Coffee className="w-4 h-4" />
+                  <span>{t('navBreakfast')}</span>
+                </button>
+              </div>
+
+              {email === 'alathurpadidars@gmail.com' && isAdmin && (
+                <>
                   <button
-                    onClick={handleOptionsDropdownToggle}
-                    className="w-full px-4 py-3 text-left text-sm font-medium bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-150 flex items-center justify-between shadow-md"
-                    aria-expanded={optionsOpen}
-                    aria-haspopup="true"
+                    onClick={() => handleNav('/add-students')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
                   >
-                    <span className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      {user ? "ADSA" : "Login"}
-                    </span>
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${optionsOpen ? 'rotate-180' : ''}`}
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                    </svg>
+                    <UserPlus className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navAddStudent')}</span>
                   </button>
 
-                  <AnimatePresence>
-                    {optionsOpen && (
-                      <motion.div
-                        className="mt-1 ml-4"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <button
-                          onClick={() => {
-                            if (user) {
-                              handleLogout();
-                            } else {
-                              navigate("/alogin");
-                            }
-                            closeDropdowns();
-                            setMenuOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-sm text-gray-600 hover:text-red-700 hover:bg-red-50 text-left rounded-lg transition-all duration-150 flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          {user ? "Logout" : "Login"}
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                  <button
+                    onClick={() => handleNav('/m-tokens')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                  >
+                    <Sliders className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navManageTokens')}</span>
+                  </button>
+                </>
+              )}
+
+              {user ? (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>{t('navLogout')}</span>
+                </button>
               ) : (
                 <button
-                  onClick={handleMenueBtn}
-                  className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-150 flex items-center gap-3"
+                  onClick={() => handleNav('/alogin')}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                  Menu
+                  <LogIn className="w-4 h-4" />
+                  <span>{t('navLogin')}</span>
                 </button>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </header>
   );
 };
 

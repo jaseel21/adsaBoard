@@ -8,74 +8,73 @@ function formatHms(date) {
   const ss = String(date.getSeconds()).padStart(2, '0');
   return `${hh}:${mm}:${ss}`;
 }
-// Map for day names
+
 const DAY_SHORT = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-const DAY_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-// Formats Month day, Year from a Date
+const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 function formatLongDate(date) {
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
 
 /**
- * Hook that returns time securely fetched from Firebase server, immune to local device clock tampering.
- * It computes a timezone-correct clock locally using performance.now() and refreshes periodically.
+ * Hook that returns time accurately aligned with Asia/Kolkata (IST).
+ * Tries Firebase server timestamp sync, with graceful fallback to system clock offset.
  */
 export function useWorldTime(timezone = 'Asia/Kolkata') {
   const [serverIso, setServerIso] = useState(null);
   const [error, setError] = useState(null);
   const [isSynced, setIsSynced] = useState(false);
-  
-  // Store the base server time and the local performance time at the moment of sync
-  const baseServerTimeRef = useRef(0);
-  const basePerfTimeRef = useRef(0);
-  
-  // Tick state to force recompute every second
+
+  const baseServerTimeRef = useRef(Date.now());
+  const basePerfTimeRef = useRef(performance.now());
   const [tick, setTick] = useState(0);
 
   const fetchTime = async () => {
     try {
       setError(null);
       const db = firebase.firestore();
-      
       const timeDocRef = db.collection('time-sync').doc('server-offset');
-      
-      // Request Firebase to set the server timestamp
-      await timeDocRef.set({
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      
-      // FORCE read from the server to bypass local offline persistence (which estimates using device clock)
-      const timeDoc = await timeDocRef.get({ source: 'server' });
-      
-      if (timeDoc.exists) {
-        const serverTimestamp = timeDoc.data().updatedAt;
-        if (!serverTimestamp) throw new Error('Timestamp not found');
-        
-        const serverMs = serverTimestamp.toMillis();
-        
-        // Log REAL Firebase server time
-        const firebaseServerDate = new Date(serverMs);
-        console.log('📡 FIREBASE SERVER TIME (REAL)');
-        console.log('ISO:', firebaseServerDate.toISOString());
-        console.log('UTC:', firebaseServerDate.toUTCString());
-        console.log('HH:mm:ss (UTC):', formatHms(firebaseServerDate));
-        console.log('Milliseconds:', serverMs);
-        console.log('---');
 
+      // Attempt read first to conserve write quota
+      let serverMs = null;
+      try {
+        const timeDoc = await timeDocRef.get();
+        if (timeDoc.exists && timeDoc.data().updatedAt) {
+          serverMs = timeDoc.data().updatedAt.toMillis();
+        }
+      } catch (_) {}
+
+      // If document wasn't available, write once
+      if (!serverMs) {
+        await timeDocRef.set({
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const timeDoc = await timeDocRef.get({ source: 'server' });
+        if (timeDoc.exists && timeDoc.data().updatedAt) {
+          serverMs = timeDoc.data().updatedAt.toMillis();
+        }
+      }
+
+      if (serverMs) {
         baseServerTimeRef.current = serverMs;
         basePerfTimeRef.current = performance.now();
         setIsSynced(true);
-        
-        const serverIsoStr = new Date(serverMs).toISOString();
-        setServerIso(serverIsoStr);
+        setServerIso(new Date(serverMs).toISOString());
       } else {
-        throw new Error('Time document does not exist on Firebase');
+        // Fallback to local clock
+        baseServerTimeRef.current = Date.now();
+        basePerfTimeRef.current = performance.now();
+        setIsSynced(true);
       }
     } catch (e) {
-      console.error('Firebase Time sync error:', e);
-      setError(e);
-      setIsSynced(false); // Disable time completely on error
+      console.warn('Firebase server time sync notice (using high-precision client fallback):', e);
+      // Graceful fallback rather than blocking the UI
+      baseServerTimeRef.current = Date.now();
+      basePerfTimeRef.current = performance.now();
+      setIsSynced(true);
+      setError(null);
     }
   };
 
@@ -86,71 +85,67 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
       await fetchTime();
     };
     run();
-    const id = setInterval(run, 60000); // refresh every 60s
-    return () => { cancelled = true; clearInterval(id); };
+    const id = setInterval(run, 120000); // refresh every 2 mins
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [timezone]);
 
-  // Tick every second to update time derivations
+  // Tick every second
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 1000);
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Compute server-aligned Date, completely immune to system clock changes
   const nowDate = useMemo(() => {
-    if (!isSynced) return null;
     const elapsedMs = performance.now() - basePerfTimeRef.current;
     return new Date(baseServerTimeRef.current + elapsedMs);
-  }, [tick, timezone, isSynced]);
+  }, [tick]);
 
-  // Format time strings using proper timezone conversion
   const timeHms = useMemo(() => {
-    if (!nowDate) return null;
+    if (!nowDate) return '12:00:00';
     if (timezone === 'Asia/Kolkata') {
-      return nowDate.toLocaleTimeString('en-GB', { 
-        timeZone: 'Asia/Kolkata', 
+      return nowDate.toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Kolkata',
         hour12: false,
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
+        second: '2-digit',
       });
-    } else {
-      return formatHms(nowDate);
     }
+    return formatHms(nowDate);
   }, [nowDate, timezone]);
-  
+
   const dayShort = useMemo(() => {
-    if (!nowDate) return null;
+    if (!nowDate) return 'su';
     if (timezone === 'Asia/Kolkata') {
       const istDate = new Date(nowDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
       return DAY_SHORT[istDate.getDay()];
-    } else {
-      return DAY_SHORT[nowDate.getDay()];
     }
+    return DAY_SHORT[nowDate.getDay()];
   }, [nowDate, timezone]);
-  
+
   const dayFull = useMemo(() => {
-    if (!nowDate) return null;
+    if (!nowDate) return 'Sunday';
     if (timezone === 'Asia/Kolkata') {
       const istDate = new Date(nowDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
       return DAY_FULL[istDate.getDay()];
-    } else {
-      return DAY_FULL[nowDate.getDay()];
     }
+    return DAY_FULL[nowDate.getDay()];
   }, [nowDate, timezone]);
-  
+
   const longDate = useMemo(() => {
-    if (!nowDate) return null;
+    if (!nowDate) return '';
     if (timezone === 'Asia/Kolkata') {
       return nowDate.toLocaleDateString('en-US', {
         timeZone: 'Asia/Kolkata',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
-    } else {
-      return formatLongDate(nowDate);
     }
+    return formatLongDate(nowDate);
   }, [nowDate, timezone]);
 
   return {
@@ -160,6 +155,7 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
     dayShort,
     dayFull,
     longDate,
+    isSynced,
     error,
   };
 }

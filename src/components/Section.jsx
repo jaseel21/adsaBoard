@@ -1,428 +1,182 @@
-import React, { useEffect, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBowlFood } from '@fortawesome/free-solid-svg-icons';
-import { faSearchMinus } from '@fortawesome/free-solid-svg-icons';
-
-import firebase from "../firebase/config";
-import {motion} from "framer-motion"
+import React, { useEffect, useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Utensils, ChevronDown, Check, Users } from 'lucide-react';
+import firebase from '../firebase/config';
+import { useWorldTime } from '../utils/time';
+import { useLanguage } from '../store/LanguageContext';
+import { useFeedback } from '../utils/useFeedback';
 
 const Section = () => {
   const [documents, setDocuments] = useState([]);
-  const [section1, setSection1] = useState([]);
-  const [section2, setSection2] = useState([]);
-  const [section3, setSection3] = useState([]);
-  const [section4, setSection4] = useState([]);
-  const [section5, setSection5] = useState([]);
-  const [section6, setSection6] = useState([]);
-  const [section7, setSection7] = useState([]);
-  const [section8, setSection8] = useState([]);
-  const [section9, setSection9] = useState([]);
-  const [section10, setSection10] = useState([]);
-  const [section11, setSection11] = useState([]);
-  const [section12, setSection12] = useState([]);
   const [activeSection, setActiveSection] = useState(null);
- 
-  const [day, setDay] = useState("");
-  const [loading,setLoading]=useState(true)
- 
+  const [loading, setLoading] = useState(true);
 
-  
+  const { t } = useLanguage();
+  const { feedback } = useFeedback();
+  const { timeHms, dayShort } = useWorldTime('Asia/Kolkata');
+  const [day, setDay] = useState('');
 
   useEffect(() => {
-    // Function to get the current day of the week in GMT+5:30
-    const updateDay = () => {
-      const nowUtc = new Date(); // Current time in UTC
-      // Manually adjust for GMT+5:30
-      const gmtPlus530 = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000));
-      const dayOfWeek = getDayOfWeek(gmtPlus530);
-      setDay(dayOfWeek);
-      console.log(dayOfWeek, "day");
-    };
-  
-    // Function to fetch data from Firestore and update sections
+    if (!dayShort || !timeHms) return;
+    const currentTime = timeHms;
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    if (currentTime > '18:00:00') {
+      const currentIndex = days.indexOf(dayShort);
+      const nextDay = days[(currentIndex + 1) % 7];
+      setDay(nextDay);
+    } else {
+      setDay(dayShort);
+    }
+  }, [timeHms, dayShort]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const querySnapshot = await firebase.firestore().collection('students').get();
-        const tokenDocuments = querySnapshot.docs.map(doc => ({
+        const docs = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
-        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-        setDocuments(tokenDocuments);
-  
-        const sectionOneTokens = tokenDocuments.slice(0, 25);
-                const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection1(selectedSOT);
-      
-                
-                
-               const sectionTwoTokens = tokenDocuments.slice(25, 50);
-               const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-               setSection2(selectedSTT);
-                
-
-                const section3Tokens=tokenDocuments.slice(50, 75);
-                const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                console.log(selectedS3T);
-                setSection3(selectedS3T)
-            
-                const section4Tokens=tokenDocuments.slice(75, 100);
-                const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection4(selectedS4T)
-            
-                const section5Tokens=tokenDocuments.slice(100, 125);
-                const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection5(selectedS5T)
-            
-                const section6Tokens=tokenDocuments.slice(125, 150);
-                const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection6(selectedS6T)
-            
-                const section7Tokens=tokenDocuments.slice(150, 175);
-                const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection7(selectedS7T)
-            
-                const section8Tokens=tokenDocuments.slice(175, 200);
-                const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection8(selectedS8T)
-            
-                // const section9Tokens=tokenDocuments.slice(136,153 );
-                // const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection9(selectedS9T)
-            
-                // const section10Tokens=tokenDocuments.slice(153, 170);
-                // const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection10(selectedS10T)
-
-                // const section11Tokens=tokenDocuments.slice(170, 187);
-                // const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection11(selectedS11T)
-
-                // const section12Tokens=tokenDocuments.slice(187, 200);
-                // const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection12(selectedS12T)
-                setLoading(false)
-      } catch (error) {
-        console.error('Error fetching tokens:', error);
+        docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
+        setDocuments(docs);
+      } catch (err) {
+        console.error('Error fetching students:', err);
+      } finally {
+        setLoading(false);
       }
     };
-  
-    // Initial call to set the day and fetch data immediately on mount
-    updateDay();
     fetchData();
-  
-    // Set up an interval to update the day every minute
-    const timer = setInterval(updateDay, 60000);
-  
-    // Clean up interval on component unmount
-    return () => clearInterval(timer);
-  }, [day]); // Dependency array should include 'day' to ensure fetchData updates when the day changes
-  
-  // Function to get the day of the week from a Date object
-  const getDayOfWeek = (date) => {
-    const daysOfWeek = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-    return daysOfWeek[date.getUTCDay()]; // Use getUTCDay() to ensure we're working in UTC
-  };
-  
+  }, []);
 
-  // Function to toggle active section
-  const toggleSection = (sectionIndex) => {
-    if (activeSection === sectionIndex) {
-      setActiveSection(null); // Collapse section if already active
-    } else {
-      setActiveSection(sectionIndex); // Expand section if not active
+  // Dynamically group students into sections of 25
+  const sections = useMemo(() => {
+    if (documents.length === 0 || !day) return [];
+    const sectionSize = 25;
+    const totalSections = Math.ceil(documents.length / sectionSize);
+    const result = [];
+
+    for (let i = 0; i < totalSections; i++) {
+      const start = i * sectionSize;
+      const end = Math.min((i + 1) * sectionSize, documents.length);
+      const slice = documents.slice(start, end);
+
+      // Canceled / blocked tokens for lunch
+      const canceledTokens = slice
+        .filter((doc) => doc.block || (doc.obj && !doc.obj.lunch?.[day]))
+        .map((doc) => doc.tokenNo);
+
+      result.push({
+        id: i + 1,
+        range: `${start + 1} - ${end}`,
+        canceledTokens,
+        total: slice.length,
+      });
     }
+
+    return result;
+  }, [documents, day]);
+
+  const toggleSection = (id) => {
+    feedback('pop');
+    setActiveSection((prev) => (prev === id ? null : id));
   };
 
   if (loading) {
-    // Loading screen
-  
-  
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] ">
-    {/* Bouncing Dots */}
-    <div className="flex space-x-2">
-      {[...Array(3)].map((_, index) => (
-        <motion.div
-          key={index}
-          className="w-4 h-4 rounded-full bg-green-500"
-          animate={{
-            y: [0, -10, 0],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 0.6,
-            delay: index * 0.2,
-          }}
-        ></motion.div>
-      ))}
-    </div>
-    <motion.p
-      className="mt-4 text-green-700 font-bold text-lg"
-      animate={{ opacity: [0.5, 1, 0.5] }}
-      transition={{ repeat: Infinity, duration: 1.5 }}
-    >
-      Loading...
-    </motion.p>
-  </div>
-  
-  );
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="flex space-x-2">
+          {[0, 1, 2].map((idx) => (
+            <motion.div
+              key={idx}
+              className="w-3.5 h-3.5 rounded-full bg-emerald-500"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 0.6, delay: idx * 0.15 }}
+            />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className=" min-h-screen py-8 flex">
-      <div className="max-w-7xl  mx-auto px-4  sm:px-6 lg:px-8">
-          <div className="flex justify-center text-black  pb-5 items-center">
-            {/* <FontAwesomeIcon icon={faFileMagnifyingGlass} /> */}
-          <FontAwesomeIcon icon={faSearchMinus} className="text-lg pr-1" />
-            <h1 className='font-normal underline   rounded-lg text-1xl'>Lunch Sections</h1>
-          </div>
-        <div className=" grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {/* Section 1 */}
-          <div>
-            <button
-              onClick={() => toggleSection(1)}
-              className={`focus:outline-none ${
-                activeSection === 1
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 1
-              <span className='text-sm font-normal'>1-25</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 1 && (
-              <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                 <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section1.length}</h2>
-                  </div>
-                {/* Map over section1 state */}
-                {section1.map((item, index) => (
-                  <li key={index} className="text-gray-700">{item}</li>
-                ))}
-              </ul>
-            )}
-          </div>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <Utensils className="w-5 h-5 text-emerald-500" />
+          Lunch Supply Distribution by Sections
+        </h1>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Each section manages batches of 25 students. Numbers shown inside are canceled/skipped tokens.
+        </p>
+      </div>
 
-          {/* Section 2 */}
-          <div>
-            <button
-              onClick={() => toggleSection(2)}
-              className={`focus:outline-none ${
-                activeSection === 2
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {sections.map((sec) => {
+          const isOpen = activeSection === sec.id;
+          return (
+            <div
+              key={sec.id}
+              className="rounded-2xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm overflow-hidden backdrop-blur-xl transition-all"
             >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 2
-              <span className='text-sm font-normal'>26-50</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 2 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section2.length}</h2>
-                  </div>
-                 {
-                   section2.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
+              <button
+                onClick={() => toggleSection(sec.id)}
+                className={`w-full p-4 flex flex-col items-center text-center transition-colors ${
+                  isOpen
+                    ? 'bg-emerald-500 text-white'
+                    : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-900 dark:text-white'
+                }`}
+              >
+                <Utensils className={`w-5 h-5 mb-1 ${isOpen ? 'text-white' : 'text-emerald-500'}`} />
+                <span className="font-bold text-sm">Section {sec.id}</span>
+                <span className={`text-xs ${isOpen ? 'text-emerald-100' : 'text-gray-400'}`}>
+                  Tokens {sec.range}
+                </span>
 
-          <div>
-            <button
-              onClick={() => toggleSection(3)}
-              className={`focus:outline-none ${
-                activeSection === 3
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 3
-              <span className='text-sm font-normal'>51-75</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 3 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section3.length}</h2>
-                  </div>
-                 {
-                   section3.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-          <div>
-            <button
-              onClick={() => toggleSection(4)}
-              className={`focus:outline-none ${
-                activeSection === 4
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 4
-              <span className='text-sm font-normal'>76-100</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 4 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section4.length}</h2>
-                  </div>
-                 {
-                   section4.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-          
-          <div>
-            <button
-              onClick={() => toggleSection(5)}
-              className={`focus:outline-none ${
-                activeSection === 5
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 5
-              <span className='text-sm font-normal'>101-125</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 5 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section5.length}</h2>
-                  </div>
-                 {
-                   section5.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-          
-          
-          <div>
-            <button
-              onClick={() => toggleSection(6)}
-              className={`focus:outline-none ${
-                activeSection === 6
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 6
-              <span className='text-sm font-normal'>126-150</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 6 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section6.length}</h2>
-                  </div>
-                 {
-                   section6.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-          
-          
-          <div>
-            <button
-              onClick={() => toggleSection(7)}
-              className={`focus:outline-none ${
-                activeSection === 7
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 7
-              <span className='text-sm font-normal'>151-175</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 7 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section7.length}</h2>
-                  </div>
-                 {
-                   section7.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
+                <span
+                  className={`mt-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    isOpen
+                      ? 'bg-white/20 text-white'
+                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  {sec.canceledTokens.length} Canceled
+                </span>
+              </button>
 
-
-          <div>
-            <button
-              onClick={() => toggleSection(8)}
-              className={`focus:outline-none ${
-                activeSection === 8
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900'
-              } rounded-lg shadow-md p-6 text-lg font-semibold flex flex-col items-center justify-center transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <FontAwesomeIcon icon={faBowlFood} className="text-xl mb-2" />
-              Section 8
-              <span className='text-sm font-normal'>176-200</span>
-            </button>
-            {/* Display list for active section */}
-            {activeSection === 8 && (
-                 <ul className="bg-white shadow-md rounded-lg p-4 mt-2">
-                   <div className='flex justify-end items-end'>
-                     <h2 className='bg-gray-200 p-2 w-auto font-medium  rounded-md text-emerald-500 text-sm text-end'>{'count : '+section8.length}</h2>
-                  </div>
-                 {
-                   section8.map((item,index)=>(
-     
-                     <li key={index} className="text-gray-700"> {item}</li>
-                   ))
-                 }
-                 {/* Add additional fields as needed */}
-               </ul>
-            )}
-          </div>
-
-          
-          
-
-        </div>
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-3 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5"
+                  >
+                    <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                      Skipped Tokens:
+                    </p>
+                    {sec.canceledTokens.length === 0 ? (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                        All tokens taking lunch!
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {sec.canceledTokens.map((tokenNo) => (
+                          <span
+                            key={tokenNo}
+                            className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-mono text-xs font-bold border border-rose-200/50 dark:border-rose-500/20"
+                          >
+                            #{tokenNo}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,699 +1,354 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  User,
+  Coffee,
+  Utensils,
+  Check,
+  Lock,
+  Unlock,
+  Save,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Trash2,
+  Sparkles,
+} from 'lucide-react';
+import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import './StudentPort.css';
 import { AuthContext } from '../store/AuthContext';
-
+import { useLanguage } from '../store/LanguageContext';
+import { useFeedback } from '../utils/useFeedback';
 
 function AstudentPort() {
-    const { user } = useContext(AuthContext);
-  
   const { stdata } = useContext(DataOfOne);
-
-  const [email,setEmail]=useState('');
-  const [lunch, setLunch] = useState(stdata.obj.lunch);
-  const [breakfast, setBreakfast] = useState(stdata.obj.breakfast);
-  const [beef, setBeef] = useState(stdata.obj2.beef);
-  const [chicken, setChicken] = useState(stdata.obj2.chicken);
-  const [fish, setFish] = useState(stdata.obj2.fish);
-  const [mutton, setMutton] = useState(stdata.obj2.mutton);
-  const [showPassword, setShowPassword] = useState(false);
-
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [showCheckoutOptions, setShowCheckoutOptions] = useState(false);
+  const { t } = useLanguage();
+  const { feedback } = useFeedback();
 
-  useEffect(() => {
-    if (user && user.bc && user.bc.email) {
-      console.log('User email:', user.bc.email);
-      setEmail(user.bc.email);
-    } else {
-      console.log('No user or email found');
-      setEmail('');
-    }
-  
-    const handleClickOutside = (event) => {
-      if (navbarRef.current && !navbarRef.current.contains(event.target)) {
-        closeDropdowns();
-        setMenuOpen(false);
-      }
-    };
-  
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [user]);
-  
-    const handleClickOutside = (event) => {
-      if (navbarRef.current && !navbarRef.current.contains(event.target)) {
-        closeDropdowns();
-        setMenuOpen(false);
-      }
-    };
-  
+  if (!stdata || !stdata.obj) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-gray-500 mb-4">No student selected for admin editing.</p>
+        <button
+          onClick={() => navigate('/admin')}
+          className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs"
+        >
+          Return to Admin Console
+        </button>
+      </div>
+    );
+  }
 
-  const handleLunchToggle = () => {
-    const LunchConfirm = window.confirm('Are you sure you want to change the settings');
-    if (LunchConfirm) {
-      setLunch(!lunch);
-    }
+  const [blocked, setBlocked] = useState(Boolean(stdata.block));
+  const [password, setPassword] = useState(stdata.password || '');
+  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [lunch, setLunch] = useState(stdata.obj.lunch || {});
+  const [breakfast, setBreakfast] = useState(stdata.obj.breakfast || {});
+  const [dietary, setDietary] = useState(
+    stdata.obj2 || { beef: true, chicken: true, fish: true, mutton: true }
+  );
+
+  const daysList = [
+    { key: 'su', label: t('days').su },
+    { key: 'mo', label: t('days').mo },
+    { key: 'tu', label: t('days').tu },
+    { key: 'we', label: t('days').we },
+    { key: 'th', label: t('days').th },
+    { key: 'fr', label: t('days').fr },
+    { key: 'sa', label: t('days').sa },
+  ];
+
+  const toggleBreakfastDay = (key) => {
+    feedback('tick');
+    setBreakfast((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleBeackfastToggle = () => {
-    const breackFastConfirm = window.confirm('Are you sure you want to change the settings');
-    if (breackFastConfirm) {
-      setBreakfast(!breakfast);
-    }
+  const toggleLunchDay = (key) => {
+    feedback('tick');
+    setLunch((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleBeefToggle = () => {
-    const beefConfirm = window.confirm('Are you sure you want to change the settings');
-    if (beefConfirm) {
-      setBeef(!beef);
-    }
-  };
-
-  const handleChickenToggle = () => {
-    const chickenConfirm = window.confirm('Are you sure you want to change the settings');
-    if (chickenConfirm) {
-      setChicken(!chicken);
-    }
-  };
-
-  const handleFishToggle = () => {
-    const fishConfirm = window.confirm('Are you sure you want to change the settings');
-    if (fishConfirm) {
-      setFish(!fish);
-    }
-  };
-
-  const handleMuttonToggle = () => {
-    const muttonConfirm = window.confirm('Are you sure you want to change the settings');
-    if (muttonConfirm) {
-      setMutton(!mutton);
-    }
+  const toggleDiet = (key) => {
+    feedback('tick');
+    setDietary((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    firebase
-      .firestore()
-      .collection('students')
-      .doc(stdata.documentId)
-      .set({
-        uname: stdata.uname,
-        password: stdata.password,
-        tokenNo: stdata.tokenNo,
-        block: blocked,
-        obj: {
-          lunch: {
-            su: lsu,
-            mo: lmo,
-            tu: ltu,
-            we: lwe,
-            th: lth,
-            fr: lfr,
-            sa: lsa
-          },
-          breakfast: {
-            su: bsu,
-            mo: bmo,
-            tu: btu,
-            we: bwe,
-            th: bth,
-            fr: bfr,
-            sa: bsa
-          },
-        },
-        obj2: {
-          beef: beef,
-          chicken: chicken,
-          fish: fish,
-          mutton: mutton,
-        },
-      })
-      .then(() => {
-        Swal.fire({
-          html: `
-            <div class="flex flex-col items-center justify-center p-6">
-              <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4 border-2 border-green-200">
-                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-              <h2 class="text-xl font-semibold text-gray-900 mb-2">Token Updated Successfully</h2>
-              <p class="text-gray-600 text-center mb-6 text-sm leading-relaxed">Your authentication token has been updated and is now active.</p>
-              <button id="continueBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                Continue to Admin
-              </button>
-            </div>
-          `,
-          showConfirmButton: false,
-          showCloseButton: false,
-          allowOutsideClick: false,
-          background: '#ffffff',
-          padding: 0,
-          width: '420px',
-          customClass: {
-            popup: 'rounded-xl shadow-xl border border-gray-100',
-          },
-          didOpen: () => {
-            const continueBtn = document.getElementById('continueBtn');
-           
-            // Auto-close after 3 seconds
-            const timeout = setTimeout(() => {
-              Swal.close();
-              navigate('/admin', { state: { isLunch: stdata.isLunch } });
-            }, 3000);
-           
-            if (continueBtn) {
-              continueBtn.addEventListener('click', () => {
-                clearTimeout(timeout);
-                Swal.close();
-                navigate('/admin', { state: { isLunch: stdata.isLunch } });
-              });
-            }
-          }
+    setSaving(true);
+    feedback('tick');
+
+    try {
+      await firebase
+        .firestore()
+        .collection('students')
+        .doc(stdata.documentId)
+        .set({
+          uname: stdata.uname,
+          password: password,
+          tokenNo: stdata.tokenNo,
+          block: blocked,
+          obj: { lunch, breakfast },
+          obj2: dietary,
         });
+
+      feedback('success');
+      Swal.fire({
+        title: 'Updated Successfully',
+        text: `Student #${stdata.tokenNo} records have been updated.`,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+      }).then(() => {
+        navigate('/admin');
       });
-  };
-
-  const toggleCheckoutOptions = () => {
-    setShowCheckoutOptions(!showCheckoutOptions);
-  };
-
-  const [lsu, setLsu] = useState(stdata.obj.lunch['su']);
-  const [lmo, setLmo] = useState(stdata.obj.lunch["mo"]);
-  const [ltu, setLtu] = useState(stdata.obj.lunch["tu"]);
-  const [lwe, setLwe] = useState(stdata.obj.lunch["we"]);
-  const [lth, setLth] = useState(stdata.obj.lunch["th"]);
-  const [lfr, setLfr] = useState(stdata.obj.lunch["fr"]);
-  const [lsa, setLsa] = useState(stdata.obj.lunch["sa"]);
-
-  const [checkedL, setChackedL] = useState(false);
-
-  useEffect(() => {
-    if (lsu && lmo && ltu && lwe && lth && lfr && lsa) {
-      setChackedL(true);
-    } else {
-      setChackedL(false);
-    }
-  }, [lsu, lmo, ltu, lwe, lth, lfr, lsa]);
-
-  const [bsu, setBsu] = useState(stdata.obj.breakfast['su']);
-  const [bmo, setBmo] = useState(stdata.obj.breakfast["mo"]);
-  const [btu, setBtu] = useState(stdata.obj.breakfast["tu"]);
-  const [bwe, setBwe] = useState(stdata.obj.breakfast["we"]);
-  const [bth, setBth] = useState(stdata.obj.breakfast["th"]);
-  const [bfr, setBfr] = useState(stdata.obj.breakfast["fr"]);
-  const [bsa, setBsa] = useState(stdata.obj.breakfast["sa"]);
-
-  const [checkedBF, setChackedBF] = useState(false);
-
-  useEffect(() => {
-    if (bsu && bmo && btu && bwe && bth && bfr && bsa) {
-      setChackedBF(true);
-    } else {
-      setChackedBF(false);
-    }
-  }, [bsu, bmo, btu, bwe, bth, bfr, bsa]);
-
-  const [blocked, setBlocked] = useState(stdata.block);
-
-  const handleBlockChange = () => {
-    const blockStatus = window.confirm("Are you sure you want to block this user");
-    if (blockStatus) {
-      setBlocked(true);
-      firebase
-        .firestore()
-        .collection('students')
-        .doc(stdata.documentId)
-        .set({
-          uname: stdata.uname,
-          password: stdata.password,
-          tokenNo: stdata.tokenNo,
-          block: true,
-          obj: {
-            lunch: {
-              su: lsu,
-              mo: lmo,
-              tu: ltu,
-              we: lwe,
-              th: lth,
-              fr: lfr,
-              sa: lsa
-            },
-            breakfast: {
-              su: bsu,
-              mo: bmo,
-              tu: btu,
-              we: bwe,
-              th: bth,
-              fr: bfr,
-              sa: bsa
-            },
-          },
-          obj2: {
-            beef: beef,
-            chicken: chicken,
-            fish: fish,
-            mutton: mutton,
-          },
-        });
+    } catch (err) {
+      console.error('Error updating student record:', err);
+      feedback('warning');
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to update student records.',
+        icon: 'error',
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleUnblockChange = () => {
-    const unblockStatus = window.confirm("Are you sure you want to unblock this user");
-    if (unblockStatus) {
-      setBlocked(false);
-      firebase
-        .firestore()
-        .collection('students')
-        .doc(stdata.documentId)
-        .set({
-          uname: stdata.uname,
-          password: stdata.password,
-          tokenNo: stdata.tokenNo,
-          block: false,
-          obj: {
-            lunch: {
-              su: lsu,
-              mo: lmo,
-              tu: ltu,
-              we: lwe,
-              th: lth,
-              fr: lfr,
-              sa: lsa
-            },
-            breakfast: {
-              su: bsu,
-              mo: bmo,
-              tu: btu,
-              we: bwe,
-              th: bth,
-              fr: bfr,
-              sa: bsa
-            },
-          },
-          obj2: {
-            beef: beef,
-            chicken: chicken,
-            fish: fish,
-            mutton: mutton,
-          },
-        });
-    }
-  };
-
-  const handleCkeckedlsu = () => {
-    const conFirmOfLsu = window.confirm("Are you sure you want to apply this change?");
-    if (conFirmOfLsu) {
-      setLsu(!lsu);
-    }
-  };
-
-  const handleCkeckedLmo = () => {
-    const confirmOFLmo = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOFLmo) {
-      setLmo(!lmo);
-    }
-  };
-
-  const handleCkeckedLtu = () => {
-    const confirmOfLtu = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLtu) {
-      setLtu(!ltu);
-    }
-  };
-
-  const handleCkeckedLwe = () => {
-    const confirmOfLwe = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLwe) {
-      setLwe(!lwe);
-    }
-  };
-
-  const handleCkeckedLth = () => {
-    const confirmOfLth = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLth) {
-      setLth(!lth);
-    }
-  };
-
-  const handleCkeckedLfr = () => {
-    const confirmOfLfr = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLfr) {
-      setLfr(!lfr);
-    }
-  };
-
-  const handleCheckedLsa = () => {
-    const confrimOfLsa = window.confirm("Are you sure you want to apply this change?");
-    if (confrimOfLsa) {
-      setLsa(!lsa);
-    }
-  };
-
-  const handleCheckedBsu = () => {
-    const conFirmOfLsu = window.confirm("Are you sure you want to apply this change?");
-    if (conFirmOfLsu) {
-      setBsu(!bsu);
-    }
-  };
-
-  const handleCheckedBmo = () => {
-    const confirmOFLmo = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOFLmo) {
-      setBmo(!bmo);
-    }
-  };
-
-  const handleCheckedBtu = () => {
-    const confirmOfLtu = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLtu) {
-      setBtu(!btu);
-    }
-  };
-
-  const handleCheckedBwe = () => {
-    const confirmOfLwe = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLwe) {
-      setBwe(!bwe);
-    }
-  };
-
-  const handleCheckedBth = () => {
-    const confirmOfLth = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLth) {
-      setBth(!bth);
-    }
-  };
-
-  const handleCheckedBfr = () => {
-    const confirmOfLfr = window.confirm("Are you sure you want to apply this change?");
-    if (confirmOfLfr) {
-      setBfr(!bfr);
-    }
-  };
-
-  const handleCheckedBsa = () => {
-    const confrimOfLsa = window.confirm("Are you sure you want to apply this change?");
-    if (confrimOfLsa) {
-      setBsa(!bsa);
-    }
-  };
-
-  const lunchSelectAll = (event) => {
-    const { checked } = event.target;
-    const LunchSelectConfirm = window.confirm('Are you sure you want to apply this change?');
-    if (LunchSelectConfirm) {
-      if (checked) {
-        setLsu(true);
-        setLmo(true);
-        setLtu(true);
-        setLwe(true);
-        setLth(true);
-        setLfr(true);
-        setLsa(true);
-      } else {
-        setLsu(false);
-        setLmo(false);
-        setLtu(false);
-        setLwe(false);
-        setLth(false);
-        setLfr(false);
-        setLsa(false);
+  const handleDeleteStudent = () => {
+    feedback('warning');
+    Swal.fire({
+      title: `Delete Token #${stdata.tokenNo}?`,
+      text: `Are you sure you want to permanently delete ${stdata.uname}? This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, Delete',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await firebase.firestore().collection('students').doc(stdata.documentId).delete();
+          feedback('pop');
+          Swal.fire('Deleted!', 'Student record deleted.', 'success');
+          navigate('/admin');
+        } catch (err) {
+          console.error('Delete error:', err);
+        }
       }
-    }
-  };
-
-  const selectBreackfastAll = (event) => {
-    const { checked } = event.target;
-    const breackFastConfirm = window.confirm('Are you sure you want to apply this change?');
-    if (breackFastConfirm) {
-      if (checked) {
-        setBsu(true);
-        setBmo(true);
-        setBtu(true);
-        setBwe(true);
-        setBth(true);
-        setBfr(true);
-        setBsa(true);
-      } else {
-        setBsu(false);
-        setBmo(false);
-        setBtu(false);
-        setBwe(false);
-        setBth(false);
-        setBfr(false);
-        setBsa(false);
-      }
-    }
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <form onSubmit={handleSubmit}>
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-              <h2 className="text-2xl font-bold text-white text-center">Student Portal</h2>
-            </div>
-
-            <div className="p-6">
-              {/* Student Information Section */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Student Information
-                </h3>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                  {/* Name */}
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border">
-                    <i className="fas fa-user text-blue-500 text-xl"></i>
-                    <div className="flex-1">
-                      <span className="text-gray-500 text-sm font-medium block">Name</span>
-                      <span className="text-gray-800 font-semibold">{stdata.uname}</span>
-                    </div>
-                  </div>
-
-                  {/* Token Number */}
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border">
-                    <i className="fas fa-id-badge text-blue-500 text-xl"></i>
-                    <div className="flex-1">
-                      <span className="text-gray-500 text-sm font-medium block">Token Number</span>
-                      <span className="text-gray-800 font-semibold">{stdata.tokenNo}</span>
-                    </div>
-                  </div>
-
-                  {/* Password */}
-                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border">
-                    <i className="fas fa-lock text-blue-500 text-xl"></i>
-                    <div className="flex-1">
-                      <span className="text-gray-500 text-sm font-medium block">Password</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-800 font-semibold">
-                          {showPassword ? stdata.password : '••••••••'}
-                        </span>
-                        <FontAwesomeIcon
-                          icon={showPassword ? faEyeSlash : faEye}
-                          className="text-blue-500 cursor-pointer hover:text-blue-600 transition-colors"
-                          onClick={togglePasswordVisibility}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Block/Unblock Section */}
-                <div className="bg-gray-50 rounded-lg p-4 border">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Account Status</h4>
-                  <div className="flex items-center space-x-6">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="blockStatus"
-                        className="w-4 h-4 text-red-600 focus:ring-red-500"
-                        checked={blocked}
-                        onChange={handleBlockChange}
-                      />
-                      <span className="text-red-600 font-medium">Block</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="blockStatus"
-                        className="w-4 h-4 text-green-600 focus:ring-green-500"
-                        checked={!blocked}
-                        onChange={handleUnblockChange}
-                      />
-                      <span className="text-green-600 font-medium">Unblock</span>
-                    </label>
-                    {blocked && (
-                      <span className="text-red-500 text-sm font-medium bg-red-50 px-2 py-1 rounded">
-                        Token is blocked
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Meal Preferences Section */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Meal Preferences
-                </h3>
-
-                {/* Breakfast Section */}
-                
-
-                {/* Lunch Section */}
-                <div className="bg-white border border-gray-200 rounded-lg mb-6 overflow-hidden">
-  <div className="bg-orange-50 px-4 py-3 border-b border-gray-200">
-    <div className="flex items-center justify-between">
-      <h4 className="text-md font-semibold text-gray-800">Breakfast</h4>
-      <label className="flex items-center space-x-2 cursor-pointer">
-        <input
-          type="checkbox"
-          className="w-4 h-4 text-orange-600 focus:ring-orange-500 rounded"
-          onChange={selectBreackfastAll}
-          checked={checkedBF}
-          disabled={email === "adsacanteen@gmail.com"}
-        />
-        <span className="text-sm font-medium text-gray-700">Select All</span>
-      </label>
-    </div>
-  </div>
-  <div className="p-4">
-    <div className="grid grid-cols-7 gap-4">
-      {[
-        { key: 'su', label: 'Sun', state: bsu, handler: handleCheckedBsu },
-        { key: 'mo', label: 'Mon', state: bmo, handler: handleCheckedBmo },
-        { key: 'tu', label: 'Tue', state: btu, handler: handleCheckedBtu },
-        { key: 'we', label: 'Wed', state: bwe, handler: handleCheckedBwe },
-        { key: 'th', label: 'Thu', state: bth, handler: handleCheckedBth },
-        { key: 'fr', label: 'Fri', state: bfr, handler: handleCheckedBfr },
-        { key: 'sa', label: 'Sat', state: bsa, handler: handleCheckedBsa }
-      ].map(day => (
-        <div key={day.key} className="flex flex-col items-center space-y-2">
-          <label className="text-sm font-medium text-gray-600">{day.label}</label>
-          <input
-            type="checkbox"
-            checked={day.state}
-            onChange={day.handler}
-            className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
-            disabled={email === "adsacanteen@gmail.com"} // disable condition here
-          />
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
+            {stdata.tokenNo}
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+              {stdata.uname} (Admin Edit)
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Token #{stdata.tokenNo} • {blocked ? 'Locked Account' : 'Active Account'}
+            </p>
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-</div>
 
-{/* Lunch Section */}
-<div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-  <div className="bg-green-50 px-4 py-3 border-b border-gray-200">
-    <div className="flex items-center justify-between">
-      <h4 className="text-md font-semibold text-gray-800">Lunch</h4>
-      <label className="flex items-center space-x-2 cursor-pointer">
-        <input
-          type="checkbox"
-          className="w-4 h-4 text-green-600 focus:ring-green-500 rounded"
-          onChange={lunchSelectAll}
-          checked={checkedL}
-          disabled={email === "adsacanteen@gmail.com"}
-        />
-        <span className="text-sm font-medium text-gray-700">Select All</span>
-      </label>
-    </div>
-  </div>
-  <div className="p-4">
-    <div className="grid grid-cols-7 gap-4">
-      {[
-        { key: 'su', label: 'Sun', state: lsu, handler: handleCkeckedlsu },
-        { key: 'mo', label: 'Mon', state: lmo, handler: handleCkeckedLmo },
-        { key: 'tu', label: 'Tue', state: ltu, handler: handleCkeckedLtu },
-        { key: 'we', label: 'Wed', state: lwe, handler: handleCkeckedLwe },
-        { key: 'th', label: 'Thu', state: lth, handler: handleCkeckedLth },
-        { key: 'fr', label: 'Fri', state: lfr, handler: handleCkeckedLfr },
-        { key: 'sa', label: 'Sat', state: lsa, handler: handleCheckedLsa }
-      ].map(day => (
-        <div key={day.key} className="flex flex-col items-center space-y-2">
-          <label className="text-sm font-medium text-gray-600">{day.label}</label>
-          <input
-            type="checkbox"
-            checked={day.state}
-            onChange={day.handler}
-            className="w-5 h-5 text-green-600 focus:ring-green-500 rounded"
-            disabled={email === "adsacanteen@gmail.com"} // disable condition here
-          />
-        </div>
-      ))}
-    </div>
-  </div>
-</div>
-              </div>
-
-              {/* Dietary Preferences Toggle */}
-              <div className="mb-6">
-                <button
-                  type="button"
-                  onClick={toggleCheckoutOptions}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                >
-                  <span>Dietary Preferences</span>
-                  <i className={`fas fa-chevron-${showCheckoutOptions ? 'up' : 'down'} text-sm`}></i>
-                </button>
-              </div>
-
-              {/* Dietary Preferences Section */}
-              {showCheckoutOptions && (
-                <div className="mb-8 bg-purple-50 rounded-lg p-4 border border-purple-200">
-                  <h4 className="text-md font-semibold text-gray-800 mb-4">Dietary Preferences</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { key: 'beef', label: 'Beef', state: beef, handler: handleBeefToggle },
-                      { key: 'chicken', label: 'Chicken', state: chicken, handler: handleChickenToggle },
-                      { key: 'fish', label: 'Fish', state: fish, handler: handleFishToggle },
-                      { key: 'mutton', label: 'Mutton', state: mutton, handler: handleMuttonToggle }
-                    ].map(item => (
-                      <label key={item.key} className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-purple-100 transition-colors">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-purple-600 focus:ring-purple-500 rounded"
-                          checked={item.state}
-                          onChange={item.handler}
-                        />
-                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-emerald-200"
-                >
-                  Update Preferences
-                </button>
-              </div>
-            </div>
-          </form>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              feedback('tick');
+              navigate('/admin');
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Admin Console</span>
+          </button>
         </div>
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        
+        {/* Account Controls Card */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md">
+          
+          {/* Lock / Unlock Toggle */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Canteen Account Access
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setBlocked(!blocked);
+              }}
+              className={`w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-xs shadow-sm transition-all ${
+                blocked
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/40 text-rose-700 dark:text-rose-400'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-400'
+              }`}
+            >
+              {blocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+              <span>{blocked ? 'Blocked from Dining Service' : 'Active Account (Unblocked)'}</span>
+            </button>
+          </div>
+
+          {/* Password Edit */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Student Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 pr-11 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Meal Schedules */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Breakfast */}
+          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Coffee className="w-5 h-5 text-amber-500" />
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                Breakfast Schedule
+              </h2>
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {daysList.map(({ key, label }) => {
+                const active = Boolean(breakfast[key]);
+                return (
+                  <div key={key} className="flex flex-col items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                      {label}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleBreakfastDay(key)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                        active
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
+                      }`}
+                    >
+                      {active ? <Check className="w-4 h-4" /> : '-'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Lunch */}
+          <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Utensils className="w-5 h-5 text-emerald-500" />
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                Lunch Schedule
+              </h2>
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {daysList.map(({ key, label }) => {
+                const active = Boolean(lunch[key]);
+                return (
+                  <div key={key} className="flex flex-col items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                      {label}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleLunchDay(key)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                        active
+                          ? 'bg-emerald-500 text-white shadow-sm'
+                          : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
+                      }`}
+                    >
+                      {active ? <Check className="w-4 h-4" /> : '-'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Dietary Preferences */}
+        <div className="p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md space-y-4">
+          <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+            Dietary Exclusions
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { key: 'beef', label: 'Beef', emoji: '🥩' },
+              { key: 'chicken', label: 'Chicken', emoji: '🍗' },
+              { key: 'fish', label: 'Fish', emoji: '🐟' },
+              { key: 'mutton', label: 'Mutton', emoji: '🍖' },
+            ].map(({ key, label, emoji }) => {
+              const active = Boolean(dietary[key]);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleDiet(key)}
+                  className={`p-3.5 rounded-2xl border text-center transition-all ${
+                    active
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400'
+                  }`}
+                >
+                  <span className="text-xl block mb-1">{emoji}</span>
+                  <span className="text-xs font-bold block">{label}</span>
+                  <span className="text-[10px] mt-0.5 block">{active ? 'Allowed' : 'Excluded'}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleDeleteStudent}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold text-xs border border-red-200 dark:border-red-500/20 hover:bg-red-100 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete Student Record</span>
+          </button>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-sm shadow-md transition-all active:scale-95 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'Saving Records...' : 'Save Student Changes'}</span>
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -1,17 +1,6 @@
-body {
-    /* Set the background image */
-    /* background-image: url('https://ensafe.in/wp-content/uploads/2021/11/eretrtr.jpg'); */
-  
-    
-    background-color: white;
-    /* Ensure the background image covers the entire viewport */
-    background-size: cover;
-    
-    /* Center the background image */
-    background-position: center;
-    
-    /* Set a fixed background attachment so it doesn't scroll with the content */
-    background-attachment: fixed;
-    
-    /* Optionally, add a background color in case the image is not fully loaded or visible */
-  }
+/* App.css - Cleaned up to support dynamic theming */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}

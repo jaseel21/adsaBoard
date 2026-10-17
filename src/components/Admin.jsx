@@ -1,88 +1,99 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faScrewdriverWrench } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Lock,
+  Unlock,
+  Utensils,
+  Coffee,
+  Sliders,
+  Calendar,
+  ShieldCheck,
+  Search,
+  Check,
+  X,
+} from 'lucide-react';
+import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
-import { DataOfOne } from '../store/StudentData'; // Assuming this is your context
-import { useNavigate,useLocation } from 'react-router-dom';
-import {AuthContext} from "../store/AuthContext"
-import { motion } from 'framer-motion';
-import {faCalendarDay } from '@fortawesome/free-solid-svg-icons';
+import { DataOfOne } from '../store/StudentData';
+import { AuthContext } from '../store/AuthContext';
 import { useWorldTime } from '../utils/time';
+import { useLanguage } from '../store/LanguageContext';
+import { useFeedback } from '../utils/useFeedback';
 
-
-const SwitchButton = ({ number,block, isOn, toggleSwitch }) => {
+const SwitchButton = ({ number, block, isOn, onClick }) => {
   return (
-    <button
-      onClick={toggleSwitch}
+    <motion.button
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.94 }}
+      layout
+      onClick={onClick}
       className={`
-        relative overflow-hidden
-        flex items-center justify-center
-        w-14 h-14 m-2 rounded-2xl select-none
-        font-semibold text-md tracking-wide
-        transition-transform duration-300 ease-out
-        lg:hover:scale-[1.03] active:scale-95
-        shadow-lg
-        focus:outline-none focus:ring-4 focus:ring-white/30
-        ${block
-          ? "bg-gradient-to-b from-gray-700 to-gray-900 text-white shadow-gray-800/40"
-          : isOn
-            ? "bg-gradient-to-b from-green-600 to-green-800 text-white shadow-black/20 lg:hover:shadow-black/30"
-            : "bg-gradient-to-b from-red-600 to-red-800 text-white shadow-black/20 lg:hover:shadow-black/30"
+        relative flex items-center justify-center
+        w-13 h-13 sm:w-14 sm:h-14 rounded-2xl select-none font-bold text-sm sm:text-base tracking-wide
+        shadow-sm transition-all duration-200 focus:outline-none
+        ${
+          block
+            ? 'bg-gradient-to-b from-gray-700 to-gray-900 text-gray-300 border border-gray-600/40 shadow-inner'
+            : isOn
+            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
+            : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
         }
       `}
-      style={{
-        textShadow: !block ? "0 2px 4px rgba(0,0,0,0.25)" : "none",
-      }}
     >
-    {number}
-  </button>
+      {block ? <Lock className="w-4 h-4 text-gray-400" /> : <span>{number}</span>}
+    </motion.button>
   );
 };
 
 function Admin() {
-  const location=useLocation()
-  const { setStdata } = useContext(DataOfOne); // Getting context value
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { setStdata } = useContext(DataOfOne);
+  const { user } = useContext(AuthContext);
+  const { t } = useLanguage();
+  const { feedback } = useFeedback();
 
   const [documents, setDocuments] = useState([]);
-  const [isChecked, setIsChecked] = useState();
+  const [isChecked, setIsChecked] = useState(false);
   const [isLunch, setIsLunch] = useState(false);
-  const [loading,setLoading]=useState(true)
-  const navigate=useNavigate()
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const {user}=useContext(AuthContext)
+  const { dayShort } = useWorldTime('Asia/Kolkata');
+  const [day, setDay] = useState('');
 
   useEffect(() => {
-    // Check for location state and update isLunch accordingly
     if (location.state?.isLunch !== undefined) {
       setIsLunch(location.state.isLunch);
-    } else {
-      setIsLunch(false); // Default value if no state is provided
     }
   }, [location.state]);
 
-  const { dayShort, error: timeError } = useWorldTime('Asia/Kolkata');
-  const [day, setDay] = useState("");
+  useEffect(() => {
+    if (dayShort) setDay(dayShort);
+  }, [dayShort]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const querySnapshot = await firebase.firestore().collection('students').get();
-        const tokenDocuments = querySnapshot.docs.map(doc => ({
+        const docs = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
-        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-        setDocuments(tokenDocuments);
+        docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
+        setDocuments(docs);
 
-        const doc = await firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get();
+        const doc = await firebase
+          .firestore()
+          .collection('tokenboard')
+          .doc('g8iJVNn2RQkysjMAvX1h')
+          .get();
         if (doc.exists) {
-          let tbStatus = doc.data();
-          setIsChecked(tbStatus.status);
-        } else {
-          console.log("No such document!");
+          setIsChecked(Boolean(doc.data().status));
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching admin data:', error);
       } finally {
         setLoading(false);
       }
@@ -91,362 +102,191 @@ function Admin() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (dayShort) {
-      setDay(dayShort);
+  const toggleBoardLock = () => {
+    if (!user) {
+      navigate('/alogin');
+      return;
     }
-  }, [dayShort]);
+    feedback('tick');
+    const nextStatus = !isChecked;
 
-
-
-  const toggleSwitch1 = () => {
-    if(user){
-
-      const action = isChecked ? 'close' : 'open';
-      const changeConfirm = window.confirm(`Are you sure you want to ${action} the board?`);
-      if (changeConfirm) {
-        changeStatus();
+    Swal.fire({
+      title: nextStatus ? 'Unlock Token Board?' : 'Lock Token Board?',
+      text: nextStatus
+        ? 'Students will be allowed to update tokens outside normal cutoff hours.'
+        : 'Token updates will revert to strict standard schedule.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: nextStatus ? '#10b981' : '#ef4444',
+      confirmButtonText: nextStatus ? 'Unlock Board' : 'Lock Board',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await firebase
+            .firestore()
+            .collection('tokenboard')
+            .doc('g8iJVNn2RQkysjMAvX1h')
+            .set({ status: nextStatus }, { merge: true });
+          setIsChecked(nextStatus);
+          feedback('success');
+        } catch (err) {
+          console.error('Error toggling board:', err);
+        }
       }
-    }else{
-      navigate('/alogin')
-    }
-  };
-
-  const changeStatus = () => {
-     firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").get().then((doc=>{
-      if (doc.exists) {
-        
-        let tbStatus = doc.data(); // Assign doc.data() to tbStatus
-        console.log(tbStatus); // Optionally log tbStatus
-        setIsChecked(tbStatus.status)
-        console.log(tbStatus);
-      } else {
-        console.log("No such document!");
-      }
-    }))
-    // setIsChecked(!isChecked);
-    firebase.firestore().collection("tokenboard").doc("g8iJVNn2RQkysjMAvX1h").set({
-      status: !isChecked
     });
   };
 
-  const toggleSwitch = async (index) => {
-
-    let StInfo = await firebase.firestore().collection('students').where('tokenNo', '==', parseInt(documents[index].tokenNo)).get();
-    if (!StInfo.empty) {
-      let studentData = StInfo.docs[0].data();
-      studentData.documentId = StInfo.docs[0].id;
-      studentData.isLunch=isLunch
-
-      setStdata(studentData); // Assuming setStdata updates context state
-      navigate("/astudent-port")
-
-      // Assuming navigate is a function to navigate to a different page (e.g., using React Router)
-      // Make sure to import navigate from your routing library (e.g., React Router's useHistory)
-      // navigate('/student-portal');
-    }
-    // Example logic: You would update Firestore here
+  const handleStudentSelect = async (doc) => {
+    feedback('tick');
+    const studentData = { ...doc, documentId: doc.id, isLunch };
+    setStdata(studentData);
+    navigate('/astudent-port');
   };
 
-  const toggleStatus = () => {
-    setIsLunch(!isLunch);
-  };
- 
+  const filteredDocuments = documents.filter((doc) => {
+    if (!searchQuery.trim()) return true;
+    return (
+      String(doc.tokenNo).includes(searchQuery.trim()) ||
+      (doc.uname && doc.uname.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+    );
+  });
 
-
-const handleTokens =()=>{
-  navigate("/m-tokens")
-}
-
-
-if (loading || (!dayShort && !timeError) || (!timeError && day === "")) {
-  // Loading screen
-
-
-return (
-  <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] ">
-  {/* Bouncing Dots */}
-  <div className="flex space-x-2">
-    {[...Array(3)].map((_, index) => (
-      <motion.div
-        key={index}
-        className="w-4 h-4 rounded-full bg-green-500"
-        animate={{
-          y: [0, -10, 0],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 0.6,
-          delay: index * 0.2,
-        }}
-      ></motion.div>
-    ))}
-  </div>
-  <motion.p
-    className="mt-4 text-green-700 font-bold text-lg"
-    animate={{ opacity: [0.5, 1, 0.5] }}
-    transition={{ repeat: Infinity, duration: 1.5 }}
-  >
-    Loading...
-  </motion.p>
-</div>
-
-);
-
-}
-
-if (timeError) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)]">
-      <div className="bg-red-50 p-6 rounded-2xl border border-red-200 text-center max-w-md">
-        <FontAwesomeIcon icon={faScrewdriverWrench} className="text-red-500 text-4xl mb-3" />
-        <h2 className="text-red-700 font-bold text-xl mb-2">Time Sync Failed</h2>
-        <p className="text-red-600 text-sm">{timeError.message || 'Unable to get secure server time. Please check your connection or permissions.'}</p>
-      </div>
-    </div>
-  );
-}
-const fullDayName = {
-  su: 'Sunday',
-  mo: 'Monday',
-  tu: 'Tuesday',
-  we: 'Wednesday',
-  th: 'Thursday',
-  fr: 'Friday',
-  sa: 'Saturday'
-};
-
-  return (
-    <div className=''>
-      <div className="p-2 flex">
-  
-      
-        <div className="flex flex-col items-center p-2 justify-center  rounded-md w-1/3 md:w-1/12 ">
-  {/* <h1 className="text-gray-800 text-lg font-semibold mb-4">Token Board</h1> */}
-  <div className="flex flex-col items-center">
-    <span className="text-sm text-gray-500 font-medium mb-2">
-      {isChecked ? 'Unlocked' : 'Locked'}
-    </span>
-    <div className="relative">
-      {/* Outer metallic ring */}
-      <div
-        className={`w-16 h-16 rounded-full bg-gray-800 border-4 shadow-inner flex items-center justify-center relative duration-300 ${
-          isChecked ? 'border-green-500' : 'border-red-500'
-        }`}
-        style={{
-          boxShadow: `0 0 15px ${isChecked ? 'green' : 'red'}`,
-          background: 'linear-gradient(145deg, #3a3a3a, #1a1a1a)', // Metallic gradient
-        }}
-      >
-        {/* Inner dial with lock/unlock icon */}
-        <div
-          className={`w-10 h-10 bg-gray-700 rounded-full shadow-md flex items-center justify-center`}
-        >
-          {/* Lock/Unlock SVG icon */}
-          {isChecked ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-green-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 17v-1m-4-4v-4a4 4 0 118 0v4m4 4v4H4v-4h16z"
-              />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-red-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 12V9a4 4 0 00-8 0v3m-4 4v4h16v-4m-4-4h-4m4 0h-4"
-              />
-            </svg>
-          )}
-        </div>
-      </div>
-      {/* Clickable button */}
-      <button
-        className="absolute inset-0 rounded-full focus:outline-none"
-        onClick={toggleSwitch1}
-      ></button>
-    </div>
-  </div>
-</div>
-
-
-
-<div className='flex-wrap ml-auto'>
-<div className="  justify-end  py-1 items-end  ">
-  
-  <div className='  items-center'>
-  
-            <h1  class="text-sm  uppercase text-center text-gray-500 ">
-              <span><FontAwesomeIcon icon={faCalendarDay} className="text-sm text-gray-500 pr-1 " /></span>
-              {fullDayName[day] || ''}
-            </h1>
-  </div>
-  
-          </div>
-{/* <button onClick={handleTokens} className='bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-md border hover:shadow-lg transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 m-9 inline-flex items-center' >Manage Tokens</button> */}
-</div>
-
-
-
-
-
-
-
-
-
-      </div>
-
-
-
-      <div className="flex items-center justify-center">
-
-      <button
-  onClick={toggleStatus}
-  className={`group relative flex items-center justify-center w-60 h-12 bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl focus:outline-none ring-4 ring-emerald-500/30 transition-all duration-700 ease-out shadow-lg shadow-2xl shadow-emerald-500/20 border border-slate-600/50 backdrop-blur-sm`}
->
-  {/* Animated toggle circle */}
-  <span
-    className={`absolute top-1 bottom-1 my-auto w-12 h-12 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl transition-all duration-700 ease-out border border-slate-500/30 ${
-      isLunch ? "left-1" : "left-[calc(100%-3.25rem)]"
-    }`}
-    style={{
-      boxShadow: isLunch 
-        ? "0 0 20px 4px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)" 
-        : "0 0 20px 4px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
-    }}
-  >
-    {/* Inner glow indicator */}
-    <div 
-      className={`absolute inset-1 rounded-lg transition-all duration-700 ${
-        isLunch ? 'bg-emerald-500/20' : 'bg-blue-500/20'
-      }`}
-    />
-  </span>
-  
-  {/* Text Content */}
-  <div className="flex flex-col items-center z-10">
-    <span className={`font-bold text-lg tracking-wide transition-colors duration-700 ${
-      isLunch ? 'text-emerald-100' : 'text-blue-100'
-    }`}>
-      {isLunch ? "Lunch" : "Breakfast"}
-    </span>
-    <span className="text-xs text-slate-400 font-medium mt-0.5 group-hover:text-slate-300 transition-colors duration-300">
-      {isLunch ? "Switch to breakfast" : "Switch to lunch"}
-    </span>
-  </div>
-  
-  {/* Arrow Icon */}
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={`h-6 w-6 text-white absolute transition-all duration-700 ease-out z-10 ${
-      isLunch ? "left-5 rotate-180" : "right-5 rotate-180"
-    }`}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path
-      d={
-        isLunch
-          ? "M7 16l-4-4m0 0l4-4m-4 4h18" // Arrow pointing left
-          : "M17 8l4 4m0 0l-4 4m4-4H3" // Arrow pointing right
-      }
-    />
-  </svg>
-  
-  {/* Decorative wave pattern */}
-  <div className={`absolute inset-0 rounded-2xl overflow-hidden pointer-events-none transition-opacity duration-700 ${
-    isLunch ? 'opacity-30' : 'opacity-20'
-  }`}>
-    <svg 
-      className="absolute top-0 left-0 w-full h-full" 
-      viewBox="0 0 288 56" 
-      preserveAspectRatio="none"
-    >
-      <path
-        d={isLunch 
-          ? "M0,28 Q72,10 144,28 T288,28 L288,56 L0,56 Z"
-          : "M0,28 Q72,46 144,28 T288,28 L288,0 L0,0 Z"
-        }
-        fill={isLunch ? "rgba(16, 185, 129, 0.1)" : "rgba(59, 130, 246, 0.1)"}
-        className="transition-all duration-700 ease-out"
-      />
-    </svg>
-  </div>
-  
-  {/* Background gradient overlay */}
-  <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
-    isLunch 
-      ? 'bg-gradient-to-r from-emerald-500/5 to-green-500/5' 
-      : 'bg-gradient-to-r from-blue-500/5 to-indigo-500/5'
-  }`} />
-  
-  {/* Animated border glow */}
-  <div className={`absolute inset-0 rounded-2xl transition-all duration-700 ${
-    isLunch 
-      ? 'shadow-[0_0_0_1px_rgba(16,185,129,0.3)]' 
-      : 'shadow-[0_0_0_1px_rgba(59,130,246,0.3)]'
-  } opacity-0 group-hover:opacity-100`} />
-</button>
-    </div>
-
-      <h1 className='text-3xl font-bold mb-8'></h1>
-      <div className="flex flex-wrap justify-center">
-        
-
-        {isLunch ? <>
-        <div className="md:px-28">
-        <div className="flex flex-wrap justify-center">
-          {documents.map((doc, index) => (
-
-              <SwitchButton
-                key={index}
-                number={doc.tokenNo}
-                block={doc.block}
-                isOn={doc.obj && doc.obj.lunch[day]}
-                toggleSwitch={() => toggleSwitch(index)}
-              />
-          ))}
-          </div>
-          </div>
-        </>
-           
-         : <>
-         <div className="md:px-28">
-         <div className="flex flex-wrap justify-center">
-         { documents.map((doc, index) => (
-            <SwitchButton
-              key={index}
-              number={doc.tokenNo}
-              block={doc.block}
-              isOn={doc.obj && doc.obj.breakfast[day]}
-              toggleSwitch={() => toggleSwitch(index)}
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="flex space-x-2">
+          {[0, 1, 2].map((idx) => (
+            <motion.div
+              key={idx}
+              className="w-3.5 h-3.5 rounded-full bg-emerald-500"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 0.6, delay: idx * 0.15 }}
             />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      
+      {/* Admin Action Ribbon */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        
+        {/* Board Lock Control */}
+        <div className="md:col-span-5 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" />
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">
+                Master Board Override
+              </h2>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {isChecked
+                ? 'Board is UNLOCKED (open 24/7 for updates)'
+                : 'Board is LOCKED to standard schedule (2 PM - 11 PM)'}
+            </p>
           </div>
+
+          <button
+            onClick={toggleBoardLock}
+            className={`p-3.5 rounded-2xl flex items-center gap-2 font-bold text-xs shadow-md transition-all transform active:scale-95 ${
+              isChecked
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25'
+                : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/25'
+            }`}
+          >
+            {isChecked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            <span>{isChecked ? 'Unlocked' : 'Locked'}</span>
+          </button>
+        </div>
+
+        {/* Meal View & Management Links */}
+        <div className="md:col-span-7 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          
+          {/* Meal Toggle */}
+          <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
+            <button
+              onClick={() => {
+                feedback('pop');
+                setIsLunch(true);
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                isLunch
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>Lunch</span>
+            </button>
+
+            <button
+              onClick={() => {
+                feedback('pop');
+                setIsLunch(false);
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                !isLunch
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              <Coffee className="w-3.5 h-3.5" />
+              <span>Breakfast</span>
+            </button>
           </div>
-         </>
-        }
-         
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/m-tokens');
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Manage Range</span>
+            </button>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Token or name..."
+                className="w-36 sm:w-44 pl-8 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200/80 dark:border-white/10 text-xs font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Token Matrix */}
+      <div className="rounded-3xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 p-6 shadow-sm backdrop-blur-xl">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          Click on any student token below to edit individual preferences or lock/unlock their account.
+        </p>
+
+        <motion.div layout className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
+          {filteredDocuments.map((doc) => {
+            const isOn = Boolean(
+              isLunch ? doc.obj?.lunch?.[day] : doc.obj?.breakfast?.[day]
+            );
+            return (
+              <SwitchButton
+                key={doc.id || doc.tokenNo}
+                number={doc.tokenNo}
+                block={Boolean(doc.block)}
+                isOn={isOn}
+                onClick={() => handleStudentSelect(doc)}
+              />
+            );
+          })}
+        </motion.div>
       </div>
     </div>
   );

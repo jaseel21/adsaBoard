@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import firebase from 'firebase/app';
-import 'firebase/firestore';
+import firebase from '../firebase/config';
 import Papa from 'papaparse';
 
 const AddStudentsCSV = () => {

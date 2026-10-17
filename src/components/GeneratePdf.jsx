@@ -1,830 +1,314 @@
-import React, { useState, useEffect } from 'react';
-import firebase from '../firebase/config';  // Update the path to your Firebase configuration file
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Printer, FileDown, ArrowLeft, Coffee, Utensils, Calendar } from 'lucide-react';
+import firebase from '../firebase/config';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { motion } from 'framer-motion';
 import { useWorldTime } from '../utils/time';
+import { useLanguage } from '../store/LanguageContext';
+import { useFeedback } from '../utils/useFeedback';
 
-const FetchData = () => {
-    const [data, setData] = useState([]);
-    const [documents, setDocuments] = useState([]);
-    const [section1, setSection1] = useState([]);
-    const [section2, setSection2] = useState([]);
-    const [section3, setSection3] = useState([]);
-    const [section4, setSection4] = useState([]);
-    const [section5, setSection5] = useState([]);
-    const [section6, setSection6] = useState([]);
-    const [section7, setSection7] = useState([]);
-    const [section8, setSection8] = useState([]);
-    // const [section9, setSection9] = useState([]);
-    // const [section10, setSection10] = useState([]);
-    // const [section11, setSection11] = useState([]);
-    // const [section12, setSection12] = useState([]);
+const GeneratePdf = () => {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+  const { feedback } = useFeedback();
 
-    const [Bsection1, setBsection1] = useState([]);
-  const [Bsection2, setBsection2] = useState([]);
-  const [Bsection3, setBsection3] = useState([]);
-  const [Bsection4, setBsection4] = useState([]);
-  const [Bsection5, setBsection5] = useState([]);
-  const [Bsection6, setBsection6] = useState([]);
-  const [Bsection7, setBsection7] = useState([]);
-  const [Bsection8, setBsection8] = useState([]);
-  // const [Bsection9, setBsection9] = useState([]);
-  // const [Bsection10, setBsection10] = useState([]);
-  // const [Bsection11, setBsection11] = useState([]);
-  // const [Bsection12, setBsection12] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [day, setDay] = useState('');
 
+  const { timeHms, dayShort, longDate } = useWorldTime('Asia/Kolkata');
 
-    
-  const [day, setDay] = useState("");
-  const [loading,setLoading]=useState(true)
-  
-  // Get time and date from worldtimeapi hook (device-independent)
-  const { timeHms, dayShort, nowDate } = useWorldTime('Asia/Kolkata');
-
-
-
-  // Update day from worldtimeapi hook (same pattern as Home.jsx)
   useEffect(() => {
-    const updateDay = () => {
-      // Use dayShort directly from worldtimeapi hook
-      const dayOfWeek = dayShort;
-      // Use timeHms directly from worldtimeapi hook
-      const currentTime = timeHms;
-      
-      // Calculate day based on time (after 6 PM, show next day)
-      if (currentTime > "18:00:00") {
-        const days = ["su", "mo", "tu", "we", "th", "fr", "sa"];
-        const currentIndex = days.indexOf(dayOfWeek);
-        const nextDay = days[(currentIndex + 1) % 7];
-        setDay(nextDay);
-      } else {
-        setDay(dayOfWeek);
-      }
-    };
-
-    // Initial call to set the day immediately on mount
-    updateDay();
-
-    // Set up an interval to update every minute
-    const timer = setInterval(updateDay, 60000);
-
-    // Clean up interval on component unmount
-    return () => clearInterval(timer);
+    if (!dayShort || !timeHms) return;
+    const currentTime = timeHms;
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    if (currentTime > '18:00:00') {
+      const currentIndex = days.indexOf(dayShort);
+      const nextDay = days[(currentIndex + 1) % 7];
+      setDay(nextDay);
+    } else {
+      setDay(dayShort);
+    }
   }, [timeHms, dayShort]);
 
- 
-
-
- useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const querySnapshot = await firebase.firestore().collection('students').get();
-        const tokenDocuments = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-        setDocuments(tokenDocuments);
-        
-        
-
-        console.log(day);
-        
-
-      } catch (error) {
-        console.error('Error fetching tokens:', error);
-      }
-    };
-
-    fetchData();
-
-  }, []);
-
-
-
-
-
-    useEffect(() => {
-        
-        const fetchData = async () => {
-            try {
-                const querySnapshot = await firebase.firestore().collection('students').get();
-                const tokenDocuments = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-                setDocuments(tokenDocuments);
-
-
-                const sectionOneTokens = tokenDocuments.slice(0, 25);
-                const selectedSOT = sectionOneTokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection1(selectedSOT);
-      
-                
-                
-               const sectionTwoTokens = tokenDocuments.slice(25, 50);
-               const selectedSTT = sectionTwoTokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-               setSection2(selectedSTT);
-
-                
-
-                const section3Tokens=tokenDocuments.slice(50, 75);
-                const selectedS3T = section3Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-               
-                setSection3(selectedS3T)
-            
-                const section4Tokens=tokenDocuments.slice(75, 100);
-                const selectedS4T = section4Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection4(selectedS4T)
-            
-                const section5Tokens=tokenDocuments.slice(100, 125);
-                const selectedS5T = section5Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection5(selectedS5T)
-            
-                const section6Tokens=tokenDocuments.slice(125, 150);
-                const selectedS6T = section6Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection6(selectedS6T)
-            
-                const section7Tokens=tokenDocuments.slice(150, 175);
-                const selectedS7T = section7Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection7(selectedS7T)
-            
-                const section8Tokens=tokenDocuments.slice(175, 200);
-                const selectedS8T = section8Tokens.filter(doc => doc.obj && !doc.obj.lunch[day] || doc.block).map(doc => doc.tokenNo);
-                setSection8(selectedS8T)
-            
-                // const section9Tokens=tokenDocuments.slice(136,153 );
-                // const selectedS9T = section9Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection9(selectedS9T)
-            
-                // const section10Tokens=tokenDocuments.slice(153, 170);
-                // const selectedS10T = section10Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection10(selectedS10T)
-
-                // const section11Tokens=tokenDocuments.slice(170, 187);
-                // const selectedS11T = section11Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection11(selectedS11T)
-
-                // const section12Tokens=tokenDocuments.slice(187, 200);
-                // const selectedS12T = section12Tokens.filter(doc => doc.obj && !doc.obj.lunch[day]).map(doc => doc.tokenNo);
-                // setSection12(selectedS12T)
-
-                // -----------------------------------------------------
-
-
-
-                const BsectionOneTokens = tokenDocuments.slice(0, 25);
-        const BselectedSOT = BsectionOneTokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-        setBsection1(BselectedSOT);
-
-        const BsectionTowTokens=tokenDocuments.slice(25, 50);
-        console.log(BsectionTowTokens);
-        const BselectedSTT = BsectionTowTokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-
-        
-        console.log(selectedSTT);
-        setBsection2(BselectedSTT)
-
-        const Bsection3Tokens=tokenDocuments.slice(50, 75);
-        const BselectedS3T = Bsection3Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-        setBsection3(BselectedS3T)
-
-        const Bsection4Tokens=tokenDocuments.slice(75, 100);
-        const BselectedS4T = Bsection4Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-        setBsection4(BselectedS4T)
-
-        const Bsection5Tokens=tokenDocuments.slice(100, 125);
-        const BselectedS5T = Bsection5Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-        setBsection5(BselectedS5T)
-
-        const Bsection6Tokens=tokenDocuments.slice(125, 150);
-        const BselectedS6T = Bsection6Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block ).map(doc => doc.tokenNo);
-        setBsection6(BselectedS6T)
-
-        const Bsection7Tokens=tokenDocuments.slice(150, 175);
-        const BselectedS7T = Bsection7Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-        setBsection7(BselectedS7T)
-
-        const Bsection8Tokens=tokenDocuments.slice(175, 200);
-        const BselectedS8T = Bsection8Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day] || doc.block).map(doc => doc.tokenNo);
-        setBsection8(BselectedS8T)
-
-        // const Bsection9Tokens=tokenDocuments.slice(136, 153);
-        // const BselectedS9T = Bsection9Tokens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        // setBsection9(BselectedS9T)
-
-        // const Bsection10Tkens=tokenDocuments.slice(153, 170);
-        // const BselectedS10T= Bsection10Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        // setBsection10(BselectedS10T)
-
-        // const Bsection11Tkens=tokenDocuments.slice(170, 187);
-        // const BselectedS11T= Bsection11Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        // setBsection11(BselectedS11T)
-
-        // const Bsection12Tkens=tokenDocuments.slice(187, 200);
-        // const BselectedS12T= Bsection12Tkens.filter(doc => doc.obj && !doc.obj.breakfast[day]).map(doc => doc.tokenNo);
-        // setBsection12(BselectedS12T)
-               
-
-                
-                // Similarly, set other sections as needed
-                // Example: setSection3, setSection4, ..., setSection8
-
-          
-                setLoading(false)
-            } catch (error) {
-                console.error('Error fetching tokens:', error);
-            }
-        };
-
-        fetchData();
-    }, [day]);
-
-    const [document,setDocument]=useState([])
-  const [beef,setBeef]=useState([])
-  const [chicken,setChicken]=useState([])
-  const [fish,setFish]=useState([])
-  const [mutton,setMutton]=useState([])
-  
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const querySnapshot = await firebase.firestore().collection('students').get();
-        const tokenDocuments = querySnapshot.docs.map(doc => ({
+        const docs = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
-        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-        setDocument(tokenDocuments);
-        
-        // Now that documents are fetched, call fetchBeef to process them
-        fetchRejections(tokenDocuments);
-        
-        
+        docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
+        setDocuments(docs);
       } catch (error) {
         console.error('Error fetching tokens:', error);
+      } finally {
+        setLoading(false);
       }
     };
-  
-    const fetchRejections = (documents) => {
-      const beefTokens = documents.filter(doc => doc.obj2 && !doc.obj2.beef).map(doc => doc.tokenNo);
-      setBeef(beefTokens);
-
-      const chickenTokens= documents.filter(doc => doc.obj && !doc.obj2.chicken).map(doc =>doc.tokenNo);
-      setChicken(chickenTokens)
-
-      const fishTokens= documents.filter(doc => doc.obj && !doc.obj2.fish).map(doc =>doc.tokenNo);
-      setFish(fishTokens)
-
-      const muttonTokens= documents.filter(doc => doc.obj && !doc.obj2.mutton).map(doc =>doc.tokenNo);
-      setMutton(muttonTokens)
-    };
-
-    
-  
     fetchData();
-  
   }, []);
 
-    const [formattedDate, setFormattedDate] = useState("");
+  // Compute 8 sections of 25 for lunch and breakfast
+  const { lunchSections, breakfastSections, beef, chicken, fish, mutton } = useMemo(() => {
+    const sectionSize = 25;
+    const totalSections = Math.min(8, Math.ceil(documents.length / sectionSize) || 1);
 
-  // Update formatted date from worldtimeapi hook
-  useEffect(() => {
-    const updateFormattedDate = () => {
-      // Use nowDate from worldtimeapi hook (device-independent)
-      if (nowDate) {
-        // Get date, month, and year from worldtimeapi date
-        const date = nowDate.getDate(); // Day of the month (1-31)
-        const month = nowDate.getMonth() + 1; // Months are zero-indexed, so +1 (1-12)
-        const year = nowDate.getFullYear(); // Get the full year (e.g., 2024)
+    const lSections = [];
+    const bSections = [];
 
-        // Format the date as "day/month/year"
-        const formatted = `${date}/${month}/${year}`;
+    for (let i = 0; i < totalSections; i++) {
+      const start = i * sectionSize;
+      const end = Math.min((i + 1) * sectionSize, documents.length);
+      const slice = documents.slice(start, end);
 
-        // Update state
-        setFormattedDate(formatted);
-      }
+      const lCanceled = slice
+        .filter((doc) => doc.block || (doc.obj && !doc.obj.lunch?.[day]))
+        .map((doc) => doc.tokenNo);
+
+      const bCanceled = slice
+        .filter((doc) => doc.block || (doc.obj && !doc.obj.breakfast?.[day]))
+        .map((doc) => doc.tokenNo);
+
+      lSections.push(lCanceled);
+      bSections.push(bCanceled);
+    }
+
+    const beefList = documents.filter((doc) => doc.obj2 && !doc.obj2.beef).map((doc) => doc.tokenNo);
+    const chickenList = documents.filter((doc) => doc.obj2 && !doc.obj2.chicken).map((doc) => doc.tokenNo);
+    const fishList = documents.filter((doc) => doc.obj2 && !doc.obj2.fish).map((doc) => doc.tokenNo);
+    const muttonList = documents.filter((doc) => doc.obj2 && !doc.obj2.mutton).map((doc) => doc.tokenNo);
+
+    return {
+      lunchSections: lSections,
+      breakfastSections: bSections,
+      beef: beefList,
+      chicken: chickenList,
+      fish: fishList,
+      mutton: muttonList,
     };
-
-    // Initial call to set the date immediately on mount
-    updateFormattedDate();
-
-    // Set up an interval to update every minute
-    const timer = setInterval(updateFormattedDate, 60000);
-
-    // Clean up interval on component unmount
-    return () => clearInterval(timer);
-  }, [nowDate]);
-
-  
-
-
-  
-
+  }, [documents, day]);
 
   const generatePDF = () => {
+    feedback('tick');
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    // Add the current date at the top of the document (from worldtimeapi)
-    const dateStr = formattedDate;
+    // Header
+    doc.setFontSize(16);
+    doc.setTextColor(5, 150, 105);
+    doc.text('Alathurpadi Dars Canteen - Daily Supply Manifest', 14, 18);
     doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0); // Black color for the date
-    doc.text(`Date: ${dateStr}`, 14, 10);
-    
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Schedule Date: ${longDate || new Date().toDateString()} (${day.toUpperCase()})`, 14, 25);
 
-    // Define the columns for the first table
-    const columns1 = [
-        { header: 'Sec1', dataKey: 'Bsection1' },
-        { header: 'Sec 2', dataKey: 'Bsection2' },
-        { header: 'Sec 3', dataKey: 'Bsection3' },
-        { header: 'Sec 4', dataKey: 'Bsection4' },
-        { header: 'Sec 5', dataKey: 'Bsection5' },
-        { header: 'Sec 6', dataKey: 'Bsection6' },
-        { header: 'Sec 7', dataKey: 'Bsection7' },
-        { header: 'Sec 8', dataKey: 'Bsection8' },
-        // { header: 'Sec 9', dataKey: 'Bsection9' },
-        // { header: 'Sec 10', dataKey: 'Bsection10' },
-        // { header: 'Sec 11', dataKey: 'Bsection11' },
-        // { header: 'Sec 12', dataKey: 'Bsection12' }
-    ];
-
-    // Prepare the data for the first table
-    const tableData1 = Array.from({ length: Math.max(
-        Bsection1.length,
-        Bsection2.length,
-        Bsection3.length,
-        Bsection4.length,
-        Bsection5.length,
-        Bsection6.length,
-        Bsection7.length,
-        Bsection8.length,
-        // Bsection9.length,
-        // Bsection10.length,
-        // Bsection11.length,
-        // Bsection12.length
-    ) }).map((_, index) => ({
-        Bsection1: index === 0 && Bsection1.length === 0 ? 'empty' : (index < Bsection1.length ? Bsection1[index] : ''),
-        Bsection2: index === 0 && Bsection2.length === 0 ? 'empty' : (index < Bsection2.length ? Bsection2[index] : ''),
-        Bsection3: index === 0 && Bsection3.length === 0 ? 'empty' : (index < Bsection3.length ? Bsection3[index] : ''),
-        Bsection4: index === 0 && Bsection4.length === 0 ? 'empty' : (index < Bsection4.length ? Bsection4[index] : ''),
-        Bsection5: index === 0 && Bsection5.length === 0 ? 'empty' : (index < Bsection5.length ? Bsection5[index] : ''),
-        Bsection6: index === 0 && Bsection6.length === 0 ? 'empty' : (index < Bsection6.length ? Bsection6[index] : ''),
-        Bsection7: index === 0 && Bsection7.length === 0 ? 'empty' : (index < Bsection7.length ? Bsection7[index] : ''),
-        Bsection8: index === 0 && Bsection8.length === 0 ? 'empty' : (index < Bsection8.length ? Bsection8[index] : ''),
-        // Bsection9: index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : ''),
-        // Bsection10: index === 0 && Bsection10.length === 0 ? 'empty' : (index < Bsection10.length ? Bsection10[index] : ''),
-        // Bsection11: index === 0 && Bsection11.length === 0 ? 'empty' : (index < Bsection11.length ? Bsection11[index] : ''),
-        // Bsection12: index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')
+    // Lunch Table
+    const lColumns = lunchSections.map((_, idx) => ({
+      header: `Sec ${idx + 1} (${idx * 25 + 1}-${Math.min((idx + 1) * 25, documents.length)})`,
+      dataKey: `s${idx}`,
     }));
-
-    // Add the title for the first table
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0); // Black color for the title
-    doc.text('Breakfast Token Canceled List', 14, 15);
-
-    // Add the first table to the PDF
-    doc.autoTable({
-        columns: columns1,
-        body: tableData1,
-        startY: 15,
-        theme: 'striped',
-        headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
-        bodyStyles: { fontSize: 8, padding: 3 },
-        margin: { top: 10 }, // Add top margin for the table
-        didDrawPage: (data) => {
-            // Ensure title is added before drawing tables
-            if (data.pageCount === 1) {
-                doc.text('Breakfast Token Canceled List', 14, 15);
-            }
-        }
+    const maxLRows = Math.max(...lunchSections.map((s) => s.length), 1);
+    const lBody = Array.from({ length: maxLRows }).map((_, rIdx) => {
+      const row = {};
+      lunchSections.forEach((sec, sIdx) => {
+        row[`s${sIdx}`] = sec[rIdx] !== undefined ? sec[rIdx] : '-';
+      });
+      return row;
     });
 
-    // Get the y-coordinate of the bottom of the first table
-    const yAfterFirstTable = doc.lastAutoTable.finalY + 10; // add some margin
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text('1. Lunch - Canceled/Skipped Tokens', 14, 34);
 
-    // Define the columns for the second table
-    
-    const columns2 = [
-        { header: 'Sec 1', dataKey: 'section1' },
-        { header: 'Sec 2', dataKey: 'section2' },
-        { header: 'Sec 3', dataKey: 'section3' },
-        { header: 'Sec 4', dataKey: 'section4' },
-        { header: 'Sec 5', dataKey: 'section5' },
-        { header: 'Sec 6', dataKey: 'section6' },
-        { header: 'Sec 7', dataKey: 'section7' },
-        { header: 'Sec 8', dataKey: 'section8' },
-        // { header: 'Sec 9', dataKey: 'section9' },
-        // { header: 'Sec 10', dataKey: 'section10' },
-        // { header: 'Sec 11', dataKey: 'section11' },
-        // { header: 'Sec 12', dataKey: 'section12' }
-    ];
-    
-
-    // Prepare the data for the second table
-   
-    const tableData2 = Array.from({ length: Math.max(
-        section1.length,
-        section2.length,
-        section3.length,
-        section4.length,
-        section5.length,
-        section6.length,
-        section7.length,
-        section8.length,
-        // section9.length,
-        // section11.length,
-        // section12.length
-    ) }).map((_, index) => ({
-        section1: index === 0 && section1.length === 0 ? 'empty' : index < section1.length ? section1[index] : '',
-        section2: index === 0 && section2.length === 0 ? 'empty' : index < section2.length ? section2[index] : '',
-        section3: index === 0 && section3.length === 0 ? 'empty' : index < section3.length ? section3[index] : '',
-        section4: index === 0 && section4.length === 0 ? 'empty' : index < section4.length ? section4[index] : '',
-        section5: index === 0 && section5.length === 0 ? 'empty' : index < section5.length ? section5[index] : '',
-        section6: index === 0 && section6.length === 0 ? 'empty' : index < section6.length ? section6[index] : '',
-        section7: index === 0 && section7.length === 0 ? 'empty' : index < section7.length ? section7[index] : '',
-        section8: index === 0 && section8.length === 0 ? 'empty' : index < section8.length ? section8[index] : '',
-        // section9: index === 0 && section9.length === 0 ? 'empty' : index < section9.length ? section9[index] : '',
-        // section10: index === 0 && section10.length === 0 ? 'empty' : index < section10.length ? section10[index] : '',
-        // section11: index === 0 && section11.length === 0 ? 'empty' : index < section11.length ? section11[index] : '',
-        // section12: index === 0 && section12.length === 0 ? 'empty' : index < section12.length ? section12[index] : '',
-    }));
-
-    // Add the title for the second table
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0); // Black color for the title
-    doc.text('Lunch Token Canceled List', 14, yAfterFirstTable + 15);
-
-    // Add the second table to the PDF
     doc.autoTable({
-        columns: columns2,
-        body: tableData2,
-        startY: yAfterFirstTable + 5, // Start after the title of the second table
-        theme: 'striped',
-        headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
-        bodyStyles: { fontSize: 8, padding: 3 },
-        margin: { top: 10 }, // Add top margin for the table
-        didDrawPage: (data) => {
-            // Ensure title is added before drawing tables
-            if (data.pageCount === 1) {
-                doc.text('Lunch Token Canceled List', 14, yAfterFirstTable + 5);
-            }
-        }
+      columns: lColumns,
+      body: lBody,
+      startY: 38,
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105], textColor: [255, 255, 255], fontSize: 8 },
+      bodyStyles: { fontSize: 8, halign: 'center' },
     });
 
-    // Define y position for the third table after some margin from the second table
-    // const yAfterSecondTable = doc.lastAutoTable.finalY + 10; // Add some margin
+    // Breakfast Table
+    const yAfterLunch = doc.lastAutoTable.finalY + 12;
+    const bColumns = breakfastSections.map((_, idx) => ({
+      header: `Sec ${idx + 1}`,
+      dataKey: `s${idx}`,
+    }));
+    const maxBRows = Math.max(...breakfastSections.map((s) => s.length), 1);
+    const bBody = Array.from({ length: maxBRows }).map((_, rIdx) => {
+      const row = {};
+      breakfastSections.forEach((sec, sIdx) => {
+        row[`s${sIdx}`] = sec[rIdx] !== undefined ? sec[rIdx] : '-';
+      });
+      return row;
+    });
 
-    // // Define the columns for the third table
-    // const columns3 = [
-    //     { header: 'Beef', dataKey: 'beef' },
-    //     { header: 'Chicken', dataKey: 'chicken' },
-    //     { header: 'Fish', dataKey: 'fish' },
-    //     { header: 'Mutton', dataKey: 'mutton' },
-    // ];
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text('2. Breakfast - Canceled/Skipped Tokens', 14, yAfterLunch);
 
-    // // Prepare the data for the third table
-    // const tableData3 = Array.from({ length: Math.max(
-    //     beef.length,
-    //     chicken.length,
-    //     fish.length,
-    //     mutton.length
-    // ) }).map((_, index) => ({
-    //     beef: index === 0 && beef.length === 0 ? 'empty' : (index < beef.length ? beef[index] : ''),
-    //     chicken: index === 0 && chicken.length === 0 ? 'empty' : (index < chicken.length ? chicken[index] : ''),
-    //     fish: index === 0 && fish.length === 0 ? 'empty' : (index < fish.length ? fish[index] : ''),
-    //     mutton: index === 0 && mutton.length === 0 ? 'empty' : (index < mutton.length ? mutton[index] : ''),
-    // }));
+    doc.autoTable({
+      columns: bColumns,
+      body: bBody,
+      startY: yAfterLunch + 4,
+      theme: 'grid',
+      headStyles: { fillColor: [217, 119, 6], textColor: [255, 255, 255], fontSize: 8 },
+      bodyStyles: { fontSize: 8, halign: 'center' },
+    });
 
-    // // Add the title for the third table
-    // doc.setFontSize(16);
-    // doc.setTextColor(0, 0, 0); // Black color for the title
-    // doc.text('Beef, Chicken, Mutton Avoiders', 14, yAfterSecondTable + 10);
+    doc.save(`ADSA_Kitchen_Supply_${day}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    feedback('success');
+  };
 
-    // // Add the third table to the PDF
-    // doc.autoTable({
-    //     columns: columns3,
-    //     body: tableData3,
-    //     startY: yAfterSecondTable + 15, // Start after the title of the third table
-    //     theme: 'striped',
-    //     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontSize: 10, padding: 5 },
-    //     bodyStyles: { fontSize: 9, padding: 3 },
-    //     margin: { top: 10 }, // Add top margin for the table
-    //     didDrawPage: (data) => {
-    //         // Ensure title is added before drawing tables
-    //         if (data.pageCount === 1) {
-    //             doc.text('Beef, Chicken, Mutton Avoiders', 14, yAfterSecondTable + 10);
-    //         }
-    //     }
-    // });
-
-    // Save the PDF
-    doc.save('supply-list.pdf');
-};
-
-if (loading) {
-  // Loading screen
-
-
-return (
-  <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] ">
-  {/* Bouncing Dots */}
-  <div className="flex space-x-2">
-    {[...Array(3)].map((_, index) => (
-      <motion.div
-        key={index}
-        className="w-4 h-4 rounded-full bg-green-500"
-        animate={{
-          y: [0, -10, 0],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 0.6,
-          delay: index * 0.2,
-        }}
-      ></motion.div>
-    ))}
-  </div>
-  <motion.p
-    className="mt-4 text-green-700 font-bold text-lg"
-    animate={{ opacity: [0.5, 1, 0.5] }}
-    transition={{ repeat: Infinity, duration: 1.5 }}
-  >
-    Loading...
-  </motion.p>
-</div>
-
-);
-}
-
-
-
+  if (loading) {
     return (
-        <div className="pt-5 px-3">
-            <button  onClick={generatePDF} class="bg-gray-300 mb-4 hover:bg-gray-400 text-gray-800 text-sm font-bold py-2 px-4 rounded inline-flex items-center">
-  <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
-  <span>Download</span>
-</button>
-
-            <div className="flex flex-col w-full max-w-full mx-auto overflow-x-auto">
-
-            <h1 className='p-5 text-center text-xl text-black font-bold underline'>Breakfast Token Canceled List</h1>
-                <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 1
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 2
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 3
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 4
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 5
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 6
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 7
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 8
-                                </th>
-                                {/* <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 9
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 10
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 11
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 12
-                                </th> */}
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {Array.from({ length: Math.max(
-                                Bsection1.length,
-                                Bsection2.length,
-                                Bsection3.length,
-                                Bsection4.length,
-                                Bsection5.length,
-                                Bsection6.length,
-                                Bsection7.length,
-                                Bsection8.length,
-                                // Bsection9.length,
-                                // Bsection10.length,
-                                // Bsection11.length,
-                                // Bsection12.length
-                            ) }).map((_, index) => (
-                                <tr key={index}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                       {index === 0 && Bsection1.length === 0 ? 'empty' : (index < Bsection1.length ? Bsection1[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {index === 0 && Bsection2.length === 0 ? 'empty' : (index < Bsection2.length ? Bsection2[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {index === 0 && Bsection3.length === 0 ? 'empty' : (index < Bsection3.length ? Bsection3[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                       {index === 0 && Bsection4.length === 0 ? 'empty' : (index < Bsection4.length ? Bsection4[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection5.length === 0 ? 'empty' : (index < Bsection5.length ? Bsection5[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection6.length === 0 ? 'empty' : (index < Bsection6.length ? Bsection6[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection7.length === 0 ? 'empty' : (index < Bsection7.length ? Bsection7[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection8.length === 0 ? 'empty' : (index < Bsection8.length ? Bsection8[index] : '')}
-                                    </td>
-                                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection9.length === 0 ? 'empty' : (index < Bsection9.length ? Bsection9[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection10.length === 0 ? 'empty' : (index < Bsection10.length ? Bsection10[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection11.length === 0 ? 'empty' : (index < Bsection11.length ? Bsection11[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && Bsection12.length === 0 ? 'empty' : (index < Bsection12.length ? Bsection12[index] : '')}
-                                    </td> */}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <h1 className=' text-center text-xl font-bold text-black underline'>Lunch Token Canceled List</h1>
-                <div className="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 1
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 2
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 3
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 4
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 5
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 6
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 7
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 8
-                                </th>
-                                {/* <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 9
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 10
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 11
-                                </th>
-                                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-                                    Sec 12
-                                </th> */}
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {Array.from({ length: Math.max(
-                                section1.length,
-                                section2.length,
-                                section3.length,
-                                section4.length,
-                                section5.length,
-                                section6.length,
-                                section7.length,
-                                section8.length,
-                                // section9.length,
-                                // section10.length,
-                                // section11.length,
-                                // section12.length
-                            ) }).map((_, index) => (
-                                <tr key={index}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                       {index === 0 && section1.length === 0 ? 'empty' : (index < section1.length ? section1[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {index === 0 && section2.length === 0 ? 'empty' : (index < section2.length ? section2[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {index === 0 && section3.length === 0 ? 'empty' : (index < section3.length ? section3[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                       {index === 0 && section4.length === 0 ? 'empty' : (index < section4.length ? section4[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section5.length === 0 ? 'empty' : (index < section5.length ? section5[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section6.length === 0 ? 'empty' : (index < section6.length ? section6[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section7.length === 0 ? 'empty' : (index < section7.length ? section7[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section8.length === 0 ? 'empty' : (index < section8.length ? section8[index] : '')}
-                                    </td>
-                                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section9.length === 0 ? 'empty' : (index < section9.length ? section9[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section10.length === 0 ? 'empty' : (index < section10.length ? section10[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section11.length === 0 ? 'empty' : (index < section11.length ? section11[index] : '')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    {index === 0 && section12.length === 0 ? 'empty' : (index < section12.length ? section12[index] : '')}
-                                    </td> */}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                
-
-
-            </div>
-            <h1 className='p-5 text-center text-xl text-black font-bold underline'>Beef, Chicken, Fish, Mutton Avoiders</h1>
-            <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-        <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-          <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-  <thead className="bg-gray-50">
-    <tr>
-      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
-        Beef
-      </th>
-      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
-        Chicken
-      </th>
-      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider">
-        Fish
-      </th>
-      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
-        Mutton
-      </th>
-    </tr>
-  </thead>
-  <tbody className="bg-white divide-y divide-gray-200">
-    {Array.from({ length: Math.max(beef.length, chicken.length, fish.length, mutton.length) }).map((_, index) => (
-      <tr key={index}>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index ===0 && beef.length===0 ? "empty" : (index < beef.length ? beef[index] : '') }
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index==0 && chicken.length===0 ? "empty" : ( index < chicken.length ? chicken[index] : '')}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index===0 && fish.length===0 ? "empty" : ( index < fish.length ? fish[index] : '')}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {index===0 && mutton.length===0 ? "empty" : ( index < mutton.length ? mutton[index] : '')}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-
-
-
-          </div>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="flex space-x-2">
+          {[0, 1, 2].map((idx) => (
+            <motion.div
+              key={idx}
+              className="w-3.5 h-3.5 rounded-full bg-emerald-500"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 0.6, delay: idx * 0.15 }}
+            />
+          ))}
         </div>
       </div>
-        </div>
     );
+  }
+
+  const maxLRows = Math.max(...lunchSections.map((s) => s.length), 1);
+  const maxBRows = Math.max(...breakfastSections.map((s) => s.length), 1);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Printer className="w-5 h-5 text-emerald-500" />
+            Kitchen Supply Manifest Generator
+          </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Sections 1-8 canceled tokens breakdown for kitchen distribution ({longDate})
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              feedback('tick');
+              navigate('/');
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Board</span>
+          </button>
+
+          <button
+            onClick={generatePDF}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all transform active:scale-95"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Download Kitchen PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lunch Manifest Table */}
+      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 p-6 shadow-md overflow-hidden backdrop-blur-xl space-y-3">
+        <div className="flex items-center gap-2">
+          <Utensils className="w-4 h-4 text-emerald-500" />
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+            Lunch Supply - Canceled Tokens (Sec 1 to {lunchSections.length})
+          </h2>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10 text-center text-xs">
+            <thead className="bg-emerald-50/70 dark:bg-emerald-950/30">
+              <tr>
+                {lunchSections.map((sec, idx) => (
+                  <th key={idx} className="py-2.5 px-3 font-bold text-emerald-800 dark:text-emerald-300">
+                    Sec {idx + 1}
+                    <span className="block text-[10px] opacity-75 font-normal">
+                      ({sec.length} skipped)
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-mono">
+              {Array.from({ length: maxLRows }).map((_, rIdx) => (
+                <tr key={rIdx} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
+                  {lunchSections.map((sec, sIdx) => (
+                    <td key={sIdx} className="py-2 px-3 text-gray-700 dark:text-gray-300">
+                      {sec[rIdx] !== undefined ? (
+                        <span className="font-bold text-rose-600 dark:text-rose-400">
+                          #{sec[rIdx]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600">-</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Breakfast Manifest Table */}
+      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 p-6 shadow-md overflow-hidden backdrop-blur-xl space-y-3">
+        <div className="flex items-center gap-2">
+          <Coffee className="w-4 h-4 text-amber-500" />
+          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+            Breakfast Supply - Canceled Tokens (Sec 1 to {breakfastSections.length})
+          </h2>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10 text-center text-xs">
+            <thead className="bg-amber-50/70 dark:bg-amber-950/30">
+              <tr>
+                {breakfastSections.map((sec, idx) => (
+                  <th key={idx} className="py-2.5 px-3 font-bold text-amber-800 dark:text-amber-300">
+                    Sec {idx + 1}
+                    <span className="block text-[10px] opacity-75 font-normal">
+                      ({sec.length} skipped)
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-mono">
+              {Array.from({ length: maxBRows }).map((_, rIdx) => (
+                <tr key={rIdx} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
+                  {breakfastSections.map((sec, sIdx) => (
+                    <td key={sIdx} className="py-2 px-3 text-gray-700 dark:text-gray-300">
+                      {sec[rIdx] !== undefined ? (
+                        <span className="font-bold text-amber-600 dark:text-amber-400">
+                          #{sec[rIdx]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 dark:text-gray-600">-</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default FetchData;
+export default GeneratePdf;
