@@ -19,14 +19,17 @@ import {
   CalendarDays,
   X,
   LogOut,
+  RotateCcw,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
+import DateGridMatrix from './ui/DateGridMatrix';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useIdleTimer } from '../utils/useIdleTimer';
 import { subscribeToPreferences } from '../utils/preferenceService';
+import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import {
   getTodayISTDate,
   addDaysToDate,
@@ -42,6 +45,13 @@ function StudentPort() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
+  const {
+    isTomorrowLocked,
+    tomorrowIST,
+    tomorrowDayShort,
+    startTime,
+    endTime,
+  } = useTokenLockStatus();
 
   // Public Kiosk Inactivity Protection: Auto-logout after 90 seconds of inactivity
   const handleKioskTimeout = () => {
@@ -73,13 +83,20 @@ function StudentPort() {
     return {};
   });
 
+  // Custom Student Templates
+  const [templates, setTemplates] = useState(() => stdata?.templates || []);
+
   const [saving, setSaving] = useState(false);
-  const [customDateInput, setCustomDateInput] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Baseline snapshot for dirty checking
+  const [savedBaseline, setSavedBaseline] = useState(() => ({
+    lunch: stdata?.obj?.lunch || {},
+    breakfast: stdata?.obj?.breakfast || {},
+    dateExceptions: stdata?.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {},
+  }));
 
   const todayIST = useMemo(() => getTodayISTDate(), []);
-  const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 30), [todayIST]);
-  const quickDateOptions = useMemo(() => getQuickDateOptions(), []);
+  const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
 
   // Days list for weekly standard schedule
   const daysList = useMemo(
@@ -105,18 +122,95 @@ function StudentPort() {
 
   useEffect(() => {
     if (stdata) {
-      if (stdata.obj) {
-        setLunch(stdata.obj.lunch || {});
-        setBreakfast(stdata.obj.breakfast || {});
-      }
+      const initLunch = stdata.obj?.lunch || {};
+      const initBreakfast = stdata.obj?.breakfast || {};
+      const initExceptions = stdata.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {};
+
+      setLunch(initLunch);
+      setBreakfast(initBreakfast);
       if (stdata.obj2) {
         setDietary(stdata.obj2 || {});
       }
-      if (stdata.dateExceptions) {
-        setDateExceptions(cleanPastDateExceptions(stdata.dateExceptions));
+      setDateExceptions(initExceptions);
+      if (stdata.templates) {
+        setTemplates(stdata.templates || []);
       }
+
+      setSavedBaseline({
+        lunch: initLunch,
+        breakfast: initBreakfast,
+        dateExceptions: initExceptions,
+      });
     }
-  }, [stdata]);
+  }, [stdata?.tokenNo, stdata?.documentId]);
+
+  // Compare meal routine
+  const isRoutineEqual = (a = {}, b = {}) => {
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    return days.every((d) => Boolean(a[d]) === Boolean(b[d]));
+  };
+
+  // Compare date exceptions
+  const isExceptionsEqual = (a = {}, b = {}) => {
+    const cleanA = cleanPastDateExceptions(a || {});
+    const cleanB = cleanPastDateExceptions(b || {});
+    const keysA = Object.keys(cleanA);
+    const keysB = Object.keys(cleanB);
+    if (keysA.length !== keysB.length) return false;
+    for (const k of keysA) {
+      if (!cleanB[k]) return false;
+      if (Boolean(cleanA[k].breakfast) !== Boolean(cleanB[k].breakfast)) return false;
+      if (Boolean(cleanA[k].lunch) !== Boolean(cleanB[k].lunch)) return false;
+    }
+    return true;
+  };
+
+  // Memoized isDirty flag
+  const isDirty = useMemo(() => {
+    if (!savedBaseline) return false;
+    const lunchChanged = !isRoutineEqual(lunch, savedBaseline.lunch);
+    const breakfastChanged = !isRoutineEqual(breakfast, savedBaseline.breakfast);
+    const exceptionsChanged = !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
+    return lunchChanged || breakfastChanged || exceptionsChanged;
+  }, [lunch, breakfast, dateExceptions, savedBaseline]);
+
+  // Count of individual changed preferences
+  const changedCount = useMemo(() => {
+    if (!savedBaseline) return 0;
+    let count = 0;
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    days.forEach((d) => {
+      if (Boolean(lunch[d]) !== Boolean(savedBaseline.lunch?.[d])) count++;
+      if (Boolean(breakfast[d]) !== Boolean(savedBaseline.breakfast?.[d])) count++;
+    });
+    const cleanCur = cleanPastDateExceptions(dateExceptions || {});
+    const cleanBase = cleanPastDateExceptions(savedBaseline.dateExceptions || {});
+    const allDates = new Set([...Object.keys(cleanCur), ...Object.keys(cleanBase)]);
+    allDates.forEach((d) => {
+      const cur = cleanCur[d];
+      const base = cleanBase[d];
+      if (!cur && base) count++;
+      else if (cur && !base) count++;
+      else if (cur && base) {
+        if (Boolean(cur.breakfast) !== Boolean(base.breakfast) || Boolean(cur.lunch) !== Boolean(base.lunch)) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [lunch, breakfast, dateExceptions, savedBaseline]);
+
+  // Window beforeunload safety net
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   if (!stdata || !stdata.tokenNo) {
     return (
@@ -140,6 +234,12 @@ function StudentPort() {
 
   // Weekly Lunch Toggles
   const toggleLunchDay = (dayKey) => {
+    if (dayKey === tomorrowDayShort && isTomorrowLocked) {
+      dialog.toast.info(
+        'Tomorrow is Locked',
+        `Tomorrow's meal orders are locked past cutoff (${endTime}). Your routine update for this day will apply starting next week.`
+      );
+    }
     feedback('pop');
     setLunch((prev) => ({
       ...prev,
@@ -158,6 +258,12 @@ function StudentPort() {
 
   // Weekly Breakfast Toggles
   const toggleBreakfastDay = (dayKey) => {
+    if (dayKey === tomorrowDayShort && isTomorrowLocked) {
+      dialog.toast.info(
+        'Tomorrow is Locked',
+        `Tomorrow's meal orders are locked past cutoff (${endTime}). Your routine update for this day will apply starting next week.`
+      );
+    }
     feedback('pop');
     setBreakfast((prev) => ({
       ...prev,
@@ -177,75 +283,51 @@ function StudentPort() {
   const allLunchSelected = daysList.every(({ key }) => Boolean(lunch[key]));
   const allBreakfastSelected = daysList.every(({ key }) => Boolean(breakfast[key]));
 
-  // Date Exceptions Handlers
-  const handleAddDateException = (dateStr, defaultLabel) => {
-    feedback('tick');
-    const validation = validateExceptionDate(dateStr);
-    if (!validation.valid) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Invalid Date',
-        text: validation.error,
-        confirmButtonColor: '#10b981',
-      });
-      return;
-    }
-
-    if (dateExceptions[dateStr]) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Already Scheduled',
-        text: `You already have an exception set for ${formatFriendlyDate(dateStr)}. You can edit its meal options below.`,
-        confirmButtonColor: '#10b981',
-      });
-      return;
-    }
-
-    // Default to the student's normal weekly setting for that day of the week, with one toggled off for convenience
-    const dayOfWeek = getDayOfWeekShort(dateStr);
-    const normalBf = breakfast[dayOfWeek] !== undefined ? Boolean(breakfast[dayOfWeek]) : true;
-    const normalLu = lunch[dayOfWeek] !== undefined ? Boolean(lunch[dayOfWeek]) : true;
-
-    setDateExceptions((prev) => ({
-      ...prev,
-      [dateStr]: {
-        breakfast: false, // Default to skipping breakfast on exception day
-        lunch: false,     // Default to skipping lunch on exception day
-        label: defaultLabel || formatFriendlyDate(dateStr),
+  // Student data snapshot for the Date Grid Matrix
+  const studentForMatrix = useMemo(
+    () => ({
+      ...stdata,
+      obj: {
+        lunch,
+        breakfast,
       },
-    }));
+      dateExceptions,
+      templates,
+    }),
+    [stdata, lunch, breakfast, dateExceptions, templates]
+  );
 
-    setShowDatePicker(false);
-    setCustomDateInput('');
+  // Custom Template Persistence
+  const handleSaveTemplates = async (updatedTemplates) => {
+    setTemplates(updatedTemplates);
+    const targetDocId = stdata.documentId || stdata.id;
+    if (targetDocId) {
+      try {
+        await firebase.firestore().collection('students').doc(targetDocId).set(
+          { templates: updatedTemplates },
+          { merge: true }
+        );
+        setStdata({ ...stdata, templates: updatedTemplates });
+        dialog.toast.success('Template Saved', 'Your custom template is ready to use!');
+      } catch (err) {
+        console.error('Error saving template:', err);
+      }
+    }
   };
 
-  const handleToggleExceptionMeal = (dateStr, mealType) => {
+  // Discard pending changes and revert to baseline
+  const handleDiscard = () => {
     feedback('pop');
-    setDateExceptions((prev) => {
-      const current = prev[dateStr];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [dateStr]: {
-          ...current,
-          [mealType]: !current[mealType],
-        },
-      };
-    });
+    if (savedBaseline) {
+      setLunch(savedBaseline.lunch || {});
+      setBreakfast(savedBaseline.breakfast || {});
+      setDateExceptions(savedBaseline.dateExceptions || {});
+      dialog.toast.info('Changes Discarded', 'Reverted back to your saved preferences.');
+    }
   };
 
-  const handleRemoveDateException = (dateStr) => {
-    feedback('warning');
-    setDateExceptions((prev) => {
-      const updated = { ...prev };
-      delete updated[dateStr];
-      return updated;
-    });
-  };
-
-  // Save full routine and exceptions back to Firestore
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Save full routine and exceptions back to Firestore (with optional logout)
+  const handleSave = async (shouldLogout = false) => {
     feedback('tick');
     setSaving(true);
 
@@ -256,12 +338,31 @@ function StudentPort() {
       }
       const cleanedExceptions = cleanPastDateExceptions(dateExceptions);
 
+      // Safeguard: If tomorrow is locked past cutoff, preserve tomorrow's baseline status
+      if (isTomorrowLocked) {
+        const baselineExc = savedBaseline.dateExceptions?.[tomorrowIST];
+        const baselineBf = baselineExc?.breakfast !== undefined
+          ? baselineExc.breakfast
+          : Boolean(savedBaseline.breakfast?.[tomorrowDayShort]);
+        const baselineLu = baselineExc?.lunch !== undefined
+          ? baselineExc.lunch
+          : Boolean(savedBaseline.lunch?.[tomorrowDayShort]);
+
+        cleanedExceptions[tomorrowIST] = {
+          ...(cleanedExceptions[tomorrowIST] || {}),
+          breakfast: baselineBf,
+          lunch: baselineLu,
+          label: cleanedExceptions[tomorrowIST]?.label || 'Cutoff Locked (Preserved)',
+        };
+      }
+
       const payload = {
         obj: {
           lunch,
           breakfast,
         },
         dateExceptions: cleanedExceptions,
+        templates,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -278,91 +379,163 @@ function StudentPort() {
       };
       setStdata(updatedStdata);
       setDateExceptions(cleanedExceptions);
-
-      feedback('pop');
-      Swal.fire({
-        icon: 'success',
-        title: t('scheduleSaved') || 'Schedule Saved!',
-        text: 'Your weekly dining schedule and upcoming date exceptions were updated successfully.',
-        timer: 2200,
-        showConfirmButton: false,
-        background: document.documentElement.classList.contains('dark') ? '#0f1715' : '#ffffff',
-        color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#111827',
+      setSavedBaseline({
+        lunch: { ...lunch },
+        breakfast: { ...breakfast },
+        dateExceptions: { ...cleanedExceptions },
       });
+
+      if (shouldLogout) {
+        dialog.toast.success(
+          t('scheduleSaved') || 'Schedule Saved!',
+          'Your dining preferences were updated and you have been safely logged out.',
+          3500
+        );
+        if (logoutStudent) logoutStudent();
+        navigate('/', { replace: true });
+      } else {
+        dialog.toast.success(
+          t('scheduleSaved') || 'Schedule Saved!',
+          'Your weekly dining schedule and upcoming date exceptions were updated successfully.',
+          3200
+        );
+      }
     } catch (error) {
       console.error('Error updating student schedule:', error);
-      feedback('warning');
-      Swal.fire({
-        icon: 'error',
+      dialog.alert({
+        type: 'error',
         title: 'Update Failed',
-        text: 'Could not save your preferences. Please check your internet connection.',
-        confirmButtonColor: '#ef4444',
+        message: 'Could not save your preferences. Please check your internet connection.',
       });
     } finally {
       setSaving(false);
     }
   };
 
+  const handleSafeBack = async () => {
+    feedback('tick');
+    if (!isDirty) {
+      navigate('/');
+      return;
+    }
+    const shouldDiscard = await dialog.confirm({
+      title: t('unsavedChanges') || 'Unsaved Preferences',
+      message: t('unsavedBackPrompt') || 'You have unsaved changes to your dining schedule. Do you want to discard them and return to the main board?',
+      confirmText: t('discardChanges') || 'Discard & Leave',
+      cancelText: t('keepEditing') || 'Keep Editing',
+      confirmColor: 'rose',
+      icon: 'warning',
+    });
+    if (shouldDiscard) {
+      navigate('/');
+    }
+  };
+
+  const handleSafeLogout = async () => {
+    feedback('warning');
+    if (!isDirty) {
+      if (logoutStudent) logoutStudent();
+      navigate('/', { replace: true });
+      return;
+    }
+    const shouldSaveFirst = await dialog.confirm({
+      title: t('unsavedChanges') || 'Unsaved Preferences',
+      message: t('unsavedLogoutPrompt') || 'You have unsaved changes to your dining schedule. Would you like to save them before logging out?',
+      confirmText: t('saveAndLogout') || 'Save & Log Out',
+      cancelText: t('discardAndLogout') || 'Discard & Log Out',
+      confirmColor: 'emerald',
+      icon: 'question',
+    });
+    if (shouldSaveFirst) {
+      await handleSave(true);
+    } else {
+      if (logoutStudent) logoutStudent();
+      navigate('/', { replace: true });
+    }
+  };
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+    handleSave(false);
+  };
+
   const sortedExceptionDates = Object.keys(dateExceptions).sort();
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-32 sm:pb-36 space-y-8">
       
       {/* ================= STUDENT HEADER CARD ================= */}
-      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl p-5 sm:p-7 backdrop-blur-xl">
+      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl p-4 xs:p-5 sm:p-7 backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5 sm:gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white font-mono font-black text-xl sm:text-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
+          <div className="flex items-center gap-3 xs:gap-3.5 sm:gap-4 min-w-0">
+            <div className="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white font-mono font-black text-lg xs:text-xl sm:text-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
               #{stdata.tokenNo}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                  {stdata.nameEn || stdata.name || stdata.uname}
+                <h1 className="text-base xs:text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
+                  {stdata.nameEn || stdata.name || `Token #${stdata.tokenNo}`}
                 </h1>
                 {stdata.batch && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                  <span className="px-2 xs:px-2.5 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                     {stdata.batch}
                   </span>
                 )}
               </div>
               {stdata.nameMl && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-malayalam">
                   {stdata.nameMl}
                 </p>
               )}
-              <div className="flex items-center gap-2 mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
-                <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Daily update cutoff window: 02:00 PM – 11:00 PM IST</span>
+              <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-gray-500 dark:text-gray-400">
+                <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${!isTomorrowLocked ? 'text-emerald-500' : 'text-amber-500'}`} />
+                <span>
+                  Daily cutoff: {startTime} – {endTime} IST •{' '}
+                  <strong className={!isTomorrowLocked ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
+                    Tomorrow is {!isTomorrowLocked ? 'Open' : 'Locked'}
+                  </strong>
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-white/5">
             <button
               type="button"
-              onClick={() => {
-                feedback('tick');
-                navigate('/');
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors"
+              onClick={handleSafeBack}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Board</span>
             </button>
 
+            {/* In-Header Save Preferences button when dirty */}
+            <AnimatePresence>
+              {isDirty && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-extrabold text-xs shadow-md shadow-emerald-500/25 transition-all active:scale-95 disabled:opacity-50"
+                  title="Save dining preferences"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{saving ? 'Saving...' : (t('savePreferences') || 'Save Preferences')}</span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+
             <button
               type="button"
-              onClick={() => {
-                feedback('warning');
-                if (logoutStudent) logoutStudent();
-                navigate('/', { replace: true });
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200/60 dark:border-rose-500/20 transition-all active:scale-95"
+              onClick={handleSafeLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200/60 dark:border-rose-500/20 transition-all active:scale-95"
               title="Sign out of student account (Important on public computers)"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Finish & Log Out</span>
+              <span>{t('navLogout') || 'Log Out'}</span>
             </button>
           </div>
         </div>
@@ -416,19 +589,23 @@ function StudentPort() {
                   const active = Boolean(breakfast[key]);
                   return (
                     <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
-                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center flex items-center justify-center gap-0.5">
                         {label}
+                        {key === tomorrowDayShort && isTomorrowLocked && (
+                          <span title={`Tomorrow is locked past ${endTime}. Edits apply starting next week.`} className="text-amber-500 text-[10px]">🔒</span>
+                        )}
                       </span>
                       <button
                         type="button"
                         onClick={() => toggleBreakfastDay(key)}
-                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 ${
+                        title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
+                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 font-mono shadow-sm ${
                           active
-                            ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-md'
-                            : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
+                            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
+                            : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
                         }`}
                       >
-                        {active ? <Check className="w-4 h-4" /> : '-'}
+                        {active ? <Check className="w-4 h-4" /> : <X className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   );
@@ -467,19 +644,23 @@ function StudentPort() {
                   const active = Boolean(lunch[key]);
                   return (
                     <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
-                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center flex items-center justify-center gap-0.5">
                         {label}
+                        {key === tomorrowDayShort && isTomorrowLocked && (
+                          <span title={`Tomorrow is locked past ${endTime}. Edits apply starting next week.`} className="text-amber-500 text-[10px]">🔒</span>
+                        )}
                       </span>
                       <button
                         type="button"
                         onClick={() => toggleLunchDay(key)}
-                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 ${
+                        title={`${label}: Lunch is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
+                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 font-mono shadow-sm ${
                           active
-                            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-md'
-                            : 'bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-400'
+                            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
+                            : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
                         }`}
                       >
-                        {active ? <Check className="w-4 h-4" /> : '-'}
+                        {active ? <Check className="w-4 h-4" /> : <X className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   );
@@ -489,203 +670,26 @@ function StudentPort() {
           </div>
         </div>
 
-        {/* ================= SECTION 2: ADVANCED DATE EXCEPTIONS ================= */}
-        <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-lg p-5 sm:p-7 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
+        {/* ================= SECTION 2: TACTILE DATE GRID (DINING OVERRIDES) ================= */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-                  Advanced Date Exceptions (Up to 30 Days Ahead)
-                </h3>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-2xl">
-                Planning to miss meals or attend extra meals on a specific date? Add an exception here. Your regular weekly routine will <strong className="text-emerald-600 dark:text-emerald-400">automatically resume</strong> the next day so you will never forget to turn tokens back on!
+                <span>Upcoming Dining Calendar & Date Overrides</span>
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Planning to miss meals or attend extra meals on specific dates? Click any date cell in the tactile grid below to turn meals <strong className="text-emerald-600 dark:text-emerald-400">ON (Green)</strong> or <strong className="text-rose-600 dark:text-rose-400">OFF (Red)</strong>. Your regular weekly routine automatically resumes once the date passes.
               </p>
             </div>
           </div>
 
-          {/* Quick Date Shortcut Chips */}
-          <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              Quick Shortcuts
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              {quickDateOptions.map((opt) => (
-                <button
-                  key={opt.date}
-                  type="button"
-                  onClick={() => handleAddDateException(opt.date, opt.label)}
-                  disabled={Boolean(dateExceptions[opt.date])}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                    dateExceptions[opt.date]
-                      ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed opacity-60'
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-500/30 hover:bg-emerald-100 hover:scale-105 active:scale-95'
-                  }`}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{opt.label}</span>
-                  <span className="text-[10px] opacity-70">({opt.sublabel})</span>
-                </button>
-              ))}
-
-              {/* Custom Date Picker Trigger */}
-              <button
-                type="button"
-                onClick={() => setShowDatePicker(!showDatePicker)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-300/60 dark:border-blue-500/30 hover:bg-blue-100 active:scale-95 transition-all"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>+ Pick Any Date</span>
-              </button>
-            </div>
-
-            {/* Custom Date Picker Dropdown/Input */}
-            {showDatePicker && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex flex-wrap items-center gap-2.5 mt-2"
-              >
-                <input
-                  type="date"
-                  min={todayIST}
-                  max={maxExceptionDate}
-                  value={customDateInput}
-                  onChange={(e) => setCustomDateInput(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-white dark:bg-[#131b18] border border-gray-300 dark:border-white/20 text-xs font-bold text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <button
-                  type="button"
-                  disabled={!customDateInput}
-                  onClick={() => handleAddDateException(customDateInput)}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition-all"
-                >
-                  Add Exception
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDatePicker(false)}
-                  className="px-3 py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  Cancel
-                </button>
-              </motion.div>
-            )}
-          </div>
-
-          {/* List of Active Scheduled Date Exceptions */}
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                Scheduled Date Overrides ({sortedExceptionDates.length})
-              </span>
-              {sortedExceptionDates.length > 0 && (
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                  Toggles override your routine only for that single date
-                </span>
-              )}
-            </div>
-
-            {sortedExceptionDates.length === 0 ? (
-              <div className="p-6 rounded-2xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-                <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                  No upcoming date exceptions scheduled.
-                </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  Your standard weekly routine will automatically apply everyday.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {sortedExceptionDates.map((dateKey) => {
-                  const exc = dateExceptions[dateKey];
-                  const isBfOn = Boolean(exc?.breakfast);
-                  const isLuOn = Boolean(exc?.lunch);
-
-                  return (
-                    <motion.div
-                      key={dateKey}
-                      layout
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="p-4 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/90 dark:border-white/10 shadow-sm space-y-3"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-extrabold text-gray-900 dark:text-white">
-                              {formatFriendlyDate(dateKey, true)}
-                            </span>
-                            {dateKey === todayIST && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600">
-                                Today
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-gray-400 block font-mono">
-                            {dateKey}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDateException(dateKey)}
-                          className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                          title="Remove this exception"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Breakfast & Lunch Toggles for this specific date */}
-                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100 dark:border-white/5">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleExceptionMeal(dateKey, 'breakfast')}
-                          className={`flex items-center justify-between p-2 rounded-xl text-xs font-bold transition-all ${
-                            isBfOn
-                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300/60 dark:border-amber-500/30'
-                              : 'bg-gray-100 dark:bg-white/5 text-gray-400 border border-transparent'
-                          }`}
-                        >
-                          <span className="text-[11px]">Breakfast</span>
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
-                              isBfOn ? 'bg-amber-500 text-white' : 'bg-gray-300 dark:bg-white/10 text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {isBfOn ? 'ON' : 'OFF'}
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleExceptionMeal(dateKey, 'lunch')}
-                          className={`flex items-center justify-between p-2 rounded-xl text-xs font-bold transition-all ${
-                            isLuOn
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-500/30'
-                              : 'bg-gray-100 dark:bg-white/5 text-gray-400 border border-transparent'
-                          }`}
-                        >
-                          <span className="text-[11px]">Lunch</span>
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
-                              isLuOn ? 'bg-emerald-500 text-white' : 'bg-gray-300 dark:bg-white/10 text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {isLuOn ? 'ON' : 'OFF'}
-                          </span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <DateGridMatrix
+            student={studentForMatrix}
+            onSaveExceptions={(updated) => setDateExceptions(updated)}
+            onSaveTemplates={handleSaveTemplates}
+            editable={true}
+          />
         </div>
 
         {/* ================= SECTION 3: DIETARY PREFERENCES (ADMIN MANAGED - READ ONLY) ================= */}
@@ -748,18 +752,105 @@ function StudentPort() {
           </div>
         </div>
 
-        {/* ================= SUBMIT ACTION BAR ================= */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/25 transition-all transform active:scale-95 disabled:opacity-50"
-          >
-            <Save className="w-5 h-5" />
-            <span>{saving ? 'Saving...' : 'Save Dining Preferences'}</span>
-          </button>
+        {/* ================= BOTTOM SUBMIT ACTION BAR ================= */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/80 border border-gray-200/80 dark:border-white/10 shadow-md">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <Info className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            <span>
+              {isDirty
+                ? 'You have pending modifications. Click "Save & Exit" to apply and sign out.'
+                : 'All dining preferences are currently saved.'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="submit"
+              disabled={saving || !isDirty}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl transition-all transform active:scale-95 ${
+                isDirty
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-500/25'
+                  : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-600 opacity-60 cursor-not-allowed'
+              }`}
+            >
+              <Save className="w-4 h-4" />
+              <span>{saving ? 'Saving...' : (t('savePreferences') || 'Save Preferences')}</span>
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* ================= PERSISTENT FLOATING ACTION BAR (STICKY DOCK) ================= */}
+      <div className="fixed bottom-2 xs:bottom-4 sm:bottom-6 inset-x-0 z-40 flex justify-center px-2 xs:px-4 pointer-events-none pb-safe">
+        <motion.div
+          layout
+          className="pointer-events-auto w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 border border-emerald-500/30 dark:border-emerald-500/20 shadow-2xl backdrop-blur-xl p-2 xs:p-2.5 sm:p-3 flex items-center justify-between gap-1.5 xs:gap-2 sm:gap-4 transition-all"
+        >
+          {/* Status Badge */}
+          <div className="flex items-center gap-1.5 xs:gap-2 pl-1 xs:pl-2 sm:pl-3 min-w-0">
+            {isDirty ? (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-xs sm:text-sm font-extrabold text-amber-700 dark:text-amber-400 block truncate">
+                    <span className="hidden xs:inline">{t('unsavedChanges') || 'Unsaved Changes'}</span>
+                    <span className="xs:hidden">Unsaved</span>
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate">
+                    {changedCount} {changedCount === 1 ? 'change' : 'changes'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 block truncate">
+                    <span className="hidden xs:inline">{t('allChangesSaved') || 'All Preferences Saved'}</span>
+                    <span className="xs:hidden">Saved</span>
+                  </span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
+                    Up to date
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* Discard button when dirty */}
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleDiscard}
+                disabled={saving}
+                className="inline-flex items-center gap-1 px-2.5 xs:px-3 py-2 rounded-xl text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 font-bold text-xs transition-colors active:scale-95"
+                title="Discard unsaved changes"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('discardChanges') || 'Discard'}</span>
+              </button>
+            )}
+
+            {/* Save Preferences Primary Button */}
+            <button
+              type="button"
+              onClick={() => handleSave(false)}
+              disabled={saving || !isDirty}
+              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 xs:px-5 sm:px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-white shadow-lg transition-all transform active:scale-95 whitespace-nowrap ${
+                isDirty
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-emerald-500/30'
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed'
+              }`}
+              title="Save dining preferences"
+            >
+              <Save className="w-4 h-4" />
+              <span>{saving ? 'Saving...' : (t('savePreferences') || 'Save Preferences')}</span>
+            </button>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Public Kiosk Auto-Logout Modal Warning */}
       <AnimatePresence>

@@ -40,22 +40,37 @@ async function runMigration() {
   console.log(`Safety backup created at: ${backupFile}`);
 
   // 2. Prepare batch update
+  const malayalamRegex = /[\u0D00-\u0D7F]/;
   const batch = db.batch();
   let count = 0;
 
   snapshot.forEach(doc => {
     const data = doc.data();
     const tokenNo = Number(data.tokenNo);
-    const existingUname = data.uname || '';
-    const nameEn = transliterateName(existingUname);
+
+    // Identify Malayalam name
+    let nameMl = '';
+    if (data.nameMl && malayalamRegex.test(data.nameMl)) {
+      nameMl = data.nameMl.trim();
+    } else if (data.uname && malayalamRegex.test(data.uname)) {
+      nameMl = data.uname.trim();
+    } else if (data.name && malayalamRegex.test(data.name)) {
+      nameMl = data.name.trim();
+    } else if (data.nameEn && malayalamRegex.test(data.nameEn)) {
+      nameMl = data.nameEn.trim();
+    }
+
+    // English name via transliteration
+    const nameEn = transliterateName(nameMl);
     const batchGroup = getBatchForToken(tokenNo);
-    const username = String(tokenNo);
+    const tokenString = String(tokenNo);
 
     const docRef = db.collection('students').doc(doc.id);
     batch.set(docRef, {
-      username: username,
+      uname: tokenString,
+      username: tokenString,
       nameEn: nameEn,
-      nameMl: existingUname,
+      nameMl: nameMl,
       name: nameEn,
       batch: batchGroup
     }, { merge: true });
@@ -67,12 +82,33 @@ async function runMigration() {
   await batch.commit();
   console.log('--- Migration successfully committed to Firestore! ---');
 
-  // Verify
-  const verifySnap = await db.collection('students').limit(5).get();
-  console.log('\nVerification sample:');
+  // 3. Verification
+  const verifySnap = await db.collection('students').get();
+  let verifyUnameIsToken = 0;
+  let verifyUsernameIsToken = 0;
+  let verifyHasNameMl = 0;
+  let verifyHasNameEn = 0;
+
   verifySnap.forEach(d => {
     const val = d.data();
-    console.log(`Token #${val.tokenNo} -> Username: ${val.username} | Batch: ${val.batch} | EN: ${val.nameEn} | ML: ${val.nameMl}`);
+    if (String(val.uname) === String(val.tokenNo)) verifyUnameIsToken++;
+    if (String(val.username) === String(val.tokenNo)) verifyUsernameIsToken++;
+    if (val.nameMl && malayalamRegex.test(val.nameMl)) verifyHasNameMl++;
+    if (val.nameEn && !malayalamRegex.test(val.nameEn) && val.nameEn.length > 0) verifyHasNameEn++;
+  });
+
+  console.log('\nMigration Verification Summary:');
+  console.log(`Total students: ${verifySnap.size}`);
+  console.log(`uname == tokenNo: ${verifyUnameIsToken} / ${verifySnap.size}`);
+  console.log(`username == tokenNo: ${verifyUsernameIsToken} / ${verifySnap.size}`);
+  console.log(`Valid nameMl: ${verifyHasNameMl} / ${verifySnap.size}`);
+  console.log(`Valid nameEn: ${verifyHasNameEn} / ${verifySnap.size}`);
+
+  console.log('\nSample verification records:');
+  const sampleDocs = verifySnap.docs.slice(0, 5);
+  sampleDocs.forEach(d => {
+    const val = d.data();
+    console.log(`Token #${val.tokenNo} -> uname: ${val.uname} | username: ${val.username} | Batch: ${val.batch} | EN: "${val.nameEn}" | ML: "${val.nameMl}"`);
   });
 
   process.exit(0);

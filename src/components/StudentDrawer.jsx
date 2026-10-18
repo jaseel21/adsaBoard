@@ -18,13 +18,17 @@ import {
   Layers,
   Phone,
   Home,
-  RefreshCw
+  CalendarDays,
+  LayoutGrid,
+  Calendar,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { subscribeToPreferences } from '../utils/preferenceService';
+import { cleanPastDateExceptions } from '../utils/studentExceptionService';
+import DateGridMatrix from './ui/DateGridMatrix';
 
 const defaultMealDays = {
   su: true,
@@ -88,13 +92,29 @@ export default function StudentDrawer({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'meals' | 'status'
 
+  // Date Exceptions & Templates state for this student
+  const [dateExceptions, setDateExceptions] = useState({});
+  const [studentTemplates, setStudentTemplates] = useState([]);
+  const [showDateGridModal, setShowDateGridModal] = useState(false);
+
   // Reset or Populate form on student prop change
   useEffect(() => {
     if (student) {
+      const malayalamRegex = /[\u0D00-\u0D7F]/;
+      const initialNameEn = student.nameEn && !malayalamRegex.test(student.nameEn)
+        ? student.nameEn
+        : (student.name && !malayalamRegex.test(student.name) ? student.name : '');
+      const initialNameMl = student.nameMl && malayalamRegex.test(student.nameMl)
+        ? student.nameMl
+        : (student.uname && malayalamRegex.test(student.uname) ? student.uname : (student.nameMl || ''));
+      const initialUname = (student.username !== undefined && String(student.username))
+        || (student.uname !== undefined && !malayalamRegex.test(String(student.uname)) ? String(student.uname) : '')
+        || (student.tokenNo !== undefined ? String(student.tokenNo) : '');
+
       setTokenNo(student.tokenNo !== undefined ? String(student.tokenNo) : '');
-      setNameEn(student.nameEn || student.uname || '');
-      setNameMl(student.nameMl || '');
-      setUname(student.uname || '');
+      setNameEn(initialNameEn);
+      setNameMl(initialNameMl);
+      setUname(initialUname);
       setPassword(student.password || '');
       setBatch(student.batch || 'General');
       setRoomNo(student.roomNo || '');
@@ -105,6 +125,8 @@ export default function StudentDrawer({
       setLunch(student.obj?.lunch ? { ...defaultMealDays, ...student.obj.lunch } : defaultMealDays);
       setBreakfast(student.obj?.breakfast ? { ...defaultMealDays, ...student.obj.breakfast } : defaultMealDays);
       setDietary(student.obj2 ? { ...defaultDietary, ...student.obj2 } : defaultDietary);
+      setDateExceptions(student.dateExceptions ? cleanPastDateExceptions(student.dateExceptions) : {});
+      setStudentTemplates(Array.isArray(student.templates) ? student.templates : []);
     } else {
       // Create Mode
       setTokenNo('');
@@ -120,16 +142,16 @@ export default function StudentDrawer({
       setLunch(defaultMealDays);
       setBreakfast(defaultMealDays);
       setDietary(defaultDietary);
+      setDateExceptions({});
+      setStudentTemplates([]);
     }
     setActiveTab('profile');
   }, [student, isOpen, existingBatches]);
 
-  // Auto-fill username when nameEn changes in create mode
-  const handleNameEnChange = (val) => {
-    setNameEn(val);
-    if (!isEdit && !uname) {
-      const generated = val.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-      if (generated) setUname(generated);
+  const handleTokenChange = (val) => {
+    setTokenNo(val);
+    if (!isEdit && (!uname || /^\d*$/.test(uname))) {
+      setUname(val.trim());
     }
   };
 
@@ -145,7 +167,11 @@ export default function StudentDrawer({
         break;
       }
     }
-    setTokenNo(String(next));
+    const nextStr = String(next);
+    setTokenNo(nextStr);
+    if (!uname || /^\d*$/.test(uname)) {
+      setUname(nextStr);
+    }
   };
 
   // Generate strong random password
@@ -203,30 +229,33 @@ export default function StudentDrawer({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!tokenNo || isNaN(tokenNum)) {
-      Swal.fire({ icon: 'warning', title: 'Invalid Token', text: 'Please enter a valid numeric token number.' });
+      dialog.alert({ type: 'warning', title: 'Invalid Token', message: 'Please enter a valid numeric token number.' });
       return;
     }
     if (isDuplicateToken) {
-      Swal.fire({ icon: 'error', title: 'Duplicate Token', text: `Token #${tokenNum} is already assigned to another student.` });
+      dialog.alert({ type: 'error', title: 'Duplicate Token', message: `Token #${tokenNum} is already assigned to another student.` });
       return;
     }
     if (!nameEn.trim()) {
-      Swal.fire({ icon: 'warning', title: 'Missing Name', text: 'Please enter student full name in English.' });
+      dialog.alert({ type: 'warning', title: 'Missing Name', message: 'Please enter student full name in English.' });
       return;
     }
     if (!password.trim()) {
-      Swal.fire({ icon: 'warning', title: 'Missing Password', text: 'Please provide a login password for the student.' });
+      dialog.alert({ type: 'warning', title: 'Missing Password', message: 'Please provide a login password for the student.' });
       return;
     }
 
     setSaving(true);
     feedback('tick');
 
+    const finalUname = uname.trim() || String(tokenNum);
     const payload = {
       tokenNo: tokenNum,
       nameEn: nameEn.trim(),
       nameMl: nameMl.trim(),
-      uname: uname.trim() || nameEn.trim().toLowerCase().replace(/[^a-z0-9]/g, '_') || `token${tokenNum}`,
+      name: nameEn.trim(),
+      uname: finalUname,
+      username: finalUname,
       password: password.trim(),
       batch: batch.trim() || 'General',
       roomNo: roomNo.trim(),
@@ -235,6 +264,8 @@ export default function StudentDrawer({
       blockReason: block ? blockReason.trim() : '',
       obj: { lunch, breakfast },
       obj2: dietary,
+      dateExceptions: cleanPastDateExceptions(dateExceptions),
+      templates: studentTemplates,
       updatedAt: new Date().toISOString()
     };
 
@@ -242,75 +273,58 @@ export default function StudentDrawer({
       const db = firebase.firestore();
       if (isEdit) {
         await db.collection('students').doc(student.id).set(payload, { merge: true });
-        feedback('success');
-        Swal.fire({
-          icon: 'success',
-          title: t('studentSavedSuccess') || 'Saved Successfully',
-          text: `Token #${tokenNum} (${nameEn}) updated.`,
-          timer: 1600,
-          showConfirmButton: false
-        });
+        dialog.toast.success(
+          t('studentSavedSuccess') || 'Saved Successfully',
+          `Token #${tokenNum} (${nameEn}) updated.`
+        );
         if (onSaved) onSaved({ id: student.id, ...payload });
       } else {
         payload.createdAt = new Date().toISOString();
         const docRef = await db.collection('students').add(payload);
-        feedback('success');
-        Swal.fire({
-          icon: 'success',
-          title: 'Student Created',
-          text: `Token #${tokenNum} (${nameEn}) added successfully!`,
-          timer: 1600,
-          showConfirmButton: false
-        });
+        dialog.toast.success(
+          'Student Created',
+          `Token #${tokenNum} (${nameEn}) added successfully!`
+        );
         if (onSaved) onSaved({ id: docRef.id, ...payload });
       }
       onClose();
     } catch (err) {
       console.error('Error saving student:', err);
-      feedback('warning');
-      Swal.fire({
-        icon: 'error',
+      dialog.alert({
+        type: 'error',
         title: 'Save Failed',
-        text: err.message || 'Could not save student record.'
+        message: err.message || 'Could not save student record.'
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!student || !student.id) return;
-    feedback('warning');
-    Swal.fire({
+    const confirmed = await dialog.confirm({
       title: `${t('deleteStudentRecord') || 'Delete'} #${student.tokenNo}?`,
-      text: t('confirmDeleteStudent') || `Permanently delete ${student.nameEn || student.uname}? This cannot be undone.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, Delete'
-    }).then(async (res) => {
-      if (res.isConfirmed) {
-        setDeleting(true);
-        try {
-          await firebase.firestore().collection('students').doc(student.id).delete();
-          feedback('pop');
-          Swal.fire({
-            icon: 'success',
-            title: t('studentDeletedSuccess') || 'Deleted!',
-            timer: 1500,
-            showConfirmButton: false
-          });
-          if (onDeleted) onDeleted(student.id);
-          onClose();
-        } catch (err) {
-          console.error('Delete error:', err);
-          Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete student.' });
-        } finally {
-          setDeleting(false);
-        }
-      }
+      message: t('confirmDeleteStudent') || `Permanently delete ${student.nameEn || student.name || `Token #${student.tokenNo}`}? This cannot be undone.`,
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      setDeleting(true);
+      try {
+        await firebase.firestore().collection('students').doc(student.id).delete();
+        dialog.toast.success(t('studentDeletedSuccess') || 'Deleted!', `Token #${student.tokenNo} removed.`);
+        if (onDeleted) onDeleted(student.id);
+        onClose();
+      } catch (err) {
+        console.error('Delete error:', err);
+        dialog.alert({ type: 'error', title: 'Error', message: 'Failed to delete student.' });
+      } finally {
+        setDeleting(false);
+      }
+    }
   };
 
   const daysList = [
@@ -345,17 +359,17 @@ export default function StudentDrawer({
             className="fixed inset-y-0 right-0 w-full sm:max-w-xl md:max-w-2xl bg-white dark:bg-[#0c1412] border-l border-gray-200/80 dark:border-white/10 shadow-2xl z-50 flex flex-col overflow-hidden"
           >
             {/* Drawer Header */}
-            <div className="p-5 sm:p-6 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold text-lg shadow-md shadow-emerald-500/20">
+            <div className="p-4 sm:p-6 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold text-base sm:text-lg shadow-md shadow-emerald-500/20 flex-shrink-0">
                   {tokenNo ? tokenNo : <User className="w-5 h-5" />}
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>{isEdit ? (nameEn || t('editPreferences')) : (t('addStudentBtn') || 'Add New Student')}</span>
-                    {nameMl && <span className="text-xs font-normal text-emerald-600 dark:text-emerald-400">({nameMl})</span>}
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+                    <span className="truncate">{isEdit ? (nameEn || t('editPreferences')) : (t('addStudentBtn') || 'Add New Student')}</span>
+                    {nameMl && <span className="text-xs font-normal text-emerald-600 dark:text-emerald-400 hidden xs:inline">({nameMl})</span>}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
                     {isEdit ? `Editing Token #${tokenNum || '?'}` : 'Register new student into canteen system'}
                   </p>
                 </div>
@@ -363,18 +377,18 @@ export default function StudentDrawer({
 
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors flex-shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Tab navigation */}
-            <div className="flex border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] px-6">
+            <div className="flex border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] px-3 sm:px-6 overflow-x-auto scrollbar-none whitespace-nowrap touch-pan-x">
               <button
                 type="button"
                 onClick={() => { feedback('tick'); setActiveTab('profile'); }}
-                className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
+                className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
                   activeTab === 'profile'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
@@ -386,7 +400,7 @@ export default function StudentDrawer({
               <button
                 type="button"
                 onClick={() => { feedback('tick'); setActiveTab('meals'); }}
-                className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
+                className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
                   activeTab === 'meals'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
@@ -398,7 +412,7 @@ export default function StudentDrawer({
               <button
                 type="button"
                 onClick={() => { feedback('tick'); setActiveTab('status'); }}
-                className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
+                className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ${
                   activeTab === 'status'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
@@ -410,10 +424,11 @@ export default function StudentDrawer({
             </div>
 
             {/* Form Content */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* TAB 1: PROFILE */}
               {activeTab === 'profile' && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 sm:space-y-5">
                   {/* Token Number & Auto-assign */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -437,7 +452,7 @@ export default function StudentDrawer({
                       required
                       min="1"
                       value={tokenNo}
-                      onChange={(e) => setTokenNo(e.target.value)}
+                      onChange={(e) => handleTokenChange(e.target.value)}
                       placeholder="e.g. 15"
                       className={`w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${
                         isDuplicateToken
@@ -463,7 +478,7 @@ export default function StudentDrawer({
                         type="text"
                         required
                         value={nameEn}
-                        onChange={(e) => handleNameEnChange(e.target.value)}
+                        onChange={(e) => setNameEn(e.target.value)}
                         placeholder="e.g. Muhammed Rashad"
                         className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                       />
@@ -665,14 +680,15 @@ export default function StudentDrawer({
                             key={d.key}
                             type="button"
                             onClick={() => toggleLunchDay(d.key)}
-                            className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
+                            title={`${d.label}: Lunch is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
+                            className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold font-mono text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
                               active
-                                ? 'bg-gradient-to-b from-emerald-500 to-green-600 text-white shadow-sm shadow-emerald-500/30'
-                                : 'bg-gray-100 dark:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
+                                : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-sm shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
                             }`}
                           >
                             <span className="truncate w-full text-center">{d.label}</span>
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? 'bg-white' : 'bg-rose-400'}`} />
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-white/90" />
                           </button>
                         );
                       })}
@@ -695,7 +711,7 @@ export default function StudentDrawer({
                         <button
                           type="button"
                           onClick={() => setAllBreakfast(true)}
-                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition-colors"
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
                         >
                           All ON
                         </button>
@@ -717,18 +733,110 @@ export default function StudentDrawer({
                             key={d.key}
                             type="button"
                             onClick={() => toggleBreakfastDay(d.key)}
-                            className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
+                            title={`${d.label}: Breakfast is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
+                            className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold font-mono text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
                               active
-                                ? 'bg-gradient-to-b from-amber-500 to-yellow-600 text-white shadow-sm shadow-amber-500/30'
-                                : 'bg-gray-100 dark:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
+                                : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-sm shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
                             }`}
                           >
                             <span className="truncate w-full text-center">{d.label}</span>
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? 'bg-white' : 'bg-rose-400'}`} />
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-white/90" />
                           </button>
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* Upcoming Single-Date Overrides & Leaves */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-500/20 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                          <CalendarDays className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                            Single-Date Dining Overrides & Leaves
+                          </h4>
+                          <p className="text-[11px] text-gray-500">
+                            {Object.keys(dateExceptions).length > 0
+                              ? `${Object.keys(dateExceptions).length} date override(s) scheduled for this student`
+                              : 'No date overrides scheduled. Following regular weekly routine.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          feedback('tick');
+                          setShowDateGridModal(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs shadow-md shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 active:scale-95 transition-all flex items-center gap-2 self-start sm:self-center"
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                        <span>Manage Date Grid</span>
+                      </button>
+                    </div>
+
+                    {/* Date Grid Modal for Admin */}
+                    {showDateGridModal && (
+                      <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-[#0f1715] p-5 sm:p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-2xl"
+                        >
+                          <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5">
+                            <div>
+                              <h3 className="text-base font-black text-gray-900 dark:text-white">
+                                Date Overrides — Token #{tokenNo} ({nameEn || 'Student'})
+                              </h3>
+                              <p className="text-xs text-gray-500">
+                                Click any date in the calendar grid to turn breakfast/lunch ON or OFF on behalf of this student.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('tick');
+                                setShowDateGridModal(false);
+                              }}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <DateGridMatrix
+                            student={{
+                              ...student,
+                              tokenNo,
+                              nameEn,
+                              obj: { lunch, breakfast },
+                              dateExceptions,
+                              templates: studentTemplates,
+                            }}
+                            onSaveExceptions={(updated) => setDateExceptions(updated)}
+                            onSaveTemplates={(updatedTemplates) => setStudentTemplates(updatedTemplates)}
+                            editable={true}
+                          />
+
+                          <div className="flex justify-end pt-3 border-t border-gray-100 dark:border-white/5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('success');
+                                setShowDateGridModal(false);
+                              }}
+                              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-extrabold text-xs shadow-md shadow-emerald-500/25"
+                            >
+                              Done Managing Overrides
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Dietary Preferences (Exemptions) */}
@@ -812,16 +920,18 @@ export default function StudentDrawer({
                 </motion.div>
               )}
 
-              {/* Bottom Actions */}
-              <div className="pt-4 border-t border-gray-200/80 dark:border-white/10 flex items-center justify-between gap-3">
+              </div>
+
+              {/* Bottom Actions Sticky Bar */}
+              <div className="p-3.5 sm:p-5 border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#0c1412]/95 backdrop-blur-md pb-safe flex items-center justify-between gap-2.5 sm:gap-3 shrink-0">
                 {isEdit ? (
                   <button
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting || saving}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all disabled:opacity-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>{deleting ? 'Deleting...' : (t('deleteStudentRecord') || 'Delete')}</span>
                   </button>
                 ) : (
@@ -832,16 +942,16 @@ export default function StudentDrawer({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-xs font-bold transition-all"
+                    className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-xs font-bold transition-all"
                   >
                     {t('cancel') || 'Cancel'}
                   </button>
                   <button
                     type="submit"
                     disabled={saving || isDuplicateToken}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all transform active:scale-95 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all transform active:scale-95 disabled:opacity-50"
                   >
-                    <Save className="w-4 h-4" />
+                    <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>{saving ? (t('saving') || 'Saving...') : (t('saveStudentRecord') || 'Save Record')}</span>
                   </button>
                 </div>

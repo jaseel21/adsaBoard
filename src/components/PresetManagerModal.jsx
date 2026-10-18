@@ -11,7 +11,7 @@ import {
   Tag,
   Sparkles,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import {
   subscribeToDishPresets,
   addDishPreset,
@@ -73,30 +73,30 @@ export default function PresetManagerModal({ isOpen, onClose }) {
     }
   };
 
-  const handleDelete = (presetTitle) => {
-    feedback('warning');
-    Swal.fire({
+  const handleDelete = async (presetTitle) => {
+    const confirmed = await dialog.confirm({
       title: `Delete Preset "${presetTitle}"?`,
-      text: 'This will remove it from the quick presets list.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      confirmButtonText: 'Yes, Delete',
-    }).then(async (res) => {
-      if (res.isConfirmed) {
-        try {
-          await deleteDishPreset(activeSlot, presetTitle);
-          feedback('pop');
-        } catch (err) {
-          console.error('Error deleting preset:', err);
-        }
-      }
+      message: 'This will remove it from the quick presets list.',
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      try {
+        await deleteDishPreset(activeSlot, presetTitle);
+        dialog.toast.success('Preset Deleted', `Removed "${presetTitle}" from presets.`);
+      } catch (err) {
+        console.error('Error deleting preset:', err);
+        dialog.alert({ type: 'error', title: 'Error', message: 'Could not delete preset.' });
+      }
+    }
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md pb-safe"
       onClick={onClose}
     >
       <motion.div
@@ -104,16 +104,16 @@ export default function PresetManagerModal({ isOpen, onClose }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[85vh] flex flex-col rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden"
+        className="w-full max-w-xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
               <BookmarkPlus className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Canteen Dish Presets</h2>
+              <h2 className="text-base sm:text-lg font-bold">Canteen Dish Presets</h2>
               <p className="text-xs text-emerald-100">
                 CRUD reusable meal templates for quick 1-click schedule editing
               </p>
@@ -128,7 +128,7 @@ export default function PresetManagerModal({ isOpen, onClose }) {
         </div>
 
         {/* Slot Selector */}
-        <div className="p-3 bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10 flex items-center gap-1.5 overflow-x-auto">
+        <div className="p-2 sm:p-3 bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10 flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-pan-x">
           {[
             { id: 'breakfast', label: 'Breakfast', icon: Coffee },
             { id: 'lunch', label: 'Lunch', icon: Utensils },
@@ -141,13 +141,13 @@ export default function PresetManagerModal({ isOpen, onClose }) {
                 feedback('tick');
                 setActiveSlot(id);
               }}
-              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 min-w-[85px] sm:min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeSlot === id
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-white/5'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5 shrink-0" />
               <span>{label}</span>
             </button>
           ))}
@@ -279,7 +279,7 @@ export default function PresetManagerModal({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-gray-50 dark:bg-[#121c19] border-t border-gray-200 dark:border-white/10 flex justify-end">
+        <div className="p-3.5 sm:p-4 bg-gray-50 dark:bg-[#121c19] border-t border-gray-200 dark:border-white/10 flex justify-end pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-xs"

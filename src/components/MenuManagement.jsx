@@ -28,8 +28,9 @@ import {
   Eraser,
   Sliders,
   Users,
+  Home,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { AuthContext } from '../store/AuthContext';
@@ -56,6 +57,8 @@ import {
 import MealEditModal from './MealEditModal';
 import BulkMenuEditModal from './BulkMenuEditModal';
 import PresetManagerModal from './PresetManagerModal';
+import DateGridPickerModal from './ui/DateGridPickerModal';
+import { formatFriendlyDate } from '../utils/studentExceptionService';
 
 const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -93,6 +96,7 @@ export default function MenuManagement() {
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [showPresetManagerModal, setShowPresetManagerModal] = useState(false);
   const [newOverrideDate, setNewOverrideDate] = useState('');
+  const [showFeastDatePicker, setShowFeastDatePicker] = useState(false);
   const [newOverrideTitle, setNewOverrideTitle] = useState('');
   const [newOverrideBreakfast, setNewOverrideBreakfast] = useState('');
   const [newOverrideLunch, setNewOverrideLunch] = useState('');
@@ -138,20 +142,20 @@ export default function MenuManagement() {
   // Auth gate helper for modifications
   const checkAuth = () => {
     if (!user) {
-      feedback('warning');
-      Swal.fire({
-        title: 'Committee Login Required',
-        text: 'Please log in with committee credentials to modify the canteen menu.',
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'Go to Login',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#10b981',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate('/alogin');
-        }
-      });
+      dialog
+        .confirm({
+          title: 'Committee Login Required',
+          message: 'Please log in with committee credentials to modify the canteen menu.',
+          icon: 'lock',
+          confirmText: 'Go to Login',
+          cancelText: 'Cancel',
+          confirmColor: 'emerald',
+        })
+        .then((confirmed) => {
+          if (confirmed) {
+            navigate('/alogin');
+          }
+        });
       return false;
     }
     return true;
@@ -223,40 +227,28 @@ export default function MenuManagement() {
 
     if (isCurrentlyArchived) {
       // Unarchive
-      feedback('pop');
       await archiveDay(selectedDayKey, false, '', currentDayData, user?.email || 'admin');
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Day Activated',
-        text: `${currentDayData?.dayName} is now active and on the regular canteen schedule.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
+      dialog.toast.success(
+        'Day Activated',
+        `${currentDayData?.dayName} is now active and on the regular canteen schedule.`
+      );
     } else {
       // Archive with prompt
-      feedback('warning');
-      const { value: reason } = await Swal.fire({
+      const reason = await dialog.prompt({
         title: `Archive ${currentDayData?.dayName}?`,
-        text: `Mark ${currentDayData?.dayName} as closed / no supply for students and kitchen staff.`,
-        input: 'text',
-        inputPlaceholder: 'Reason (e.g. Sunday Routine Off, Cleaning & Maintenance)',
-        inputValue: 'Sunday Routine Off - Canteen Closed',
-        showCancelButton: true,
-        confirmButtonColor: '#f59e0b',
-        confirmButtonText: 'Archive Day',
+        message: `Mark ${currentDayData?.dayName} as closed / no supply for students and kitchen staff.`,
+        placeholder: 'Reason (e.g. Sunday Routine Off, Cleaning & Maintenance)',
+        defaultValue: 'Sunday Routine Off - Canteen Closed',
+        confirmText: 'Archive Day',
+        confirmColor: 'amber',
       });
 
-      if (reason !== undefined) {
+      if (reason !== null) {
         await archiveDay(selectedDayKey, true, reason || 'Routine Off', currentDayData, user?.email || 'admin');
-        feedback('success');
-        Swal.fire({
-          icon: 'success',
-          title: 'Day Archived',
-          text: `${currentDayData?.dayName} is marked archived. Home Spotlight will automatically skip this day.`,
-          timer: 2000,
-          showConfirmButton: false,
-        });
+        dialog.toast.success(
+          'Day Archived',
+          `${currentDayData?.dayName} is marked archived. Home Spotlight will automatically skip this day.`
+        );
       }
     }
   };
@@ -285,26 +277,30 @@ export default function MenuManagement() {
   const handleSaveAsDefaultTemplate = async () => {
     if (!checkAuth()) return;
 
-    feedback('tick');
-    const result = await Swal.fire({
+    const confirmed = await dialog.confirm({
       title: 'Set as Default Template?',
-      text: 'This will save the current active week as your permanent standard template for future resets.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      confirmButtonText: 'Set as Defaults',
-      cancelButtonText: 'Cancel',
+      message: 'This will save the current active week as your permanent standard template for future resets.',
+      confirmColor: 'emerald',
+      confirmText: 'Set as Defaults',
+      cancelText: 'Cancel',
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
       try {
         setSaving(true);
         await saveDefaultTemplate(weeklyMenu, user?.email || 'admin');
         setDefaultTemplate(weeklyMenu);
-        feedback('success');
-        Swal.fire('Saved!', 'Current weekly schedule is now saved as the institutional Default Template.', 'success');
+        dialog.toast.success(
+          'Saved!',
+          'Current weekly schedule is now saved as the institutional Default Template.'
+        );
       } catch (err) {
         console.error('Error saving default template:', err);
+        dialog.alert({
+          type: 'error',
+          title: 'Save Failed',
+          message: 'Could not save default template.',
+        });
       } finally {
         setSaving(false);
       }
@@ -312,99 +308,92 @@ export default function MenuManagement() {
   };
 
   // Reset to customizable default template
-  const handleRestoreFromDefaults = () => {
+  const handleRestoreFromDefaults = async () => {
     if (!checkAuth()) return;
 
-    feedback('warning');
-    Swal.fire({
+    const confirmed = await dialog.confirm({
       title: 'Restore from Default Template?',
-      text: 'This will replace the live schedule with your saved Default Menu Template for all 7 days.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#10b981',
-      confirmButtonText: 'Restore Defaults',
-      cancelButtonText: 'Cancel',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          setSaving(true);
-          const restored = await resetWeeklyMenuToDefault(user?.email || 'admin');
-          setWeeklyMenu(restored);
-          feedback('success');
-          Swal.fire({
-            icon: 'success',
-            title: 'Restored from Defaults',
-            text: 'Live menu successfully synced with default template.',
-            timer: 2000,
-            showConfirmButton: false,
-          });
-        } catch (err) {
-          console.error('Reset error:', err);
-        } finally {
-          setSaving(false);
-        }
-      }
+      message: 'This will replace the live schedule with your saved Default Menu Template for all 7 days.',
+      confirmColor: 'amber',
+      confirmText: 'Restore Defaults',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      try {
+        setSaving(true);
+        const restored = await resetWeeklyMenuToDefault(user?.email || 'admin');
+        setWeeklyMenu(restored);
+        dialog.toast.success(
+          'Restored from Defaults',
+          'Live menu successfully synced with default template.'
+        );
+      } catch (err) {
+        console.error('Reset error:', err);
+        dialog.alert({
+          type: 'error',
+          title: 'Reset Failed',
+          message: 'Could not restore default template.',
+        });
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   // Clear entire week to blank/empty
-  const handleClearEntireWeekToEmpty = () => {
+  const handleClearEntireWeekToEmpty = async () => {
     if (!checkAuth()) return;
 
-    feedback('warning');
-    Swal.fire({
+    const confirmed = await dialog.confirm({
       title: 'Clear Entire Supply Menu?',
-      text: 'This will wipe all dishes for all 7 days to empty blanks, allowing you to enter a fresh schedule.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      confirmButtonText: 'Clear to Empty',
-      cancelButtonText: 'Cancel',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          setSaving(true);
-          const empty = await resetMenuToEmpty(user?.email || 'admin');
-          setWeeklyMenu(empty);
-          feedback('success');
-          Swal.fire({
-            icon: 'success',
-            title: 'Menu Cleared',
-            text: 'All 7 days have been reset to empty slots.',
-            timer: 2000,
-            showConfirmButton: false,
-          });
-        } catch (err) {
-          console.error('Error resetting menu to empty:', err);
-        } finally {
-          setSaving(false);
-        }
-      }
+      message: 'This will wipe all dishes for all 7 days to empty blanks, allowing you to enter a fresh schedule.',
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Clear to Empty',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      try {
+        setSaving(true);
+        const empty = await resetMenuToEmpty(user?.email || 'admin');
+        setWeeklyMenu(empty);
+        dialog.toast.success('Menu Cleared', 'All 7 days have been reset to empty slots.');
+      } catch (err) {
+        console.error('Error resetting menu to empty:', err);
+        dialog.alert({
+          type: 'error',
+          title: 'Reset Failed',
+          message: 'Could not reset menu.',
+        });
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   // Clear single day to blank/empty
-  const handleClearCurrentDay = () => {
+  const handleClearCurrentDay = async () => {
     if (!checkAuth()) return;
 
-    feedback('warning');
-    Swal.fire({
+    const confirmed = await dialog.confirm({
       title: `Clear ${currentDayData?.dayName}'s Dishes?`,
-      text: `Reset all dishes for ${currentDayData?.dayName} to empty?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      confirmButtonText: 'Clear Day',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await clearDayMenu(selectedDayKey, user?.email || 'admin');
-        feedback('success');
-      }
+      message: `Reset all dishes for ${currentDayData?.dayName} to empty?`,
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Clear Day',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      await clearDayMenu(selectedDayKey, user?.email || 'admin');
+      dialog.toast.success('Day Cleared', `Dishes for ${currentDayData?.dayName} reset to empty.`);
+    }
   };
 
   // Clone day menu
-  const handleCloneDay = () => {
+  const handleCloneDay = async () => {
     if (!checkAuth()) return;
 
     feedback('tick');
@@ -415,47 +404,42 @@ export default function MenuManagement() {
       }
     });
 
-    Swal.fire({
+    const targetDayKey = await dialog.prompt({
       title: `Copy ${currentDayData?.dayName}'s Menu`,
-      text: 'Select the target day to replace with this day’s meals:',
-      input: 'select',
-      inputOptions: options,
-      inputPlaceholder: 'Select target day...',
-      showCancelButton: true,
-      confirmButtonText: 'Copy Menu',
-      confirmButtonColor: '#10b981',
-    }).then(async (result) => {
-      if (result.isConfirmed && result.value) {
-        const targetDayKey = result.value;
-        const targetDayName = activeDataset[targetDayKey]?.dayName || targetDayKey;
-        const clonedData = {
-          ...currentDayData,
-          dayKey: targetDayKey,
-          dayName: targetDayName,
-          dayShort: activeDataset[targetDayKey]?.dayShort || targetDayKey,
-        };
-
-        const updated = {
-          ...activeDataset,
-          [targetDayKey]: clonedData,
-        };
-
-        if (editorMode === 'live') {
-          setWeeklyMenu(updated);
-          await saveDayMenu(targetDayKey, clonedData, user?.email || 'admin');
-        } else {
-          setDefaultTemplate(updated);
-          await saveDefaultTemplate(updated, user?.email || 'admin');
-        }
-
-        feedback('success');
-        Swal.fire('Copied!', `Menu successfully replicated to ${targetDayName}.`, 'success');
-      }
+      message: 'Select the target day to replace with this day’s meals:',
+      options,
+      confirmText: 'Copy Menu',
+      confirmColor: 'emerald',
     });
+
+    if (targetDayKey) {
+      const targetDayName = activeDataset[targetDayKey]?.dayName || targetDayKey;
+      const clonedData = {
+        ...currentDayData,
+        dayKey: targetDayKey,
+        dayName: targetDayName,
+        dayShort: activeDataset[targetDayKey]?.dayShort || targetDayKey,
+      };
+
+      const updated = {
+        ...activeDataset,
+        [targetDayKey]: clonedData,
+      };
+
+      if (editorMode === 'live') {
+        setWeeklyMenu(updated);
+        await saveDayMenu(targetDayKey, clonedData, user?.email || 'admin');
+      } else {
+        setDefaultTemplate(updated);
+        await saveDefaultTemplate(updated, user?.email || 'admin');
+      }
+
+      dialog.toast.success('Copied!', `Menu successfully replicated to ${targetDayName}.`);
+    }
   };
 
   // Swap two days
-  const handleSwapDays = () => {
+  const handleSwapDays = async () => {
     if (!checkAuth()) return;
 
     feedback('tick');
@@ -466,52 +450,51 @@ export default function MenuManagement() {
       }
     });
 
-    Swal.fire({
+    const targetKey = await dialog.prompt({
       title: `Swap ${currentDayData?.dayName} with another day`,
-      text: 'Select the day to exchange menus with:',
-      input: 'select',
-      inputOptions: options,
-      showCancelButton: true,
-      confirmButtonText: 'Swap Schedules',
-      confirmButtonColor: '#10b981',
-    }).then(async (result) => {
-      if (result.isConfirmed && result.value) {
-        const targetKey = result.value;
-        const sourceData = { ...currentDayData };
-        const targetData = { ...activeDataset[targetKey] };
-
-        const newSource = {
-          ...targetData,
-          dayKey: selectedDayKey,
-          dayName: sourceData.dayName,
-          dayShort: sourceData.dayShort,
-        };
-
-        const newTarget = {
-          ...sourceData,
-          dayKey: targetKey,
-          dayName: targetData.dayName,
-          dayShort: targetData.dayShort,
-        };
-
-        const updated = {
-          ...activeDataset,
-          [selectedDayKey]: newSource,
-          [targetKey]: newTarget,
-        };
-
-        if (editorMode === 'live') {
-          setWeeklyMenu(updated);
-          await saveWeeklyMenu(updated, user?.email || 'admin');
-        } else {
-          setDefaultTemplate(updated);
-          await saveDefaultTemplate(updated, user?.email || 'admin');
-        }
-
-        feedback('success');
-        Swal.fire('Swapped!', `Schedules between ${sourceData.dayName} and ${targetData.dayName} exchanged.`, 'success');
-      }
+      message: 'Select the day to exchange menus with:',
+      options,
+      confirmText: 'Swap Schedules',
+      confirmColor: 'emerald',
     });
+
+    if (targetKey) {
+      const sourceData = { ...currentDayData };
+      const targetData = { ...activeDataset[targetKey] };
+
+      const newSource = {
+        ...targetData,
+        dayKey: selectedDayKey,
+        dayName: sourceData.dayName,
+        dayShort: sourceData.dayShort,
+      };
+
+      const newTarget = {
+        ...sourceData,
+        dayKey: targetKey,
+        dayName: targetData.dayName,
+        dayShort: targetData.dayShort,
+      };
+
+      const updated = {
+        ...activeDataset,
+        [selectedDayKey]: newSource,
+        [targetKey]: newTarget,
+      };
+
+      if (editorMode === 'live') {
+        setWeeklyMenu(updated);
+        await saveWeeklyMenu(updated, user?.email || 'admin');
+      } else {
+        setDefaultTemplate(updated);
+        await saveDefaultTemplate(updated, user?.email || 'admin');
+      }
+
+      dialog.toast.success(
+        'Swapped!',
+        `Schedules between ${sourceData.dayName} and ${targetData.dayName} exchanged.`
+      );
+    }
   };
 
   // Export printable canteen menu PDF
@@ -589,7 +572,11 @@ export default function MenuManagement() {
       feedback('success');
     } catch (err) {
       console.error('Error generating menu PDF:', err);
-      Swal.fire('Error', 'Failed to generate PDF. Please try again.', 'error');
+      dialog.alert({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to generate PDF. Please try again.',
+      });
     }
   };
 
@@ -598,7 +585,11 @@ export default function MenuManagement() {
     e.preventDefault();
     if (!checkAuth()) return;
     if (!newOverrideDate || !newOverrideTitle) {
-      Swal.fire('Required', 'Please choose a date and occasion title.', 'warning');
+      dialog.alert({
+        type: 'warning',
+        title: 'Required',
+        message: 'Please choose a date and occasion title.',
+      });
       return;
     }
 
@@ -613,31 +604,32 @@ export default function MenuManagement() {
         },
         user?.email || 'admin'
       );
-      feedback('success');
       setNewOverrideDate('');
       setNewOverrideTitle('');
       setNewOverrideBreakfast('');
       setNewOverrideLunch('');
-      Swal.fire('Saved!', 'Date override registered.', 'success');
+      dialog.toast.success('Saved!', 'Date override registered.');
     } catch (err) {
       console.error('Error adding override:', err);
+      dialog.alert({
+        type: 'error',
+        title: 'Save Error',
+        message: 'Could not save date override.',
+      });
     }
   };
 
   const handleDeleteOverride = async (dateKey) => {
     if (!checkAuth()) return;
-    feedback('warning');
-    const result = await Swal.fire({
+    const confirmed = await dialog.confirm({
       title: 'Remove Override?',
-      text: `Remove special schedule for ${dateKey}?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      confirmButtonText: 'Remove',
+      message: `Remove special schedule for ${dateKey}?`,
+      confirmColor: 'rose',
+      confirmText: 'Remove',
     });
-    if (result.isConfirmed) {
+    if (confirmed) {
       await deleteDateOverride(dateKey);
-      feedback('success');
+      dialog.toast.success('Removed', `Special schedule for ${dateKey} removed.`);
     }
   };
 
@@ -671,18 +663,18 @@ export default function MenuManagement() {
   const isDayArchived = Boolean(currentDayData?.isArchived);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
       
       {/* Top Banner & Control Deck */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/25">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/25 shrink-0">
               <Utensils className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">
+                <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white">
                   {t('menuManagement') || 'Canteen Menu Console'}
                 </h1>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600/30">
@@ -697,7 +689,7 @@ export default function MenuManagement() {
         </div>
 
         {/* Navigation & Mode Controls */}
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start sm:justify-end">
           
           {/* Mode Switcher Pill */}
           <div className="flex items-center p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
@@ -706,7 +698,7 @@ export default function MenuManagement() {
                 feedback('tick');
                 setEditorMode('live');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 editorMode === 'live'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -719,7 +711,7 @@ export default function MenuManagement() {
                 feedback('tick');
                 setEditorMode('defaults');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
                 editorMode === 'defaults'
                   ? 'bg-amber-600 text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -739,6 +731,18 @@ export default function MenuManagement() {
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Admin Board</span>
+          </button>
+
+          <button
+            onClick={() => {
+              feedback('tick');
+              navigate('/');
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 transition-colors"
+            title="Go to Public Home (/)"
+          >
+            <Home className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Home</span>
           </button>
 
           <button
@@ -774,14 +778,14 @@ export default function MenuManagement() {
       )}
 
       {/* Action Deck: Defaults, Clear to Empty, Feasts, Print */}
-      <div className="p-3 sm:p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="p-3 sm:p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Save Live as Default Template */}
           {editorMode === 'live' && (
             <button
               onClick={handleSaveAsDefaultTemplate}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition-colors"
             >
               <Save className="w-3.5 h-3.5 text-emerald-500" />
               <span>Set as Default Template</span>
@@ -793,7 +797,7 @@ export default function MenuManagement() {
             <button
               onClick={handleRestoreFromDefaults}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 text-xs font-semibold transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
               <span>Restore from Defaults</span>
@@ -804,21 +808,21 @@ export default function MenuManagement() {
           <button
             onClick={handleClearEntireWeekToEmpty}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold transition-colors"
           >
             <Eraser className="w-3.5 h-3.5" />
             <span>Clear Full Week (Empty)</span>
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Bulk Edit Days (Item #10) */}
           <button
             onClick={() => {
               feedback('tick');
               setShowBulkEditModal(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition-colors"
           >
             <Layers className="w-3.5 h-3.5 text-emerald-500" />
             <span>Bulk Edit Days</span>
@@ -830,7 +834,7 @@ export default function MenuManagement() {
               feedback('tick');
               setShowPresetManagerModal(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-xs font-bold transition-colors"
           >
             <BookmarkPlus className="w-3.5 h-3.5 text-blue-500" />
             <span>Dish Presets</span>
@@ -842,7 +846,7 @@ export default function MenuManagement() {
               feedback('tick');
               setShowOverridesModal(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 text-xs font-semibold transition-colors"
           >
             <Calendar className="w-3.5 h-3.5 text-purple-500" />
             <span>Single-Day Feasts ({Object.keys(overrides).length})</span>
@@ -851,7 +855,7 @@ export default function MenuManagement() {
           {/* Export PDF */}
           <button
             onClick={handleExportPDF}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 text-xs font-semibold transition-colors"
           >
             <Printer className="w-3.5 h-3.5 text-gray-500" />
             <span>Print PDF</span>
@@ -861,7 +865,7 @@ export default function MenuManagement() {
 
       {/* 7-Day Horizontal Selector */}
       <div className="p-2 sm:p-2.5 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 sm:pb-0 scrollbar-none touch-pan-x">
           {DAY_KEYS.map((key) => {
             const dayData = activeDataset[key] || DEFAULT_WEEKLY_MENU[key];
             const isSelected = selectedDayKey === key;
@@ -875,7 +879,7 @@ export default function MenuManagement() {
                   feedback('tick');
                   setSelectedDayKey(key);
                 }}
-                className={`relative flex-1 min-w-[88px] sm:min-w-[110px] p-2.5 sm:p-3 rounded-xl border transition-all text-left ${
+                className={`relative flex-1 min-w-[80px] xs:min-w-[95px] sm:min-w-[110px] p-2.5 sm:p-3 rounded-xl border transition-all text-left ${
                   isSelected
                     ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400 shadow-md shadow-emerald-500/20'
                     : isArchived
@@ -1176,12 +1180,12 @@ export default function MenuManagement() {
       {/* Special Date Overrides Modal */}
       <AnimatePresence>
         {showOverridesModal && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-safe">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl bg-white dark:bg-[#0f1715] rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-xl bg-white dark:bg-[#0f1715] rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-2xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto pb-safe"
             >
               <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
                 <div className="flex items-center gap-2">
@@ -1209,12 +1213,28 @@ export default function MenuManagement() {
                     <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
                       Calendar Date *
                     </label>
-                    <input
-                      type="date"
-                      value={newOverrideDate}
-                      onChange={(e) => setNewOverrideDate(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-purple-200 dark:border-purple-500/30 text-gray-900 dark:text-white"
-                      required
+                    <button
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        setShowFeastDatePicker(true);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-purple-200 dark:border-purple-500/30 text-left text-xs font-bold text-gray-900 dark:text-white flex items-center justify-between hover:bg-purple-50/50 dark:hover:bg-purple-950/30 transition-colors"
+                    >
+                      <span>
+                        {newOverrideDate
+                          ? formatFriendlyDate(newOverrideDate, true)
+                          : '📅 Pick Feast Date from Grid...'}
+                      </span>
+                      <Calendar className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                    </button>
+
+                    <DateGridPickerModal
+                      isOpen={showFeastDatePicker}
+                      onClose={() => setShowFeastDatePicker(false)}
+                      selectedDate={newOverrideDate}
+                      onSelectDate={(pickedDate) => setNewOverrideDate(pickedDate)}
+                      title="Pick Special Feast Date"
                     />
                   </div>
                   <div>

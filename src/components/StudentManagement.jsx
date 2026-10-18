@@ -20,6 +20,7 @@ import {
   RefreshCw,
   X,
   UtensilsCrossed,
+  Home,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
@@ -28,7 +29,6 @@ import { useFeedback } from '../utils/useFeedback';
 import StudentDrawer from './StudentDrawer';
 import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
-import PreferenceManagerModal from './PreferenceManagerModal';
 import { subscribeToPreferences } from '../utils/preferenceService';
 
 export default function StudentManagement() {
@@ -68,7 +68,6 @@ export default function StudentManagement() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
-  const [prefModalOpen, setPrefModalOpen] = useState(false);
   const [preferences, setPreferences] = useState([]);
 
   useEffect(() => {
@@ -151,9 +150,9 @@ export default function StudentManagement() {
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
           const tokenStr = String(s.tokenNo || '');
-          const nameEn = (s.nameEn || s.uname || '').toLowerCase();
+          const nameEn = (s.nameEn || s.name || '').toLowerCase();
           const nameMl = (s.nameMl || '').toLowerCase();
-          const uname = (s.uname || '').toLowerCase();
+          const uname = (s.uname || s.username || '').toLowerCase();
           const batch = (s.batch || '').toLowerCase();
 
           const matches =
@@ -196,8 +195,8 @@ export default function StudentManagement() {
           valA = Number(a.tokenNo) || 0;
           valB = Number(b.tokenNo) || 0;
         } else if (sortField === 'nameEn') {
-          valA = (a.nameEn || a.uname || '').toLowerCase();
-          valB = (b.nameEn || b.uname || '').toLowerCase();
+          valA = (a.nameEn || a.name || '').toLowerCase();
+          valB = (b.nameEn || b.name || '').toLowerCase();
         } else if (sortField === 'batch') {
           valA = (a.batch || '').toLowerCase();
           valB = (b.batch || '').toLowerCase();
@@ -337,20 +336,20 @@ export default function StudentManagement() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
       
       {/* Top Banner & Title Strip */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold shadow-md shadow-emerald-500/20">
-              <Users className="w-6 h-6" />
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold shadow-md shadow-emerald-500/20 flex-shrink-0">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-lg xs:text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                 {t('studentMgmtTitle') || 'Student Management Console'}
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                 {t('studentMgmtSubtitle') || 'Directory, bilingual records, individual & bulk CRUD actions'}
               </p>
             </div>
@@ -358,45 +357,57 @@ export default function StudentManagement() {
         </div>
 
         {/* Global Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-start md:justify-end">
           <button
             onClick={handleManualRefresh}
             title="Refresh Data"
-            className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors"
+            className="p-2 sm:p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
 
           <button
             onClick={() => { feedback('tick'); setCsvModalOpen(true); }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
             <span>{t('importCsvBtn') || 'Import / Export'}</span>
           </button>
 
           <button
             onClick={() => {
               feedback('tick');
-              setPrefModalOpen(true);
+              navigate('/admin/dietary');
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
           >
-            <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
-            <span>Dietary Options</span>
+            <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{t('navDietary') || 'Dietary Hub'}</span>
           </button>
 
           <button
             onClick={() => { feedback('tick'); navigate('/admin'); }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
           >
-            <Sliders className="w-4 h-4 text-emerald-500" />
+            <Sliders className="w-3.5 h-3.5 text-emerald-500" />
             <span>Master Board</span>
           </button>
 
           <button
+            onClick={() => {
+              feedback('tick');
+              navigate('/');
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            title="Go to Public Home (/)"
+          >
+            <Home className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Home</span>
+          </button>
+
+          <button
             onClick={handleOpenAddStudent}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all transform active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all transform active:scale-95"
           >
             <UserPlus className="w-4 h-4" />
             <span>{t('addStudentBtn') || '+ Add Student'}</span>
@@ -405,59 +416,59 @@ export default function StudentManagement() {
       </div>
 
       {/* KPI Bento Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Total Students */}
-        <div className="p-4 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Total Students</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{stats.total}</span>
-            <span className="text-xs text-gray-400 font-medium">registered</span>
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-500 block truncate">Total Students</span>
+          <div className="mt-1 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{stats.total}</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 font-medium truncate">registered</span>
           </div>
         </div>
 
         {/* Active vs Blocked */}
-        <div className="p-4 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Active vs Blocked</span>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-500 block truncate">Active vs Blocked</span>
+          <div className="mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className="px-1.5 sm:px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
               {stats.active} Active
             </span>
-            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400">
+            <span className="px-1.5 sm:px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400">
               {stats.blocked} Locked
             </span>
           </div>
         </div>
 
         {/* Today's Lunch */}
-        <div className="p-4 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-            <Utensils className="w-3.5 h-3.5" />
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1 truncate">
+            <Utensils className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>Today&apos;s Lunch</span>
           </span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{stats.lunchActiveToday}</span>
-            <span className="text-xs text-gray-400">opted-in</span>
+          <div className="mt-1 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{stats.lunchActiveToday}</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 truncate">opted-in</span>
           </div>
         </div>
 
         {/* Today's Breakfast */}
-        <div className="p-4 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
-            <Coffee className="w-3.5 h-3.5" />
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1 truncate">
+            <Coffee className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>Today&apos;s Breakfast</span>
           </span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{stats.breakfastActiveToday}</span>
-            <span className="text-xs text-gray-400">opted-in</span>
+          <div className="mt-1 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{stats.breakfastActiveToday}</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 truncate">opted-in</span>
           </div>
         </div>
 
         {/* Active Batches */}
-        <div className="col-span-2 lg:col-span-1 p-4 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Batches / Classes</span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{allBatches.length}</span>
-            <span className="text-xs text-gray-400">academic groups</span>
+        <div className="col-span-2 lg:col-span-1 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-500 block truncate">Batches / Classes</span>
+          <div className="mt-1 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">{allBatches.length}</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 truncate">academic groups</span>
           </div>
         </div>
       </div>
@@ -617,7 +628,7 @@ export default function StudentManagement() {
       {/* Main View: Table Mode */}
       {viewMode === 'table' ? (
         <div className="rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm overflow-hidden backdrop-blur-xl">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-none touch-pan-x">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] text-[11px] font-bold text-gray-500 uppercase tracking-wider">
@@ -696,7 +707,7 @@ export default function StudentManagement() {
                         <td className="py-3 px-4">
                           <div className="space-y-0.5">
                             <span className="font-bold text-gray-900 dark:text-white block">
-                              {st.nameEn || st.uname || `Student #${st.tokenNo}`}
+                              {st.nameEn || st.name || `Student #${st.tokenNo}`}
                             </span>
                             <div className="flex items-center gap-2">
                               {st.nameMl && (
@@ -705,7 +716,7 @@ export default function StudentManagement() {
                                 </span>
                               )}
                               <span className="text-gray-400 text-[10px] font-mono">
-                                @{st.uname || `token${st.tokenNo}`}
+                                @{st.username || st.uname || st.tokenNo}
                               </span>
                             </div>
                           </div>
@@ -824,7 +835,7 @@ export default function StudentManagement() {
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
-                          {st.nameEn || st.uname || `Token #${st.tokenNo}`}
+                          {st.nameEn || st.name || `Token #${st.tokenNo}`}
                         </h3>
                         {st.nameMl && (
                           <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -832,7 +843,7 @@ export default function StudentManagement() {
                           </p>
                         )}
                         <span className="text-[10px] text-gray-400 font-mono">
-                          @{st.uname || `token${st.tokenNo}`}
+                          @{st.username || st.uname || st.tokenNo}
                         </span>
                       </div>
                     </div>
@@ -905,7 +916,7 @@ export default function StudentManagement() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
-            className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 max-w-2xl px-5 py-3 rounded-2xl bg-[#0f1715]/95 text-white border border-white/20 shadow-2xl backdrop-blur-2xl flex flex-wrap items-center justify-between gap-3"
+            className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 max-w-2xl px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-[#0f1715]/95 text-white border border-white/20 shadow-2xl backdrop-blur-2xl flex flex-wrap items-center justify-between gap-2.5 sm:gap-3"
           >
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center">
@@ -966,13 +977,6 @@ export default function StudentManagement() {
         onImportComplete={() => {
           setSelectedIds(new Set());
         }}
-      />
-
-      {/* Dietary Preferences CRUD Modal (Item #2) */}
-      <PreferenceManagerModal
-        isOpen={prefModalOpen}
-        onClose={() => setPrefModalOpen(false)}
-        preferences={preferences}
       />
     </div>
   );

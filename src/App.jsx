@@ -13,6 +13,7 @@ import Admin from './components/Admin';
 import AdminLogin from './components/AdminLogin';
 import StudentManagement from './components/StudentManagement';
 import MenuManagement from './components/MenuManagement';
+import DietaryManagement from './components/DietaryManagement';
 import NotFound from './components/NotFound';
 import AdminRoute from './components/guards/AdminRoute';
 import StudentRoute from './components/guards/StudentRoute';
@@ -88,6 +89,16 @@ function AppContent() {
               </AdminRoute>
             }
           />
+          <Route
+            path="/admin/dietary"
+            element={
+              <AdminRoute>
+                <DietaryManagement />
+              </AdminRoute>
+            }
+          />
+          <Route path="/admin/avoiders" element={<Navigate to="/admin/dietary" replace />} />
+          <Route path="/dietary-management" element={<Navigate to="/admin/dietary" replace />} />
 
           {/* Legacy Redirects */}
           <Route path="/add-student" element={<Navigate to="/student-management?add=true" replace />} />

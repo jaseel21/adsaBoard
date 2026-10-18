@@ -19,7 +19,7 @@ import {
   Leaf,
   Utensils,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import {
   savePreferences,
   addPreference,
@@ -117,48 +117,41 @@ export default function PreferenceManagerModal({
       setNewLabelMl('');
       setNewIcon('Utensils');
       setShowAddForm(false);
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Preference Created',
-        text: `"${newLabelEn.trim()}" was successfully added to dietary preferences.`,
-        timer: 1800,
-        showConfirmButton: false,
-      });
+      dialog.toast.success(
+        'Preference Created',
+        `"${newLabelEn.trim()}" was successfully added to dietary preferences.`
+      );
     } catch (err) {
       console.error(err);
-      feedback('warning');
-      Swal.fire({
-        icon: 'error',
+      dialog.alert({
+        type: 'error',
         title: 'Error',
-        text: err.message || 'Failed to create preference.',
+        message: err.message || 'Failed to create preference.',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDelete = (pref) => {
-    feedback('warning');
-    Swal.fire({
+  const handleDelete = async (pref) => {
+    const confirmed = await dialog.confirm({
       title: `Delete "${pref.labelEn}"?`,
-      text: 'Existing student choices in the database will be preserved safely, but this option will no longer appear on selection menus.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, Delete',
-      cancelButtonText: 'Cancel',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await deletePreference(pref.id);
-          feedback('pop');
-        } catch (err) {
-          console.error(err);
-        }
-      }
+      message: 'Existing student choices in the database will be preserved safely, but this option will no longer appear on selection menus.',
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      try {
+        await deletePreference(pref.id);
+        dialog.toast.success('Deleted', `Removed "${pref.labelEn}".`);
+      } catch (err) {
+        console.error(err);
+        dialog.alert({ type: 'error', title: 'Error', message: 'Failed to delete preference.' });
+      }
+    }
   };
 
   const handleMove = async (index, direction) => {
@@ -177,7 +170,7 @@ export default function PreferenceManagerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md pb-safe"
       onClick={onClose}
     >
       <motion.div
@@ -185,16 +178,16 @@ export default function PreferenceManagerModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden"
+        className="w-full max-w-xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Dietary & Meal Preferences</h2>
+              <h2 className="text-base sm:text-lg font-bold">Dietary & Meal Preferences</h2>
               <p className="text-xs text-emerald-100">
                 CRUD canteen dietary options (Beef, Chicken, Fish, Egg, etc.) safely
               </p>
@@ -209,7 +202,7 @@ export default function PreferenceManagerModal({
         </div>
 
         {/* Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 flex-1">
           {/* Top action */}
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -449,14 +442,14 @@ export default function PreferenceManagerModal({
         </div>
 
         {/* Footer Note */}
-        <div className="p-4 bg-gray-50 dark:bg-[#121c19] border-t border-gray-200 dark:border-white/10 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="p-3.5 sm:p-4 bg-gray-50 dark:bg-[#121c19] border-t border-gray-200 dark:border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
           <div className="flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span>Changes reflect immediately in Student Portal and Kitchen Reports without data loss.</span>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-xs"
+            className="w-full sm:w-auto px-5 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-xs"
           >
             Done
           </button>

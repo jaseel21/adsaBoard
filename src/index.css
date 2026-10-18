@@ -15,10 +15,52 @@
     --color-border: rgba(255, 255, 255, 0.08);
   }
 
-  body {
+  html, body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Safe Area Inset Utility Classes for iOS & Android Gesture Navigation */
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .pt-safe {
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  }
+
+  .px-safe {
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+
+  /* Universal Hide Scrollbars */
+  .scrollbar-none {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Smooth touch momentum */
+  .touch-pan-x {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Minimum Ergonomic Touch Target */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Malayalam specific typographical adjustments */

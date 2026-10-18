@@ -32,7 +32,7 @@ export default function NotFound() {
   };
 
   return (
-    <div className="relative min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 overflow-hidden">
+    <div className="relative min-h-[calc(100dvh-8rem)] flex items-center justify-center px-3 xs:px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-hidden">
       {/* Radiant ambient glow orbs */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-teal-500/10 dark:bg-teal-500/15 blur-3xl pointer-events-none" />

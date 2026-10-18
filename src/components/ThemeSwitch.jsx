@@ -48,11 +48,11 @@ const ThemeSwitch = () => {
           setOpen(!open);
         }}
         aria-label="Toggle Theme"
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100/80 dark:bg-white/10 hover:bg-gray-200/80 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200/70 dark:border-white/10 text-xs font-medium transition-all duration-200 shadow-sm"
+        className="flex items-center gap-1 xs:gap-1.5 px-2 xs:px-2.5 py-1.5 rounded-xl bg-gray-100/80 dark:bg-white/10 hover:bg-gray-200/80 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200/70 dark:border-white/10 text-xs font-medium transition-all duration-200 shadow-sm flex-shrink-0"
       >
         {currentIcon()}
         <span className="hidden lg:inline">{getLabel()}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform duration-200 opacity-60 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 transition-transform duration-200 opacity-60 flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>

@@ -14,9 +14,8 @@ import {
   Download,
   Copy,
   Sparkles,
-  RefreshCw
-} from 'lucide-react';
-import Swal from 'sweetalert2';
+  } from 'lucide-react';
+import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -120,20 +119,12 @@ export default function BulkActionModal({
         setProgress(Math.round(((i + 1) / chunks.length) * 100));
       }
 
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Meals Updated',
-        text: `Successfully updated meal schedules for ${count} students.`,
-        timer: 1600,
-        showConfirmButton: false
-      });
+      dialog.toast.success('Meals Updated', `Successfully updated meal schedules for ${count} students.`);
       if (onCompleted) onCompleted();
       onClose();
     } catch (err) {
       console.error('Bulk meals error:', err);
-      feedback('warning');
-      Swal.fire({ icon: 'error', title: 'Update Failed', text: err.message });
+      dialog.alert({ type: 'error', title: 'Update Failed', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -173,19 +164,12 @@ export default function BulkActionModal({
         setProgress(Math.round(((i + 1) / chunks.length) * 100));
       }
 
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Dietary Updated',
-        text: `Updated dietary preferences for ${count} students.`,
-        timer: 1600,
-        showConfirmButton: false
-      });
+      dialog.toast.success('Dietary Updated', `Updated dietary preferences for ${count} students.`);
       if (onCompleted) onCompleted();
       onClose();
     } catch (err) {
       console.error('Bulk dietary error:', err);
-      Swal.fire({ icon: 'error', title: 'Update Failed', text: err.message });
+      dialog.alert({ type: 'error', title: 'Update Failed', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -194,7 +178,7 @@ export default function BulkActionModal({
   // 3. Bulk Batch Reassignment
   const handleBulkBatch = async () => {
     if (!newBatch.trim()) {
-      Swal.fire({ icon: 'warning', title: 'Missing Batch', text: 'Please enter a valid batch name.' });
+      dialog.alert({ type: 'warning', title: 'Missing Batch', message: 'Please enter a valid batch name.' });
       return;
     }
     feedback('tick');
@@ -219,19 +203,12 @@ export default function BulkActionModal({
         await batch.commit();
       }
 
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Batch Reassigned',
-        text: `Moved ${count} students to "${newBatch}".`,
-        timer: 1600,
-        showConfirmButton: false
-      });
+      dialog.toast.success('Batch Reassigned', `Moved ${count} students to "${newBatch}".`);
       if (onCompleted) onCompleted();
       onClose();
     } catch (err) {
       console.error('Bulk batch error:', err);
-      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+      dialog.alert({ type: 'error', title: 'Error', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -262,19 +239,15 @@ export default function BulkActionModal({
         await batch.commit();
       }
 
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: newBlockStatus ? 'Students Blocked' : 'Students Unblocked',
-        text: `${count} students have been ${newBlockStatus ? 'blocked' : 'unblocked'}.`,
-        timer: 1600,
-        showConfirmButton: false
-      });
+      dialog.toast.success(
+        newBlockStatus ? 'Students Blocked' : 'Students Unblocked',
+        `${count} students have been ${newBlockStatus ? 'blocked' : 'unblocked'}.`
+      );
       if (onCompleted) onCompleted();
       onClose();
     } catch (err) {
       console.error('Bulk status error:', err);
-      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+      dialog.alert({ type: 'error', title: 'Error', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -303,9 +276,9 @@ export default function BulkActionModal({
 
           roster.push({
             tokenNo: st.tokenNo,
-            nameEn: st.nameEn || st.uname || '',
+            nameEn: st.nameEn || st.name || '',
             nameMl: st.nameMl || '',
-            uname: st.uname || `token${st.tokenNo}`,
+            uname: st.username || st.uname || String(st.tokenNo || ''),
             newPassword: newPass,
             batch: st.batch || 'General'
           });
@@ -321,11 +294,11 @@ export default function BulkActionModal({
       }
 
       setGeneratedRoster(roster);
-      feedback('success');
+      dialog.toast.success('Passwords Reset', `Generated fresh credentials for ${count} students.`);
       if (onCompleted) onCompleted();
     } catch (err) {
       console.error('Bulk pass error:', err);
-      Swal.fire({ icon: 'error', title: 'Reset Failed', text: err.message });
+      dialog.alert({ type: 'error', title: 'Reset Failed', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -355,52 +328,43 @@ export default function BulkActionModal({
   };
 
   // 6. Bulk Delete
-  const handleBulkDelete = () => {
-    feedback('warning');
+  const handleBulkDelete = async () => {
     const tokenListStr = selectedStudents.slice(0, 10).map(s => `#${s.tokenNo}`).join(', ') + (count > 10 ? ` and ${count - 10} more...` : '');
 
-    Swal.fire({
+    const confirmed = await dialog.confirm({
       title: `Delete ${count} Students?`,
-      html: `You are about to permanently delete <b>${count}</b> student records:<br/><span class="text-xs text-rose-500 font-mono">${tokenListStr}</span><br/><br/>This action <b>CANNOT</b> be undone!`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, Permanently Delete All'
-    }).then(async (res) => {
-      if (res.isConfirmed) {
-        setLoading(true);
-        try {
-          const db = firebase.firestore();
-          const chunks = chunkArray(selectedStudents, 400);
-
-          for (let i = 0; i < chunks.length; i++) {
-            const chunk = chunks[i];
-            const batch = db.batch();
-            chunk.forEach(st => {
-              batch.delete(db.collection('students').doc(st.id));
-            });
-            await batch.commit();
-          }
-
-          feedback('pop');
-          Swal.fire({
-            icon: 'success',
-            title: 'Deleted!',
-            text: `${count} student records have been deleted.`,
-            timer: 1600,
-            showConfirmButton: false
-          });
-          if (onCompleted) onCompleted();
-          onClose();
-        } catch (err) {
-          console.error('Bulk delete error:', err);
-          Swal.fire({ icon: 'error', title: 'Delete Error', text: err.message });
-        } finally {
-          setLoading(false);
-        }
-      }
+      message: `You are about to permanently delete ${count} student records: ${tokenListStr}. This action cannot be undone.`,
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Yes, Permanently Delete All',
+      cancelText: 'Cancel',
     });
+
+    if (confirmed) {
+      setLoading(true);
+      try {
+        const db = firebase.firestore();
+        const chunks = chunkArray(selectedStudents, 400);
+
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          const batch = db.batch();
+          chunk.forEach(st => {
+            batch.delete(db.collection('students').doc(st.id));
+          });
+          await batch.commit();
+        }
+
+        dialog.toast.success('Deleted!', `${count} student records have been deleted.`);
+        if (onCompleted) onCompleted();
+        onClose();
+      } catch (err) {
+        console.error('Bulk delete error:', err);
+        dialog.alert({ type: 'error', title: 'Delete Error', message: err.message });
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const daysList = [
@@ -414,24 +378,24 @@ export default function BulkActionModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-2xl rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] pb-safe"
       >
         {/* Header */}
-        <div className="p-5 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/20">
+        <div className="p-4 sm:p-5 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-md shadow-emerald-500/20 flex-shrink-0">
               {count}
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                 {t('bulkActionsBtn') || 'Bulk Student Operations'}
               </h3>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+              <p className="text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
                 Targeting {count} selected students
               </p>
             </div>
@@ -439,14 +403,14 @@ export default function BulkActionModal({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5"
+            className="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Action Tabs */}
-        <div className="flex border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] px-4 overflow-x-auto">
+        <div className="flex border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] px-3 sm:px-4 overflow-x-auto scrollbar-none whitespace-nowrap touch-pan-x">
           {[
             { id: 'meals', label: 'Meals', icon: Utensils },
             { id: 'dietary', label: 'Dietary', icon: Coffee },
@@ -461,7 +425,7 @@ export default function BulkActionModal({
               <button
                 key={tab.id}
                 onClick={() => { feedback('tick'); setActiveAction(tab.id); }}
-                className={`py-3 px-3.5 text-xs font-bold border-b-2 whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                className={`py-2.5 sm:py-3 px-3 sm:px-3.5 text-xs font-bold border-b-2 whitespace-nowrap flex items-center gap-1.5 transition-all flex-shrink-0 ${
                   active
                     ? tab.danger
                       ? 'border-rose-500 text-rose-600 dark:text-rose-400'
@@ -479,7 +443,7 @@ export default function BulkActionModal({
         </div>
 
         {/* Body Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
           {/* TAB 1: MEALS */}
           {activeAction === 'meals' && (
             <div className="space-y-4">

@@ -42,16 +42,23 @@ import NextMealSpotlight from './NextMealSpotlight';
 import './Home.css';
 
 // Animated Rolling Counter Component
-const RollingCounter = ({ value, label, colorClass, glowClass, icon: Icon }) => {
+const RollingCounter = ({ value, label, colorClass, glowClass, icon: Icon, badge }) => {
   return (
     <motion.div
       whileHover={{ y: -2 }}
       className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-white/80 dark:bg-[#121c19]/90 border border-gray-200/80 dark:border-white/10 shadow-sm transition-all duration-300 ${glowClass}`}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">
-          {label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">
+            {label}
+          </span>
+          {badge && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+              {badge}
+            </span>
+          )}
+        </div>
         <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${colorClass}`}>
           <Icon className="w-4 h-4 text-white" />
         </div>
@@ -92,8 +99,8 @@ const TokenButton = ({ doc, isOn, onLeave, onClick, onBlockedClick }) => {
       aria-label={`Token ${doc.tokenNo}`}
       className={`
         relative group flex items-center justify-center flex-shrink-0
-        w-11 h-11 min-[380px]:w-12 min-[380px]:h-12 sm:w-14 sm:h-14 aspect-square rounded-2xl select-none font-extrabold
-        text-xs min-[380px]:text-sm sm:text-base tracking-tight font-mono
+        w-10 h-10 xs:w-11 xs:h-11 min-[380px]:w-12 min-[380px]:h-12 sm:w-14 sm:h-14 aspect-square rounded-xl xs:rounded-2xl select-none font-extrabold
+        text-[11px] xs:text-xs min-[380px]:text-sm sm:text-base tracking-tight font-mono
         shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400/50
         ${
           isBlocked
@@ -157,12 +164,23 @@ const SwitchPage = () => {
   // Dynamic Preferences
   const [preferencesList, setPreferencesList] = useState([]);
 
-  const { timeHms, longDate, dayShort } = useWorldTime('Asia/Kolkata');
+  const {
+    timeHms,
+    time12,
+    longDate,
+    dayShort,
+    dayFull,
+    isSynced,
+    isDeviceDesynced,
+    deviceOffsetMinutes,
+  } = useWorldTime('Asia/Kolkata');
   const [day, setDay] = useState('');
-  const todayIST = useMemo(() => getTodayISTDate(), []);
+  const [is24Hour, setIs24Hour] = useState(false);
+  const todayIST = useMemo(() => getTodayISTDate(), [longDate]);
+  const localizedDay = t('daysFull')?.[dayShort] || dayFull;
 
-  // Determine current or next day for meal allocation (after 6:00 PM IST, view next day)
-  const isPostEveningCutoff = Boolean(timeHms && timeHms > '18:00:00');
+  // Determine current or next day for meal allocation (after 2:00 PM IST, view next day's supply by default)
+  const isPostEveningCutoff = Boolean(timeHms && timeHms >= '14:00:00');
   const targetDateIST = useMemo(() => {
     return isPostEveningCutoff ? addDaysToDate(todayIST, 1) : todayIST;
   }, [isPostEveningCutoff, todayIST]);
@@ -238,8 +256,8 @@ const SwitchPage = () => {
         if (q) {
           const matchToken = String(doc.tokenNo).includes(q);
           const matchEn = (doc.nameEn || doc.name || '').toLowerCase().includes(q);
-          const matchMl = (doc.nameMl || doc.uname || '').toLowerCase().includes(q);
-          const matchUser = (doc.username || '').toLowerCase().includes(q);
+          const matchMl = (doc.nameMl || '').toLowerCase().includes(q);
+          const matchUser = (doc.username || doc.uname || '').toLowerCase().includes(q);
           if (!matchToken && !matchEn && !matchMl && !matchUser) return false;
         }
 
@@ -270,8 +288,8 @@ const SwitchPage = () => {
         if (sortBy === 'token_asc') return (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0);
         if (sortBy === 'token_desc') return (Number(b.tokenNo) || 0) - (Number(a.tokenNo) || 0);
         if (sortBy === 'name_asc') {
-          const nameA = a.nameEn || a.name || a.uname || '';
-          const nameB = b.nameEn || b.name || b.uname || '';
+          const nameA = a.nameEn || a.name || '';
+          const nameB = b.nameEn || b.name || '';
           return nameA.localeCompare(nameB);
         }
         if (sortBy === 'status_active') {
@@ -391,10 +409,11 @@ const SwitchPage = () => {
           </div>
 
           {/* Quick Counter Cards */}
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto min-w-[280px] sm:min-w-[320px]">
+          <div className="grid grid-cols-2 gap-2.5 xs:gap-3 w-full md:w-auto min-w-0 sm:min-w-[300px]">
             <RollingCounter
               value={lunchCount}
               label={t('navLunch') || 'Lunch'}
+              badge={isPostEveningCutoff ? 'Tomorrow' : undefined}
               colorClass="bg-gradient-to-br from-emerald-500 to-green-600"
               glowClass="border-emerald-500/30 dark:border-emerald-500/20"
               icon={Utensils}
@@ -402,6 +421,7 @@ const SwitchPage = () => {
             <RollingCounter
               value={breakfastCount}
               label={t('navBreakfast') || 'Breakfast'}
+              badge={isPostEveningCutoff ? 'Tomorrow' : undefined}
               colorClass="bg-gradient-to-br from-amber-500 to-orange-600"
               glowClass="border-amber-500/30 dark:border-amber-500/20"
               icon={Coffee}
@@ -410,28 +430,79 @@ const SwitchPage = () => {
         </div>
 
         {/* Action Dock inside Banner */}
-        <div className="relative z-10 mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-emerald-200">
-            <Clock className="w-4 h-4 text-emerald-400" />
-            <span>Today: <b>{longDate || 'Loading IST...'}</b></span>
+        <div className="relative z-10 mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-white/10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Live Anti-Tamper Server Time, Day & Date Widget */}
+          <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 sm:gap-2.5">
+            {/* Day & Date Pill */}
+            <div className="inline-flex items-center gap-1.5 xs:gap-2 px-2.5 xs:px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 backdrop-blur-md text-xs font-semibold text-emerald-100 shadow-sm transition-all select-none">
+              <CalendarDays className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-white text-xs sm:text-sm">
+                  {localizedDay}
+                </span>
+                <span className="text-emerald-400/50">•</span>
+                <span className="text-emerald-200 font-medium">
+                  {longDate || 'Loading IST...'}
+                </span>
+              </div>
+            </div>
+
+
+            {/* Live Server Clock with Seconds */}
+            <button
+              type="button"
+              onClick={() => setIs24Hour((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 xs:gap-2 px-2.5 xs:px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-950 border border-emerald-400/30 text-white shadow-inner backdrop-blur-md transition-all active:scale-95 text-left cursor-pointer group"
+              title="Authoritative server time synchronized via network (immune to device clock manipulation). Click to toggle 12h/24h format."
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+              </span>
+              <Clock className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0 group-hover:rotate-12 transition-transform" />
+              <span className="font-mono font-black text-xs sm:text-sm tracking-wider text-emerald-100">
+                {is24Hour ? timeHms : time12 || '--:--:--'}
+              </span>
+              <span className="text-[10px] font-mono uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/20">
+                IST
+              </span>
+              {isSynced && (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-sans font-medium text-emerald-300/80 pl-1 border-l border-emerald-500/30">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>Synced</span>
+                </span>
+              )}
+            </button>
+
+            {/* Anti-tamper Warning if student's device clock deviates from true server time */}
+            {isDeviceDesynced && (
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-400/40 text-[11px] font-bold text-amber-200 shadow-sm"
+                title={`Device clock differs by ~${Math.abs(deviceOffsetMinutes)}m from real IST. Portal operates strictly on network server time.`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 animate-pulse" />
+                <span className="hidden xs:inline">Device Desynced • Using Server Time</span>
+                <span className="xs:hidden">Using Server Time</span>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full lg:w-auto">
             <button
               onClick={() => {
                 feedback('tick');
                 navigate('/pdfg');
               }}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-semibold text-xs border border-white/20 transition-all active:scale-95"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-semibold text-xs border border-white/20 transition-all active:scale-95 whitespace-nowrap"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>{t('supplyListBtn') || 'Kitchen Sheet'}</span>
             </button>
 
-            {/* Smart Locked/Open Token Update Button (Item #3) */}
+            {/* Smart Locked/Open Token Update Button */}
             <button
               onClick={handleUpdateTokenClick}
-              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 ${
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 ${
                 portalStatus.isOpen
                   ? 'bg-white text-emerald-800 hover:bg-emerald-50'
                   : 'bg-amber-400/90 hover:bg-amber-400 text-gray-900 border border-amber-300'
@@ -439,13 +510,14 @@ const SwitchPage = () => {
             >
               {portalStatus.isOpen ? (
                 <>
-                  <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+                  <Edit3 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                   <span>Update Token</span>
                 </>
               ) : (
                 <>
-                  <Lock className="w-3.5 h-3.5 text-gray-900" />
-                  <span>Token Portal Locked ({portalStatus.statusBadge})</span>
+                  <Lock className="w-3.5 h-3.5 text-gray-900 flex-shrink-0" />
+                  <span className="hidden sm:inline">Token Portal Locked ({portalStatus.statusBadge})</span>
+                  <span className="sm:hidden">Locked ({portalStatus.statusBadge.split(' ')[0]})</span>
                 </>
               )}
             </button>
@@ -511,16 +583,16 @@ const SwitchPage = () => {
             </button>
           </div>
 
-          {/* View Category Segmented Control (Item #7) */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400">View By:</span>
-            <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-semibold">
+          {/* View Category Segmented Control */}
+          <div className="flex items-center gap-2 flex-wrap max-w-full">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 flex-shrink-0">View By:</span>
+            <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-semibold overflow-x-auto max-w-full scrollbar-none">
               <button
                 onClick={() => {
                   feedback('tick');
                   setViewCategory('all');
                 }}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
                   viewCategory === 'all'
                     ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -533,7 +605,7 @@ const SwitchPage = () => {
                   feedback('tick');
                   setViewCategory('batch');
                 }}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
                   viewCategory === 'batch'
                     ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -546,7 +618,7 @@ const SwitchPage = () => {
                   feedback('tick');
                   setViewCategory('section');
                 }}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
                   viewCategory === 'section'
                     ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -675,7 +747,7 @@ const SwitchPage = () => {
               if (students.length === 0) return null;
               const isCollapsed = Boolean(collapsedBatches[bName]);
               const activeCount = students.filter((s) => {
-                return !s.block && getEffectiveStudentMealStatus(s, todayIST, day, isLunch ? 'lunch' : 'breakfast');
+                return !s.block && getEffectiveStudentMealStatus(s, targetDateIST, day, isLunch ? 'lunch' : 'breakfast');
               }).length;
 
               return (
@@ -712,11 +784,11 @@ const SwitchPage = () => {
                     <div className="p-4 sm:p-5 flex flex-wrap gap-2 sm:gap-2.5">
                       {students.map((doc) => {
                         const hasDateExc = Boolean(
-                          getActiveStudentException(doc, todayIST, isLunch ? 'lunch' : 'breakfast')
+                          getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
                         );
                         const isOn = getEffectiveStudentMealStatus(
                           doc,
-                          todayIST,
+                          targetDateIST,
                           day,
                           isLunch ? 'lunch' : 'breakfast'
                         );
@@ -743,7 +815,7 @@ const SwitchPage = () => {
           <div className="space-y-6">
             {groupedBySection.map((sec) => {
               const activeCount = sec.students.filter((s) => {
-                return !s.block && getEffectiveStudentMealStatus(s, todayIST, day, isLunch ? 'lunch' : 'breakfast');
+                return !s.block && getEffectiveStudentMealStatus(s, targetDateIST, day, isLunch ? 'lunch' : 'breakfast');
               }).length;
 
               return (
@@ -774,11 +846,11 @@ const SwitchPage = () => {
                   <div className="p-4 sm:p-5 flex flex-wrap gap-2 sm:gap-2.5">
                     {sec.students.map((doc) => {
                       const hasDateExc = Boolean(
-                        getActiveStudentException(doc, todayIST, isLunch ? 'lunch' : 'breakfast')
+                        getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
                       );
                       const isOn = getEffectiveStudentMealStatus(
                         doc,
-                        todayIST,
+                        targetDateIST,
                         day,
                         isLunch ? 'lunch' : 'breakfast'
                       );
@@ -841,32 +913,32 @@ const SwitchPage = () => {
               exit={{ opacity: 0, scale: 0.94, y: 10 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden"
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]"
             >
               {/* Header Banner */}
-              <div className="relative bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-extrabold text-2xl shadow-inner border border-white/30">
+              <div className="relative bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 p-4 xs:p-6 text-white flex-shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 xs:gap-3.5 min-w-0">
+                    <div className="w-11 h-11 xs:w-14 xs:h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-extrabold text-lg xs:text-2xl shadow-inner border border-white/30 flex-shrink-0">
                       {detailsDoc.tokenNo}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-bold tracking-tight">
-                          {detailsDoc.nameEn || detailsDoc.name || detailsDoc.uname || `Student #${detailsDoc.tokenNo}`}
+                        <h2 className="text-base xs:text-xl font-bold tracking-tight truncate">
+                          {detailsDoc.nameEn || detailsDoc.name || `Student #${detailsDoc.tokenNo}`}
                         </h2>
                       </div>
                       {detailsDoc.nameMl && (
-                        <p className="text-xs text-emerald-100 font-medium mt-0.5">
+                        <p className="text-xs text-emerald-100 font-medium mt-0.5 truncate font-malayalam">
                           {detailsDoc.nameMl}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 flex-wrap">
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 border border-white/20">
                           {detailsDoc.batch || 'General Batch'}
                         </span>
-                        <span className="text-[11px] text-emerald-100 flex items-center gap-1 font-mono">
-                          @{detailsDoc.username || `token${detailsDoc.tokenNo}`}
+                        <span className="text-[10px] xs:text-[11px] text-emerald-100 flex items-center gap-1 font-mono">
+                          @{detailsDoc.username || detailsDoc.uname || detailsDoc.tokenNo}
                         </span>
                       </div>
                     </div>
@@ -877,7 +949,7 @@ const SwitchPage = () => {
                       feedback('tick');
                       setDetailsDoc(null);
                     }}
-                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -885,26 +957,28 @@ const SwitchPage = () => {
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
-                {/* Active Date Exception Notice if any for today */}
+              <div className="p-4 xs:p-6 space-y-4 xs:space-y-5 overflow-y-auto max-h-[calc(90dvh-110px)] pb-safe">
+                {/* Active Date Exception Notice if any for today / target date */}
                 {(() => {
-                  const activeExc = getActiveStudentException(detailsDoc, todayIST);
+                  const activeExc = getActiveStudentException(detailsDoc, targetDateIST);
                   if (activeExc) {
                     const bfStatus = activeExc.breakfast !== undefined ? (activeExc.breakfast ? 'Taking (ON)' : 'Skipped (OFF)') : null;
                     const luStatus = activeExc.lunch !== undefined ? (activeExc.lunch ? 'Taking (ON)' : 'Skipped (OFF)') : null;
                     return (
-                      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 flex items-start gap-3">
-                        <CalendarDays className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="p-3.5 xs:p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 flex items-start gap-2.5 xs:gap-3">
+                        <CalendarDays className="w-4 h-4 xs:w-5 xs:h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                         <div className="text-xs text-amber-900 dark:text-amber-200">
                           <span className="font-bold block">
-                            Single-Day Exception Active for Today ({formatFriendlyDate(todayIST)})
+                            Single-Day Exception Active for {formatFriendlyDate(targetDateIST)}
                           </span>
                           <span className="block mt-0.5">
                             {bfStatus && <>Breakfast: <strong>{bfStatus}</strong> </>}
                             {luStatus && <>• Lunch: <strong>{luStatus}</strong></>}
                           </span>
                           <span className="text-[11px] opacity-75 block mt-1">
-                            Regular weekly dining routine automatically resumes tomorrow.
+                            {targetDateIST === todayIST
+                              ? 'Regular weekly dining routine automatically resumes tomorrow.'
+                              : 'Single-day override scheduled for tomorrow.'}
                           </span>
                         </div>
                       </div>
@@ -914,30 +988,30 @@ const SwitchPage = () => {
                 })()}
 
                 {/* Breakfast Schedule Grid */}
-                <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-500/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="p-3.5 xs:p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-500/20">
+                  <div className="flex items-center gap-2 mb-2.5 xs:mb-3">
                     <Coffee className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
                       {t('navBreakfast') || 'Breakfast'} Schedule
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1.5">
+                  <div className="grid grid-cols-7 gap-1 xs:gap-1.5">
                     {daysList.map(({ key, label }) => {
                       const active = detailsDoc.obj?.breakfast?.[key] === true;
                       return (
                         <div key={key} className="flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                          <span className="text-[9px] xs:text-[10px] font-semibold text-gray-500 dark:text-gray-400">
                             {label}
                           </span>
                           <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                            className={`w-8 h-8 xs:w-9 xs:h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
                               active
-                                ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm'
-                                : 'bg-gray-100 dark:bg-white/5 text-gray-400'
+                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm border border-emerald-400/40'
+                                : 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-300/40'
                             }`}
                           >
-                            {active ? <Check className="w-4 h-4" /> : '-'}
+                            {active ? <Check className="w-3.5 h-3.5 xs:w-4 xs:h-4" /> : <X className="w-3 h-3 xs:w-3.5 xs:h-3.5" />}
                           </div>
                         </div>
                       );
@@ -946,30 +1020,30 @@ const SwitchPage = () => {
                 </div>
 
                 {/* Lunch Schedule Grid */}
-                <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="p-3.5 xs:p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/20">
+                  <div className="flex items-center gap-2 mb-2.5 xs:mb-3">
                     <Utensils className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider">
                       {t('navLunch') || 'Lunch'} Schedule
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1.5">
+                  <div className="grid grid-cols-7 gap-1 xs:gap-1.5">
                     {daysList.map(({ key, label }) => {
                       const active = detailsDoc.obj?.lunch?.[key] === true;
                       return (
                         <div key={key} className="flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                          <span className="text-[9px] xs:text-[10px] font-semibold text-gray-500 dark:text-gray-400">
                             {label}
                           </span>
                           <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
+                            className={`w-8 h-8 xs:w-9 xs:h-9 rounded-xl flex items-center justify-center text-xs font-bold transition-all ${
                               active
-                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm'
-                                : 'bg-gray-100 dark:bg-white/5 text-gray-400'
+                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm border border-emerald-400/40'
+                                : 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-300/40'
                             }`}
                           >
-                            {active ? <Check className="w-4 h-4" /> : '-'}
+                            {active ? <Check className="w-3.5 h-3.5 xs:w-4 xs:h-4" /> : <X className="w-3 h-3 xs:w-3.5 xs:h-3.5" />}
                           </div>
                         </div>
                       );
@@ -1071,10 +1145,10 @@ const SwitchPage = () => {
 
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Token Updates are Locked
+                  Token Updates are Suspended
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">
-                  To ensure kitchen staff can purchase supplies and prepare accurate meal quantities, token updates are accepted daily strictly between <b>2:00 PM</b> and <b>11:00 PM IST</b>.
+                  Token updates have been temporarily paused by the ADSA Canteen Committee. Normal operational updates will resume shortly.
                 </p>
                 <div className="mt-3 p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-500/20 text-xs font-semibold text-amber-800 dark:text-amber-300">
                   Current Status: {portalStatus.statusBadge}

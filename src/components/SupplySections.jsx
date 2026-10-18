@@ -40,8 +40,8 @@ export default function SupplySections({ defaultMeal }) {
   const [day, setDay] = useState('');
   const todayIST = useMemo(() => getTodayISTDate(), []);
 
-  // Synchronize target meal date (after 6:00 PM IST, view next day's supply)
-  const isPostCutoff = Boolean(timeHms && timeHms > '18:00:00');
+  // Synchronize target meal date (after 2:00 PM IST, view next day's supply)
+  const isPostCutoff = Boolean(timeHms && timeHms >= '14:00:00');
   const targetDateIST = useMemo(() => {
     return isPostCutoff ? addDaysToDate(todayIST, 1) : todayIST;
   }, [isPostCutoff, todayIST]);
@@ -232,9 +232,9 @@ export default function SupplySections({ defaultMeal }) {
   const totalSkipped = dynamicSections.reduce((acc, s) => acc + s.canceledTokens.length, 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
       {/* Top Banner & Mode Controls */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {isLunchMeal ? (
@@ -242,17 +242,17 @@ export default function SupplySections({ defaultMeal }) {
             ) : (
               <Coffee className="w-5 h-5 text-amber-500" />
             )}
-            <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+            <h1 className="text-lg xs:text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
               {isLunchMeal ? 'Lunch Supply Distribution' : 'Breakfast Supply Distribution'}
             </h1>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
             Canceled and active token breakdown for kitchen tables and dining hall sections
             {isPostCutoff ? ' (Showing Tomorrow\'s Manifest)' : ''}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start sm:justify-end">
           {/* Meal Toggle Switch */}
           <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
             <button

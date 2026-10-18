@@ -10,7 +10,7 @@ import {
   Save,
   Clock,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import {
   bulkUpdateMealAcrossDays,
   subscribeToDishPresets,
@@ -77,11 +77,11 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
   const handleBulkSubmit = async (e) => {
     e.preventDefault();
     if (selectedDays.length === 0) {
-      Swal.fire({ icon: 'warning', title: 'No Days Selected', text: 'Please select at least one day.' });
+      dialog.alert({ type: 'warning', title: 'No Days Selected', message: 'Please select at least one day.' });
       return;
     }
     if (!title.trim()) {
-      Swal.fire({ icon: 'warning', title: 'Missing Dish Name', text: 'Please enter a dish name.' });
+      dialog.alert({ type: 'warning', title: 'Missing Dish Name', message: 'Please enter a dish name.' });
       return;
     }
 
@@ -104,19 +104,14 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
 
     try {
       await bulkUpdateMealAcrossDays(selectedDays, selectedSlot, mealData);
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Bulk Menu Updated!',
-        text: `Updated ${selectedSlot.toUpperCase()} across ${selectedDays.length} days successfully.`,
-        timer: 1800,
-        showConfirmButton: false,
-      });
+      dialog.toast.success(
+        'Bulk Menu Updated!',
+        `Updated ${selectedSlot.toUpperCase()} across ${selectedDays.length} days successfully.`
+      );
       onClose();
     } catch (err) {
       console.error('Bulk update error:', err);
-      feedback('warning');
-      Swal.fire({ icon: 'error', title: 'Error', text: 'Could not update menu across days.' });
+      dialog.alert({ type: 'error', title: 'Error', message: 'Could not update menu across days.' });
     } finally {
       setSaving(false);
     }
@@ -124,7 +119,7 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-md"
       onClick={onClose}
     >
       <motion.div
@@ -132,10 +127,10 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden"
+        className="w-full max-w-xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden pb-safe"
       >
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-600 to-green-600 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
               <Layers className="w-5 h-5 text-white" />
@@ -318,7 +313,7 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
           </div>
 
           {/* Footer Submit */}
-          <div className="pt-2 flex justify-end gap-2 border-t border-gray-100 dark:border-white/5">
+          <div className="pt-3 pb-safe flex justify-end gap-2 border-t border-gray-100 dark:border-white/5">
             <button
               type="button"
               onClick={onClose}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { ShieldCheck, Lock, Mail, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
+import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -33,12 +33,10 @@ function AdminLogin() {
       feedback('success');
       navigate(redirectTarget, { replace: true });
     } catch (error) {
-      feedback('warning');
-      Swal.fire({
-        icon: 'error',
+      dialog.alert({
+        type: 'error',
         title: 'Authentication Failed',
-        text: error.message || 'Invalid administrator credentials.',
-        confirmButtonColor: '#ef4444',
+        message: error.message || 'Invalid administrator credentials.',
       });
     } finally {
       setLoading(false);
@@ -46,8 +44,8 @@ function AdminLogin() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-2xl p-6 sm:p-8 space-y-6 backdrop-blur-xl">
+    <div className="flex-1 flex items-center justify-center p-3 xs:p-4 sm:p-6 min-h-[calc(100dvh-8rem)]">
+      <div className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-2xl p-5 xs:p-6 sm:p-8 space-y-5 sm:space-y-6 backdrop-blur-xl">
         <div className="text-center space-y-2">
           <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-600 to-green-700 text-white flex items-center justify-center shadow-md">
             <ShieldCheck className="w-6 h-6" />
@@ -115,7 +113,18 @@ function AdminLogin() {
           </button>
         </form>
 
-        <div className="pt-2 text-center border-t border-gray-100 dark:border-white/5">
+        <div className="pt-2 flex flex-col items-center gap-2 border-t border-gray-100 dark:border-white/5">
+          <button
+            type="button"
+            onClick={() => {
+              feedback('tick');
+              navigate('/');
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors py-1 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Public Home</span>
+          </button>
           <span className="text-[11px] text-gray-400 dark:text-gray-500">
             Authorized ADSA Canteen Committee Access Only
           </span>

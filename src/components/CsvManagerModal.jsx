@@ -16,7 +16,7 @@ import {
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -47,7 +47,7 @@ export default function CsvManagerModal({
   const handleFileChange = (selectedFile) => {
     if (!selectedFile) return;
     if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
-      Swal.fire({ icon: 'error', title: 'Invalid File', text: 'Please select a valid .csv file' });
+      dialog.alert({ type: 'error', title: 'Invalid File', message: 'Please select a valid .csv file' });
       return;
     }
 
@@ -66,10 +66,18 @@ export default function CsvManagerModal({
 
         rows.forEach((row, idx) => {
           // Normalize column names
+          const malayalamRegex = /[\u0D00-\u0D7F]/;
           const tokenNo = parseInt(row.tokenno || row.token || row['token no'] || row['token_no'], 10);
-          const nameEn = (row.nameen || row.name || row['english name'] || row['name_en'] || row.uname || '').trim();
-          const nameMl = (row.nameml || row['malayalam name'] || row['name_ml'] || '').trim();
-          const uname = (row.uname || row.username || (nameEn ? nameEn.toLowerCase().replace(/[^a-z0-9]/g, '_') : `token${tokenNo}`)).trim();
+          let rawNameEn = (row.nameen || row.name || row['english name'] || row['name_en'] || '').trim();
+          let rawNameMl = (row.nameml || row['malayalam name'] || row['name_ml'] || '').trim();
+          
+          if (rawNameEn && malayalamRegex.test(rawNameEn) && !rawNameMl) {
+            rawNameMl = rawNameEn;
+            rawNameEn = '';
+          }
+          const nameEn = rawNameEn;
+          const nameMl = rawNameMl;
+          const uname = (row.uname || row.username || (!isNaN(tokenNo) ? String(tokenNo) : '')).trim();
           const password = String(row.password || row.pass || 'pass123').trim();
           const batch = (row.batch || row.class || row.year || 'General').trim();
           const roomNo = String(row.roomno || row.room || '').trim();
@@ -105,7 +113,7 @@ export default function CsvManagerModal({
       },
       error: (err) => {
         setParsing(false);
-        Swal.fire({ icon: 'error', title: 'CSV Error', text: err.message });
+        dialog.alert({ type: 'error', title: 'CSV Error', message: err.message });
       }
     });
   };
@@ -133,7 +141,7 @@ export default function CsvManagerModal({
   const handleCommitImport = async () => {
     const validRows = parsedRows.filter(r => r.isValid);
     if (validRows.length === 0) {
-      Swal.fire({ icon: 'warning', title: 'No Valid Records', text: 'No valid student rows to import.' });
+      dialog.alert({ type: 'warning', title: 'No Valid Records', message: 'No valid student rows to import.' });
       return;
     }
 
@@ -161,11 +169,14 @@ export default function CsvManagerModal({
           const existing = existingMap.get(row.tokenNo);
           const studentRef = existing ? db.collection('students').doc(existing.id) : db.collection('students').doc();
 
+          const finalUname = row.uname || (existing ? (existing.username || existing.uname) : String(row.tokenNo));
           const payload = {
             tokenNo: row.tokenNo,
             nameEn: row.nameEn,
             nameMl: row.nameMl || (existing ? existing.nameMl || '' : ''),
-            uname: row.uname || (existing ? existing.uname : `token${row.tokenNo}`),
+            name: row.nameEn,
+            uname: finalUname,
+            username: finalUname,
             password: row.password || (existing ? existing.password : 'pass123'),
             batch: row.batch || (existing ? existing.batch : 'General'),
             roomNo: row.roomNo || (existing ? existing.roomNo || '' : ''),
@@ -190,20 +201,15 @@ export default function CsvManagerModal({
         await batch.commit();
       }
 
-      feedback('success');
-      Swal.fire({
-        icon: 'success',
-        title: 'Import Successful',
-        text: `Processed ${rowsToProcess.length} students into the canteen system.`,
-        timer: 1800,
-        showConfirmButton: false
-      });
+      dialog.toast.success(
+        'Import Successful',
+        `Processed ${rowsToProcess.length} students into the canteen system.`
+      );
       if (onImportComplete) onImportComplete();
       onClose();
     } catch (err) {
       console.error('Import error:', err);
-      feedback('warning');
-      Swal.fire({ icon: 'error', title: 'Import Failed', text: err.message });
+      dialog.alert({ type: 'error', title: 'Import Failed', message: err.message });
     } finally {
       setUploading(false);
     }
@@ -235,9 +241,9 @@ export default function CsvManagerModal({
     const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'password', 'batch', 'roomNo', 'phone', 'status'];
     const rows = allStudents.map(s => [
       s.tokenNo,
-      `"${(s.nameEn || s.uname || '').replace(/"/g, '""')}"`,
+      `"${(s.nameEn || s.name || '').replace(/"/g, '""')}"`,
       `"${(s.nameMl || '').replace(/"/g, '""')}"`,
-      `"${(s.uname || '').replace(/"/g, '""')}"`,
+      `"${(s.username || s.uname || String(s.tokenNo || '')).replace(/"/g, '""')}"`,
       `"${(s.password || '').replace(/"/g, '""')}"`,
       `"${(s.batch || 'General').replace(/"/g, '""')}"`,
       `"${(s.roomNo || '').replace(/"/g, '""')}"`,
@@ -280,7 +286,7 @@ export default function CsvManagerModal({
 
     const data = sorted.map(s => ({
       token: s.tokenNo,
-      name: s.nameEn || s.uname || '-',
+      name: s.nameEn || s.name || '-',
       batch: s.batch || 'General',
       room: s.roomNo || '-',
       status: s.block ? 'BLOCKED' : 'ACTIVE',
@@ -301,24 +307,24 @@ export default function CsvManagerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-2xl rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] pb-safe"
       >
         {/* Header */}
-        <div className="p-5 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+        <div className="p-4 sm:p-5 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                 CSV & Data Manager
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-[11px] sm:text-xs text-gray-500">
                 Bulk import, bilingual roster export & sample templates
               </p>
             </div>
@@ -326,17 +332,17 @@ export default function CsvManagerModal({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5"
+            className="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] px-6">
+        <div className="flex border-b border-gray-200/80 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] px-3 sm:px-6 overflow-x-auto scrollbar-none whitespace-nowrap touch-pan-x">
           <button
             onClick={() => { feedback('tick'); setActiveTab('import'); }}
-            className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
+            className={`py-2.5 sm:py-3 px-3.5 sm:px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 flex-shrink-0 ${
               activeTab === 'import'
                 ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'

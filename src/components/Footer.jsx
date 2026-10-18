@@ -19,8 +19,8 @@ const Footer = () => {
       {/* Decorative top accent glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 max-w-3xl h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 dark:via-emerald-400/40 to-transparent" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center">
           
           {/* Brand & Crest Column */}
           <div className="md:col-span-5 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">

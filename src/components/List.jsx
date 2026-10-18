@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileDown, Sparkles, ArrowLeft } from 'lucide-react';
+import { FileDown, Sparkles, ArrowLeft, UtensilsCrossed } from 'lucide-react';
 import firebase from '../firebase/config';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { AuthContext } from '../store/AuthContext';
 import { subscribeToPreferences } from '../utils/preferenceService';
 
 const MenuTable = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [documents, setDocuments] = useState([]);
   const [preferences, setPreferences] = useState([]);
   const [rejectionsByPref, setRejectionsByPref] = useState({});
@@ -134,20 +136,33 @@ const MenuTable = () => {
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-emerald-500" />
             Dietary Avoiders Matrix
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Tokens with specific meat/fish exclusions for kitchen reference (Dynamic Preferences)
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+          {user && (
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/admin/dietary');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all"
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Manage Avoiders</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               feedback('tick');
@@ -194,7 +209,7 @@ const MenuTable = () => {
 
       {/* Dynamic Table */}
       <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm overflow-hidden backdrop-blur-xl">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-none touch-pan-x">
           <table className="w-full text-center">
             <thead>
               <tr className="bg-gray-50/80 dark:bg-white/5 border-b border-gray-200/80 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-300">

@@ -65,7 +65,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
     const current = (dayShort || 'fr').toLowerCase();
     const currIdx = DAYS_ORDER.indexOf(current) !== -1 ? DAYS_ORDER.indexOf(current) : 5;
     const nextIdx = (currIdx + 1) % 7;
-    const postCutoff = timeHms && timeHms > '18:00:00';
+    const postCutoff = timeHms && timeHms >= '14:00:00';
     return {
       todayKey: current,
       tomorrowKey: DAYS_ORDER[nextIdx],
@@ -81,7 +81,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
   const displayedDayKey = useMemo(() => {
     if (activeTab === 'today') return todayKey;
     if (activeTab === 'tomorrow') return tomorrowKey;
-    // If today is closed/archived or after 18:00 cutoff -> default to tomorrow
+    // If today is closed/archived or after 2 PM (14:00) cutoff -> default to tomorrow
     if (todayDayData?.isArchived || isPostCutoff) return tomorrowKey;
     return todayKey;
   }, [activeTab, isPostCutoff, todayKey, tomorrowKey, todayDayData]);
@@ -268,12 +268,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
                 {t('nextMealSpotlight') || 'Canteen Meal Radar'}
-              </h2>
-              {isPostCutoff && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50">
-                  {t('nextDaySupply') || 'Next Day Active'}
-                </span>
-              )}
+              </h2>np
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400">
               {isShowingTomorrow
@@ -386,10 +381,10 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             </div>
 
             {/* Timing & Headcount Meta */}
-            <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-emerald-200/50 dark:border-white/5">
+            <div className="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between md:justify-center gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-emerald-200/50 dark:border-white/5 w-full md:w-auto">
               {spotlightMeal.timing && (
                 <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                  <Clock className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
                   <span>{spotlightMeal.timing}</span>
                 </div>
               )}
@@ -432,7 +427,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
         </div>
       )}
 
-      {/* Day Overview Strip: Render ONLY ACTIVE slots (Archived slots are completely removed!) */}
+      {/* Day Overview Strip: Render ONLY ACTIVE slots */}
       {!isDayArchived && activeSlots.length > 0 && (
         <div
           className={`relative z-10 grid gap-2.5 ${
@@ -441,8 +436,8 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
               : activeSlots.length === 2
               ? 'grid-cols-1 sm:grid-cols-2'
               : activeSlots.length === 3
-              ? 'grid-cols-1 sm:grid-cols-3'
-              : 'grid-cols-2 sm:grid-cols-4'
+              ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3'
+              : 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-4'
           }`}
         >
           {activeSlots.map((slot) => {

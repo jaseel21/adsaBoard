@@ -42,9 +42,11 @@ const LanguageSwitch = () => {
         aria-label="Switch Language"
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100/80 dark:bg-white/10 hover:bg-gray-200/80 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200/70 dark:border-white/10 text-xs font-medium transition-all duration-200 shadow-sm"
       >
-        <Languages className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-        <span className="font-semibold text-xs tracking-wide">{getLabel()}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform duration-200 opacity-60 ${open ? 'rotate-180' : ''}`} />
+        <Languages className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+        {/* Full label on desktop, compact code on mobile */}
+        <span className="font-semibold text-xs tracking-wide hidden sm:inline">{getLabel()}</span>
+        <span className="font-bold text-[11px] tracking-wider sm:hidden font-mono uppercase">{lang}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform duration-200 opacity-60 flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>

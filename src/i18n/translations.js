@@ -23,6 +23,17 @@ export const translations = {
     navAddStudent: "Add Student",
     navManageTokens: "Manage Tokens",
     navMenuMgmt: "Menu Management",
+    navDietary: "Dietary",
+    navDietaryMgmt: "Dietary Management",
+    dietaryMgmtTitle: "Dietary & Avoiders Console",
+    dietaryMgmtSubtitle: "Real-time kitchen avoiders matrix, student dietary exclusions & preference setup",
+    addAvoiderBtn: "Add Avoider",
+    removeAvoiderBtn: "Remove from Avoiders",
+    avoidersCount: "Avoiders",
+    viewAvoidersCategory: "Category View",
+    viewAvoidersMatrix: "Full Matrix",
+    viewCategoriesSetup: "Category Settings",
+    exportKitchenPdf: "Export Kitchen PDF",
 
     // Food Menu & Management
     menuManagement: "Canteen Menu Management",
@@ -86,8 +97,10 @@ export const translations = {
     blockedTokens: "Blocked",
     totalStudents: "Total Registered",
     currentDay: "Today's Schedule",
-    nextDaySupply: "Viewing Next Day's Supply (After 6:00 PM)",
     cutoffNotice: "Daily update window: 02:00 PM - 11:00 PM IST",
+    nextDayLocked: "Next-day meal updates closed (Cutoff passed)",
+    futureDatesOpen: "Advance dates remain open for scheduling",
+    nextDayCutoffInfo: "Daily cutoff applies only to tomorrow's meals. Future dates can be edited anytime.",
     serverSynced: "Server Time Live",
     syncingTime: "Syncing...",
 
@@ -202,6 +215,17 @@ export const translations = {
     bulkDeleteTitle: "Delete Selected Students",
     applyChanges: "Apply Changes",
 
+    // Student Portal Workflow
+    savePreferences: "Save Preferences",
+    saveAndLogout: "Save & Log Out",
+    discardAndLogout: "Discard & Log Out",
+    keepEditing: "Keep Editing",
+    unsavedChanges: "Unsaved Changes",
+    allChangesSaved: "All Preferences Saved",
+    discardChanges: "Discard",
+    unsavedLogoutPrompt: "You have unsaved changes to your dining schedule. What would you like to do before logging out?",
+    unsavedBackPrompt: "You have unsaved changes to your dining schedule. Do you want to discard them and return to the main board?",
+
     // Footer
     footerTagline: "Crafted with dedication for Alathurpadi Dars dining management.",
     quickLinks: "Quick Navigation",
@@ -212,12 +236,12 @@ export const translations = {
   ml: {
     // Brand & App
     appName: "അഡ്സ ടി-ബോർഡ്",
-    appSubtitle: "അലാത്തുർപടി ദർസ് കാന്റീൻ ടോക്കൺ ബോർഡ്",
-    orgName: "അലാത്തുർപടി ദർസ് സ്റ്റുഡന്റസ് അസോസിയേഷൻ",
+    appSubtitle: "ആലത്തുർപടി ദർസ് കാന്റീൻ ടോക്കൺ ബോർഡ്",
+    orgName: "ആലത്തുർപടി ദർസ് സ്റ്റുഡന്റസ് അസോസിയേഷൻ",
     orgShort: "ADSA",
     officialWebsite: "ഔദ്യോഗിക വെബ്സൈറ്റ്",
     allRightsReserved: "സർവ്വ അവകാശങ്ങളും നിക്ഷിപ്തം",
-    historicalNote: "ചരിത്രപ്രസിദ്ധമായ അലാത്തുർപടി ജുമാ മസ്ജിദ്, മലപ്പുറം",
+    historicalNote: "ചരിത്രപ്രസിദ്ധമായ ആലത്തുർപടി ജുമാ മസ്ജിദ്, മലപ്പുറം",
 
     // Navigation
     navHome: "ഹോം",
@@ -233,6 +257,17 @@ export const translations = {
     navAddStudent: "വിദ്യാർത്ഥിയെ ചേർക്കുക",
     navManageTokens: "ടോക്കൺ മാനേജ്മെന്റ്",
     navMenuMgmt: "മെനു മാനേജ്മെന്റ്",
+    navDietary: "ഭക്ഷണക്രമം",
+    navDietaryMgmt: "ഭക്ഷണക്രമ മാനേജ്മെന്റ്",
+    dietaryMgmtTitle: "ഭക്ഷണക്രമ & ഒഴിവാക്കൽ കൺസോൾ",
+    dietaryMgmtSubtitle: "പ്രത്യേക ഭക്ഷണ ഒഴിവാക്കലുകൾ, വിദ്യാർത്ഥി ലിസ്റ്റ്, കാറ്റഗറി മാനേജ്മെന്റ്",
+    addAvoiderBtn: "ഒഴിവാക്കൽ ചേർക്കുക",
+    removeAvoiderBtn: "ഒഴിവാക്കലിൽ നിന്ന് മാറ്റുക",
+    avoidersCount: "ഒഴിവാക്കിയവർ",
+    viewAvoidersCategory: "കാറ്റഗറി ലിസ്റ്റ്",
+    viewAvoidersMatrix: "കംപ്ലീറ്റ് മാട്രിക്സ്",
+    viewCategoriesSetup: "കാറ്റഗറി ക്രമീകരണങ്ങൾ",
+    exportKitchenPdf: "കിച്ചൻ PDF ഡൗൺലോഡ്",
 
     // Dashboard & Bento
     lunchCount: "ഉച്ചഭക്ഷണം",
@@ -248,8 +283,11 @@ export const translations = {
     blockedTokens: "ബ്ലോക്ക് ചെയ്തവ",
     totalStudents: "ആകെ വിദ്യാർത്ഥികൾ",
     currentDay: "ഇന്നത്തെ പട്ടിക",
-    nextDaySupply: "നാളത്തെ സപ്ലൈ പട്ടിക (വൈകുന്നേരം 6:00 ന് ശേഷം)",
+    nextDaySupply: "നാളത്തെ സപ്ലൈ പട്ടിക (ഉച്ചയ്ക്ക് 2:00 ന് ശേഷം)",
     cutoffNotice: "ടോക്കൺ മാറ്റാനുള്ള സമയം: ഉച്ചയ്ക്ക് 02:00 PM മുതൽ രാത്രി 11:00 PM വരെ",
+    nextDayLocked: "നാളത്തെ ടോക്കൺ മാറ്റാനുള്ള സമയം കഴിഞ്ഞു",
+    futureDatesOpen: "വരും ദിവസങ്ങളിലെ ടോക്കണുകൾ മാറ്റാവുന്നതാണ്",
+    nextDayCutoffInfo: "നാളത്തെ ഭക്ഷണത്തിന് മാത്രമാണ് കട്ട് ഓഫ് സമയം ബാധകം. മറ്റ് ദിവസങ്ങളിലെ മാറ്റങ്ങൾ എപ്പോഴും വരുത്താം.",
     serverSynced: "സർവർ സമയം ലൈവ്",
     syncingTime: "സമയം സമന്വയിപ്പിക്കുന്നു...",
 
@@ -392,7 +430,7 @@ export const translations = {
     scheduleSaved: "ഭക്ഷണ മെനു വിജയകരമായി സേവ് ചെയ്തു!",
     resetDefaults: "ഡിഫോൾട്ട് മെനുവാക്കുക",
     resetConfirmTitle: "മെനു ഡിഫോൾട്ടാക്കണമോ?",
-    resetConfirmText: "അലാത്തുർപടി ദർസിലെ എല്ലാ ദിവസങ്ങളിലെയും സ്റ്റാൻഡേർഡ് മെനു പുനഃസ്ഥാപിക്കപ്പെടും.",
+    resetConfirmText: "ആലത്തുർപടി ദർസിലെ എല്ലാ ദിവസങ്ങളിലെയും സ്റ്റാൻഡേർഡ് മെനു പുനഃസ്ഥാപിക്കപ്പെടും.",
     cloneDay: "ദിവസം കോപ്പി ചെയ്യുക",
     swapDays: "ദിവസങ്ങൾ മാറ്റുക",
     dateOverrides: "സ്പെഷ്യൽ വിരുന്നുകൾ",
@@ -412,10 +450,21 @@ export const translations = {
     unarchiveSlot: "ഭക്ഷണം സജീവമാക്കുക",
     canteenClosed: "കാന്റീൻ അവധി",
 
+    // Student Portal Workflow
+    savePreferences: "പ്രിഫറൻസുകൾ സേവ് ചെയ്യുക",
+    saveAndLogout: "സേവ് ചെയ്ത് ലോഗൗട്ട് ചെയ്യുക",
+    discardAndLogout: "ഒഴിവാക്കി ലോഗൗട്ട് ചെയ്യുക",
+    keepEditing: "തുടരുക",
+    unsavedChanges: "സേവ് ചെയ്യാത്ത മാറ്റങ്ങൾ",
+    allChangesSaved: "എല്ലാ പ്രിഫറൻസുകളും സേവ് ചെയ്തു",
+    discardChanges: "മാറ്റങ്ങൾ ഒഴിവാക്കുക",
+    unsavedLogoutPrompt: "നിങ്ങളുടെ ഭക്ഷണക്രമത്തിൽ വരുത്തിയ മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല. ലോഗൗട്ട് ചെയ്യുന്നതിന് മുമ്പ് എന്ത് ചെയ്യണം?",
+    unsavedBackPrompt: "നിങ്ങളുടെ ഭക്ഷണക്രമത്തിൽ വരുത്തിയ മാറ്റങ്ങൾ സേവ് ചെയ്തിട്ടില്ല. അവ ഒഴിവാക്കി ബോർഡിലേക്ക് മടങ്ങണമോ?",
+
     // Footer
-    footerTagline: "അലാത്തുർപടി ദർസ് കാന്റീൻ സേവനങ്ങൾക്കായി പ്രത്യേകം തയ്യാറാക്കിയത്.",
+    footerTagline: "ആലത്തുർപടി ദർസ് കാന്റീൻ സേവനങ്ങൾക്കായി പ്രത്യേകം തയ്യാറാക്കിയത്.",
     quickLinks: "പ്രധാന ലിങ്കുകൾ",
     systemStatus: "സർവർ സ്റ്റാറ്റസ്: ഓൺലൈൻ (IST Asia/Kolkata)",
-    developedFor: "അലാത്തുർപടി ദർസ് സ്റ്റുഡന്റസ് അസോസിയേഷൻ",
+    developedFor: "ആലത്തുർപടി ദർസ് സ്റ്റുഡന്റസ് അസോസിയേഷൻ",
   }
 };

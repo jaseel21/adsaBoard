@@ -84,24 +84,24 @@ const MenuTable = () => {
   const totalCols = 1 + (hasVisibleBreakfast ? 1 : 0) + (hasVisibleLunch ? 1 : 0) + (hasVisibleEvening ? 1 : 0) + (hasVisibleDinner ? 1 : 0);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6">
       
       {/* Top Header Card */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-lg xs:text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
             <Utensils className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
             <span>{t('navMenu') || 'Weekly Canteen Menu'}</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600/30">
               Live Schedule
             </span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
             Weekly meal schedule served at Alathurpadi Dars dining hall
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto justify-end">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 self-stretch sm:self-auto justify-start sm:justify-end">
           {/* Admin shortcut button (visible to Committee, or routes to Login if public) */}
           <button
             onClick={() => {

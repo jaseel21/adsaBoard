@@ -1,0 +1,7188 @@
+[
+  {
+    "id": "00obnoPivjcwSKLdLAft",
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": true,
+        "sa": false
+      },
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": true,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "tokenNo": 118,
+    "password": "659",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "block": false,
+    "uname": "അബ്ദുൽ ബാസിത് വി.പി മണ്ണാർക്കാട്"
+  },
+  {
+    "id": "0ZbxFlApSkHao8gVzUuy",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "tokenNo": 22,
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": true,
+        "sa": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": true,
+        "we": false,
+        "fr": false,
+        "su": false,
+        "sa": false
+      }
+    },
+    "password": "471",
+    "block": false,
+    "uname": "ഹാഫിള് മുഹമ്മദ് മുബാറക് വടക്കാഞ്ചേരി"
+  },
+  {
+    "id": "0xRHXktGnEiJAL8yEmpO",
+    "name": "Muhammed Salih Ariyoor",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "nameEn": "Muhammed Salih Ariyoor",
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "th": false,
+        "we": false,
+        "fr": false
+      }
+    },
+    "tokenNo": 171,
+    "block": false,
+    "username": "171",
+    "nameMl": "മുഹമ്മദ്‌ സാലിഹ് അരിയൂർ",
+    "uname": "മുഹമ്മദ്‌ സാലിഹ് അരിയൂർ",
+    "batch": "Batch 2",
+    "password": "841"
+  },
+  {
+    "id": "1tj5Sbyc1B1VLgWtrIAN",
+    "password": "623",
+    "tokenNo": 40,
+    "obj": {
+      "breakfast": {
+        "mo": false,
+        "tu": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": true,
+        "sa": false
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "uname": "മുഹമ്മദ് അനസ് ടി കട്ടിലശ്ശേരി",
+    "block": false
+  },
+  {
+    "id": "28BeZ52dgZR8KZrW4cet",
+    "batch": "Batch 4",
+    "name": "Hafiz Amn Rhman .ke Parappanangadi",
+    "nameMl": "ഹാഫിള് അമൻ റഹ്മാൻ .കെ പരപ്പനങ്ങാടി",
+    "password": "764",
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "uname": "ഹാഫിള് അമൻ റഹ്മാൻ .കെ പരപ്പനങ്ങാടി",
+    "tokenNo": 108,
+    "nameEn": "Hafiz Amn Rhman .ke Parappanangadi",
+    "obj": {
+      "breakfast": {
+        "su": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "su": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "block": false,
+    "username": "108"
+  },
+  {
+    "id": "2M9TbhsUkXf3xWB5X2Wz",
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "chicken": true,
+      "mutton": true
+    },
+    "tokenNo": 104,
+    "uname": "മുഹമ്മദ് സജീർ എം.കെ ഇരുമ്പുഴി",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": true
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": false,
+        "su": true,
+        "fr": false,
+        "th": false,
+        "we": true,
+        "sa": true
+      }
+    },
+    "password": "376"
+  },
+  {
+    "id": "2qe5t8Vl0UPUmj7A90Sk",
+    "obj": {
+      "lunch": {
+        "mo": false,
+        "tu": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      },
+      "breakfast": {
+        "su": true,
+        "th": false,
+        "fr": false,
+        "we": true,
+        "sa": true,
+        "mo": false,
+        "tu": false
+      }
+    },
+    "tokenNo": 2,
+    "uname": "2",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് വാളാട്",
+    "block": false,
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "beef": true,
+      "chicken": true
+    },
+    "password": "731",
+    "blockReason": "",
+    "phone": "",
+    "batch": "General",
+    "updatedAt": "2026-10-18T07:56:43.721Z",
+    "roomNo": "",
+    "nameEn": "Hafiz Muhammed Valad"
+  },
+  {
+    "id": "3LUxIInqlKVraArOXyoh",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "uname": "മുഹമ്മദ് നിഹാൽ എം പള്ളിക്കൽ ബസാർ",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": true,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      },
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "mo": false,
+        "tu": false
+      }
+    },
+    "tokenNo": 121,
+    "password": "125"
+  },
+  {
+    "id": "3P5vO4MrAVy4qmIEUPe6",
+    "name": "Hafiz Minhaj Majeed Pi.ke Cherppulshsheri",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "nameEn": "Hafiz Minhaj Majeed Pi.ke Cherppulshsheri",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": false,
+        "sa": true
+      },
+      "breakfast": {
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "tokenNo": 115,
+    "block": false,
+    "username": "115",
+    "nameMl": "ഹാഫിള് മിൻഹാജ് മജീദ് പി.കെ ചെർപ്പുളശ്ശേരി",
+    "uname": "ഹാഫിള് മിൻഹാജ് മജീദ് പി.കെ ചെർപ്പുളശ്ശേരി",
+    "batch": "Batch 4",
+    "password": "546"
+  },
+  {
+    "id": "3TYpRqJP5WlJalcR0iKb",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഫായിസ് ചെറുപ്പുളശ്ശേരി",
+    "tokenNo": 34,
+    "obj": {
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true
+      },
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "password": "586",
+    "batch": "Batch 7",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഫായിസ് ചെറുപ്പുളശ്ശേരി",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "block": false,
+    "username": "34",
+    "name": "Hafiz Muhammed Fayis Cheruppulshsheri",
+    "nameEn": "Hafiz Muhammed Fayis Cheruppulshsheri"
+  },
+  {
+    "id": "3VEN2Jncx3a8M925PcK9",
+    "password": "320",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true
+      }
+    },
+    "tokenNo": 152,
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "block": false,
+    "uname": "മുഹമ്മദ്‌ അർമിയാഅ് സൗത്ത് തൃപ്പനച്ചി"
+  },
+  {
+    "id": "3piy063CGzdRFlKWl5S2",
+    "password": "182",
+    "block": false,
+    "uname": "മുഹമ്മദ് ഫഹീം പള്ളിപ്പുറം",
+    "tokenNo": 149,
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "fish": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    }
+  },
+  {
+    "id": "4RCmRuQzJPu32gtDfUsW",
+    "nameMl": "മുഹമ്മദ് സഈദ് കോട്ടക്കൽ",
+    "name": "Muhammed SEed Kottakkal",
+    "username": "161",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "fish": true,
+      "mutton": true
+    },
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": true,
+    "password": "890",
+    "tokenNo": 161,
+    "nameEn": "Muhammed SEed Kottakkal",
+    "uname": "മുഹമ്മദ് സഈദ് കോട്ടക്കൽ",
+    "batch": "Batch 2"
+  },
+  {
+    "id": "4RckERZC47t2QzTrX2YJ",
+    "tokenNo": 122,
+    "password": "573",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് സ്വാലിഹ് ടി കെ പാറക്കണ്ണി",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true
+      },
+      "breakfast": {
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Muhammed Salih Ti Ke Parkknni",
+    "nameEn": "Muhammed Salih Ti Ke Parkknni",
+    "uname": "മുഹമ്മദ് സ്വാലിഹ് ടി കെ പാറക്കണ്ണി",
+    "username": "122",
+    "batch": "Batch 4",
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "chicken": true,
+      "mutton": true
+    }
+  },
+  {
+    "id": "5U4cWBWW8ZApIpxS5fdm",
+    "tokenNo": 36,
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true,
+        "mo": true,
+        "tu": false
+      }
+    },
+    "uname": "ഹാഫിള് ശാമിൽ സി ചേലേമ്പ്ര",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "password": "264"
+  },
+  {
+    "id": "5UXJH9wcBTece7KSYz1H",
+    "username": "79",
+    "batch": "Batch 5",
+    "name": "Hafiz Muhammed Rilvan Melmuri",
+    "nameEn": "Hafiz Muhammed Rilvan Melmuri",
+    "uname": "ഹാഫിള് മുഹമ്മദ് രിള്‌വാൻ മേൽമുറി",
+    "tokenNo": 79,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "password": "189",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": true,
+        "sa": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": false
+      }
+    },
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് രിള്‌വാൻ മേൽമുറി",
+    "block": false
+  },
+  {
+    "id": "60rmhElqjcO5AzZcW3n0",
+    "batch": "Batch 7",
+    "username": "24",
+    "uname": "അബ്ദുൽ ഹസീബ് മണ്ണാർക്കാട്",
+    "nameEn": "Abdul Haseeb Mannarkkad",
+    "password": "213",
+    "block": false,
+    "name": "Abdul Haseeb Mannarkkad",
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "sa": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "su": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "sa": false
+      }
+    },
+    "tokenNo": 24,
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "nameMl": "അബ്ദുൽ ഹസീബ് മണ്ണാർക്കാട്"
+  },
+  {
+    "id": "6bYAzukydRbbU3pm6VUh",
+    "name": "Hafiz Muhammed Aadil Kttilshsheri",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": true
+    },
+    "username": "138",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ആദിൽ കട്ടിലശ്ശേരി",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true
+      }
+    },
+    "batch": "Batch 3",
+    "tokenNo": 138,
+    "nameEn": "Hafiz Muhammed Aadil Kttilshsheri",
+    "password": "509",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ആദിൽ കട്ടിലശ്ശേരി",
+    "block": true
+  },
+  {
+    "id": "6dx30yebmtPbLUmK3KGv",
+    "uname": "റംഷാദ് വള്ളുവങ്ങാട്",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": false,
+        "sa": false
+      }
+    },
+    "batch": "Batch 7",
+    "nameMl": "റംഷാദ് വള്ളുവങ്ങാട്",
+    "username": "15",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "beef": true,
+      "mutton": true
+    },
+    "tokenNo": 15,
+    "name": "Ramshad Valluvangad",
+    "nameEn": "Ramshad Valluvangad",
+    "password": "967"
+  },
+  {
+    "id": "6pTaxggyGufU6iAJxbds",
+    "name": "Hafiz Muhammed Raees Kambalakkad",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": false,
+      "beef": false
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      }
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ റഈസ് കമ്പളക്കാട്",
+    "username": "181",
+    "batch": "Batch 1",
+    "nameEn": "Hafiz Muhammed Raees Kambalakkad",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ റഈസ് കമ്പളക്കാട്",
+    "block": false,
+    "password": "123",
+    "tokenNo": 181
+  },
+  {
+    "id": "717Gm4SLlilS7aazCR9g",
+    "password": "250",
+    "name": "Hafiz JAfr Ali Pi Ti Nattukl",
+    "batch": "Batch 5",
+    "nameMl": "ഹാഫിള് ജഅ്ഫർ അലി പി ടി നാട്ടുകൽ",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "uname": "ഹാഫിള് ജഅ്ഫർ അലി പി ടി നാട്ടുകൽ",
+    "username": "86",
+    "tokenNo": 86,
+    "nameEn": "Hafiz JAfr Ali Pi Ti Nattukl",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true
+      }
+    }
+  },
+  {
+    "id": "77jVSkgfSE75gj5detNy",
+    "obj": {
+      "breakfast": {
+        "mo": false,
+        "tu": false,
+        "sa": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": true
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": true,
+        "fr": false,
+        "we": false,
+        "th": false
+      }
+    },
+    "tokenNo": 94,
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "384",
+    "uname": "മുഹമ്മദ് സഹൽ കുന്നക്കാവ്",
+    "block": false
+  },
+  {
+    "id": "7YYoKmqQJNFiekIHBeqx",
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": false,
+      "mutton": false
+    },
+    "tokenNo": 120,
+    "block": false,
+    "uname": "മുഹമ്മദ് ഫാഇസ് സി. പള്ളിക്കൽ ബസാർ",
+    "password": "837"
+  },
+  {
+    "id": "7gbOxR6YP5TxnbUkSLWj",
+    "uname": "മുഹമ്മദ് നിഷാൽ പൊൻമള",
+    "block": false,
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "beef": true,
+      "fish": true
+    },
+    "tokenNo": 84,
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true
+      }
+    },
+    "password": "145"
+  },
+  {
+    "id": "82Ryijh6ccSGr1nr3pr0",
+    "username": "189",
+    "block": false,
+    "nameEn": "Muhammed Dilshad Koottilngngati",
+    "obj": {
+      "lunch": {
+        "su": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      },
+      "breakfast": {
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "name": "Muhammed Dilshad Koottilngngati",
+    "uname": "മുഹമ്മദ്‌ ദിൽഷാദ് കൂട്ടിലങ്ങാടി",
+    "password": "173",
+    "nameMl": "മുഹമ്മദ്‌ ദിൽഷാദ് കൂട്ടിലങ്ങാടി",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "batch": "Batch 1",
+    "tokenNo": 189
+  },
+  {
+    "id": "8EQuPw4Hsxyhs6IONnro",
+    "password": "923",
+    "tokenNo": 140,
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "uname": "അലി ബാസിം ചെറുകുളമ്പ്",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "th": true,
+        "we": true,
+        "fr": false,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": false,
+        "su": false,
+        "th": true,
+        "we": true,
+        "fr": false,
+        "mo": true,
+        "tu": true
+      }
+    }
+  },
+  {
+    "id": "8ZzneXdAKzcPDEFPQxmS",
+    "tokenNo": 110,
+    "password": "481",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് സിയാസ് എസ് . പാലക്കാട്",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": false,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": false,
+        "sa": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "th": false,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "uname": "മുഹമ്മദ് സിയാസ് എസ് . പാലക്കാട്",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": true
+    },
+    "nameEn": "Muhammed Siyas Es . Palkkat",
+    "username": "110",
+    "name": "Muhammed Siyas Es . Palkkat",
+    "batch": "Batch 4"
+  },
+  {
+    "id": "8gseVvQwQQjG940Xz0c9",
+    "tokenNo": 76,
+    "password": "205",
+    "block": false,
+    "uname": "ഹാഫിള് യാസീൻ വഴിക്കടവ്",
+    "obj": {
+      "lunch": {
+        "sa": false,
+        "su": false,
+        "th": true,
+        "fr": true,
+        "we": false,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "sa": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "su": false,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    }
+  },
+  {
+    "id": "8nfjZqdv68Wqpini6Kro",
+    "batch": "Batch 2",
+    "uname": "സൽമാനുൽ ഫാരിസി പി കരിപ്പൂർ",
+    "username": "175",
+    "nameEn": "Slmanul Farisi Pi Krippoor",
+    "tokenNo": 175,
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "password": "983",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "chicken": false,
+      "beef": true,
+      "mutton": true
+    },
+    "nameMl": "സൽമാനുൽ ഫാരിസി പി കരിപ്പൂർ",
+    "name": "Slmanul Farisi Pi Krippoor"
+  },
+  {
+    "id": "92xkSaMX21DHQ48a2Mca",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": false,
+        "sa": false
+      }
+    },
+    "nameEn": "Juraij",
+    "username": "29",
+    "uname": "ജുറൈജ്",
+    "password": "492",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "nameMl": "ജുറൈജ്",
+    "batch": "Batch 7",
+    "name": "Juraij",
+    "tokenNo": 29
+  },
+  {
+    "id": "95yzuJ88xBQIjj40Mxz2",
+    "password": "777",
+    "tokenNo": 44,
+    "block": false,
+    "nameMl": "സയ്യിദ് നസീൽ അഹ്മദ് അറവങ്കര",
+    "nameEn": "Syyid Nseel Ahmad Arvngkr",
+    "batch": "Batch 6",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "su": false,
+        "th": true,
+        "fr": false,
+        "we": false
+      },
+      "breakfast": {
+        "su": false,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "sa": false,
+        "tu": false,
+        "mo": true
+      }
+    },
+    "uname": "സയ്യിദ് നസീൽ അഹ്മദ് അറവങ്കര",
+    "username": "44",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "name": "Syyid Nseel Ahmad Arvngkr"
+  },
+  {
+    "id": "9NXYJzf62PgALu9DcCmd",
+    "password": "126",
+    "tokenNo": 54,
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "fish": true,
+      "mutton": false
+    },
+    "obj": {
+      "breakfast": {
+        "mo": false,
+        "tu": true,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": true,
+        "sa": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      }
+    },
+    "block": false,
+    "uname": "മുഹമ്മദ് സഈദ് പാതിരമണ്ണ"
+  },
+  {
+    "id": "9QX6yyila4K5IGoKmodM",
+    "tokenNo": 156,
+    "block": false,
+    "uname": "മുഹമ്മദ് അബ്ദുല്ല ജലാൽ കാസറഗോഡ്",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "password": "584",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": false,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true,
+        "sa": true
+      },
+      "lunch": {
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "mo": false,
+        "tu": true
+      }
+    }
+  },
+  {
+    "id": "9XXGRH4baVonGWlx118R",
+    "password": "780",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ജംഷാദ് ചെർപ്പുളശ്ശേരി",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": false,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "su": true,
+        "sa": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "sa": true
+      }
+    },
+    "tokenNo": 53,
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    }
+  },
+  {
+    "id": "9fDwyghQOKBXvEJYwM1B",
+    "uname": "നാഫി ആലത്തൂർപടി",
+    "batch": "Batch 7",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "su": false,
+        "we": true,
+        "fr": false,
+        "th": true
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": false
+      }
+    },
+    "nameMl": "നാഫി ആലത്തൂർപടി",
+    "password": "286",
+    "name": "Nafi Alathurpadi",
+    "block": false,
+    "tokenNo": 18,
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "fish": true,
+      "beef": true
+    },
+    "username": "18",
+    "nameEn": "Nafi Alathurpadi"
+  },
+  {
+    "id": "A7OaGeRI4O4uxlZRyazK",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ശബീൽ ചെട്ടിപ്പടി",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": false
+      },
+      "lunch": {
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": false,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "tokenNo": 49,
+    "password": "281",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    }
+  },
+  {
+    "id": "AVxf7lZSjUH1EjB9j3oa",
+    "obj": {
+      "lunch": {
+        "mo": false,
+        "tu": false,
+        "su": true,
+        "we": true,
+        "th": false,
+        "fr": false,
+        "sa": false
+      },
+      "breakfast": {
+        "mo": false,
+        "tu": false,
+        "we": true,
+        "th": false,
+        "fr": false,
+        "su": true,
+        "sa": false
+      }
+    },
+    "uname": "ഹാഫിള് ഹാമിദ് ഔഫി വേങ്ങൂർ",
+    "block": false,
+    "tokenNo": 30,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "password": "761"
+  },
+  {
+    "id": "CGpOn8mpC1tHwZF0cuRU",
+    "name": "Muhammed Salih Ambazhakkode",
+    "batch": "Batch 2",
+    "nameMl": "മുഹമ്മദ്‌ സ്വാലിഹ് അമ്പാഴക്കോട്",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "username": "174",
+    "uname": "മുഹമ്മദ്‌ സ്വാലിഹ് അമ്പാഴക്കോട്",
+    "tokenNo": 174,
+    "password": "164",
+    "nameEn": "Muhammed Salih Ambazhakkode",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "tu": true,
+        "mo": true
+      }
+    }
+  },
+  {
+    "id": "D3JIDDGTZc8t1gkIzcQR",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഫാസിൽ ആലത്തൂർപടി",
+    "name": "Hafiz Muhammed Fasil Alathurpadi",
+    "username": "26",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "obj": {
+      "lunch": {
+        "su": true,
+        "we": true,
+        "th": false,
+        "fr": false,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": true,
+        "th": false,
+        "we": true,
+        "fr": false
+      }
+    },
+    "block": false,
+    "password": "619",
+    "tokenNo": 26,
+    "nameEn": "Hafiz Muhammed Fasil Alathurpadi",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഫാസിൽ ആലത്തൂർപടി",
+    "batch": "Batch 7"
+  },
+  {
+    "id": "D3czRATPKSeuoTjdl5aB",
+    "password": "239",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ശാഹിദ് .സി.എം വല്ലപ്പുഴ",
+    "block": false,
+    "tokenNo": 159,
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "obj": {
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true
+      }
+    }
+  },
+  {
+    "id": "DYsNP7kmznYW2lvgQ61a",
+    "obj": {
+      "lunch": {
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "name": "Hafiz Atheekh Rhman Neelanjcheri",
+    "username": "92",
+    "tokenNo": 92,
+    "uname": "ഹാഫിള് അതീഖ് റഹ്മാൻ നീലാഞ്ചേരി",
+    "nameMl": "ഹാഫിള് അതീഖ് റഹ്മാൻ നീലാഞ്ചേരി",
+    "batch": "Batch 5",
+    "password": "742",
+    "block": false,
+    "nameEn": "Hafiz Atheekh Rhman Neelanjcheri"
+  },
+  {
+    "id": "DiaWPp5NuLb7hJd26bBo",
+    "uname": "അഹ്‌മദ്‌ ശമ്മാസ് പാതിരമണ്ണ",
+    "batch": "Batch 1",
+    "password": "141",
+    "nameEn": "Ahmd Shmmas Pathirmnn",
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "tu": false,
+        "mo": true
+      }
+    },
+    "name": "Ahmd Shmmas Pathirmnn",
+    "block": false,
+    "username": "184",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "tokenNo": 184,
+    "nameMl": "അഹ്‌മദ്‌ ശമ്മാസ് പാതിരമണ്ണ"
+  },
+  {
+    "id": "Dkulhc7QoJ1yrSsvcB3R",
+    "uname": "മുഹമ്മദ് ശബീഹ്",
+    "password": "817",
+    "tokenNo": 157,
+    "batch": "Batch 3",
+    "obj": {
+      "lunch": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameMl": "മുഹമ്മദ് ശബീഹ്",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "name": "Muhammed Shbeeh",
+    "username": "157",
+    "nameEn": "Muhammed Shbeeh"
+  },
+  {
+    "id": "DshEkEUtUflZEwZFZ0r4",
+    "password": "921",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "sa": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": true,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "tokenNo": 73,
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "block": false,
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഹനാൻ എ കൂട്ടിലങ്ങാടി"
+  },
+  {
+    "id": "E44xWRHe3XFw2BuBtaug",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സ്വഫ്‌വാൻ പാങ്ങ്",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "we": true,
+        "th": true,
+        "fr": false,
+        "su": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      },
+      "lunch": {
+        "sa": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "beef": true,
+      "fish": true
+    },
+    "password": "934",
+    "tokenNo": 85
+  },
+  {
+    "id": "E4eylzkzbsBhgj9u1gZv",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "uname": "മുഹമ്മദ്‌ ഷഹീം രാമപുരം",
+    "block": false,
+    "tokenNo": 188,
+    "password": "169",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": false
+      },
+      "breakfast": {
+        "su": true,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "sa": false,
+        "mo": false,
+        "tu": false
+      }
+    }
+  },
+  {
+    "id": "E5FPyPfKdCMrZFYvadPR",
+    "uname": "ഹാഫിള് മുഹമ്മദ് റാഷിദ് എടക്കര",
+    "block": false,
+    "obj2": {
+      "beef": false,
+      "chicken": true,
+      "fish": true,
+      "mutton": false
+    },
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "tokenNo": 141,
+    "password": "285"
+  },
+  {
+    "id": "EDzJeOdLCPmcQpTXMtc1",
+    "uname": "മുഹമ്മദ്‌ ആരിഫുദ്ദീൻ ഇരിങ്ങാട്ടിരി",
+    "tokenNo": 170,
+    "batch": "Batch 2",
+    "password": "607",
+    "nameMl": "മുഹമ്മദ്‌ ആരിഫുദ്ദീൻ ഇരിങ്ങാട്ടിരി",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true
+      },
+      "breakfast": {
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Muhammed Aarifuddeen Iringngattiri",
+    "block": false,
+    "obj2": {
+      "mutton": true,
+      "fish": false,
+      "beef": true,
+      "chicken": true
+    },
+    "nameEn": "Muhammed Aarifuddeen Iringngattiri",
+    "username": "170"
+  },
+  {
+    "id": "EE1bYQbyXaWOVL01gvOA",
+    "password": "905",
+    "name": "Suhail Cholode",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "fish": true,
+      "mutton": false
+    },
+    "tokenNo": 23,
+    "obj": {
+      "lunch": {
+        "sa": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": false,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": false
+      }
+    },
+    "nameMl": "സുഹൈൽ ചോളോട്",
+    "uname": "സുഹൈൽ ചോളോട്",
+    "batch": "Batch 7",
+    "username": "23",
+    "block": false,
+    "nameEn": "Suhail Cholode"
+  },
+  {
+    "id": "Ee9C11t8tEEQJEZyRLGl",
+    "password": "840",
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ് സിയാദ് പി താമരശ്ശേരി",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "tokenNo": 107
+  },
+  {
+    "id": "ElqWJwZDMk3rzJ961GDC",
+    "uname": "സയ്യിദ് അബ്ദുല്ല പാണക്കാട്",
+    "obj": {
+      "lunch": {
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": true,
+        "sa": false,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "sa": false,
+        "su": false,
+        "we": true,
+        "fr": false,
+        "th": false,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "batch": "Batch 5",
+    "nameEn": "Syyid Abdull Pankkat",
+    "password": "496",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "name": "Syyid Abdull Pankkat",
+    "username": "77",
+    "nameMl": "സയ്യിദ് അബ്ദുല്ല പാണക്കാട്",
+    "tokenNo": 77
+  },
+  {
+    "id": "F4xi3XHq5wWrHDtLu49E",
+    "block": false,
+    "nameMl": "അഷ്ഫാക്ക് എ പാലക്കാട്",
+    "obj": {
+      "lunch": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "password": "236",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "tokenNo": 111,
+    "uname": "അഷ്ഫാക്ക് എ പാലക്കാട്",
+    "nameEn": "Ashfakk E Palkkat",
+    "name": "Ashfakk E Palkkat",
+    "batch": "Batch 4",
+    "username": "111"
+  },
+  {
+    "id": "F7fDVnf0z0BbiTMsqmGw",
+    "nameMl": "അബൂബക്കർ വാളാട്",
+    "obj": {
+      "lunch": {
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "th": true,
+        "we": true,
+        "fr": false,
+        "su": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "name": "Aboobkkr Valat",
+    "block": false,
+    "password": "593",
+    "tokenNo": 65,
+    "nameEn": "Aboobkkr Valat",
+    "uname": "അബൂബക്കർ വാളാട്",
+    "username": "65",
+    "batch": "Batch 6"
+  },
+  {
+    "id": "G56ZkKCCTno8V8o7tw0S",
+    "batch": "Batch 7",
+    "password": "703",
+    "tokenNo": 17,
+    "uname": "ശംനാദ് കിടങ്ങയം",
+    "nameMl": "ശംനാദ് കിടങ്ങയം",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "su": true
+      }
+    },
+    "username": "17",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "nameEn": "Shamnad Kidangayam",
+    "name": "Shamnad Kidangayam"
+  },
+  {
+    "id": "GXPKsZHDVOLhigRSmikO",
+    "obj": {
+      "breakfast": {
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "username": "56",
+    "name": "Aadil Usman Vengara",
+    "tokenNo": 56,
+    "uname": "ആദിൽ ഉസ്മാൻ വേങ്ങര",
+    "nameMl": "ആദിൽ ഉസ്മാൻ വേങ്ങര",
+    "batch": "Batch 6",
+    "password": "863",
+    "block": false,
+    "nameEn": "Aadil Usman Vengara"
+  },
+  {
+    "id": "GZ7KRV5wpt08tO9EWB4h",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      }
+    },
+    "block": false,
+    "nameEn": "Muhammed RafiA Kringkllththani",
+    "username": "57",
+    "uname": "മുഹമ്മദ് റാഫിഅ് കരിങ്കല്ലത്താണി",
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "chicken": true,
+      "mutton": true
+    },
+    "nameMl": "മുഹമ്മദ് റാഫിഅ് കരിങ്കല്ലത്താണി",
+    "batch": "Batch 6",
+    "name": "Muhammed RafiA Kringkllththani",
+    "tokenNo": 57,
+    "password": "217"
+  },
+  {
+    "id": "GllcDe3UeyimSdjyyr5h",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ റിഷാൽ വടകര",
+    "batch": "Batch 2",
+    "tokenNo": 168,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ റിഷാൽ വടകര",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "sa": true,
+        "tu": false,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "168",
+    "name": "Hafiz Muhammed Rishal Vtkr",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "password": "321",
+    "nameEn": "Hafiz Muhammed Rishal Vtkr"
+  },
+  {
+    "id": "GzBWWYMPdiWyI3yYshQA",
+    "uname": "മുഹമ്മദ് ഷമ്മാസ് കെ ആനമങ്ങാട്",
+    "batch": "Batch 4",
+    "nameEn": "Muhammed Shmmas Ke Aanmngngat",
+    "password": "314",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": false,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "name": "Muhammed Shmmas Ke Aanmngngat",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "beef": true,
+      "mutton": true
+    },
+    "tokenNo": 114,
+    "nameMl": "മുഹമ്മദ് ഷമ്മാസ് കെ ആനമങ്ങാട്",
+    "username": "114"
+  },
+  {
+    "id": "IiTeS15AbZtwDHKhIHMP",
+    "tokenNo": 50,
+    "password": "653",
+    "uname": "ഹാഫിള് നുഅ്മാൻ വേങ്ങൂർ",
+    "block": false,
+    "obj2": {
+      "fish": false,
+      "beef": true,
+      "chicken": true,
+      "mutton": true
+    },
+    "obj": {
+      "lunch": {
+        "mo": false,
+        "tu": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": true,
+        "sa": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": true,
+        "sa": false
+      }
+    }
+  },
+  {
+    "id": "IxOYgrQld8FC9NFT0S39",
+    "username": "169",
+    "name": "Hafiz Muhammed Sinan Orrppalm",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "nameEn": "Hafiz Muhammed Sinan Orrppalm",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true
+      }
+    },
+    "tokenNo": 169,
+    "block": false,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ സിനാൻ ഒറ്റപ്പാലം",
+    "password": "954",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ സിനാൻ ഒറ്റപ്പാലം",
+    "batch": "Batch 2"
+  },
+  {
+    "id": "JB8GfptBwtpJiZf6zhmm",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "name": "Syyid Muhammed Ameen Vettichchir",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "tokenNo": 102,
+    "username": "102",
+    "nameMl": "സയ്യിദ് മുഹമ്മദ് അമീൻ വെട്ടിച്ചിറ",
+    "uname": "സയ്യിദ് മുഹമ്മദ് അമീൻ വെട്ടിച്ചിറ",
+    "batch": "Batch 4",
+    "password": "142",
+    "block": false,
+    "nameEn": "Syyid Muhammed Ameen Vettichchir"
+  },
+  {
+    "id": "JD5XlEsILFTTUBCfaO7y",
+    "password": "564",
+    "tokenNo": 74,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "sa": false,
+        "we": true,
+        "fr": false,
+        "th": false,
+        "su": true
+      },
+      "breakfast": {
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": true,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "uname": "ഹാഫിള് ഹാമിദ് പടിക്കൽ",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    }
+  },
+  {
+    "id": "KJLc87m1GrUAHHTdCGKp",
+    "password": "675",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് അഫ്‌ലഹ് സി പി കൂട്ടിലങ്ങാടി",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": false,
+        "sa": false
+      }
+    },
+    "name": "Muhammed Aflh Si Pi Koottilngngati",
+    "tokenNo": 146,
+    "uname": "മുഹമ്മദ് അഫ്‌ലഹ് സി പി കൂട്ടിലങ്ങാടി",
+    "nameEn": "Muhammed Aflh Si Pi Koottilngngati",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "batch": "Batch 3",
+    "username": "146"
+  },
+  {
+    "id": "KUy51m2VhDNsqDV3mo8l",
+    "password": "342",
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "beef": true,
+      "chicken": true
+    },
+    "tokenNo": 61,
+    "uname": "ഹാഫിള് മുഹമ്മദ് പാപ്പിനിശ്ശേരി",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "we": true,
+        "fr": false,
+        "th": false,
+        "su": true,
+        "tu": false,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    }
+  },
+  {
+    "id": "Kfj3O5GEAhvakuhEq4sp",
+    "name": "Muhammed Sadin Pang",
+    "obj2": {
+      "mutton": true,
+      "chicken": true,
+      "fish": true,
+      "beef": true
+    },
+    "nameMl": "മുഹമ്മദ്‌ സാദിൻ പാങ്ങ്",
+    "obj": {
+      "lunch": {
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "മുഹമ്മദ്‌ സാദിൻ പാങ്ങ്",
+    "batch": "Batch 1",
+    "username": "192",
+    "tokenNo": 192,
+    "block": false,
+    "password": "193",
+    "nameEn": "Muhammed Sadin Pang"
+  },
+  {
+    "id": "KoR3DQRXGCQaXsPkUW23",
+    "password": "714",
+    "obj": {
+      "breakfast": {
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "block": false,
+    "uname": "മുഹമ്മദ് സ്വഫ്‌വാൻ വളമംഗലം",
+    "tokenNo": 142,
+    "obj2": {
+      "beef": false,
+      "mutton": false,
+      "chicken": true,
+      "fish": true
+    }
+  },
+  {
+    "id": "KxhPX1YItzatYq1jNpcc",
+    "tokenNo": 131,
+    "block": false,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് മാഹിൻ പടിഞ്ഞാറ്റുമുറി",
+    "obj": {
+      "breakfast": {
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "131",
+    "uname": "ഹാഫിള് മുഹമ്മദ് മാഹിൻ പടിഞ്ഞാറ്റുമുറി",
+    "nameEn": "Hafiz Muhammed Mahin Ptinjnjarrumuri",
+    "name": "Hafiz Muhammed Mahin Ptinjnjarrumuri",
+    "batch": "Batch 3",
+    "obj2": {
+      "beef": false,
+      "mutton": false,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "918"
+  },
+  {
+    "id": "LCdhPFC5mQORKR3R9Oga",
+    "batch": "Batch 2",
+    "uname": "അഫ്നാൻ അഹ്മദ് .എം കൊണ്ടോട്ടി",
+    "username": "162",
+    "nameMl": "അഫ്നാൻ അഹ്മദ് .എം കൊണ്ടോട്ടി",
+    "tokenNo": 162,
+    "block": false,
+    "nameEn": "Afnan Ahmad .Em Kondotty",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": false,
+        "mo": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "password": "256",
+    "name": "Afnan Ahmad .Em Kondotty",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    }
+  },
+  {
+    "id": "LDkRPJJgmqytFuSkZbaj",
+    "batch": "Batch 6",
+    "uname": "മുഹമ്മദ് സ്വഫ്‌വാൻ ചാപ്പനങ്ങാടി",
+    "nameEn": "Muhammed Svfvan Chappnngngati",
+    "password": "594",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "su": true,
+        "sa": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "su": true
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": true,
+      "mutton": true
+    },
+    "username": "55",
+    "tokenNo": 55,
+    "name": "Muhammed Svfvan Chappnngngati",
+    "nameMl": "മുഹമ്മദ് സ്വഫ്‌വാൻ ചാപ്പനങ്ങാടി"
+  },
+  {
+    "id": "LwFq43uERhqn3aqFfcGs",
+    "nameEn": "Muhammed Aashikh E .keallm",
+    "block": false,
+    "tokenNo": 119,
+    "password": "418",
+    "batch": "Batch 4",
+    "uname": "മുഹമ്മദ് ആഷിഖ് എ .കൊല്ലം",
+    "nameMl": "മുഹമ്മദ് ആഷിഖ് എ .കൊല്ലം",
+    "name": "Muhammed Aashikh E .keallm",
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "fish": true,
+      "mutton": true
+    },
+    "username": "119"
+  },
+  {
+    "id": "LwneeTMZ1hVDJRxCppzA",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "block": false,
+    "uname": "മുഹമ്മദ്‌ സാജിർ പുല്ലാനൂർ",
+    "obj": {
+      "breakfast": {
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": true,
+        "sa": false,
+        "mo": false,
+        "tu": false
+      },
+      "lunch": {
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": true,
+        "sa": false,
+        "mo": false,
+        "tu": false
+      }
+    },
+    "tokenNo": 187,
+    "password": "163"
+  },
+  {
+    "id": "MBfkyWjtCTDUofz0L9vJ",
+    "username": "109",
+    "batch": "Batch 4",
+    "uname": "റിൻഷാദ് കെ പി പള്ളിപ്പുറം",
+    "nameEn": "Rinshad Ke Pi Pllippurm",
+    "obj": {
+      "breakfast": {
+        "we": true,
+        "fr": false,
+        "th": true,
+        "su": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "sa": true
+      }
+    },
+    "block": false,
+    "password": "328",
+    "obj2": {
+      "beef": false,
+      "chicken": true,
+      "fish": true,
+      "mutton": false
+    },
+    "tokenNo": 109,
+    "name": "Rinshad Ke Pi Pllippurm",
+    "nameMl": "റിൻഷാദ് കെ പി പള്ളിപ്പുറം"
+  },
+  {
+    "id": "MEhcUL8gUXpdFDvQH0A4",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true
+      }
+    },
+    "password": "255",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "uname": "മുഹമ്മദ് അബൂബക്കർ മടവൂർ",
+    "block": false,
+    "tokenNo": 158
+  },
+  {
+    "id": "MYwdXBbiUlVAIdolvZcj",
+    "username": "185",
+    "name": "Muhammed Ihthisham Aamyoor",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "uname": "മുഹമ്മദ്‌ ഇഹ്തിഷാം ആമയൂർ",
+    "batch": "Batch 1",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true
+      }
+    },
+    "nameEn": "Muhammed Ihthisham Aamyoor",
+    "tokenNo": 185,
+    "password": "147",
+    "nameMl": "മുഹമ്മദ്‌ ഇഹ്തിഷാം ആമയൂർ",
+    "block": false
+  },
+  {
+    "id": "Mb5iVOlSB8T7EMgmqRQT",
+    "username": "99",
+    "uname": "ഹാഫിള് മുഹമ്മദ് മുഖ്താർ പള്ളിപ്പുറം",
+    "batch": "Batch 4",
+    "nameEn": "Hafiz Muhammed Mukhthar Pllippurm",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "fr": false,
+        "th": false,
+        "we": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "sa": false,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": false
+      }
+    },
+    "block": false,
+    "name": "Hafiz Muhammed Mukhthar Pllippurm",
+    "obj2": {
+      "beef": false,
+      "fish": true,
+      "chicken": true,
+      "mutton": true
+    },
+    "password": "518",
+    "tokenNo": 99,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് മുഖ്താർ പള്ളിപ്പുറം"
+  },
+  {
+    "id": "MkGobN3p3GG9VXICJMXs",
+    "nameEn": "Hafiz Muhammed Hashir .Ai Maraymmglm",
+    "block": false,
+    "tokenNo": 93,
+    "username": "93",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "we": false,
+        "th": false
+      }
+    },
+    "batch": "Batch 5",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഹാശിർ .ഐ മാരായമംഗലം",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഹാശിർ .ഐ മാരായമംഗലം",
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "password": "915",
+    "name": "Hafiz Muhammed Hashir .Ai Maraymmglm"
+  },
+  {
+    "id": "MzeyfWxWcQE4TSQN5Cko",
+    "uname": "മുഹമ്മദ് ഹാഷിം കരുവാരക്കുണ്ട്",
+    "obj": {
+      "lunch": {
+        "sa": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "sa": false
+      }
+    },
+    "batch": "Batch 3",
+    "nameEn": "Muhammed Hashim Karuvarakundu",
+    "password": "134",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "block": false,
+    "name": "Muhammed Hashim Karuvarakundu",
+    "username": "136",
+    "tokenNo": 136,
+    "nameMl": "മുഹമ്മദ് ഹാഷിം കരുവാരക്കുണ്ട്"
+  },
+  {
+    "id": "NnQnbB9QtDZIr7FnearA",
+    "obj": {
+      "lunch": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true,
+        "mo": false,
+        "tu": true
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": true,
+      "mutton": true
+    },
+    "tokenNo": 128,
+    "block": false,
+    "uname": "ഹാഫിള് അമൻ റഷീദ് അത്തോളി",
+    "password": "726"
+  },
+  {
+    "id": "Nu9p7FTNxOfxp3gHngRv",
+    "block": false,
+    "uname": "ഹാഫിള് അബ്ദുൽ ഹസീബ് . ടി മീനാർക്കുഴി",
+    "password": "680",
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "mo": false,
+        "tu": true
+      },
+      "breakfast": {
+        "sa": true,
+        "su": false,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "tokenNo": 133,
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": false
+    }
+  },
+  {
+    "id": "O9OJXIyXyOqk5an5gXzo",
+    "password": "12",
+    "nameMl": "മുഹമ്മദ്‌ അൻഷിദ് പാട്ടക്കരിമ്പ്",
+    "name": "Muhammed Anshid Pattkkrimp",
+    "tokenNo": 64,
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": true,
+      "beef": false
+    },
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": false,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "su": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "sa": false
+      }
+    },
+    "block": false,
+    "username": "64",
+    "nameEn": "Muhammed Anshid Pattkkrimp",
+    "uname": "മുഹമ്മദ്‌ അൻഷിദ് പാട്ടക്കരിമ്പ്",
+    "batch": "Batch 6"
+  },
+  {
+    "id": "OGtoirhT8f5e4FHdk4XS",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "name": "Hafiz Muhammed Hamid Kilinkkeat",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "fr": false,
+        "we": true,
+        "th": true
+      },
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameEn": "Hafiz Muhammed Hamid Kilinkkeat",
+    "block": false,
+    "password": "432",
+    "tokenNo": 47,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഹാമിദ് കിളിനക്കോട്",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഹാമിദ് കിളിനക്കോട്",
+    "username": "47",
+    "batch": "Batch 6"
+  },
+  {
+    "id": "OKxgXhPmYszj376tWoxS",
+    "name": "Syyid Ali Jasim .pi Keazhikkeat",
+    "nameMl": "സയ്യിദ് അലി ജാസിം .പി കോഴിക്കോട്",
+    "password": "296",
+    "tokenNo": 97,
+    "obj2": {
+      "mutton": false,
+      "fish": true,
+      "beef": false,
+      "chicken": true
+    },
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true
+      }
+    },
+    "username": "97",
+    "nameEn": "Syyid Ali Jasim .pi Keazhikkeat",
+    "uname": "സയ്യിദ് അലി ജാസിം .പി കോഴിക്കോട്",
+    "batch": "Batch 4"
+  },
+  {
+    "id": "OPCH3bAfgpHrWQKPS6BN",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "name": "Hafiz Muhammed Risan Nasr Chavkkat",
+    "obj": {
+      "breakfast": {
+        "mo": false,
+        "tu": false,
+        "sa": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false
+      },
+      "lunch": {
+        "mo": false,
+        "tu": false,
+        "sa": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": false
+      }
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ് റിസാൻ നാസർ ചാവക്കാട്",
+    "username": "134",
+    "batch": "Batch 3",
+    "nameEn": "Hafiz Muhammed Risan Nasr Chavkkat",
+    "tokenNo": 134,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് റിസാൻ നാസർ ചാവക്കാട്",
+    "block": false,
+    "password": "247"
+  },
+  {
+    "id": "P2OsQGoKRrkSPWjft8LT",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true
+      }
+    },
+    "block": false,
+    "uname": "നിഹാൽ റഹ്മാൻ ഇരുമ്പുഴി",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "tokenNo": 82,
+    "password": "902"
+  },
+  {
+    "id": "P5fIUM5W6yRICM1yuj7I",
+    "username": "179",
+    "batch": "Batch 1",
+    "name": "Abdul Hadi Aththanikkl",
+    "nameEn": "Abdul Hadi Aththanikkl",
+    "uname": "അബ്ദുൽ ഹാദി അത്താണിക്കൽ",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "111",
+    "nameMl": "അബ്ദുൽ ഹാദി അത്താണിക്കൽ",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": false,
+    "tokenNo": 179
+  },
+  {
+    "id": "P6NyZmet4L797NSPzBsl",
+    "block": false,
+    "nameMl": "മുഹമ്മദ്‌ അൻഷിഫ് പെരിന്തൽമണ്ണ",
+    "password": "219",
+    "nameEn": "Muhammed Anshif Perinthalmanna",
+    "batch": "Batch 1",
+    "tokenNo": 195,
+    "uname": "മുഹമ്മദ്‌ അൻഷിഫ് പെരിന്തൽമണ്ണ",
+    "name": "Muhammed Anshif Perinthalmanna",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "username": "195",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true
+      }
+    }
+  },
+  {
+    "id": "PTYBFojcqcXAEo3iTxEe",
+    "nameEn": "Muhammed Siyad E .goodlloor",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "857",
+    "block": false,
+    "name": "Muhammed Siyad E .goodlloor",
+    "nameMl": "മുഹമ്മദ് സിയാദ് എ .ഗൂഡല്ലൂർ",
+    "obj": {
+      "lunch": {
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "112",
+    "tokenNo": 112,
+    "batch": "Batch 4",
+    "uname": "മുഹമ്മദ് സിയാദ് എ .ഗൂഡല്ലൂർ"
+  },
+  {
+    "id": "PY42yCvrXHv9NMABhNBe",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സിനാദ് എ കൂട്ടിലങ്ങാടി",
+    "tokenNo": 88,
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": false,
+        "tu": true,
+        "mo": false
+      },
+      "lunch": {
+        "sa": false,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "batch": "Batch 5",
+    "password": "806",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് സിനാദ് എ കൂട്ടിലങ്ങാടി",
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "block": false,
+    "name": "Hafiz Muhammed Sinad E Koottilngngati",
+    "nameEn": "Hafiz Muhammed Sinad E Koottilngngati",
+    "username": "88"
+  },
+  {
+    "id": "PnCSVyoo5oPJn0ii7fqs",
+    "name": "Muhammed Salih Ti Pandikkad",
+    "password": "935",
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "beef": true,
+      "fish": true
+    },
+    "nameEn": "Muhammed Salih Ti Pandikkad",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": false,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true
+      }
+    },
+    "nameMl": "മുഹമ്മദ് സ്വാലിഹ് ടി പാണ്ടിക്കാട്",
+    "username": "59",
+    "uname": "മുഹമ്മദ് സ്വാലിഹ് ടി പാണ്ടിക്കാട്",
+    "tokenNo": 59,
+    "batch": "Batch 6"
+  },
+  {
+    "id": "Pq2X9wv8peoIYZmsqS9j",
+    "name": "Hafiz Mhmood Knyakumari",
+    "password": "195",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "nameMl": "ഹാഫിള് മഹ്മൂദ് കന്യാകുമാരി",
+    "uname": "ഹാഫിള് മഹ്മൂദ് കന്യാകുമാരി",
+    "batch": "Batch 2",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": false,
+        "sa": true,
+        "su": true,
+        "th": false,
+        "we": true,
+        "fr": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": false
+      }
+    },
+    "username": "166",
+    "tokenNo": 166,
+    "block": false,
+    "nameEn": "Hafiz Mhmood Knyakumari"
+  },
+  {
+    "id": "PqFzjenURnwr2WtofxgZ",
+    "name": "Hafiz Nihal Ahmad Kambalakkad",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "password": "916",
+    "nameEn": "Hafiz Nihal Ahmad Kambalakkad",
+    "tokenNo": 21,
+    "block": false,
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "su": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "sa": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "we": false,
+        "fr": true,
+        "th": false,
+        "su": false
+      }
+    },
+    "nameMl": "ഹാഫിള് നിഹാൽ അഹ്മദ് കമ്പളക്കാട്",
+    "username": "21",
+    "uname": "ഹാഫിള് നിഹാൽ അഹ്മദ് കമ്പളക്കാട്",
+    "batch": "Batch 7"
+  },
+  {
+    "id": "Q4lqb9DppVz7iILuLHS0",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": false,
+    "uname": "മുനീസ് ആലത്തൂർപടി",
+    "password": "362",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "tokenNo": 130
+  },
+  {
+    "id": "QJtY2czqTMyVLXMVILP5",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "fish": true,
+      "chicken": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "tokenNo": 75,
+    "name": "Hafiz Muhammed Salih Nenmini",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് സ്വാലിഹ് നെന്മിനി",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സ്വാലിഹ് നെന്മിനി",
+    "username": "75",
+    "batch": "Batch 5",
+    "block": false,
+    "password": "738",
+    "nameEn": "Hafiz Muhammed Salih Nenmini"
+  },
+  {
+    "id": "QTdkFmx5aVkXqFgo1wd4",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "mo": false,
+        "tu": false
+      },
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "tokenNo": 19,
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "password": "159",
+    "uname": "ഉമറുൽ ഫാറൂഖ് ആലത്തൂർപടി",
+    "block": false
+  },
+  {
+    "id": "REcJw6KrSNCiiULwiN67",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": true,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true
+      }
+    },
+    "uname": "മുഹമ്മദ് ഇഹ്‌സാൻ ഇബ്രാഹീം ചെറുകുന്ന്",
+    "block": false,
+    "obj2": {
+      "beef": false,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "password": "830",
+    "tokenNo": 144
+  },
+  {
+    "id": "RLvbu4GH2DqpYQLZcPgU",
+    "tokenNo": 145,
+    "username": "145",
+    "nameMl": "മുഹമ്മദ് സിനാൻ അകംപാടം",
+    "block": false,
+    "batch": "Batch 3",
+    "password": "149",
+    "nameEn": "Muhammed Sinan Akmpatm",
+    "uname": "മുഹമ്മദ് സിനാൻ അകംപാടം",
+    "name": "Muhammed Sinan Akmpatm",
+    "obj2": {
+      "beef": false,
+      "chicken": false,
+      "mutton": false,
+      "fish": false
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      }
+    }
+  },
+  {
+    "id": "ROfPQJXzfWU9jjCNgH5c",
+    "password": "506",
+    "uname": "ഹാഫിള് ലുഖ്മാനുൽ ഹകീം വിളയൂർ",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "fish": true,
+      "chicken": true
+    },
+    "tokenNo": 43,
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "we": true,
+        "fr": false,
+        "su": true,
+        "sa": true
+      },
+      "lunch": {
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    }
+  },
+  {
+    "id": "RSp868rWXIj0YybSSovt",
+    "name": "Muhammed Muhsin Mullampara",
+    "batch": "Batch 7",
+    "nameMl": "മുഹമ്മദ് മുഹ്സിൻ മുള്ളമ്പാറ",
+    "password": "570",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "uname": "മുഹമ്മദ് മുഹ്സിൻ മുള്ളമ്പാറ",
+    "tokenNo": 9,
+    "nameEn": "Muhammed Muhsin Mullampara",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": false,
+    "username": "9"
+  },
+  {
+    "id": "Rh6JaxzrGSUVPDEBk4Rw",
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": true,
+        "sa": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "su": true,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "sa": false
+      }
+    },
+    "tokenNo": 28,
+    "password": "786",
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "fish": true,
+      "beef": true
+    },
+    "uname": "മുഹമ്മദ് ഇരുമ്പുഴി",
+    "block": false
+  },
+  {
+    "id": "S9EBJB3SljYF9I4SaRs5",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": true,
+      "mutton": true
+    },
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ ഉവൈസ് കൊട്ടാരക്കര",
+    "tokenNo": 178,
+    "name": "Hafiz Muhammed Uwais Kottarkkr",
+    "obj": {
+      "breakfast": {
+        "su": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "sa": false,
+        "mo": false,
+        "tu": false
+      },
+      "lunch": {
+        "sa": false,
+        "su": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "mo": false,
+        "tu": false
+      }
+    },
+    "block": false,
+    "username": "178",
+    "nameEn": "Hafiz Muhammed Uwais Kottarkkr",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ ഉവൈസ് കൊട്ടാരക്കര",
+    "password": "104",
+    "batch": "Batch 1"
+  },
+  {
+    "id": "SOeHJv9LvhHngRXHyplD",
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "su": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "sa": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": false
+      }
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ് അലി രാമപുരം",
+    "password": "279",
+    "tokenNo": 12,
+    "batch": "Batch 7",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് അലി രാമപുരം",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "name": "Hafiz Muhammed Ali Ramapuram",
+    "username": "12",
+    "nameEn": "Hafiz Muhammed Ali Ramapuram"
+  },
+  {
+    "id": "SULKt0ewClYE54wXMAxd",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സഹൽ അമ്മിനിക്കാട്",
+    "block": false,
+    "password": "795",
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "tokenNo": 135,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      },
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "mo": false,
+        "tu": true
+      }
+    }
+  },
+  {
+    "id": "SUtPisAL31rF9seYCRUZ",
+    "block": false,
+    "updatedAt": "2026-10-18T07:56:18.751Z",
+    "nameMl": "അൽഅമീൻ വിളയൂർ",
+    "uname": "1",
+    "username": "1",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": false
+      }
+    },
+    "nameEn": "Al-Ameen Vilayoor",
+    "roomNo": "",
+    "password": "482",
+    "batch": "Batch 7",
+    "blockReason": "",
+    "phone": "",
+    "tokenNo": 1,
+    "name": "Al-Ameen Vilyoor"
+  },
+  {
+    "id": "So7TpKYXj8Ua3pk9NemT",
+    "password": "201",
+    "tokenNo": 193,
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "fr": false,
+        "th": false,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": false
+      },
+      "lunch": {
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": false,
+    "uname": "നഫിൽ കന്യാകുമാരി",
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    }
+  },
+  {
+    "id": "SuY2sKIKVFLxnDhV1WeX",
+    "tokenNo": 139,
+    "block": false,
+    "uname": "ഹാഫിള് അഹ്മദ് നസീം മണലായ",
+    "obj": {
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "password": "648"
+  },
+  {
+    "id": "TBTxI6vRv4NSmlof6bvi",
+    "nameMl": "ഹാഫിള് അഹ്മദ് ഫഹീം ഒറ്റപ്പാലം",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": true,
+      "beef": true
+    },
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true
+      },
+      "breakfast": {
+        "sa": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Hafiz Ahmad Fheem Orrppalm",
+    "block": false,
+    "password": "894",
+    "tokenNo": 176,
+    "nameEn": "Hafiz Ahmad Fheem Orrppalm",
+    "uname": "ഹാഫിള് അഹ്മദ് ഫഹീം ഒറ്റപ്പാലം",
+    "username": "176",
+    "batch": "Batch 2"
+  },
+  {
+    "id": "TIihoahVjhFjv8CTb1kY",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് നിയാസ് എം വയനാട്",
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "password": "693",
+    "uname": "മുഹമ്മദ് നിയാസ് എം വയനാട്",
+    "tokenNo": 106,
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": true
+    },
+    "nameEn": "Muhammed Niyas Em Vynat",
+    "name": "Muhammed Niyas Em Vynat",
+    "batch": "Batch 4",
+    "username": "106"
+  },
+  {
+    "id": "UK5XXT3FtPUyzmTOcqtt",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ അജ്മൽ തള്ളച്ചിറ",
+    "tokenNo": 182,
+    "batch": "Batch 1",
+    "password": "128",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ അജ്മൽ തള്ളച്ചിറ",
+    "name": "Hafiz Muhammed Ajmal Thllchchir",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "nameEn": "Hafiz Muhammed Ajmal Thllchchir",
+    "username": "182"
+  },
+  {
+    "id": "UQ34K06TOx6vVaxAkAHM",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "156",
+    "tokenNo": 3,
+    "block": false,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് അലി ജൗഹർ ചെർക്കള",
+    "uname": "3",
+    "blockReason": "",
+    "updatedAt": "2026-10-18T07:57:03.514Z",
+    "name": "Hafiz Muhammed Ali Jauhar Cherkkala",
+    "roomNo": "",
+    "nameEn": "Hafiz Muhammed Ali Jawhar Cherkkala",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": false,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "sa": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "3",
+    "phone": "",
+    "batch": "Batch 7"
+  },
+  {
+    "id": "UlVRph4pih6fh1SscNqW",
+    "tokenNo": 143,
+    "uname": "മുഹമ്മദ് മുബഷിർ വയനാട്",
+    "block": false,
+    "password": "596",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": false
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "su": true,
+        "sa": true
+      }
+    }
+  },
+  {
+    "id": "V6nmabgMzJQQps4DxQjD",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ശമീം പി വഴിക്കടവ്",
+    "password": "203",
+    "tokenNo": 117,
+    "batch": "Batch 4",
+    "obj": {
+      "lunch": {
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ശമീം പി വഴിക്കടവ്",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "name": "Hafiz Muhammed Shmeem Pi Vzhikktv",
+    "username": "117",
+    "nameEn": "Hafiz Muhammed Shmeem Pi Vzhikktv"
+  },
+  {
+    "id": "Vn0SyoNc4hvrkLBuCjDm",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ റഷാദ് ആലത്തൂർ",
+    "batch": "Batch 2",
+    "password": "470",
+    "nameEn": "Hafiz Muhammed Rshad Aalththoor",
+    "obj": {
+      "breakfast": {
+        "fr": true,
+        "we": true,
+        "th": false,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": false,
+        "we": true
+      }
+    },
+    "name": "Hafiz Muhammed Rshad Aalththoor",
+    "username": "165",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "tokenNo": 165,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ റഷാദ് ആലത്തൂർ"
+  },
+  {
+    "id": "WNYx5NY34sNMyzksuMo6",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "tu": false,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "name": "Syyid Muhammed Bsheer Pi Vengngoor",
+    "username": "129",
+    "tokenNo": 129,
+    "nameMl": "സയ്യിദ് മുഹമ്മദ് ബഷീർ പി വേങ്ങൂർ",
+    "uname": "സയ്യിദ് മുഹമ്മദ് ബഷീർ പി വേങ്ങൂർ",
+    "batch": "Batch 3",
+    "password": "809",
+    "block": false,
+    "nameEn": "Syyid Muhammed Bsheer Pi Vengngoor"
+  },
+  {
+    "id": "WzH3NphrXhAOQvuU0Juy",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് മിദ്‌ലാജ് കെ.കീഴാറ്റൂർ",
+    "name": "Hafiz Muhammed Midlaj Ke.keezharroor",
+    "username": "98",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": false,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true
+      }
+    },
+    "password": "730",
+    "tokenNo": 98,
+    "nameEn": "Hafiz Muhammed Midlaj Ke.keezharroor",
+    "uname": "ഹാഫിള് മുഹമ്മദ് മിദ്‌ലാജ് കെ.കീഴാറ്റൂർ",
+    "batch": "Batch 4"
+  },
+  {
+    "id": "X4aVMpYMw5xk8qDQ38NX",
+    "batch": "Batch 4",
+    "name": "Abdurhman Vi.ke Cherppulshsheri",
+    "nameMl": "അബ്ദുറഹ്മാൻ വി.കെ ചെർപ്പുളശ്ശേരി",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "uname": "അബ്ദുറഹ്മാൻ വി.കെ ചെർപ്പുളശ്ശേരി",
+    "username": "96",
+    "tokenNo": 96,
+    "password": "853",
+    "nameEn": "Abdurhman Vi.ke Cherppulshsheri",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true
+      }
+    },
+    "block": false
+  },
+  {
+    "id": "X7QmiAUUI4bM90n31fE2",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "password": "657",
+    "tokenNo": 125,
+    "uname": "ഹാഫിള് സയ്യിദ് ഷമ്മാസ് പാണക്കാട്",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": true,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "su": true,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "sa": false
+      }
+    }
+  },
+  {
+    "id": "XLKCaUEd8bDGw1j2KIX7",
+    "name": "Hafiz Muhammed Midlaj Pang",
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "beef": true,
+      "chicken": true
+    },
+    "tokenNo": 48,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് മിദ്‌ലാജ് പാങ്ങ്",
+    "uname": "ഹാഫിള് മുഹമ്മദ് മിദ്‌ലാജ് പാങ്ങ്",
+    "batch": "Batch 6",
+    "obj": {
+      "breakfast": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": false,
+        "tu": false,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true
+      }
+    },
+    "username": "48",
+    "password": "709",
+    "block": false,
+    "nameEn": "Hafiz Muhammed Midlaj Pang"
+  },
+  {
+    "id": "Xnu2zPt249on6ENQs9ZR",
+    "password": "536",
+    "tokenNo": 172,
+    "block": false,
+    "nameMl": "സയ്യിദ് ഹല്ലാജ് കൂട്ടായി",
+    "nameEn": "Syyid Hllaj Koottayi",
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": true,
+        "su": false,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": false
+      },
+      "lunch": {
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "batch": "Batch 2",
+    "username": "172",
+    "uname": "സയ്യിദ് ഹല്ലാജ് കൂട്ടായി",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": true,
+      "beef": true
+    },
+    "name": "Syyid Hllaj Koottayi"
+  },
+  {
+    "id": "XwA9j8PctD3Ohs4D8WDn",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      }
+    },
+    "block": false,
+    "nameEn": "Muhammed Si Em Kasrgod",
+    "username": "173",
+    "uname": "മുഹമ്മദ്‌ സി എം കാസറഗോഡ്",
+    "password": "729",
+    "obj2": {
+      "fish": false,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "nameMl": "മുഹമ്മദ്‌ സി എം കാസറഗോഡ്",
+    "batch": "Batch 2",
+    "name": "Muhammed Si Em Kasrgod",
+    "tokenNo": 173
+  },
+  {
+    "id": "YopeeYtxSmEnaWx08WGQ",
+    "batch": "Batch 1",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ മുഹ്സിൻ ചെർപ്പുളശ്ശേരി",
+    "username": "190",
+    "nameEn": "Hafiz Muhammed Muhsin Cherppulshsheri",
+    "tokenNo": 190,
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true
+      }
+    },
+    "password": "181",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ മുഹ്സിൻ ചെർപ്പുളശ്ശേരി",
+    "name": "Hafiz Muhammed Muhsin Cherppulshsheri"
+  },
+  {
+    "id": "Z0Gvla6sVmypUC7xhRF5",
+    "tokenNo": 38,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "972",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": false,
+        "su": false,
+        "mo": true,
+        "tu": true
+      },
+      "lunch": {
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "മുഹമ്മദ് സ്വഫ്‌വാൻ പഴമള്ളൂർ",
+    "block": false
+  },
+  {
+    "id": "Z5dqZAGlKkh8IfIo8fB2",
+    "block": false,
+    "password": "224",
+    "tokenNo": 196,
+    "nameMl": "മുഹമ്മദ്‌ മിദ്‌ലാജ് വേങ്ങര",
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "th": false,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "മുഹമ്മദ്‌ മിദ്‌ലാജ് വേങ്ങര",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "nameEn": "Muhammed Midlaj Vengara",
+    "username": "196",
+    "name": "Muhammed Midlaj Vengara",
+    "batch": "Batch 1"
+  },
+  {
+    "id": "ZKRe5DvHNZxIGTPh8pw1",
+    "username": "32",
+    "nameEn": "Hafiz Muhammed Fvas .ti Thrukkrippoor",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false
+      },
+      "lunch": {
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "name": "Hafiz Muhammed Fvas .ti Thrukkrippoor",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഫവാസ് .ടി തൃക്കരിപ്പൂർ",
+    "password": "927",
+    "batch": "Batch 7",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഫവാസ് .ടി തൃക്കരിപ്പൂർ",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "tokenNo": 32
+  },
+  {
+    "id": "aGFVDpt07eUqMq3xhJVL",
+    "password": "781",
+    "name": "Hafiz Muhammed Arshad Vi Peanml",
+    "batch": "Batch 4",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് അർഷദ് വി പൊൻമള",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": true
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ് അർഷദ് വി പൊൻമള",
+    "username": "116",
+    "tokenNo": 116,
+    "nameEn": "Hafiz Muhammed Arshad Vi Peanml",
+    "obj": {
+      "breakfast": {
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": false
+      },
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": false
+  },
+  {
+    "id": "aQHdi3XThoUbx8B1Bv7I",
+    "password": "690",
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "uname": "മുഹമ്മദ് റിഹാൻ കാഞ്ഞങ്ങാട്",
+    "block": false,
+    "tokenNo": 113,
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": false,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    }
+  },
+  {
+    "id": "aXTrPUhnm1OefDjygPdT",
+    "name": "Hafiz Aml Shibin Aathvnat",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "ഹാഫിള് അമൽ ഷിബിൻ ആതവനാട്",
+    "username": "180",
+    "batch": "Batch 1",
+    "nameEn": "Hafiz Aml Shibin Aathvnat",
+    "nameMl": "ഹാഫിള് അമൽ ഷിബിൻ ആതവനാട്",
+    "block": false,
+    "tokenNo": 180,
+    "password": "117"
+  },
+  {
+    "id": "aeYILE550texnC7RbDsR",
+    "nameEn": "Muhammed Nvar Kavnoor",
+    "password": "458",
+    "block": false,
+    "uname": "മുഹമ്മദ്‌ നവാർ കാവനൂർ",
+    "name": "Muhammed Nvar Kavnoor",
+    "updatedAt": {
+      "seconds": 1792310899,
+      "nanoseconds": 892000000
+    },
+    "tokenNo": 154,
+    "username": "154",
+    "batch": "Batch 3",
+    "nameMl": "മുഹമ്മദ്‌ നവാർ കാവനൂർ",
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "mo": true,
+        "tu": true
+      },
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "dateExceptions": {
+      "2026-10-19": {
+        "breakfast": false,
+        "label": "Tomorrow Off",
+        "lunch": false
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    }
+  },
+  {
+    "id": "bJV8dGdHAQr1k1NYRaN0",
+    "uname": "സയ്യിദ് ഇസ്മായിൽ എളമരം",
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "th": false,
+        "we": false,
+        "fr": false
+      },
+      "breakfast": {
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "batch": "Batch 3",
+    "nameMl": "സയ്യിദ് ഇസ്മായിൽ എളമരം",
+    "username": "148",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "tokenNo": 148,
+    "name": "Syyid Ismayil Elmrm",
+    "password": "531",
+    "nameEn": "Syyid Ismayil Elmrm"
+  },
+  {
+    "id": "bYLQFM9yjdzhepW13zdZ",
+    "username": "78",
+    "tokenNo": 78,
+    "batch": "Batch 5",
+    "name": "Abdull Salih Kalmpati",
+    "nameMl": "അബ്ദുല്ല സ്വാലിഹ് കാളമ്പാടി",
+    "uname": "അബ്ദുല്ല സ്വാലിഹ് കാളമ്പാടി",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "password": "752",
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false,
+        "sa": false
+      },
+      "breakfast": {
+        "su": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "nameEn": "Abdull Salih Kalmpati",
+    "block": false
+  },
+  {
+    "id": "blPU1AuQEUDxHoe0z3dM",
+    "username": "95",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "sa": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "block": false,
+    "nameEn": "Hafiz Muhammed Adnan Pi Mruth",
+    "uname": "ഹാഫിള് മുഹമ്മദ് അദ്നാൻ പി മരുത",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "password": "620",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് അദ്നാൻ പി മരുത",
+    "batch": "Batch 4",
+    "name": "Hafiz Muhammed Adnan Pi Mruth",
+    "tokenNo": 95
+  },
+  {
+    "id": "c65QYCcDIpGGNTIMzSdp",
+    "username": "4",
+    "batch": "Batch 7",
+    "name": "Hafiz Ameen Nishal Areekode",
+    "nameEn": "Hafiz Ameen Nishal Areekode",
+    "tokenNo": 4,
+    "uname": "ഹാഫിള് അമീൻ നിഷാൽ അരീക്കോട്",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "password": "904",
+    "nameMl": "ഹാഫിള് അമീൻ നിഷാൽ അരീക്കോട്",
+    "obj": {
+      "lunch": {
+        "su": true,
+        "th": false,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": false,
+        "tu": false,
+        "mo": true
+      }
+    },
+    "block": false
+  },
+  {
+    "id": "cPvosPqHEgwZbGkDuifX",
+    "tokenNo": 14,
+    "password": "412",
+    "block": false,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് മുനവ്വർ കിളിനക്കോട്",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "sa": true
+      },
+      "breakfast": {
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Hafiz Muhammed Munawwar Kilinakkode",
+    "nameEn": "Hafiz Muhammed Munawwar Kilinakkode",
+    "uname": "ഹാഫിള് മുഹമ്മദ് മുനവ്വർ കിളിനക്കോട്",
+    "username": "14",
+    "batch": "Batch 7",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    }
+  },
+  {
+    "id": "cnsRvkwcgmJt5owlGGfS",
+    "tokenNo": 183,
+    "uname": "ഹാഫിള് ജുറൈജ് എകരൂൽ",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "sa": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "136"
+  },
+  {
+    "id": "cqx1EuhbY0Sm7k8ERflr",
+    "obj": {
+      "lunch": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      },
+      "breakfast": {
+        "su": true,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "sa": true,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "password": "787",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": true
+    },
+    "tokenNo": 10,
+    "block": false,
+    "uname": "മുഹമ്മദ് സുഹൈബ് അമ്പാഴക്കോട്"
+  },
+  {
+    "id": "crxZqQmqN5guXO5oSop0",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് നസീഫ് എൻ . കരുവാരകുണ്ട്",
+    "tokenNo": 101,
+    "name": "Hafiz Muhammed Nseef En . Kruvarkunt",
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": false,
+        "sa": false
+      },
+      "lunch": {
+        "sa": false,
+        "su": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "block": false,
+    "username": "101",
+    "nameEn": "Hafiz Muhammed Nseef En . Kruvarkunt",
+    "uname": "ഹാഫിള് മുഹമ്മദ് നസീഫ് എൻ . കരുവാരകുണ്ട്",
+    "batch": "Batch 4",
+    "password": "235"
+  },
+  {
+    "id": "dIbyyoP9nrG963TJh4a2",
+    "block": false,
+    "uname": "ഹാഫിള് മുഹമ്മദ് സ്വാലിഹ് കാച്ചിനിക്കാട്",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": false,
+      "beef": true
+    },
+    "tokenNo": 39,
+    "password": "158",
+    "obj": {
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true
+      }
+    }
+  },
+  {
+    "id": "e20ZYkq9detIeb1zgy0t",
+    "nameEn": "Syyid Muhammed Shahid Pankkat",
+    "block": false,
+    "username": "83",
+    "tokenNo": 83,
+    "batch": "Batch 5",
+    "uname": "സയ്യിദ് മുഹമ്മദ് ശാഹിദ് പാണക്കാട്",
+    "nameMl": "സയ്യിദ് മുഹമ്മദ് ശാഹിദ് പാണക്കാട്",
+    "name": "Syyid Muhammed Shahid Pankkat",
+    "obj2": {
+      "mutton": true,
+      "chicken": true,
+      "fish": true,
+      "beef": true
+    },
+    "password": "361",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "fr": false,
+        "we": true,
+        "th": false,
+        "su": true
+      },
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      }
+    }
+  },
+  {
+    "id": "em5kO6G2J5KTzzcuBl8R",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": false,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "we": true,
+        "fr": false,
+        "th": true,
+        "su": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "obj2": {
+      "mutton": true,
+      "chicken": true,
+      "beef": true,
+      "fish": true
+    },
+    "name": "Hafiz Muhammed Af Lh Kavunthr",
+    "username": "89",
+    "uname": "ഹാഫിള് മുഹമ്മദ് അഫ് ലഹ് കാവുന്തറ",
+    "tokenNo": 89,
+    "nameEn": "Hafiz Muhammed Af Lh Kavunthr",
+    "batch": "Batch 5",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് അഫ് ലഹ് കാവുന്തറ",
+    "block": false,
+    "password": "423"
+  },
+  {
+    "id": "f5sfetRRQcDvuj5Hr9Ve",
+    "password": "964",
+    "tokenNo": 100,
+    "nameMl": "സയ്യിദ് അബ്ദുള്ള ഹാശിം പി . കുറ്റിപ്പുറം",
+    "name": "Syyid Abdull Hashim Pi . Kuttippuram",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "fish": true,
+      "chicken": true
+    },
+    "nameEn": "Syyid Abdull Hashim Pi . Kuttippuram",
+    "username": "100",
+    "batch": "Batch 4",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "സയ്യിദ് അബ്ദുള്ള ഹാശിം പി . കുറ്റിപ്പുറം"
+  },
+  {
+    "id": "fDqvrGkpAmEeT6KYRWmq",
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "fish": true,
+      "beef": true
+    },
+    "tokenNo": 186,
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "su": false,
+        "sa": false
+      },
+      "lunch": {
+        "sa": false,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "su": true,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "uname": "ഹാഫിള് ശാദി മുഹമ്മദ്‌ പൊൻമള",
+    "block": false,
+    "password": "154"
+  },
+  {
+    "id": "fJn9OqUJVn8JrYbGtlRE",
+    "password": "847",
+    "tokenNo": 41,
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "beef": true,
+      "chicken": true
+    },
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": false,
+        "sa": false,
+        "tu": true,
+        "mo": false
+      },
+      "lunch": {
+        "we": true,
+        "fr": false,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "uname": "മുഹമ്മദ് സവാദ് മേൽമുറി",
+    "block": false
+  },
+  {
+    "id": "fhJfc9zUyfAIxb1uUtBd",
+    "tokenNo": 6,
+    "password": "689",
+    "block": false,
+    "uname": "ഹാഫിള് മുഹമ്മദ് റിസ്വാൻ ആക്കോട്",
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "beef": true,
+      "fish": true
+    },
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": true,
+        "sa": false
+      },
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "su": true,
+        "tu": false,
+        "mo": false
+      }
+    }
+  },
+  {
+    "id": "g8hmBA29BHmQ775rVxIb",
+    "username": "5",
+    "block": false,
+    "tokenNo": 5,
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "mo": false,
+        "tu": false
+      },
+      "lunch": {
+        "su": false,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "sa": false,
+        "mo": false,
+        "tu": false
+      }
+    },
+    "uname": "മുഹമ്മദ്‌ സിനാൻ മേൽമുറി",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "nameMl": "മുഹമ്മദ്‌ സിനാൻ മേൽമുറി",
+    "nameEn": "Muhammed Sinan Melmuri",
+    "roomNo": "",
+    "updatedAt": "2026-10-17T23:35:31.933Z",
+    "name": "Muhammed Sinan Melmuri",
+    "phone": "",
+    "password": "327",
+    "batch": "Batch 7",
+    "blockReason": ""
+  },
+  {
+    "id": "g9scZjR7fbEltpZrPj3a",
+    "batch": "Batch 7",
+    "tokenNo": 8,
+    "uname": "മുഹമ്മദ്‌ മിൻഹാജുൽ ഹഖ് ആലത്തൂർപടി",
+    "password": "813",
+    "nameMl": "മുഹമ്മദ്‌ മിൻഹാജുൽ ഹഖ് ആലത്തൂർപടി",
+    "block": false,
+    "name": "Muhammed Minhajul Haq Alathurpadi",
+    "nameEn": "Muhammed Minhajul Haq Alathurpadi",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "sa": false,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "username": "8"
+  },
+  {
+    "id": "gAD2EWefXz0rzCYzbb6e",
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "name": "Muhammed Fvas Kttilshsheri",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameMl": "മുഹമ്മദ് ഫവാസ് കട്ടിലശ്ശേരി",
+    "uname": "മുഹമ്മദ് ഫവാസ് കട്ടിലശ്ശേരി",
+    "batch": "Batch 5",
+    "username": "72",
+    "tokenNo": 72,
+    "block": false,
+    "password": "439",
+    "nameEn": "Muhammed Fvas Kttilshsheri"
+  },
+  {
+    "id": "gnm85XFE7YwNf1nJ33Fd",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് അംജദ് കൊളപ്പുറം",
+    "password": "231",
+    "nameEn": "Muhammed Amjd Kealppurm",
+    "batch": "Batch 1",
+    "tokenNo": 197,
+    "uname": "മുഹമ്മദ് അംജദ് കൊളപ്പുറം",
+    "name": "Muhammed Amjd Kealppurm",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true
+      },
+      "breakfast": {
+        "sa": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "197",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "fish": true,
+      "mutton": true
+    }
+  },
+  {
+    "id": "hR4wbjDCVzdDRPy3dtsQ",
+    "block": false,
+    "nameEn": "Salman Mujeeb Chalkkuti",
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "su": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "sa": false
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false,
+        "sa": false
+      }
+    },
+    "username": "167",
+    "uname": "സൽമാൻ മുജീബ് ചാലക്കുടി",
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "nameMl": "സൽമാൻ മുജീബ് ചാലക്കുടി",
+    "name": "Salman Mujeeb Chalkkuti",
+    "batch": "Batch 2",
+    "tokenNo": 167,
+    "password": "768"
+  },
+  {
+    "id": "hfuMGlq3So7NBTth2ZzC",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സ്വഫ്‌വാൻ പറപ്പൂർ",
+    "block": false,
+    "tokenNo": 90,
+    "obj2": {
+      "mutton": true,
+      "chicken": true,
+      "fish": true,
+      "beef": true
+    },
+    "password": "197",
+    "obj": {
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "sa": false,
+        "su": true,
+        "fr": false,
+        "th": true,
+        "we": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "su": true,
+        "th": true,
+        "fr": false,
+        "we": true
+      }
+    }
+  },
+  {
+    "id": "i5b48nsm9NyYTWBAbefO",
+    "name": "Muhammed Nvas Melmuri",
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": true,
+      "mutton": true
+    },
+    "nameEn": "Muhammed Nvas Melmuri",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "password": "710",
+    "nameMl": "മുഹമ്മദ് നവാസ് മേൽമുറി",
+    "username": "66",
+    "tokenNo": 66,
+    "uname": "മുഹമ്മദ് നവാസ് മേൽമുറി",
+    "batch": "Batch 6"
+  },
+  {
+    "id": "ifhC0QFSVN6bE68r4iKV",
+    "tokenNo": 150,
+    "password": "843",
+    "uname": "അബ്ദുറഹ്മാൻ ആലത്തൂർപടി",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "mo": true,
+        "tu": true
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "beef": true,
+      "chicken": true
+    }
+  },
+  {
+    "id": "j0vaUBizavl6XtKW1DTA",
+    "name": "Hafiz Muhammed Sinan Karththoor",
+    "nameEn": "Hafiz Muhammed Sinan Karththoor",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "beef": true,
+      "mutton": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": false
+      },
+      "lunch": {
+        "sa": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "block": false,
+    "password": "840",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് സിനാൻ കാരത്തൂർ",
+    "username": "27",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സിനാൻ കാരത്തൂർ",
+    "tokenNo": 27,
+    "batch": "Batch 7"
+  },
+  {
+    "id": "jGLmtHJry5UAGX9D1QSs",
+    "batch": "Batch 1",
+    "uname": "അഹ്‌മദ്‌ നസീബ് കന്യാകുമാരി",
+    "nameEn": "Ahmd Nseeb Knyakumari",
+    "tokenNo": 194,
+    "password": "208",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Ahmd Nseeb Knyakumari",
+    "username": "194",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "nameMl": "അഹ്‌മദ്‌ നസീബ് കന്യാകുമാരി"
+  },
+  {
+    "id": "jhGc4nx5bOvbdpJiHpvD",
+    "uname": "മുഹമ്മദ് സിനാൻ വേങ്ങര",
+    "batch": "Batch 6",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true
+      },
+      "breakfast": {
+        "we": true,
+        "fr": false,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": false
+      }
+    },
+    "password": "865",
+    "nameEn": "Muhammed Sinan Vengara",
+    "block": false,
+    "name": "Muhammed Sinan Vengara",
+    "obj2": {
+      "fish": false,
+      "chicken": true,
+      "mutton": false,
+      "beef": true
+    },
+    "nameMl": "മുഹമ്മദ് സിനാൻ വേങ്ങര",
+    "tokenNo": 46,
+    "username": "46"
+  },
+  {
+    "id": "jsr2zjbAfhvla2yeiPP7",
+    "block": false,
+    "username": "160",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ അമീൻ എറണാകുളം",
+    "password": "650",
+    "nameEn": "Hafiz Muhammed Ameen Ernakulm",
+    "tokenNo": 160,
+    "batch": "Batch 2",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true
+      },
+      "breakfast": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ അമീൻ എറണാകുളം",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "name": "Hafiz Muhammed Ameen Ernakulm"
+  },
+  {
+    "id": "kP3j8UsGQDGWWb73mEa2",
+    "uname": "ഹാഫിള് അബ്ദുറഹ്മാൻ മിദ്‌ലാജ് പടിഞ്ഞാറ്റുമുറി",
+    "batch": "Batch 6",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "sa": false,
+        "su": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "nameEn": "Hafiz Abdurhman Midlaj Ptinjnjarrumuri",
+    "password": "410",
+    "name": "Hafiz Abdurhman Midlaj Ptinjnjarrumuri",
+    "block": false,
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": true,
+      "mutton": true
+    },
+    "nameMl": "ഹാഫിള് അബ്ദുറഹ്മാൻ മിദ്‌ലാജ് പടിഞ്ഞാറ്റുമുറി",
+    "tokenNo": 37,
+    "username": "37"
+  },
+  {
+    "id": "kapqCyDYxhbzEFOQZSEI",
+    "nameEn": "Muhammed Aarif .E Kollm",
+    "name": "Muhammed Aarif .E Kollm",
+    "obj2": {
+      "beef": false,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "password": "743",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് ആരിഫ് .എ കൊല്ലം",
+    "batch": "Batch 2",
+    "username": "163",
+    "tokenNo": 163,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      },
+      "breakfast": {
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "uname": "മുഹമ്മദ് ആരിഫ് .എ കൊല്ലം"
+  },
+  {
+    "id": "kawT52I62KqsQ2vIKIRy",
+    "uname": "മുഹമ്മദ് ഫർഹാൻ പാങ്ങ്",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      }
+    },
+    "batch": "Batch 3",
+    "nameMl": "മുഹമ്മദ് ഫർഹാൻ പാങ്ങ്",
+    "username": "147",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "block": false,
+    "name": "Muhammed Frhan Pang",
+    "tokenNo": 147,
+    "password": "907",
+    "nameEn": "Muhammed Frhan Pang"
+  },
+  {
+    "id": "ktqdvnHLmy9x912ehwUJ",
+    "password": "480",
+    "tokenNo": 127,
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "th": false,
+        "fr": false,
+        "we": false,
+        "su": true,
+        "sa": false
+      },
+      "lunch": {
+        "su": true,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "sa": false,
+        "mo": false,
+        "tu": false
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "fish": true,
+      "mutton": true
+    },
+    "uname": "മുഹമ്മദ്‌ ജലാൽ കരിങ്കല്ലത്താണി",
+    "block": false
+  },
+  {
+    "id": "kvmiABPccmlVMB0MAjnc",
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true
+      }
+    },
+    "password": "687",
+    "name": "Hafiz Muhammed Irshad Perampr",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഇർഷാദ് പേരാമ്പ്ര",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഇർഷാദ് പേരാമ്പ്ര",
+    "batch": "Batch 5",
+    "username": "71",
+    "tokenNo": 71,
+    "block": false,
+    "nameEn": "Hafiz Muhammed Irshad Perampr"
+  },
+  {
+    "id": "lPPebpd1FCcOOgF44Eui",
+    "batch": "Batch 1",
+    "name": "Hafiz Bilal Ponnani",
+    "password": "187",
+    "nameMl": "ഹാഫിള് ബിലാൽ പൊന്നാനി",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "uname": "ഹാഫിള് ബിലാൽ പൊന്നാനി",
+    "tokenNo": 191,
+    "username": "191",
+    "nameEn": "Hafiz Bilal Ponnani",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true
+      }
+    },
+    "block": false
+  },
+  {
+    "id": "mXwPZh8mHiiJRj797ABx",
+    "username": "52",
+    "tokenNo": 52,
+    "batch": "Batch 6",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് നിസാർ കെ തേലക്കാട്",
+    "name": "Hafiz Muhammed Nisar Ke Thelkkat",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ് നിസാർ കെ തേലക്കാട്",
+    "password": "345",
+    "obj": {
+      "lunch": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": true,
+        "fr": false,
+        "th": true,
+        "we": true,
+        "su": false,
+        "sa": false
+      }
+    },
+    "nameEn": "Hafiz Muhammed Nisar Ke Thelkkat",
+    "block": false
+  },
+  {
+    "id": "mlNSiJJUQdnKk6sSMal4",
+    "nameMl": "മുഹമ്മദ് റിൻഷാദ് പാങ്ങ്",
+    "username": "16",
+    "name": "Muhammed Rinshad Pang",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "beef": true,
+      "chicken": true
+    },
+    "block": false,
+    "password": "541",
+    "tokenNo": 16,
+    "nameEn": "Muhammed Rinshad Pang",
+    "batch": "Batch 7",
+    "uname": "മുഹമ്മദ് റിൻഷാദ് പാങ്ങ്",
+    "obj": {
+      "breakfast": {
+        "tu": false,
+        "mo": true,
+        "sa": false,
+        "we": true,
+        "th": false,
+        "fr": false,
+        "su": true
+      },
+      "lunch": {
+        "sa": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    }
+  },
+  {
+    "id": "mu8iavqqCeDeuWAS1dhf",
+    "username": "80",
+    "tokenNo": 80,
+    "batch": "Batch 5",
+    "name": "Hafiz Syyid Muhammed Svbeeh Vzhikktv",
+    "nameMl": "ഹാഫിള് സയ്യിദ് മുഹമ്മദ് സ്വബീഹ് വഴിക്കടവ്",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "beef": true,
+      "mutton": true
+    },
+    "uname": "ഹാഫിള് സയ്യിദ് മുഹമ്മദ് സ്വബീഹ് വഴിക്കടവ്",
+    "password": "630",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": false,
+        "sa": false,
+        "we": true,
+        "fr": false,
+        "th": false,
+        "su": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "su": false,
+        "th": false,
+        "fr": false,
+        "we": true,
+        "sa": false
+      }
+    },
+    "nameEn": "Hafiz Syyid Muhammed Svbeeh Vzhikktv",
+    "block": false
+  },
+  {
+    "id": "mvvnANTDMa5vEJYCO1Ps",
+    "password": "862",
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      },
+      "lunch": {
+        "sa": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "tokenNo": 137,
+    "uname": "അഹ്മദ് സിനാൻ തുവ്വൂർ",
+    "block": false,
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "fish": true,
+      "beef": true
+    }
+  },
+  {
+    "id": "n5soeLCHn72C7bXsd4V1",
+    "username": "164",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "sa": true
+      },
+      "breakfast": {
+        "sa": true,
+        "su": false,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Muhammed Rabeeh Valanchery",
+    "nameEn": "Muhammed Rabeeh Valanchery",
+    "block": false,
+    "nameMl": "മുഹമ്മദ്‌ റബീഹ് വളാഞ്ചേരി",
+    "password": "832",
+    "uname": "മുഹമ്മദ്‌ റബീഹ് വളാഞ്ചേരി",
+    "tokenNo": 164,
+    "batch": "Batch 2"
+  },
+  {
+    "id": "nedC9Yc7atygMpQuWawP",
+    "name": "Hafiz Muhammed Musthf Vilyoor",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "password": "759",
+    "uname": "ഹാഫിള് മുഹമ്മദ് മുസ്ഥഫ വിളയൂർ",
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      },
+      "breakfast": {
+        "sa": true,
+        "su": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "tu": false,
+        "mo": true
+      }
+    },
+    "batch": "Batch 6",
+    "tokenNo": 62,
+    "nameEn": "Hafiz Muhammed Musthf Vilyoor",
+    "username": "62",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് മുസ്ഥഫ വിളയൂർ",
+    "block": false
+  },
+  {
+    "id": "njrNlgoUhKSroONMSlMP",
+    "tokenNo": 31,
+    "uname": "ഹാഫിള് മുഹമ്മദ് സിനാൻ മണ്ണാർക്കാട്",
+    "block": false,
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "th": false,
+        "fr": false,
+        "we": true,
+        "sa": true,
+        "tu": false,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "password": "308"
+  },
+  {
+    "id": "nwsg7BCopmfGMbFchGEh",
+    "tokenNo": 81,
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "password": "514",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      },
+      "lunch": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "block": false,
+    "uname": "ഹാഫിള് മുഹമ്മദ് സ്വാലിഹ് മേൽമുറി"
+  },
+  {
+    "id": "oxbdvIptpK5YkzVTxMji",
+    "nameMl": "മുഹമ്മദ് ജാസിർ ആലത്തൂർപടി",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "obj": {
+      "lunch": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": true
+      },
+      "breakfast": {
+        "tu": false,
+        "mo": false,
+        "sa": false,
+        "su": false,
+        "fr": false,
+        "th": false,
+        "we": true
+      }
+    },
+    "name": "Muhammed Jasir Alathurpadi",
+    "password": "352",
+    "block": false,
+    "tokenNo": 25,
+    "nameEn": "Muhammed Jasir Alathurpadi",
+    "uname": "മുഹമ്മദ് ജാസിർ ആലത്തൂർപടി",
+    "username": "25",
+    "batch": "Batch 7"
+  },
+  {
+    "id": "poXrDYtHspRPoN7jbCAR",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഷഫീഅ് കൂത്തുപറമ്പ്",
+    "batch": "Batch 6",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഷഫീഅ് കൂത്തുപറമ്പ്",
+    "password": "478",
+    "name": "Hafiz Muhammed ShfeeA Kooththuprmp",
+    "block": false,
+    "tokenNo": 58,
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "nameEn": "Hafiz Muhammed ShfeeA Kooththuprmp",
+    "username": "58"
+  },
+  {
+    "id": "s2t3t7RGsVbwpS2jiltW",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "sa": false,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "nameEn": "Hafiz Muhammed Irshad Iringngavoor",
+    "name": "Hafiz Muhammed Irshad Iringngavoor",
+    "block": false,
+    "tokenNo": 68,
+    "password": "371",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ ഇർഷാദ് ഇരിങ്ങാവൂർ",
+    "username": "68",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ ഇർഷാദ് ഇരിങ്ങാവൂർ",
+    "batch": "Batch 6"
+  },
+  {
+    "id": "sE5ql707ZUknkpsZUuRa",
+    "uname": "ഹാഫിള് അൻവറലി പാങ്ങ്",
+    "block": false,
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "tokenNo": 153,
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true
+      },
+      "lunch": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "password": "971"
+  },
+  {
+    "id": "sq4puJusVbx3cShqsi2e",
+    "tokenNo": 151,
+    "block": false,
+    "nameMl": "ഹാഫിള് അബ്ദുല്ല സി.കെ അരിപ്ര",
+    "username": "151",
+    "nameEn": "Hafiz Abdull Si.ke Aripr",
+    "batch": "Batch 3",
+    "uname": "ഹാഫിള് അബ്ദുല്ല സി.കെ അരിപ്ര",
+    "name": "Hafiz Abdull Si.ke Aripr",
+    "password": "695",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": true,
+      "beef": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "tu": true,
+        "mo": true
+      }
+    }
+  },
+  {
+    "id": "tTNpqYsuFd3YbqE6LQHb",
+    "password": "932",
+    "tokenNo": 126,
+    "obj": {
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "su": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "sa": true
+      },
+      "breakfast": {
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": true,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "uname": "ഹാഫിള് സഅദ് ചുങ്കത്തറ",
+    "block": false
+  },
+  {
+    "id": "tkv6Q4nmoEOAzOi6q5Nd",
+    "name": "Syyid Jlaluddheen Burhan Bukhari",
+    "nameEn": "Syyid Jlaluddheen Burhan Bukhari",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "beef": true,
+      "mutton": true
+    },
+    "username": "155",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "fr": false,
+        "th": false,
+        "we": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "block": false,
+    "tokenNo": 155,
+    "nameMl": "സയ്യിദ് ജലാലുദ്ധീൻ ബുർഹാൻ ബുഖാരി",
+    "uname": "സയ്യിദ് ജലാലുദ്ധീൻ ബുർഹാൻ ബുഖാരി",
+    "batch": "Batch 3",
+    "password": "103"
+  },
+  {
+    "id": "tyQ6NfcOfoAknooKwYFK",
+    "nameEn": "Shfeekh Alathurpadi",
+    "block": false,
+    "username": "45",
+    "batch": "Batch 6",
+    "nameMl": "ശഫീഖ് ആലത്തൂർപടി",
+    "uname": "ശഫീഖ് ആലത്തൂർപടി",
+    "name": "Shfeekh Alathurpadi",
+    "tokenNo": 45,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "password": "194",
+    "obj": {
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "su": true,
+        "sa": true
+      }
+    }
+  },
+  {
+    "id": "u1o5eNViYnWRZHATzNI2",
+    "block": false,
+    "uname": "സയ്യിദ് ഉമർ സിനാൻ ജമലുല്ലൈലി",
+    "obj": {
+      "lunch": {
+        "th": true,
+        "fr": false,
+        "we": true,
+        "su": true,
+        "sa": false,
+        "mo": true,
+        "tu": true
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "su": true,
+        "th": true,
+        "fr": false,
+        "we": true,
+        "sa": false
+      }
+    },
+    "password": "453",
+    "tokenNo": 132,
+    "obj2": {
+      "chicken": true,
+      "beef": true,
+      "mutton": true,
+      "fish": false
+    }
+  },
+  {
+    "id": "uN420rnTDr8tiM4LTo9b",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് നസ്വീഹ് മണ്ണാർമല",
+    "username": "70",
+    "obj2": {
+      "mutton": true,
+      "chicken": true,
+      "beef": true,
+      "fish": true
+    },
+    "block": false,
+    "name": "Hafiz Muhammed Nsveeh Mnnarml",
+    "password": "152",
+    "obj": {
+      "breakfast": {
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "sa": true,
+        "mo": true,
+        "tu": true
+      }
+    },
+    "tokenNo": 70,
+    "nameEn": "Hafiz Muhammed Nsveeh Mnnarml",
+    "batch": "Batch 5",
+    "uname": "ഹാഫിള് മുഹമ്മദ് നസ്വീഹ് മണ്ണാർമല"
+  },
+  {
+    "id": "uWGeQXUgYDumAbvmVGy0",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": false,
+        "su": true,
+        "th": false,
+        "we": false,
+        "fr": true,
+        "sa": false
+      }
+    },
+    "obj2": {
+      "mutton": true,
+      "fish": true,
+      "chicken": true,
+      "beef": true
+    },
+    "password": "313",
+    "name": "Hafiz Muhammed Sinan Vettm",
+    "nameEn": "Hafiz Muhammed Sinan Vettm",
+    "block": false,
+    "tokenNo": 42,
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് സിനാൻ വെട്ടം",
+    "username": "42",
+    "uname": "ഹാഫിള് മുഹമ്മദ് സിനാൻ വെട്ടം",
+    "batch": "Batch 6"
+  },
+  {
+    "id": "uYrWV38UyrRTUd2y9OOg",
+    "obj": {
+      "breakfast": {
+        "mo": false,
+        "tu": false,
+        "sa": false,
+        "su": true,
+        "fr": true,
+        "th": false,
+        "we": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "su": true,
+        "we": true,
+        "th": false,
+        "fr": true
+      }
+    },
+    "tokenNo": 105,
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "fish": true,
+      "chicken": true
+    },
+    "password": "548",
+    "uname": "അഹ്മദ് ഇഹ്സാൻ പി കമ്പളക്കാട്",
+    "block": false
+  },
+  {
+    "id": "uprg04Q73qnzsUmO3CwC",
+    "obj2": {
+      "beef": true,
+      "fish": true,
+      "mutton": true,
+      "chicken": true
+    },
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true
+      },
+      "lunch": {
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Lukhmanul Hkeem Em Bheemnat",
+    "uname": "ലുഖ്മാനുൽ ഹകീം എം ഭീമനാട്",
+    "password": "398",
+    "batch": "Batch 4",
+    "nameEn": "Lukhmanul Hkeem Em Bheemnat",
+    "nameMl": "ലുഖ്മാനുൽ ഹകീം എം ഭീമനാട്",
+    "block": false,
+    "username": "123",
+    "tokenNo": 123
+  },
+  {
+    "id": "utvmuHkKvDx18wvr7MCM",
+    "obj": {
+      "breakfast": {
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "we": true,
+        "th": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "mutton": true,
+      "beef": true
+    },
+    "name": "Muhammed Salih .Em Chemmlshsheri",
+    "tokenNo": 91,
+    "uname": "മുഹമ്മദ് സ്വാലിഹ് .എം ചെമ്മലശ്ശേരി",
+    "nameMl": "മുഹമ്മദ് സ്വാലിഹ് .എം ചെമ്മലശ്ശേരി",
+    "password": "658",
+    "batch": "Batch 5",
+    "block": false,
+    "nameEn": "Muhammed Salih .Em Chemmlshsheri",
+    "username": "91"
+  },
+  {
+    "id": "vDSAULRJHVcykRB6U9fM",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ആദിൽ പരിയാപുരം",
+    "batch": "Batch 6",
+    "password": "601",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ആദിൽ പരിയാപുരം",
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "name": "Hafiz Muhammed Aadil Priyapurm",
+    "block": false,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "tokenNo": 60,
+    "nameEn": "Hafiz Muhammed Aadil Priyapurm",
+    "username": "60"
+  },
+  {
+    "id": "vOSXryCTjMTWZ5i3am3i",
+    "block": false,
+    "nameMl": "മുഹമ്മദ് ജവാദ് വെള്ളില",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "th": false,
+        "fr": false,
+        "we": true,
+        "su": true,
+        "sa": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "we": false,
+        "th": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "11",
+    "uname": "മുഹമ്മദ് ജവാദ് വെള്ളില",
+    "tokenNo": 11,
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    },
+    "nameEn": "Muhammed Jawad Vellila",
+    "name": "Muhammed Jawad Vellila",
+    "batch": "Batch 7",
+    "password": "654"
+  },
+  {
+    "id": "vutuO9v1LWslRBcdcEvg",
+    "password": "786",
+    "batch": "Batch 7",
+    "uname": "ഹാഫിള് മുഹ്‌സിൻ നറുക്കോട്",
+    "nameEn": "Hafiz Muhsin Narukkode",
+    "username": "13",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true
+      },
+      "breakfast": {
+        "fr": false,
+        "we": false,
+        "th": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "name": "Hafiz Muhsin Narukkode",
+    "tokenNo": 13,
+    "nameMl": "ഹാഫിള് മുഹ്‌സിൻ നറുക്കോട്",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "fish": true,
+      "mutton": true
+    }
+  },
+  {
+    "id": "vwp5PS7c2kQLbYAneE3F",
+    "tokenNo": 63,
+    "password": "184",
+    "block": false,
+    "uname": "നാസിഫ് അമീൻ പാതിരമണ്ണ",
+    "obj": {
+      "lunch": {
+        "th": false,
+        "fr": true,
+        "we": false,
+        "su": true,
+        "sa": false,
+        "tu": true,
+        "mo": false
+      },
+      "breakfast": {
+        "mo": true,
+        "tu": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "fish": true,
+      "beef": true,
+      "mutton": true,
+      "chicken": true
+    }
+  },
+  {
+    "id": "w3pSRk3CS6veqObG76HF",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "sa": false,
+        "su": false,
+        "we": false,
+        "fr": false,
+        "th": false,
+        "tu": false,
+        "mo": false
+      },
+      "breakfast": {
+        "we": false,
+        "th": false,
+        "fr": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "nameMl": "ഹാഫിള് ആദിൽ മുഹമ്മദ് ചട്ടിപ്പറമ്പ്",
+    "password": "791",
+    "tokenNo": 35,
+    "uname": "ഹാഫിള് ആദിൽ മുഹമ്മദ് ചട്ടിപ്പറമ്പ്",
+    "obj2": {
+      "beef": true,
+      "chicken": true,
+      "mutton": true,
+      "fish": true
+    },
+    "nameEn": "Hafiz Aadil Muhammed Chttipprmp",
+    "name": "Hafiz Aadil Muhammed Chttipprmp",
+    "batch": "Batch 7",
+    "username": "35"
+  },
+  {
+    "id": "x3mPnRbjbQZ8pgjCBJVJ",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "su": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "sa": true,
+        "tu": true,
+        "mo": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "we": true,
+        "fr": true,
+        "th": true,
+        "su": true,
+        "sa": true
+      }
+    },
+    "nameMl": "മുഹമ്മദ് ഇംതിയാസ് കെ ആമയൂർ",
+    "username": "103",
+    "uname": "മുഹമ്മദ് ഇംതിയാസ് കെ ആമയൂർ",
+    "obj2": {
+      "fish": true,
+      "mutton": true,
+      "chicken": true,
+      "beef": true
+    },
+    "tokenNo": 103,
+    "nameEn": "Muhammed Imthiyas Ke Aamyoor",
+    "name": "Muhammed Imthiyas Ke Aamyoor",
+    "batch": "Batch 4",
+    "password": "805"
+  },
+  {
+    "id": "x4mKiBrpu17GpUBmF0WU",
+    "username": "177",
+    "nameEn": "Hafiz Muhammed Flah Vaniymplm",
+    "block": false,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": false,
+        "fr": false,
+        "sa": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "fr": false,
+        "th": true,
+        "sa": true
+      }
+    },
+    "name": "Hafiz Muhammed Flah Vaniymplm",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ ഫലാഹ് വാണിയമ്പലം",
+    "password": "101",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ്‌ ഫലാഹ് വാണിയമ്പലം",
+    "batch": "Batch 1",
+    "obj2": {
+      "mutton": true,
+      "beef": true,
+      "chicken": true,
+      "fish": true
+    },
+    "tokenNo": 177
+  },
+  {
+    "id": "xFXHGWEi6YULY5opHY0D",
+    "password": "804",
+    "uname": "ഹാഫിള് മുഹമ്മദ്‌ യൂസുഫ് വാളാട്",
+    "block": false,
+    "tokenNo": 69,
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "beef": true,
+      "fish": true
+    },
+    "obj": {
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "fr": true,
+        "we": false,
+        "th": true,
+        "su": true,
+        "sa": false
+      },
+      "breakfast": {
+        "sa": false,
+        "th": false,
+        "fr": false,
+        "we": true,
+        "su": true,
+        "tu": false,
+        "mo": false
+      }
+    }
+  },
+  {
+    "id": "xc0A6fM21FLPuaBSURPE",
+    "name": "Muhammed Thvyyib Pi En Aalprmp",
+    "password": "214",
+    "obj2": {
+      "beef": true,
+      "mutton": true,
+      "chicken": true,
+      "fish": true
+    },
+    "nameEn": "Muhammed Thvyyib Pi En Aalprmp",
+    "tokenNo": 124,
+    "block": false,
+    "obj": {
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "fr": true,
+        "th": true,
+        "we": true,
+        "su": true,
+        "sa": true
+      },
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true
+      }
+    },
+    "username": "124",
+    "nameMl": "മുഹമ്മദ് ത്വയ്യിബ് പി എൻ ആൽപറമ്പ്",
+    "uname": "മുഹമ്മദ് ത്വയ്യിബ് പി എൻ ആൽപറമ്പ്",
+    "batch": "Batch 4"
+  },
+  {
+    "id": "y0guSPCKAnRNOPzWAbwk",
+    "uname": "മുഹമ്മദ് സ്വാലിഹ് കാപ്പ്",
+    "batch": "Batch 7",
+    "password": "245",
+    "nameEn": "Muhammed Salih Kappu",
+    "tokenNo": 7,
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": false,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "su": false
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": false
+      }
+    },
+    "name": "Muhammed Salih Kappu",
+    "block": false,
+    "username": "7",
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "nameMl": "മുഹമ്മദ് സ്വാലിഹ് കാപ്പ്"
+  },
+  {
+    "id": "yOYLg8DU5xYmZGhRuck9",
+    "password": "917",
+    "obj2": {
+      "chicken": true,
+      "mutton": true,
+      "beef": true,
+      "fish": true
+    },
+    "uname": "ഹാഫിള് മുഹമ്മദ് ശാനിബ് മണ്ണാർക്കാട്",
+    "block": false,
+    "obj": {
+      "breakfast": {
+        "sa": false,
+        "su": true,
+        "fr": false,
+        "we": false,
+        "th": false,
+        "mo": false,
+        "tu": false
+      },
+      "lunch": {
+        "mo": true,
+        "tu": true,
+        "su": true,
+        "th": true,
+        "fr": true,
+        "we": true,
+        "sa": true
+      }
+    },
+    "tokenNo": 51
+  },
+  {
+    "id": "yPvI8gikD73tJdlVSgj8",
+    "nameEn": "Hafiz Muhammed Fayis .ti Thrukkrippoor",
+    "password": "143",
+    "block": false,
+    "tokenNo": 33,
+    "batch": "Batch 7",
+    "username": "33",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് ഫായിസ് .ടി തൃക്കരിപ്പൂർ",
+    "uname": "ഹാഫിള് മുഹമ്മദ് ഫായിസ് .ടി തൃക്കരിപ്പൂർ",
+    "obj": {
+      "breakfast": {
+        "su": false,
+        "we": false,
+        "th": false,
+        "fr": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      },
+      "lunch": {
+        "th": false,
+        "we": false,
+        "fr": false,
+        "su": false,
+        "sa": false,
+        "tu": false,
+        "mo": false
+      }
+    },
+    "name": "Hafiz Muhammed Fayis .ti Thrukkrippoor",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    }
+  },
+  {
+    "id": "yRHQVx0gzCoTHqqMQopl",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "sa": true,
+        "fr": true,
+        "th": true,
+        "we": false,
+        "su": true
+      },
+      "lunch": {
+        "sa": false,
+        "su": true,
+        "fr": true,
+        "we": false,
+        "th": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "tokenNo": 67,
+    "uname": "ഹാഫിള് ആഷിഫ് അലി അരിമ്പ്ര",
+    "block": false,
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "password": "968"
+  },
+  {
+    "id": "yejM0FAPWMRQPzibQ88n",
+    "obj": {
+      "breakfast": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "fr": false,
+        "we": true,
+        "th": true,
+        "sa": true
+      },
+      "lunch": {
+        "tu": true,
+        "mo": true,
+        "su": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "sa": true
+      }
+    },
+    "obj2": {
+      "chicken": true,
+      "fish": true,
+      "beef": true,
+      "mutton": true
+    },
+    "tokenNo": 20,
+    "name": "Hafiz Muhammed Raees Vellamunda",
+    "nameMl": "ഹാഫിള് മുഹമ്മദ് റഈസ് വെള്ളമുണ്ട",
+    "uname": "ഹാഫിള് മുഹമ്മദ് റഈസ് വെള്ളമുണ്ട",
+    "password": "824",
+    "batch": "Batch 7",
+    "block": false,
+    "nameEn": "Hafiz Muhammed Raees Vellamunda",
+    "username": "20"
+  },
+  {
+    "id": "yfHitKsXpZNj5taEZN9s",
+    "nameMl": "ഹാഫിള് മിൻഹാജ് എം തിരുവിഴാംകുന്ന്",
+    "block": false,
+    "password": "571",
+    "tokenNo": 87,
+    "nameEn": "Hafiz Minhaj Em Thiruvizhamkunn",
+    "batch": "Batch 5",
+    "uname": "ഹാഫിള് മിൻഹാജ് എം തിരുവിഴാംകുന്ന്",
+    "name": "Hafiz Minhaj Em Thiruvizhamkunn",
+    "obj": {
+      "breakfast": {
+        "sa": true,
+        "we": true,
+        "th": true,
+        "fr": true,
+        "su": true,
+        "tu": true,
+        "mo": true
+      },
+      "lunch": {
+        "sa": true,
+        "su": true,
+        "th": true,
+        "we": true,
+        "fr": true,
+        "tu": true,
+        "mo": true
+      }
+    },
+    "username": "87",
+    "obj2": {
+      "fish": true,
+      "chicken": true,
+      "mutton": true,
+      "beef": true
+    }
+  }
+]

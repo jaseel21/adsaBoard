@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { useIdleTimer } from '../utils/useIdleTimer';
-import Swal from 'sweetalert2';
+import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -97,26 +97,21 @@ const Navbar = ({ isAdmin }) => {
     setAdminDropdownOpen(false);
   };
 
-  const handleLogout = () => {
-    feedback('warning');
-    Swal.fire({
+  const handleLogout = async () => {
+    const confirmed = await dialog.confirm({
       title: t('navLogout') || 'Logout',
-      text: 'Are you sure you want to sign out of the ADSA Committee console?',
+      message: 'Are you sure you want to sign out of the ADSA Committee console?',
+      confirmText: t('navLogout') || 'Yes, Logout',
+      cancelText: t('cancel') || 'Cancel',
+      confirmColor: 'rose',
       icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#10b981',
-      confirmButtonText: t('navLogout') || 'Yes, Logout',
-      cancelButtonText: t('cancel') || 'Cancel',
-      background: document.documentElement.classList.contains('dark') ? '#0f1715' : '#ffffff',
-      color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#111827',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        firebase.auth().signOut();
-        feedback('pop');
-        navigate('/alogin');
-      }
     });
+
+    if (confirmed) {
+      await firebase.auth().signOut();
+      dialog.toast.info('Signed Out', 'You have been safely signed out of the committee console.');
+      navigate('/alogin');
+    }
   };
 
   const isActive = (path) => {
@@ -129,16 +124,17 @@ const Navbar = ({ isAdmin }) => {
       ref={navRef}
       className="sticky top-0 z-40 w-full bg-white/85 dark:bg-[#080d0b]/90 backdrop-blur-2xl border-b border-gray-200/80 dark:border-white/10 transition-colors duration-300"
     >
-      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2.5 xs:px-3.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
           {/* Brand Logo & Name */}
           <div
-            onClick={() => handleNav(isAdmin ? '/admin' : '/')}
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group select-none flex-shrink-0"
+            onClick={() => handleNav('/')}
+            className="flex items-center gap-2 xs:gap-2.5 sm:gap-3 cursor-pointer group select-none flex-shrink-0 min-w-0"
+            title="Go to Home Page (/)"
           >
-            <div className="relative">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl p-1 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/30 border border-emerald-300/60 dark:border-emerald-500/20 shadow-sm group-hover:scale-105 group-hover:shadow-glow-emerald transition-all duration-300 flex items-center justify-center">
+            <div className="relative flex-shrink-0">
+              <div className="w-8 h-8 xs:w-9 xs:h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl p-0.5 sm:p-1 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/30 border border-emerald-300/60 dark:border-emerald-500/20 shadow-sm group-hover:scale-105 group-hover:shadow-glow-emerald transition-all duration-300 flex items-center justify-center">
                 <img
                   src="https://alathurpadiDars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png"
                   onError={(e) => {
@@ -146,21 +142,21 @@ const Navbar = ({ isAdmin }) => {
                     e.currentTarget.style.display = 'none';
                   }}
                   alt="Alathurpadi Dars Logo"
-                  className="w-8 h-8 sm:w-9 sm:h-9 object-contain"
+                  className="w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9 object-contain"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-lg sm:text-2xl tracking-tight text-emerald-600 dark:text-emerald-400">
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1 xs:gap-1.5 flex-nowrap">
+                <span className="font-black text-base xs:text-lg sm:text-2xl tracking-tight text-emerald-600 dark:text-emerald-400">
                   ADSA
                 </span>
-                <span className="font-extrabold text-lg sm:text-2xl tracking-tight text-gray-800 dark:text-white">
+                <span className="font-extrabold text-base xs:text-lg sm:text-2xl tracking-tight text-gray-800 dark:text-white">
                   T-Board
                 </span>
                 {isAdmin && (
-                  <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  <span className="ml-1 px-1.5 xs:px-2 py-0.5 rounded-full text-[9px] xs:text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     Admin
                   </span>
                 )}
@@ -176,10 +172,20 @@ const Navbar = ({ isAdmin }) => {
             {/* If ADMIN View */}
             {isAdmin ? (
               <div className="flex items-center gap-1 p-1 rounded-2xl bg-gray-100/70 dark:bg-white/5 border border-gray-200/60 dark:border-white/5">
+                {/* Home Page Button */}
+                <button
+                  onClick={() => handleNav('/')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/60 dark:hover:bg-white/5 transition-all duration-200"
+                  title="Go to Home Page (/)"
+                >
+                  <Home className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{t('navHome') || 'Home'}</span>
+                </button>
+
                 {/* Master Board */}
                 <button
                   onClick={() => handleNav('/admin')}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                     location.pathname === '/admin' || location.pathname === '/alogin'
                       ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
@@ -192,7 +198,7 @@ const Navbar = ({ isAdmin }) => {
                 {/* Students Management Console */}
                 <button
                   onClick={() => handleNav('/student-management')}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                     isActive('/student-management')
                       ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
@@ -205,7 +211,7 @@ const Navbar = ({ isAdmin }) => {
                 {/* Canteen Menu Console */}
                 <button
                   onClick={() => handleNav('/admin/menu')}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                     isActive('/admin/menu') || isActive('/menu-management')
                       ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
@@ -215,17 +221,17 @@ const Navbar = ({ isAdmin }) => {
                   <span>{t('navMenuMgmt') || 'Menu'}</span>
                 </button>
 
-                {/* Rejections List */}
+                {/* Dietary Management Console */}
                 <button
-                  onClick={() => handleNav('/list')}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    isActive('/list')
+                  onClick={() => handleNav('/admin/dietary')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                    isActive('/admin/dietary') || isActive('/dietary-management') || isActive('/admin/avoiders')
                       ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
                   }`}
                 >
-                  <FileText className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{t('navList') || 'Rejections'}</span>
+                  <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{t('navDietary') || 'Dietary'}</span>
                 </button>
 
                 {/* Supply Dropdown */}
@@ -284,16 +290,6 @@ const Navbar = ({ isAdmin }) => {
                     )}
                   </AnimatePresence>
                 </div>
-
-                {/* Public View Button */}
-                <button
-                  onClick={() => handleNav('/')}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-white/5 transition-all"
-                  title="View Public Student Token Matrix"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">Live Board</span>
-                </button>
               </div>
             ) : (
               /* If PUBLIC View */
@@ -413,11 +409,23 @@ const Navbar = ({ isAdmin }) => {
                     <span>{t('navStudentPortal') || 'Student Portal'}</span>
                   </button>
                 )}
+
+                {/* Admin Console shortcut if committee is logged in while viewing public pages */}
+                {user && !isAdmin && (
+                  <button
+                    onClick={() => handleNav('/admin')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all ml-1"
+                    title="Open Committee Admin Console"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Admin Console</span>
+                  </button>
+                )}
               </>
             )}
 
-            {/* Admin Profile / Auth Pill (for Admin mode) */}
-            {isAdmin && (
+            {/* Admin Profile / Auth Pill (for Admin mode or when committee user is logged in) */}
+            {(isAdmin || user) && (
               <div className="relative ml-2" ref={adminDropdownRef}>
                 <button
                   onClick={() => {
@@ -447,6 +455,15 @@ const Navbar = ({ isAdmin }) => {
                         </div>
                       )}
 
+                      {/* Go to Public Home Page */}
+                      <button
+                        onClick={() => handleNav('/')}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                      >
+                        <Home className="w-4 h-4 text-emerald-500" />
+                        <span>{t('navHome') || 'Home Page (Public)'}</span>
+                      </button>
+
                       <button
                         onClick={() => handleNav('/student-management')}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
@@ -461,6 +478,14 @@ const Navbar = ({ isAdmin }) => {
                       >
                         <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
                         <span>Canteen Menu Console</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleNav('/admin/dietary')}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                      >
+                        <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                        <span>{t('navDietaryMgmt') || 'Dietary & Avoiders Console'}</span>
                       </button>
 
                       <button
@@ -498,7 +523,7 @@ const Navbar = ({ isAdmin }) => {
           </nav>
 
           {/* Right Action Island: Language + Theme Switches + Mobile Hamburger */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 flex-shrink-0">
             <LanguageSwitch />
             <ThemeSwitch />
 
@@ -509,10 +534,10 @@ const Navbar = ({ isAdmin }) => {
                   feedback('pop');
                   setMobileMenuOpen(!mobileMenuOpen);
                 }}
-                className="p-2.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/70 dark:border-white/10 transition-colors"
+                className="p-2 xs:p-2.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/70 dark:border-white/10 transition-colors flex items-center justify-center min-w-[38px] min-h-[38px] active:scale-95"
                 aria-label="Toggle navigation menu"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5 text-emerald-500" /> : <Menu className="w-5 h-5" />}
+                {mobileMenuOpen ? <X className="w-4 h-4 xs:w-5 xs:h-5 text-emerald-500" /> : <Menu className="w-4 h-4 xs:w-5 xs:h-5" />}
               </button>
             </div>
           </div>
@@ -527,9 +552,9 @@ const Navbar = ({ isAdmin }) => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="md:hidden overflow-hidden border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#0b1210]/95 backdrop-blur-2xl shadow-2xl"
+            className="md:hidden overflow-y-auto max-h-[calc(100dvh-4rem)] border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#0b1210]/95 backdrop-blur-2xl shadow-2xl pb-safe"
           >
-            <div className="px-4 py-4 space-y-2">
+            <div className="px-3.5 xs:px-4 py-4 space-y-2">
               {isAdmin ? (
                 <>
                   <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-2">
@@ -537,6 +562,15 @@ const Navbar = ({ isAdmin }) => {
                       Committee Admin Panel
                     </p>
                   </div>
+
+                  {/* Public Home Page Link */}
+                  <button
+                    onClick={() => handleNav('/')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <Home className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navHome') || 'Home Page (Public)'}</span>
+                  </button>
 
                   <button
                     onClick={() => handleNav('/admin')}
@@ -575,15 +609,15 @@ const Navbar = ({ isAdmin }) => {
                   </button>
 
                   <button
-                    onClick={() => handleNav('/list')}
+                    onClick={() => handleNav('/admin/dietary')}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                      isActive('/list')
+                      isActive('/admin/dietary') || isActive('/dietary-management') || isActive('/admin/avoiders')
                         ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
                   >
-                    <FileText className="w-4 h-4 text-emerald-500" />
-                    <span>{t('navList') || 'Rejections List'}</span>
+                    <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navDietaryMgmt') || 'Dietary & Avoiders'}</span>
                   </button>
 
                   {/* Supply Quick Grid */}
@@ -607,10 +641,10 @@ const Navbar = ({ isAdmin }) => {
 
                   <button
                     onClick={() => handleNav('/')}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200/60 dark:border-white/10 mt-1"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-500/20 mt-1"
                   >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>View Public Student Board</span>
+                    <Home className="w-3.5 h-3.5" />
+                    <span>{t('navHome') || 'Go to Home Page (Public)'}</span>
                   </button>
                 </>
               ) : (
@@ -700,11 +734,11 @@ const Navbar = ({ isAdmin }) => {
                   <div className="h-px bg-gray-100 dark:bg-white/10 my-2" />
 
                   <button
-                    onClick={() => handleNav('/alogin')}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
+                    onClick={() => handleNav(user ? '/admin' : '/alogin')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
                   >
-                    <ShieldCheck className="w-4 h-4 text-gray-400" />
-                    <span>Committee Login</span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <span>{user ? 'Admin Console' : 'Committee Login'}</span>
                   </button>
                 </>
               )}
