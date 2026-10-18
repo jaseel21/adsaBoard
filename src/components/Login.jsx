@@ -3,23 +3,20 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Clock, KeyRound, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, ArrowLeft } from 'lucide-react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
-import { useWorldTime } from '../utils/time';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { usePortalStatus } from '../utils/usePortalStatus';
 
 function Login() {
   const [token, setToken] = useState('');
   const [pass, setPass] = useState('');
   const [err, setErr] = useState('');
-  const [currentTime, setCurrentTime] = useState(null);
-  const [canClick, setCanClick] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formFocused, setFormFocused] = useState(false);
 
-  const { timeHms } = useWorldTime('Asia/Kolkata');
   const { t } = useLanguage();
   const { feedback } = useFeedback();
+  const { isOpen, isOverride, statusBadge, currentTime, startTime, endTime } = usePortalStatus();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,51 +36,22 @@ function Login() {
     }
   }, [location.search]);
 
-  const startTime = "14:00:00";
-  const endTime = "23:00:00";
-
-  const getISTTime = useCallback(() => {
-    if (!timeHms) return null;
-    return timeHms.padStart(8, '0');
-  }, [timeHms]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const updateTime = () => {
-      const time = getISTTime();
-      if (!isMounted) return;
-      setCurrentTime(time);
-      if (time) {
-        setCanClick(time >= startTime && time <= endTime);
-      } else {
-        setCanClick(false);
-      }
-    };
-    updateTime();
-    const intervalId = setInterval(updateTime, 1000);
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, [getISTTime, startTime, endTime]);
-
-  const isCurrentTimeInRange = useCallback(() => {
-    if (!currentTime) return false;
-    return currentTime >= startTime && currentTime <= endTime;
-  }, [currentTime, startTime, endTime]);
-
   const loginWith = useCallback(async () => {
     try {
       const StInfo = await firebase
         .firestore()
         .collection('students')
-        .where('tokenNo', '==', parseInt(token))
+        .where('tokenNo', '==', parseInt(token, 10))
         .where('password', '==', pass)
         .get();
 
       if (!StInfo.empty) {
-        const studentData = StInfo.docs[0].data();
-        studentData.documentId = StInfo.docs[0].id;
+        const studentDoc = StInfo.docs[0];
+        const studentData = {
+          id: studentDoc.id,
+          documentId: studentDoc.id,
+          ...studentDoc.data(),
+        };
         setStdata(studentData);
         feedback('success');
         navigate('/student-portal');
@@ -98,58 +66,30 @@ function Login() {
     }
   }, [token, pass, setStdata, navigate, feedback]);
 
-  const submitForm = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const time = getISTTime();
-      if (!time) {
-        setErr('Unable to verify time. Please try again.');
-        return;
-      }
-
-      const doc = await firebase
-        .firestore()
-        .collection('tokenboard')
-        .doc('g8iJVNn2RQkysjMAvX1h')
-        .get();
-
-      if (doc.exists) {
-        const tbStatus = doc.data().status;
-        if (isCurrentTimeInRange() || tbStatus === true) {
-          await loginWith();
-        } else {
-          feedback('warning');
-          setErr('Login is restricted outside allowed hours (2:00 PM - 11:00 PM IST).');
-        }
-      } else {
-        setErr('System error: Configuration not found.');
-      }
-    } catch (error) {
-      console.error('Error checking tokenboard status:', error);
-      setErr('Error checking system status. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isCurrentTimeInRange, loginWith, getISTTime, feedback]);
-
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
       setIsLoading(true);
-      if (!token || isNaN(parseInt(token))) {
+      if (!token || isNaN(parseInt(token, 10))) {
         setErr('Please enter a valid numeric token number.');
+        return;
+      }
+
+      if (!isOpen) {
+        feedback('warning');
+        setErr(`Token updates are locked outside the allowed hours (${startTime} - ${endTime}).`);
         return;
       }
 
       const blockStatus = await firebase
         .firestore()
         .collection('students')
-        .where('tokenNo', '==', parseInt(token))
+        .where('tokenNo', '==', parseInt(token, 10))
         .get();
 
       if (!blockStatus.empty) {
         const statusData = blockStatus.docs[0].data().block;
         if (statusData === false) {
-          await submitForm();
+          await loginWith();
         } else {
           feedback('warning');
           setErr('Your token has been locked by ADSA Canteen Committee.');
@@ -164,7 +104,7 @@ function Login() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, submitForm, feedback]);
+  }, [token, isOpen, startTime, endTime, loginWith, feedback]);
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -179,41 +119,49 @@ function Login() {
   return (
     <div className="flex-1 flex items-center justify-center p-4 sm:p-6 transition-colors duration-300">
       <div className="w-full max-w-md space-y-6">
-        
         {/* Time Status Pill */}
         <div className="flex justify-center">
           <div
             className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl border backdrop-blur-xl text-xs font-semibold shadow-sm transition-all ${
-              canClick
+              isOpen
                 ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
                 : 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-500/20 text-amber-700 dark:text-amber-400'
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                canClick ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
               }`}
             />
-            <Clock className="w-3.5 h-3.5" />
-            <span>{canClick ? 'Token Updates Open' : 'Outside Update Window'}</span>
-            <span className="font-mono opacity-70">({currentTime || '12:00:00'} IST)</span>
+            {isOpen ? <Clock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+            <span>{statusBadge}</span>
+            <span className="font-mono opacity-70">({currentTime || '--:--:--'} IST)</span>
           </div>
         </div>
 
         {/* Login Card */}
         <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl backdrop-blur-xl p-6 sm:p-8 space-y-6">
-          
           <div className="text-center space-y-1.5">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md">
               <KeyRound className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-              {t('navStudentPortal')}
+              {t('navStudentPortal') || 'Student Portal'}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Enter your token number and password to manage meal selections
             </p>
           </div>
+
+          {!isOpen && (
+            <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+              <Lock className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
+              <div>
+                <span className="font-bold block">Portal is Currently Locked</span>
+                Token updates are only accepted daily between {startTime} and {endTime}. Please return during the operational window.
+              </div>
+            </div>
+          )}
 
           {err && (
             <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/30 flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300">
@@ -223,14 +171,13 @@ function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
             {/* Token Input */}
             <div className="space-y-1.5">
               <label
                 htmlFor="token"
                 className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
               >
-                {t('tokenNumber')}
+                {t('tokenNumber') || 'Token Number'}
               </label>
               <div className="relative">
                 <input
@@ -253,7 +200,7 @@ function Login() {
                 htmlFor="password"
                 className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
               >
-                Password
+                {t('password') || 'Password'}
               </label>
               <div className="relative">
                 <input
@@ -264,12 +211,12 @@ function Login() {
                   onChange={(e) => setPass(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 pr-11 py-3 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200/80 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                  className="w-full pl-4 pr-11 py-3 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200/80 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -279,11 +226,20 @@ function Login() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all transform active:scale-95 disabled:opacity-50"
+              disabled={isLoading || !isOpen}
+              className={`w-full mt-2 inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-sm shadow-md transition-all transform active:scale-95 ${
+                isOpen
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-600/20'
+                  : 'bg-gray-300 dark:bg-white/10 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-80'
+              }`}
             >
               {isLoading ? (
                 <span>Verifying...</span>
+              ) : !isOpen ? (
+                <>
+                  <Lock className="w-4 h-4 text-amber-500" />
+                  <span>Token Portal Locked ({statusBadge})</span>
+                </>
               ) : (
                 <>
                   <span>Sign In to Portal</span>

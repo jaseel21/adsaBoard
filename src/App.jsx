@@ -6,19 +6,17 @@ import StudentPort from './components/StudentPort';
 import Navbar from './components/NavBar';
 import Footer from './components/Footer';
 import List from './components/List';
-import Section from './components/Section';
-import Mtokens from './components/Mtokens';
+import SupplySections from './components/SupplySections';
 import Fmenu from './components/Fmenu';
 import PersonInfo from './store/StudentData';
-import GetTokens from './store/GetDocuments';
-import SectionBF from './components/SectionBF';
 import Admin from './components/Admin';
-import AstudentPort from './components/AstudentPort';
-import GeneratePdf from './components/GeneratePdf';
 import AdminLogin from './components/AdminLogin';
-import AddStudentsCSV from './components/AddStudentsCSV';
 import StudentManagement from './components/StudentManagement';
 import MenuManagement from './components/MenuManagement';
+import NotFound from './components/NotFound';
+import AdminRoute from './components/guards/AdminRoute';
+import StudentRoute from './components/guards/StudentRoute';
+import { DialogProvider } from './components/ui/AppDialog';
 import firebase from './firebase/config';
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
@@ -32,10 +30,7 @@ function AppContent() {
   const isAdmin =
     location.pathname.startsWith('/admin') ||
     location.pathname === '/alogin' ||
-    location.pathname === '/student-management' ||
-    location.pathname === '/menu-management' ||
-    location.pathname === '/add-students' ||
-    location.pathname === '/m-tokens';
+    location.pathname.startsWith('/student-management');
 
   useEffect(() => {
     const unsubscribe = firebase.auth().onAuthStateChanged((currentUser) => {
@@ -49,37 +44,64 @@ function AppContent() {
       <Navbar isAdmin={isAdmin} />
       <main className="flex-1 flex flex-col">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/student-portal" element={<StudentPort />} />
-          <Route path="/list" element={<List />} />
-          <Route path="/lunch" element={<Section />} />
           <Route path="/menu" element={<Fmenu />} />
-          <Route path="/breakfast" element={<SectionBF />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/menu" element={<MenuManagement />} />
-          <Route path="/menu-management" element={<MenuManagement />} />
+          <Route path="/list" element={<List />} />
+          <Route path="/lunch" element={<SupplySections defaultMeal="lunch" />} />
+          <Route path="/breakfast" element={<SupplySections defaultMeal="breakfast" />} />
+
+          {/* Student Portal (Protected by Student Session) */}
+          <Route
+            path="/student-portal"
+            element={
+              <StudentRoute>
+                <StudentPort />
+              </StudentRoute>
+            }
+          />
+
+          {/* Committee Admin Routes (Strictly Protected by AdminRoute Guard) */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/menu"
+            element={
+              <AdminRoute>
+                <MenuManagement />
+              </AdminRoute>
+            }
+          />
+          <Route path="/menu-management" element={<Navigate to="/admin/menu" replace />} />
           <Route
             path="/student-management"
-            element={<StudentManagement />}
+            element={
+              <AdminRoute>
+                <StudentManagement />
+              </AdminRoute>
+            }
           />
-          <Route
-            path="/astudent-port"
-            element={user ? <AstudentPort /> : <Navigate to="/alogin" replace />}
-          />
-          <Route path="/pdfg" element={<GeneratePdf />} />
+
+          {/* Legacy Redirects */}
+          <Route path="/add-student" element={<Navigate to="/student-management?add=true" replace />} />
+          <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
+          <Route path="/astudent-port" element={<Navigate to="/student-management" replace />} />
+          <Route path="/m-tokens" element={<Navigate to="/student-management" replace />} />
+          <Route path="/pdfg" element={<Navigate to="/lunch" replace />} />
           <Route
             path="/alogin"
-            element={user ? <Admin /> : <AdminLogin />}
+            element={user ? <Navigate to="/admin" replace /> : <AdminLogin />}
           />
-          <Route
-            path="/m-tokens"
-            element={user ? <Mtokens /> : <Navigate to="/alogin" replace />}
-          />
-          <Route
-            path="/add-students"
-            element={user ? <AddStudentsCSV /> : <Navigate to="/alogin" replace />}
-          />
+
+          {/* 404 Catch-All Fallback Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
@@ -92,9 +114,9 @@ function App() {
     <ThemeProvider>
       <LanguageProvider>
         <PersonInfo>
-          <GetTokens>
+          <DialogProvider>
             <AppContent />
-          </GetTokens>
+          </DialogProvider>
         </PersonInfo>
       </LanguageProvider>
     </ThemeProvider>

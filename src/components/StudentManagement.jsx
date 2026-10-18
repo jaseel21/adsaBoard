@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -19,6 +19,7 @@ import {
   Unlock,
   RefreshCw,
   X,
+  UtensilsCrossed,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
@@ -27,9 +28,12 @@ import { useFeedback } from '../utils/useFeedback';
 import StudentDrawer from './StudentDrawer';
 import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
+import PreferenceManagerModal from './PreferenceManagerModal';
+import { subscribeToPreferences } from '../utils/preferenceService';
 
 export default function StudentManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
   const { dayShort } = useWorldTime('Asia/Kolkata');
@@ -64,35 +68,65 @@ export default function StudentManagement() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
-
-  // Fetch all students from Firestore
-  const fetchStudents = async () => {
-    try {
-      const snapshot = await firebase.firestore().collection('students').get();
-      const docs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      // Sort by token number
-      docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
-      setStudents(docs);
-    } catch (err) {
-      console.error('Error fetching students:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const [prefModalOpen, setPrefModalOpen] = useState(false);
+  const [preferences, setPreferences] = useState([]);
 
   useEffect(() => {
-    fetchStudents();
+    const unsub = subscribeToPreferences((list) => {
+      setPreferences(list.filter((p) => p.isActive));
+    });
+    return () => unsub();
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const unsubStudents = firebase
+      .firestore()
+      .collection('students')
+      .onSnapshot(
+        (snapshot) => {
+          const docs = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
+          setStudents(docs);
+          setLoading(false);
+          setRefreshing(false);
+        },
+        (err) => {
+          console.error('Error in students real-time listener:', err);
+          setLoading(false);
+          setRefreshing(false);
+        }
+      );
+
+    return () => unsubStudents();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('add') === 'true') {
+      setEditingStudent(null);
+      setDrawerOpen(true);
+    }
+    const tokenParam = params.get('token');
+    if (tokenParam && students.length > 0) {
+      const match = students.find((s) => String(s.tokenNo) === String(tokenParam));
+      if (match) {
+        setEditingStudent(match);
+        setDrawerOpen(true);
+      }
+    }
+  }, [location.search, students]);
 
   const handleManualRefresh = () => {
     feedback('tick');
     setRefreshing(true);
-    fetchStudents();
+    setTimeout(() => {
+      setRefreshing(false);
+      feedback('success');
+    }, 400);
   };
 
   // Derive unique batches
@@ -339,6 +373,17 @@ export default function StudentManagement() {
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
             <span>{t('importCsvBtn') || 'Import / Export'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              feedback('tick');
+              setPrefModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+          >
+            <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+            <span>Dietary Options</span>
           </button>
 
           <button
@@ -909,7 +954,6 @@ export default function StudentManagement() {
         selectedStudents={selectedStudentsList}
         allBatches={allBatches}
         onCompleted={() => {
-          fetchStudents();
           setSelectedIds(new Set());
         }}
       />
@@ -920,8 +964,15 @@ export default function StudentManagement() {
         onClose={() => setCsvModalOpen(false)}
         allStudents={students}
         onImportComplete={() => {
-          fetchStudents();
+          setSelectedIds(new Set());
         }}
+      />
+
+      {/* Dietary Preferences CRUD Modal (Item #2) */}
+      <PreferenceManagerModal
+        isOpen={prefModalOpen}
+        onClose={() => setPrefModalOpen(false)}
+        preferences={preferences}
       />
     </div>
   );

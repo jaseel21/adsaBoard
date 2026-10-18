@@ -7,72 +7,86 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { subscribeToPreferences } from '../utils/preferenceService';
 
 const MenuTable = () => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
-  const [beef, setBeef] = useState([]);
-  const [chicken, setChicken] = useState([]);
-  const [fish, setFish] = useState([]);
-  const [mutton, setMutton] = useState([]);
+  const [preferences, setPreferences] = useState([]);
+  const [rejectionsByPref, setRejectionsByPref] = useState({});
   const [loading, setLoading] = useState(true);
 
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const querySnapshot = await firebase.firestore().collection('students').get();
-        const tokenDocuments = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        tokenDocuments.sort((a, b) => a.tokenNo - b.tokenNo);
-        setDocuments(tokenDocuments);
-        fetchRejections(tokenDocuments);
-      } catch (error) {
-        console.error('Error fetching tokens:', error);
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    const unsubPrefs = subscribeToPreferences((list) => {
+      setPreferences(list.filter((p) => p.isActive));
+    });
+
+    const unsubStudents = firebase
+      .firestore()
+      .collection('students')
+      .onSnapshot(
+        (querySnapshot) => {
+          const tokenDocuments = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          tokenDocuments.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
+          setDocuments(tokenDocuments);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Error in List.jsx real-time tokens listener:', error);
+          setLoading(false);
+        }
+      );
+
+    return () => {
+      unsubPrefs();
+      unsubStudents();
     };
-
-    const fetchRejections = (docs) => {
-      const beefTokens = docs.filter((doc) => doc.obj2 && !doc.obj2.beef).map((doc) => doc.tokenNo);
-      setBeef(beefTokens);
-
-      const chickenTokens = docs.filter((doc) => doc.obj2 && !doc.obj2.chicken).map((doc) => doc.tokenNo);
-      setChicken(chickenTokens);
-
-      const fishTokens = docs.filter((doc) => doc.obj2 && !doc.obj2.fish).map((doc) => doc.tokenNo);
-      setFish(fishTokens);
-
-      const muttonTokens = docs.filter((doc) => doc.obj2 && !doc.obj2.mutton).map((doc) => doc.tokenNo);
-      setMutton(muttonTokens);
-    };
-
-    fetchData();
   }, []);
+
+  // Compute rejections dynamically whenever preferences or documents update
+  useEffect(() => {
+    if (documents.length === 0 || preferences.length === 0) return;
+
+    const map = {};
+    preferences.forEach((pref) => {
+      const avoidedTokens = documents
+        .filter((doc) => doc.obj2 && doc.obj2[pref.id] === false)
+        .map((doc) => doc.tokenNo);
+      map[pref.id] = avoidedTokens;
+    });
+
+    setRejectionsByPref(map);
+  }, [documents, preferences]);
 
   const generatePDF = () => {
     feedback('tick');
     const doc = new jsPDF('p', 'mm', 'a4');
 
-    const columns = [
-      { header: 'Beef', dataKey: 'beef' },
-      { header: 'Chicken', dataKey: 'chicken' },
-      { header: 'Fish', dataKey: 'fish' },
-      { header: 'Mutton', dataKey: 'mutton' },
-    ];
-
-    const maxLen = Math.max(beef.length, chicken.length, fish.length, mutton.length);
-    const tableData = Array.from({ length: maxLen }).map((_, index) => ({
-      beef: index < beef.length ? beef[index] : '-',
-      chicken: index < chicken.length ? chicken[index] : '-',
-      fish: index < fish.length ? fish[index] : '-',
-      mutton: index < mutton.length ? mutton[index] : '-',
+    const columns = preferences.map((p) => ({
+      header: `${p.labelEn} (${p.labelMl || p.labelEn})`,
+      dataKey: p.id,
     }));
+
+    const maxLen = Math.max(
+      ...preferences.map((p) => (rejectionsByPref[p.id] || []).length),
+      1
+    );
+
+    const tableData = Array.from({ length: maxLen }).map((_, index) => {
+      const row = {};
+      preferences.forEach((p) => {
+        const list = rejectionsByPref[p.id] || [];
+        row[p.id] = index < list.length ? `#${list[index]}` : '-';
+      });
+      return row;
+    });
 
     doc.setFontSize(16);
     doc.setTextColor(5, 150, 105);
@@ -114,11 +128,13 @@ const MenuTable = () => {
     );
   }
 
-  const maxRows = Math.max(beef.length, chicken.length, fish.length, mutton.length);
+  const maxRows = Math.max(
+    ...preferences.map((p) => (rejectionsByPref[p.id] || []).length),
+    1
+  );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div>
@@ -127,7 +143,7 @@ const MenuTable = () => {
             Dietary Avoiders Matrix
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Tokens with specific meat/fish exclusions for kitchen reference
+            Tokens with specific meat/fish exclusions for kitchen reference (Dynamic Preferences)
           </p>
         </div>
 
@@ -145,86 +161,73 @@ const MenuTable = () => {
 
           <button
             onClick={generatePDF}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all transform active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
           >
             <FileDown className="w-4 h-4" />
-            <span>Export PDF</span>
+            <span>Export Kitchen PDF</span>
           </button>
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-lg overflow-hidden backdrop-blur-xl">
+      {/* Summary Chips */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {preferences.map((p) => {
+          const count = (rejectionsByPref[p.id] || []).length;
+          return (
+            <div
+              key={p.id}
+              className="p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 text-center shadow-xs"
+            >
+              <span className="text-xs font-bold text-gray-600 dark:text-gray-400 block">
+                {p.labelEn} Excluded
+              </span>
+              <span className="text-2xl font-extrabold text-rose-500 block mt-1">
+                {count}
+              </span>
+              <span className="text-[10px] text-gray-400 block mt-0.5">
+                {documents.length - count} accepted
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Dynamic Table */}
+      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm overflow-hidden backdrop-blur-xl">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10 text-center">
-            <thead className="bg-gray-50 dark:bg-[#131d1a]">
-              <tr>
-                <th className="py-3.5 px-4 text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
-                  🥩 {t('beef')} ({beef.length})
-                </th>
-                <th className="py-3.5 px-4 text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
-                  🍗 {t('chicken')} ({chicken.length})
-                </th>
-                <th className="py-3.5 px-4 text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
-                  🐟 {t('fish')} ({fish.length})
-                </th>
-                <th className="py-3.5 px-4 text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
-                  🍖 {t('mutton')} ({mutton.length})
-                </th>
+          <table className="w-full text-center">
+            <thead>
+              <tr className="bg-gray-50/80 dark:bg-white/5 border-b border-gray-200/80 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-300">
+                {preferences.map((p) => (
+                  <th key={p.id} className="py-3.5 px-4">
+                    <span>{p.labelEn}</span>
+                    <span className="block text-[10px] font-normal text-gray-400 mt-0.5">
+                      {p.labelMl}
+                    </span>
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-sm font-semibold text-gray-800 dark:text-gray-200">
-              {maxRows === 0 ? (
-                <tr>
-                  <td colSpan="4" className="py-8 text-xs text-gray-400">
-                    No dietary restrictions reported.
-                  </td>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-xs font-semibold">
+              {Array.from({ length: maxRows }).map((_, index) => (
+                <tr key={index} className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors">
+                  {preferences.map((p) => {
+                    const list = rejectionsByPref[p.id] || [];
+                    const tokenVal = list[index];
+                    return (
+                      <td key={p.id} className="py-3 px-4">
+                        {tokenVal ? (
+                          <span className="inline-block px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-mono text-xs font-bold">
+                            #{tokenVal}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 dark:text-gray-600">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
-              ) : (
-                Array.from({ length: maxRows }).map((_, index) => (
-                  <tr
-                    key={index}
-                    className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <td className="py-3 px-4 font-mono">
-                      {index < beef.length ? (
-                        <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs">
-                          #{beef[index]}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono">
-                      {index < chicken.length ? (
-                        <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs">
-                          #{chicken[index]}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono">
-                      {index < fish.length ? (
-                        <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs">
-                          #{fish[index]}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono">
-                      {index < mutton.length ? (
-                        <span className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs">
-                          #{mutton[index]}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>

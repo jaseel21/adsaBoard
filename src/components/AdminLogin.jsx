@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ShieldCheck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
@@ -12,39 +12,37 @@ function AdminLogin() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  const handleLogin = (e) => {
+  const redirectTarget = location.state?.from || '/admin';
+  const noticeMessage = location.state?.notice;
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     feedback('tick');
 
-    firebase
-      .auth()
-      .signInWithEmailAndPassword(email, password)
-      .then(() => {
-        feedback('success');
-        Swal.fire({
-          title: 'Welcome Admin',
-          text: 'ADSA Administration authenticated successfully.',
-          icon: 'success',
-          confirmButtonColor: '#10b981',
-        });
-        navigate('/admin');
-      })
-      .catch((error) => {
-        feedback('warning');
-        Swal.fire({
-          icon: 'error',
-          title: 'Authentication Failed',
-          text: error.message || 'Invalid administrator credentials.',
-          confirmButtonColor: '#ef4444',
-        });
-      })
-      .finally(() => {
-        setLoading(false);
+    try {
+      // Enforce session persistence so public computers don't keep committee logged in indefinitely
+      if (firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+      }
+      await firebase.auth().signInWithEmailAndPassword(email, password);
+      feedback('success');
+      navigate(redirectTarget, { replace: true });
+    } catch (error) {
+      feedback('warning');
+      Swal.fire({
+        icon: 'error',
+        title: 'Authentication Failed',
+        text: error.message || 'Invalid administrator credentials.',
+        confirmButtonColor: '#ef4444',
       });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,6 +59,13 @@ function AdminLogin() {
             Sign in with administrative credentials to manage canteen tokens
           </p>
         </div>
+
+        {noticeMessage && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
+            <span>{noticeMessage}</span>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">

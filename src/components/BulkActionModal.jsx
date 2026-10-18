@@ -20,6 +20,7 @@ import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { subscribeToPreferences } from '../utils/preferenceService';
 
 export default function BulkActionModal({
   isOpen,
@@ -43,12 +44,15 @@ export default function BulkActionModal({
   const [mealActionVal, setMealActionVal] = useState(true); // true = turn ON, false = turn OFF
 
   // Dietary state
-  const [dietaryChanges, setDietaryChanges] = useState({
-    beef: 'no_change', // 'on' | 'off' | 'no_change'
-    chicken: 'no_change',
-    fish: 'no_change',
-    mutton: 'no_change',
-  });
+  const [dietaryChanges, setDietaryChanges] = useState({});
+  const [availablePreferences, setAvailablePreferences] = useState([]);
+
+  React.useEffect(() => {
+    const unsub = subscribeToPreferences((list) => {
+      setAvailablePreferences(list.filter((p) => p.isActive));
+    });
+    return () => unsub();
+  }, []);
 
   // Batch state
   const [newBatch, setNewBatch] = useState(allBatches[0] || 'Batch 2024');
@@ -601,14 +605,9 @@ export default function BulkActionModal({
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { key: 'beef', label: 'Beef' },
-                  { key: 'chicken', label: 'Chicken' },
-                  { key: 'fish', label: 'Fish' },
-                  { key: 'mutton', label: 'Mutton' },
-                ].map(item => (
-                  <div key={item.key} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-2">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white">{item.label}</span>
+                {availablePreferences.map(item => (
+                  <div key={item.id} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-2">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">{item.labelEn}</span>
                     <div className="grid grid-cols-3 gap-1">
                       {[
                         { val: 'no_change', label: 'Unchanged' },
@@ -618,9 +617,9 @@ export default function BulkActionModal({
                         <button
                           key={opt.val}
                           type="button"
-                          onClick={() => setDietaryChanges(prev => ({ ...prev, [item.key]: opt.val }))}
+                          onClick={() => setDietaryChanges(prev => ({ ...prev, [item.id]: opt.val }))}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${
-                            dietaryChanges[item.key] === opt.val
+                            (dietaryChanges[item.id] || 'no_change') === opt.val
                               ? opt.val === 'on'
                                 ? 'bg-emerald-500 text-white'
                                 : opt.val === 'off'

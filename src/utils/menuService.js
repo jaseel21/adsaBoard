@@ -763,3 +763,109 @@ export function determineActiveMealSlot(timeHms, todayDayData = null) {
     isArchivedDay: false,
   };
 }
+
+const PRESETS_DOC_REF = () =>
+  firebase.firestore().collection('canteen_menu').doc('dish_presets');
+
+/**
+ * Subscribe to dynamic dish presets from Firestore
+ */
+export function subscribeToDishPresets(onUpdate, onError) {
+  const docRef = PRESETS_DOC_REF();
+  return docRef.onSnapshot(
+    async (snapshot) => {
+      if (snapshot.exists && snapshot.data()?.presets) {
+        onUpdate(snapshot.data().presets);
+      } else {
+        try {
+          await docRef.set({
+            presets: DISH_PRESETS,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+          onUpdate(DISH_PRESETS);
+        } catch (err) {
+          console.warn('Could not seed presets to Firestore, using local defaults:', err);
+          onUpdate(DISH_PRESETS);
+        }
+      }
+    },
+    (err) => {
+      console.error('Error subscribing to dish presets:', err);
+      if (onError) onError(err);
+      onUpdate(DISH_PRESETS);
+    }
+  );
+}
+
+/**
+ * Save complete dish presets map
+ */
+export async function saveDishPresets(presetsMap) {
+  const docRef = PRESETS_DOC_REF();
+  await docRef.set({
+    presets: presetsMap,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
+
+/**
+ * Add a new preset to a specific meal slot (breakfast, lunch, evening, dinner)
+ */
+export async function addDishPreset(slotKey, preset) {
+  const docRef = PRESETS_DOC_REF();
+  const snap = await docRef.get();
+  const current = snap.exists && snap.data()?.presets ? snap.data().presets : { ...DISH_PRESETS };
+
+  const slotPresets = Array.isArray(current[slotKey]) ? [...current[slotKey]] : [];
+  slotPresets.push({
+    title: preset.title.trim(),
+    items: Array.isArray(preset.items) ? preset.items : [preset.title.trim()],
+    category: preset.category || 'Veg',
+  });
+
+  current[slotKey] = slotPresets;
+  await saveDishPresets(current);
+}
+
+/**
+ * Delete a preset from a meal slot
+ */
+export async function deleteDishPreset(slotKey, titleToDelete) {
+  const docRef = PRESETS_DOC_REF();
+  const snap = await docRef.get();
+  const current = snap.exists && snap.data()?.presets ? snap.data().presets : { ...DISH_PRESETS };
+
+  if (Array.isArray(current[slotKey])) {
+    current[slotKey] = current[slotKey].filter((p) => p.title !== titleToDelete);
+    await saveDishPresets(current);
+  }
+}
+
+/**
+ * Bulk update a meal across multiple days (e.g. Monday + Tuesday + Wednesday)
+ */
+export async function bulkUpdateMealAcrossDays(dayKeysArray, slotKey, mealData, userEmail = 'admin') {
+  const docRef = MENU_DOC_REF();
+  const snap = await docRef.get();
+  const currentDays = snap.exists && snap.data()?.days ? snap.data().days : { ...DEFAULT_WEEKLY_MENU };
+
+  const updatedDays = { ...currentDays };
+  dayKeysArray.forEach((dKey) => {
+    if (updatedDays[dKey]) {
+      updatedDays[dKey] = {
+        ...updatedDays[dKey],
+        [slotKey]: {
+          ...updatedDays[dKey][slotKey],
+          ...mealData,
+        },
+      };
+    }
+  });
+
+  await docRef.set({
+    days: updatedDays,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedBy: userEmail,
+  }, { merge: true });
+}
+

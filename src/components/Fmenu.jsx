@@ -102,16 +102,18 @@ const MenuTable = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto justify-end">
-          {/* Admin shortcut button */}
+          {/* Admin shortcut button (visible to Committee, or routes to Login if public) */}
           <button
             onClick={() => {
               feedback('tick');
-              navigate('/admin/menu');
+              navigate(user ? '/admin/menu' : '/alogin', {
+                state: { from: '/admin/menu', notice: 'Please sign in with committee credentials to modify the weekly menu.' },
+              });
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95"
           >
             <Edit3 className="w-3.5 h-3.5" />
-            <span>{t('menuManagement') || 'Manage Menu'}</span>
+            <span>{user ? (t('menuManagement') || 'Manage Menu') : 'Committee Edit'}</span>
           </button>
 
           <button

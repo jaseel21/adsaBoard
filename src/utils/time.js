@@ -45,16 +45,18 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
         }
       } catch (_) {}
 
-      // If document wasn't available, write once
-      if (!serverMs) {
-        await timeDocRef.set({
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+      // If document wasn't available, write only if authenticated admin
+      if (!serverMs && firebase.auth().currentUser) {
+        try {
+          await timeDocRef.set({
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
 
-        const timeDoc = await timeDocRef.get({ source: 'server' });
-        if (timeDoc.exists && timeDoc.data().updatedAt) {
-          serverMs = timeDoc.data().updatedAt.toMillis();
-        }
+          const freshDoc = await timeDocRef.get({ source: 'server' });
+          if (freshDoc.exists && freshDoc.data().updatedAt) {
+            serverMs = freshDoc.data().updatedAt.toMillis();
+          }
+        } catch (_) {}
       }
 
       if (serverMs) {

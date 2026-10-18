@@ -54,6 +54,8 @@ import {
   DISH_PRESETS,
 } from '../utils/menuService';
 import MealEditModal from './MealEditModal';
+import BulkMenuEditModal from './BulkMenuEditModal';
+import PresetManagerModal from './PresetManagerModal';
 
 const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -88,6 +90,8 @@ export default function MenuManagement() {
   // Overrides modal state
   const [overrides, setOverrides] = useState({});
   const [showOverridesModal, setShowOverridesModal] = useState(false);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [showPresetManagerModal, setShowPresetManagerModal] = useState(false);
   const [newOverrideDate, setNewOverrideDate] = useState('');
   const [newOverrideTitle, setNewOverrideTitle] = useState('');
   const [newOverrideBreakfast, setNewOverrideBreakfast] = useState('');
@@ -808,7 +812,31 @@ export default function MenuManagement() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Special Feasts Overrides */}
+          {/* Bulk Edit Days (Item #10) */}
+          <button
+            onClick={() => {
+              feedback('tick');
+              setShowBulkEditModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold transition-colors"
+          >
+            <Layers className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Bulk Edit Days</span>
+          </button>
+
+          {/* Dish Presets CRUD (Item #10) */}
+          <button
+            onClick={() => {
+              feedback('tick');
+              setShowPresetManagerModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-xs font-bold transition-colors"
+          >
+            <BookmarkPlus className="w-3.5 h-3.5 text-blue-500" />
+            <span>Dish Presets</span>
+          </button>
+
+          {/* Single Day / Special Feasts Overrides */}
           <button
             onClick={() => {
               feedback('tick');
@@ -816,8 +844,8 @@ export default function MenuManagement() {
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 text-xs font-semibold transition-colors"
           >
-            <BookmarkPlus className="w-3.5 h-3.5 text-purple-500" />
-            <span>Special Feasts ({Object.keys(overrides).length})</span>
+            <Calendar className="w-3.5 h-3.5 text-purple-500" />
+            <span>Single-Day Feasts ({Object.keys(overrides).length})</span>
           </button>
 
           {/* Export PDF */}
@@ -1281,6 +1309,18 @@ export default function MenuManagement() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Bulk Menu Edit Modal (Item #10) */}
+      <BulkMenuEditModal
+        isOpen={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+      />
+
+      {/* Presets CRUD Modal (Item #10) */}
+      <PresetManagerModal
+        isOpen={showPresetManagerModal}
+        onClose={() => setShowPresetManagerModal(false)}
+      />
     </div>
   );
 }

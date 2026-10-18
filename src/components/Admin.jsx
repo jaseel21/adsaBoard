@@ -21,6 +21,7 @@ import { AuthContext } from '../store/AuthContext';
 import { useWorldTime } from '../utils/time';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { getTodayISTDate, getEffectiveStudentMealStatus } from '../utils/studentExceptionService';
 
 const SwitchButton = ({ number, block, isOn, onClick }) => {
   return (
@@ -74,33 +75,47 @@ function Admin() {
     if (dayShort) setDay(dayShort);
   }, [dayShort]);
 
+  const todayIST = getTodayISTDate();
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const querySnapshot = await firebase.firestore().collection('students').get();
-        const docs = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
-        setDocuments(docs);
+    setLoading(true);
 
-        const doc = await firebase
-          .firestore()
-          .collection('tokenboard')
-          .doc('g8iJVNn2RQkysjMAvX1h')
-          .get();
-        if (doc.exists) {
-          setIsChecked(Boolean(doc.data().status));
+    const unsubStudents = firebase
+      .firestore()
+      .collection('students')
+      .onSnapshot(
+        (querySnapshot) => {
+          const docs = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          docs.sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
+          setDocuments(docs);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching admin data:', error);
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Error fetching admin data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      );
 
-    fetchData();
+    const unsubTokenBoard = firebase
+      .firestore()
+      .collection('tokenboard')
+      .doc('g8iJVNn2RQkysjMAvX1h')
+      .onSnapshot(
+        (doc) => {
+          if (doc.exists) {
+            setIsChecked(Boolean(doc.data().status));
+          }
+        },
+        (err) => console.error('Error listening to tokenboard in admin:', err)
+      );
+
+    return () => {
+      unsubStudents();
+      unsubTokenBoard();
+    };
   }, []);
 
   const toggleBoardLock = () => {
@@ -137,11 +152,9 @@ function Admin() {
     });
   };
 
-  const handleStudentSelect = async (doc) => {
+  const handleStudentSelect = (doc) => {
     feedback('tick');
-    const studentData = { ...doc, documentId: doc.id, isLunch };
-    setStdata(studentData);
-    navigate('/astudent-port');
+    navigate(`/student-management?token=${doc.tokenNo}`);
   };
 
   const filteredDocuments = documents.filter((doc) => {
@@ -266,12 +279,12 @@ function Admin() {
             <button
               onClick={() => {
                 feedback('tick');
-                navigate('/m-tokens');
+                navigate('/student-management');
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Range</span>
+              <span>Bulk Actions</span>
             </button>
 
             <div className="relative">
@@ -296,8 +309,11 @@ function Admin() {
 
         <div className="flex flex-wrap justify-center gap-2 min-[380px]:gap-2.5 sm:gap-3">
           {filteredDocuments.map((doc) => {
-            const isOn = Boolean(
-              isLunch ? doc.obj?.lunch?.[day] : doc.obj?.breakfast?.[day]
+            const isOn = getEffectiveStudentMealStatus(
+              doc,
+              todayIST,
+              day,
+              isLunch ? 'lunch' : 'breakfast'
             );
             return (
               <SwitchButton

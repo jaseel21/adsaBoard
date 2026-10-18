@@ -24,6 +24,7 @@ import Swal from 'sweetalert2';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { subscribeToPreferences } from '../utils/preferenceService';
 
 const defaultMealDays = {
   su: true,
@@ -73,6 +74,14 @@ export default function StudentDrawer({
   const [lunch, setLunch] = useState(defaultMealDays);
   const [breakfast, setBreakfast] = useState(defaultMealDays);
   const [dietary, setDietary] = useState(defaultDietary);
+  const [availablePreferences, setAvailablePreferences] = useState([]);
+
+  useEffect(() => {
+    const unsub = subscribeToPreferences((list) => {
+      setAvailablePreferences(list.filter((p) => p.isActive));
+    });
+    return () => unsub();
+  }, []);
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -730,25 +739,20 @@ export default function StudentDrawer({
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[
-                        { key: 'beef', label: t('beef') || 'Beef' },
-                        { key: 'chicken', label: t('chicken') || 'Chicken' },
-                        { key: 'fish', label: t('fish') || 'Fish' },
-                        { key: 'mutton', label: t('mutton') || 'Mutton' },
-                      ].map((item) => {
-                        const eats = Boolean(dietary[item.key]);
+                      {availablePreferences.map((item) => {
+                        const eats = dietary[item.id] !== undefined ? Boolean(dietary[item.id]) : true;
                         return (
                           <button
-                            key={item.key}
+                            key={item.id}
                             type="button"
-                            onClick={() => toggleDiet(item.key)}
+                            onClick={() => toggleDiet(item.id)}
                             className={`p-3 rounded-xl font-bold text-xs flex items-center justify-between transition-all ${
                               eats
                                 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300/50 dark:border-emerald-500/20'
                                 : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-300/50 dark:border-rose-500/20'
                             }`}
                           >
-                            <span>{item.label}</span>
+                            <span>{item.labelEn}</span>
                             <span className={`w-2 h-2 rounded-full ${eats ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                           </button>
                         );

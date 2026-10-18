@@ -21,6 +21,7 @@ import {
   determineActiveMealSlot,
   DEFAULT_WEEKLY_MENU,
 } from '../utils/menuService';
+import { getTodayISTDate, addDaysToDate, getEffectiveStudentMealStatus } from '../utils/studentExceptionService';
 
 const DAYS_ORDER = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -93,10 +94,12 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
     let b = 0;
     let l = 0;
     if (Array.isArray(documents) && documents.length > 0 && displayedDayKey) {
+      const todayDateStr = getTodayISTDate();
+      const targetDateStr = displayedDayKey === tomorrowKey ? addDaysToDate(todayDateStr, 1) : todayDateStr;
       documents.forEach((doc) => {
         if (!doc.block) {
-          if (doc.obj?.breakfast?.[displayedDayKey]) b++;
-          if (doc.obj?.lunch?.[displayedDayKey]) l++;
+          if (getEffectiveStudentMealStatus(doc, targetDateStr, displayedDayKey, 'breakfast')) b++;
+          if (getEffectiveStudentMealStatus(doc, targetDateStr, displayedDayKey, 'lunch')) l++;
         }
       });
       return { displayedBreakfastCount: b, displayedLunchCount: l };
@@ -106,7 +109,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
       displayedBreakfastCount: breakfastOrdersCount || 0,
       displayedLunchCount: lunchOrdersCount || 0,
     };
-  }, [documents, displayedDayKey, breakfastOrdersCount, lunchOrdersCount]);
+  }, [documents, displayedDayKey, tomorrowKey, breakfastOrdersCount, lunchOrdersCount]);
 
   // Identify the spotlighted meal for the displayed day. Returns NULL if all slots are empty or archived.
   const spotlightMeal = useMemo(() => {
@@ -337,7 +340,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
               }}
               className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition-colors"
             >
-              View Tomorrow's Meals →
+              View Tomorrow&apos;s Meals →
             </button>
           )}
         </div>
