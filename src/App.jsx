@@ -106,11 +106,17 @@ function AppContent() {
             <Route path="/kds" element={<Navigate to="/kitchen" replace />} />
             <Route path="/cook-portal" element={<Navigate to="/kitchen" replace />} />
 
-            {/* Master Board & Student Management (Strictly Central Committee & Devs) */}
+            {/* Master Board & Student Management (Central Committee, Canteen Sub-Committee, Devs) */}
             <Route
               path="/admin"
               element={
-                <RoleRoute allowedRoles={[ROLES.CENTRAL_COMMITTEE, ROLES.DEVELOPER]}>
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
                   <Admin />
                 </RoleRoute>
               }
@@ -118,7 +124,13 @@ function AppContent() {
             <Route
               path="/student-management"
               element={
-                <RoleRoute allowedRoles={[ROLES.CENTRAL_COMMITTEE, ROLES.DEVELOPER]}>
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
                   <StudentManagement />
                 </RoleRoute>
               }

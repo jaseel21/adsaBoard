@@ -589,7 +589,7 @@ export default function LandingPage() {
                 }}
                 className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-teal-700 to-emerald-800 hover:from-teal-800 hover:to-emerald-900 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
               >
-                <span>{t('staffCommandSignInBtn', 'Staff Command Sign In')}</span>
+                <span>{t('staffCommandSignInBtn', 'Admin Sign In')}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </motion.div>

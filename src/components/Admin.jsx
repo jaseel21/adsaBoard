@@ -61,7 +61,7 @@ import { hapticEngine } from '../utils/haptics';
 export default function Admin() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, role } = useContext(AuthContext);
+  const { user, role, isCentralCommittee } = useContext(AuthContext);
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
@@ -312,9 +312,10 @@ export default function Admin() {
         isTomorrowLocked={isTomorrowLocked}
         lockStartTime={lockStartTime}
         lockEndTime={lockEndTime}
-        onOpenLockModal={() => setShowLockManagerModal(true)}
-        onToggleLock={toggleBoardLock}
-        onOpenStaffModal={() => setShowStaffModal(true)}
+        onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
+        onToggleLock={isCentralCommittee ? toggleBoardLock : null}
+        onOpenStaffModal={isCentralCommittee ? () => setShowStaffModal(true) : null}
+        isCentralCommittee={isCentralCommittee}
         roleBadge={roleBadge}
         user={user}
       />
@@ -740,13 +741,14 @@ export default function Admin() {
         documents={documents}
         onSelectStudent={handleTokenClick}
         onToggleMeal={() => toggleMeal(isLunch ? 'breakfast' : 'lunch')}
-        onToggleLock={toggleBoardLock}
+        onToggleLock={isCentralCommittee ? toggleBoardLock : null}
         onOpenDietary={() => setShowDietaryModal(true)}
-        onOpenStaff={() => setShowStaffModal(true)}
-        onOpenLockModal={() => setShowLockManagerModal(true)}
+        onOpenStaff={isCentralCommittee ? () => setShowStaffModal(true) : null}
+        onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
         navigate={navigate}
         isLunch={isLunch}
         effectiveMode={effectiveMode}
+        isCentralCommittee={isCentralCommittee}
       />
 
       {/* 7. Floating Ergonomic Glass Dock */}

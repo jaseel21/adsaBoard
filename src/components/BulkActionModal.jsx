@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -22,6 +22,7 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { AuthContext } from '../store/AuthContext';
 
 export default function BulkActionModal({
   isOpen,
@@ -30,6 +31,8 @@ export default function BulkActionModal({
   onCompleted,
   allBatches = []
 }) {
+  const { user, role, isCentralCommittee, isCanteenCommittee } = useContext(AuthContext);
+  const isCanteenMode = !isCentralCommittee && isCanteenCommittee;
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
@@ -449,10 +452,14 @@ export default function BulkActionModal({
           {[
             { id: 'meals', label: 'Meals', icon: Utensils },
             { id: 'dietary', label: 'Dietary', icon: Coffee },
-            { id: 'batch', label: 'Batch', icon: Layers },
             { id: 'status', label: 'Lock/Unlock', icon: ShieldCheck },
-            { id: 'password', label: 'Reset Passwords', icon: KeyRound },
-            { id: 'delete', label: 'Delete', icon: Trash2, danger: true },
+            ...(isCentralCommittee
+              ? [
+                  { id: 'batch', label: 'Batch', icon: Layers },
+                  { id: 'password', label: 'Reset Passwords', icon: KeyRound },
+                  { id: 'delete', label: 'Delete', icon: Trash2, danger: true },
+                ]
+              : []),
           ].map(tab => {
             const Icon = tab.icon;
             const active = activeAction === tab.id;

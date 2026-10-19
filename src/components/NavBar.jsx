@@ -219,8 +219,8 @@ const Navbar = ({ isAdmin }) => {
                   <span>{t('navHome') || 'Home'}</span>
                 </button>
 
-                {/* Master Board (Central Committee & Devs) */}
-                {isCentralCommittee && (
+                {/* Master Board (Central Committee, Canteen Sub-Committee & Devs) */}
+                {isCanteenCommittee && (
                   <button
                     onClick={() => handleNav('/admin')}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
@@ -234,8 +234,8 @@ const Navbar = ({ isAdmin }) => {
                   </button>
                 )}
 
-                {/* Students Management Console (Central Committee & Devs) */}
-                {isCentralCommittee && (
+                {/* Students Management Console (Central Committee, Canteen Sub-Committee & Devs) */}
+                {isCanteenCommittee && (
                   <button
                     onClick={() => handleNav('/student-management')}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
@@ -620,8 +620,8 @@ const Navbar = ({ isAdmin }) => {
                         </>
                       )}
 
-                      {/* Master Board & Students (Central Committee & Devs only) */}
-                      {isCentralCommittee && (
+                      {/* Master Board & Students (Canteen Sub-Committee, Central Committee, Devs) */}
+                      {isCanteenCommittee && (
                         <>
                           <button
                             onClick={() => handleNav('/admin')}
@@ -638,7 +638,12 @@ const Navbar = ({ isAdmin }) => {
                             <Users className="w-4 h-4 text-emerald-500" />
                             <span>{t('studentsConsole', 'Students Console')}</span>
                           </button>
+                        </>
+                      )}
 
+                      {/* Audit Logs & Staff Management (Central Committee & Devs only) */}
+                      {isCentralCommittee && (
+                        <>
                           <button
                             onClick={() => handleNav('/admin/audit-logs')}
                             className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
@@ -763,8 +768,8 @@ const Navbar = ({ isAdmin }) => {
                     <span>{t('kitchenDisplaySystem', 'Kitchen Display System')}</span>
                   </button>
 
-                  {/* Master Token Board (Central Committee & Devs) */}
-                  {isCentralCommittee && (
+                  {/* Master Token Board (Canteen Sub-Committee, Central Committee & Devs) */}
+                  {isCanteenCommittee && (
                     <button
                       onClick={() => handleNav('/admin')}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
@@ -778,8 +783,8 @@ const Navbar = ({ isAdmin }) => {
                     </button>
                   )}
 
-                  {/* Student Management (Central Committee & Devs) */}
-                  {isCentralCommittee && (
+                  {/* Student Management (Canteen Sub-Committee, Central Committee & Devs) */}
+                  {isCanteenCommittee && (
                     <button
                       onClick={() => handleNav('/student-management')}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${

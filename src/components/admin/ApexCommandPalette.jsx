@@ -36,6 +36,7 @@ export default function ApexCommandPalette({
   navigate,
   isLunch = true,
   effectiveMode,
+  isCentralCommittee = false,
 }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
@@ -74,7 +75,7 @@ export default function ApexCommandPalette({
 
   // Action Commands list
   const actionCommands = useMemo(() => {
-    return [
+    const list = [
       {
         id: 'toggle_meal',
         title: isLunch ? t('switchBreakfastService', 'Switch to Breakfast Service') : t('switchLunchService', 'Switch to Lunch Service'),
@@ -86,7 +87,10 @@ export default function ApexCommandPalette({
           onClose();
         },
       },
-      {
+    ];
+
+    if (isCentralCommittee) {
+      list.push({
         id: 'toggle_lock',
         title: effectiveMode === 'force_unlocked' ? t('activateCutoffSchedule', 'Activate Cutoff Schedule') : t('emergencyBoardUnlock', 'Emergency 24/7 Board Unlock'),
         subtitle: effectiveMode === 'force_unlocked' ? t('enforceDailyCutoffs', 'Enforce daily cutoffs') : t('bypassCutoffsAllDates', 'Bypass cutoffs for all dates'),
@@ -96,7 +100,10 @@ export default function ApexCommandPalette({
           if (onToggleLock) onToggleLock();
           onClose();
         },
-      },
+      });
+    }
+
+    list.push(
       {
         id: 'kitchen_kds',
         title: t('openKitchenKds', 'Open Kitchen Live Display System'),
@@ -118,53 +125,61 @@ export default function ApexCommandPalette({
           if (onOpenDietary) onOpenDietary();
           onClose();
         },
-      },
-      {
-        id: 'staff_management',
-        title: t('manageStaffRolesAction', 'Manage Staff Roles & Access Delegation'),
-        subtitle: t('manageStaffRolesSub', 'Grant or revoke Central Admin, Canteen Officer, or Cook roles'),
-        icon: Users,
-        iconColor: 'text-purple-500',
-        action: () => {
-          if (onOpenStaff) onOpenStaff();
-          onClose();
+      }
+    );
+
+    if (isCentralCommittee) {
+      list.push(
+        {
+          id: 'staff_management',
+          title: t('manageStaffRolesAction', 'Manage Staff Roles & Access Delegation'),
+          subtitle: t('manageStaffRolesSub', 'Grant or revoke Central Admin, Canteen Officer, or Cook roles'),
+          icon: Users,
+          iconColor: 'text-purple-500',
+          action: () => {
+            if (onOpenStaff) onOpenStaff();
+            onClose();
+          },
         },
-      },
-      {
-        id: 'cutoff_rules',
-        title: t('configureCutoffTimers', 'Configure Cutoff Window & Timers'),
-        subtitle: t('configureCutoffTimersSub', 'Adjust daily cutoff time and grace period'),
-        icon: Sliders,
-        iconColor: 'text-blue-500',
-        action: () => {
-          if (onOpenLockModal) onOpenLockModal();
-          onClose();
+        {
+          id: 'cutoff_rules',
+          title: t('configureCutoffTimers', 'Configure Cutoff Window & Timers'),
+          subtitle: t('configureCutoffTimersSub', 'Adjust daily cutoff time and grace period'),
+          icon: Sliders,
+          iconColor: 'text-blue-500',
+          action: () => {
+            if (onOpenLockModal) onOpenLockModal();
+            onClose();
+          },
         },
+        {
+          id: 'audit_logs',
+          title: t('auditLogsAction', 'Audit Trail & Activity Logs'),
+          subtitle: t('auditLogsSub', 'Inspect immutable records of all token switches and security events'),
+          icon: Activity,
+          iconColor: 'text-emerald-500',
+          action: () => {
+            navigate('/admin/audit-logs');
+            onClose();
+          },
+        }
+      );
+    }
+
+    list.push({
+      id: 'menu_mgmt',
+      title: t('canteenPlannerAction', 'Canteen Food Menu Planner'),
+      subtitle: t('canteenPlannerSub', 'Update weekly breakfast, lunch, and dinner menus (/admin/menu)'),
+      icon: Utensils,
+      iconColor: 'text-rose-500',
+      action: () => {
+        navigate('/admin/menu');
+        onClose();
       },
-      {
-        id: 'audit_logs',
-        title: t('auditLogsAction', 'Audit Trail & Activity Logs'),
-        subtitle: t('auditLogsSub', 'Inspect immutable records of all token switches and security events'),
-        icon: Activity,
-        iconColor: 'text-emerald-500',
-        action: () => {
-          navigate('/admin/audit-logs');
-          onClose();
-        },
-      },
-      {
-        id: 'menu_mgmt',
-        title: t('canteenPlannerAction', 'Canteen Food Menu Planner'),
-        subtitle: t('canteenPlannerSub', 'Update weekly breakfast, lunch, and dinner menus (/admin/menu)'),
-        icon: Utensils,
-        iconColor: 'text-rose-500',
-        action: () => {
-          navigate('/admin/menu');
-          onClose();
-        },
-      },
-    ];
-  }, [isLunch, effectiveMode, onToggleMeal, onToggleLock, onOpenDietary, onOpenStaff, onOpenLockModal, navigate, onClose, t]);
+    });
+
+    return list;
+  }, [isLunch, effectiveMode, isCentralCommittee, onToggleMeal, onToggleLock, onOpenDietary, onOpenStaff, onOpenLockModal, navigate, onClose, t]);
 
   // Filtered Results
   const { filteredActions, filteredStudents } = useMemo(() => {

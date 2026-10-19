@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -22,11 +22,13 @@ import {
   LayoutGrid,
   Calendar,
   RefreshCw,
+  Lock,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { AuthContext } from '../store/AuthContext';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { cleanPastDateExceptions, syncStudentDiningHistory } from '../utils/studentExceptionService';
 import { logAuditEvent, calculateObjectDiff, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
@@ -60,6 +62,8 @@ export default function StudentDrawer({
   onSaved,
   onDeleted
 }) {
+  const { user, role, isCentralCommittee, isCanteenCommittee } = useContext(AuthContext);
+  const isCanteenMode = !isCentralCommittee && isCanteenCommittee;
   const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
 
@@ -147,8 +151,8 @@ export default function StudentDrawer({
       setDateExceptions({});
       setStudentTemplates([]);
     }
-    setActiveTab('profile');
-  }, [student, isOpen, existingBatches]);
+    setActiveTab(isCanteenMode ? 'meals' : 'profile');
+  }, [student, isOpen, existingBatches, isCanteenMode]);
 
   const handleTokenChange = (val) => {
     setTokenNo(val);
@@ -230,53 +234,99 @@ export default function StudentDrawer({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!tokenNo || isNaN(tokenNum)) {
-      dialog.alert({ type: 'warning', title: 'Invalid Token', message: 'Please enter a valid numeric token number.' });
+
+    if (isCanteenMode && !isEdit) {
+      dialog.alert({
+        type: 'warning',
+        title: 'Action Restricted',
+        message: 'Student registration is managed exclusively by the Central Committee.',
+      });
       return;
     }
-    if (isDuplicateToken) {
-      dialog.alert({ type: 'error', title: 'Duplicate Token', message: `Token #${tokenNum} is already assigned to another student.` });
-      return;
-    }
-    if (!nameEn.trim()) {
-      dialog.alert({ type: 'warning', title: 'Missing Name', message: 'Please enter student full name in English.' });
-      return;
-    }
-    if (!password.trim()) {
-      dialog.alert({ type: 'warning', title: 'Missing Password', message: 'Please provide a login password for the student.' });
-      return;
+
+    if (!isCanteenMode) {
+      if (!tokenNo || isNaN(tokenNum)) {
+        dialog.alert({ type: 'warning', title: 'Invalid Token', message: 'Please enter a valid numeric token number.' });
+        return;
+      }
+      if (isDuplicateToken) {
+        dialog.alert({ type: 'error', title: 'Duplicate Token', message: `Token #${tokenNum} is already assigned to another student.` });
+        return;
+      }
+      if (!nameEn.trim()) {
+        dialog.alert({ type: 'warning', title: 'Missing Name', message: 'Please enter student full name in English.' });
+        return;
+      }
+      if (!password.trim()) {
+        dialog.alert({ type: 'warning', title: 'Missing Password', message: 'Please provide a login password for the student.' });
+        return;
+      }
     }
 
     setSaving(true);
     feedback('tick');
 
-    const finalUname = uname.trim() || String(tokenNum);
-    const payload = {
-      tokenNo: tokenNum,
-      nameEn: nameEn.trim(),
-      nameMl: nameMl.trim(),
-      name: nameEn.trim(),
-      uname: finalUname,
-      username: finalUname,
-      password: password.trim(),
-      batch: batch.trim() || 'General',
-      roomNo: roomNo.trim(),
-      phone: phone.trim(),
-      block: Boolean(block),
-      blockReason: block ? blockReason.trim() : '',
-      obj: { lunch, breakfast },
-      obj2: dietary,
-      dateExceptions: { ...(dateExceptions || {}) },
-      diningHistory: syncStudentDiningHistory({
-        ...student,
-        obj: { lunch, breakfast },
-        obj2: dietary,
-        dateExceptions,
-        diningHistory: student?.diningHistory || {},
-      }),
-      templates: studentTemplates,
-      updatedAt: new Date().toISOString()
-    };
+    const finalUname = isCanteenMode
+      ? (student?.uname || student?.username || String(student?.tokenNo || tokenNum))
+      : (uname.trim() || String(tokenNum));
+
+    const payload = isCanteenMode
+      ? {
+          // Strictly retain student personal details unchanged
+          tokenNo: Number(student?.tokenNo !== undefined ? student.tokenNo : tokenNum),
+          nameEn: student?.nameEn || nameEn.trim(),
+          nameMl: student?.nameMl || nameMl.trim(),
+          name: student?.name || nameEn.trim(),
+          uname: finalUname,
+          username: finalUname,
+          password: student?.password || password.trim(),
+          batch: student?.batch || batch.trim() || 'General',
+          roomNo: student?.roomNo !== undefined ? student.roomNo : roomNo.trim(),
+          phone: student?.phone !== undefined ? student.phone : phone.trim(),
+          // Operational Canteen updates:
+          block: Boolean(block),
+          blockReason: block ? blockReason.trim() : '',
+          obj: { lunch, breakfast },
+          obj2: dietary,
+          dateExceptions: { ...(dateExceptions || {}) },
+          diningHistory: syncStudentDiningHistory({
+            ...student,
+            obj: { lunch, breakfast },
+            obj2: dietary,
+            dateExceptions,
+            diningHistory: student?.diningHistory || {},
+          }),
+          templates: studentTemplates,
+          lastUpdatedBy: user?.email || 'canteen_committee',
+          updatedAt: new Date().toISOString()
+        }
+      : {
+          tokenNo: tokenNum,
+          nameEn: nameEn.trim(),
+          nameMl: nameMl.trim(),
+          name: nameEn.trim(),
+          uname: finalUname,
+          username: finalUname,
+          password: password.trim(),
+          batch: batch.trim() || 'General',
+          roomNo: roomNo.trim(),
+          phone: phone.trim(),
+          block: Boolean(block),
+          blockReason: block ? blockReason.trim() : '',
+          obj: { lunch, breakfast },
+          obj2: dietary,
+          dateExceptions: { ...(dateExceptions || {}) },
+          diningHistory: syncStudentDiningHistory({
+            ...student,
+            obj: { lunch, breakfast },
+            obj2: dietary,
+            dateExceptions,
+            diningHistory: student?.diningHistory || {},
+          }),
+          templates: studentTemplates,
+          lastUpdatedBy: user?.email || 'admin',
+          updatedAt: new Date().toISOString()
+        };
 
     try {
       const db = firebase.firestore();
@@ -296,6 +346,7 @@ export default function StudentDrawer({
             before: diff.before,
             after: diff.after,
           },
+          role: role || (isCanteenMode ? 'canteen_committee' : 'central_committee'),
         });
 
         dialog.toast.success(
@@ -318,6 +369,7 @@ export default function StudentDrawer({
             before: null,
             after: payload,
           },
+          role: role || 'central_committee',
         });
 
         dialog.toast.success(
@@ -340,6 +392,14 @@ export default function StudentDrawer({
   };
 
   const handleDelete = async () => {
+    if (isCanteenMode || !isCentralCommittee) {
+      dialog.alert({
+        type: 'warning',
+        title: 'Action Restricted',
+        message: 'Student account deletion is restricted exclusively to the Central Committee.',
+      });
+      return;
+    }
     if (!student || !student.id) return;
     const confirmed = await dialog.confirm({
       title: `${t('deleteStudentRecord') || 'Delete'} #${student.tokenNo}?`,
@@ -432,7 +492,11 @@ export default function StudentDrawer({
                     {nameMl && <span className="text-xs font-normal text-emerald-600 dark:text-emerald-400 hidden xs:inline">({nameMl})</span>}
                   </h2>
                   <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {isEdit ? `Editing Token #${tokenNum || '?'}` : 'Register new student into canteen system'}
+                    {isEdit
+                      ? (isCanteenMode
+                          ? `Token #${tokenNum || '?'} (${t('canteenSubCommitteeMode') || 'Canteen Mode'})`
+                          : `Editing Token #${tokenNum || '?'}`)
+                      : 'Register new student into canteen system'}
                   </p>
                 </div>
               </div>
@@ -488,6 +552,23 @@ export default function StudentDrawer({
             {/* Form Content */}
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+                {/* Canteen Mode Operational Alert Banner */}
+                {isCanteenMode && (
+                  <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200 flex items-start gap-3 text-xs leading-relaxed">
+                    <div className="w-5 h-5 rounded-lg bg-blue-500 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold shadow-sm">
+                      <Lock className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-extrabold block text-blue-800 dark:text-blue-300">
+                        {t('canteenSubCommitteeMode') || 'Canteen Operations Mode'}
+                      </span>
+                      <span className="opacity-90">
+                        {t('canteenModeNotice') || 'Student personal details and credentials are protected and managed exclusively by the Central Committee. You have full operational authority to modify dining routines, calendar exceptions, dietary preferences, and token block status.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
               {/* TAB 1: PROFILE */}
               {activeTab === 'profile' && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 sm:space-y-5">
@@ -497,8 +578,9 @@ export default function StudentDrawer({
                       <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                         <Hash className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{t('tokenNumber') || 'Token Number'} *</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
-                      {!isEdit && (
+                      {!isEdit && !isCanteenMode && (
                         <button
                           type="button"
                           onClick={handleAutoAssignToken}
@@ -513,16 +595,19 @@ export default function StudentDrawer({
                       type="number"
                       required
                       min="1"
+                      disabled={isCanteenMode || isEdit}
                       value={tokenNo}
                       onChange={(e) => handleTokenChange(e.target.value)}
                       placeholder="e.g. 15"
-                      className={`w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${
-                        isDuplicateToken
-                          ? 'border-rose-500 focus:ring-rose-500/40 text-rose-500'
-                          : 'border-gray-200 dark:border-white/10 focus:ring-emerald-500/40'
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                        isCanteenMode
+                          ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                          : isDuplicateToken
+                          ? 'bg-gray-50 dark:bg-[#15221e] border-rose-500 focus:ring-rose-500/40 text-rose-500'
+                          : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 focus:ring-emerald-500/40 text-gray-900 dark:text-white'
                       }`}
                     />
-                    {isDuplicateToken && (
+                    {!isCanteenMode && isDuplicateToken && (
                       <p className="mt-1 text-xs text-rose-500 font-medium">
                         ⚠️ Token #{tokenNum} already exists! Please choose another number.
                       </p>
@@ -533,115 +618,152 @@ export default function StudentDrawer({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* English Name */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                        {t('englishNameLabel') || 'Name (English)'} *
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                        <span>{t('englishNameLabel') || 'Name (English)'} *</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
                       <input
                         type="text"
                         required
+                        disabled={isCanteenMode}
                         value={nameEn}
                         onChange={(e) => setNameEn(e.target.value)}
                         placeholder="e.g. Muhammed Rashad"
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                          isCanteenMode
+                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                        }`}
                       />
                     </div>
 
                     {/* Malayalam Name */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                        {t('malayalamNameLabel') || 'Name (Malayalam മലയാളം)'}
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                        <span>{t('malayalamNameLabel') || 'Name (Malayalam മലയാളം)'}</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
                       <input
                         type="text"
+                        disabled={isCanteenMode}
                         value={nameMl}
                         onChange={(e) => setNameMl(e.target.value)}
                         placeholder="e.g. മുഹമ്മദ് റഷാദ്"
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                          isCanteenMode
+                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                        }`}
                       />
                     </div>
                   </div>
 
-                  {/* Malayalam quick helper chips */}
-                  <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/20">
-                    <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5 flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3" />
-                      <span>Malayalam Quick Insert:</span>
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {commonMalayalamPrefixes.map((word) => (
-                        <button
-                          key={word}
-                          type="button"
-                          onClick={() => {
-                            feedback('tick');
-                            setNameMl(prev => prev ? `${prev} ${word}` : word);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/10 hover:bg-emerald-500 hover:text-white text-emerald-900 dark:text-emerald-200 text-xs font-medium border border-emerald-300/40 dark:border-white/5 transition-all"
-                        >
-                          +{word}
-                        </button>
-                      ))}
+                  {/* Malayalam quick helper chips (Hidden in Canteen Mode) */}
+                  {!isCanteenMode && (
+                    <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/20">
+                      <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 mb-1.5 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Malayalam Quick Insert:</span>
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {commonMalayalamPrefixes.map((word) => (
+                          <button
+                            key={word}
+                            type="button"
+                            onClick={() => {
+                              feedback('tick');
+                              setNameMl(prev => prev ? `${prev} ${word}` : word);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-white dark:bg-white/10 hover:bg-emerald-500 hover:text-white text-emerald-900 dark:text-emerald-200 text-xs font-medium border border-emerald-300/40 dark:border-white/5 transition-all"
+                          >
+                            +{word}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Username & Password */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Username */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                        {t('usernameLabel') || 'Username'}
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                        <span>{t('usernameLabel') || 'Username'}</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
                       <input
                         type="text"
+                        disabled={isCanteenMode}
                         value={uname}
                         onChange={(e) => setUname(e.target.value)}
                         placeholder="e.g. muhammed_12"
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                          isCanteenMode
+                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                        }`}
                       />
                     </div>
 
                     {/* Password */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                          {t('passwordLabel') || 'Password'} *
-                        </label>
-                        <button
-                          type="button"
-                          onClick={handleGeneratePassword}
-                          className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          <span>Generate</span>
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full pl-4 pr-20 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleCopyPassword}
-                            title="Copy Password"
-                            className="p-1.5 text-gray-400 hover:text-emerald-500"
-                          >
-                            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                          </button>
+                      {isCanteenMode ? (
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-blue-500" />
+                            <span>{t('passwordLabel') || 'Password'}</span>
+                          </label>
+                          <div className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                            <span className="tracking-widest font-mono">••••••••</span>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 italic">
+                              {t('managedByCentralAdmin') || 'Protected Central Credential'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                              {t('passwordLabel') || 'Password'} *
+                            </label>
+                            <button
+                              type="button"
+                              onClick={handleGeneratePassword}
+                              className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span>Generate</span>
+                            </button>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type={showPassword ? 'text' : 'password'}
+                              required
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="••••••••"
+                              className="w-full pl-4 pr-20 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                            />
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                              >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCopyPassword}
+                                title="Copy Password"
+                                className="p-1.5 text-gray-400 hover:text-emerald-500"
+                              >
+                                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -652,14 +774,20 @@ export default function StudentDrawer({
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{t('batchYearLabel') || 'Batch / Class'}</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
                       <input
                         type="text"
                         list="batchList"
+                        disabled={isCanteenMode}
                         value={batch}
                         onChange={(e) => setBatch(e.target.value)}
                         placeholder="e.g. Batch 2024"
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                          isCanteenMode
+                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                        }`}
                       />
                       <datalist id="batchList">
                         {existingBatches.map(b => (
@@ -673,13 +801,19 @@ export default function StudentDrawer({
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <Home className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{t('roomNoLabel') || 'Room No'}</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
                       <input
                         type="text"
+                        disabled={isCanteenMode}
                         value={roomNo}
                         onChange={(e) => setRoomNo(e.target.value)}
                         placeholder="e.g. B-12"
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                          isCanteenMode
+                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                        }`}
                       />
                     </div>
 
@@ -688,13 +822,19 @@ export default function StudentDrawer({
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <Phone className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{t('phoneLabel') || 'Phone'}</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
                       </label>
                       <input
                         type="tel"
+                        disabled={isCanteenMode}
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="e.g. 9847000000"
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                          isCanteenMode
+                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                        }`}
                       />
                     </div>
                   </div>
@@ -988,7 +1128,7 @@ export default function StudentDrawer({
 
               {/* Bottom Actions Sticky Bar */}
               <div className="p-3.5 sm:p-5 border-t border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-[#0c1412]/95 backdrop-blur-md pb-safe flex items-center justify-between gap-2.5 sm:gap-3 shrink-0">
-                {isEdit ? (
+                {isEdit && isCentralCommittee ? (
                   <button
                     type="button"
                     onClick={handleDelete}

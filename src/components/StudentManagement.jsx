@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -30,8 +30,11 @@ import StudentDrawer from './StudentDrawer';
 import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
 import { subscribeToPreferences } from '../utils/preferenceService';
+import { AuthContext } from '../store/AuthContext';
 
 export default function StudentManagement() {
+  const { user, role, isCentralCommittee, isCanteenCommittee } = useContext(AuthContext);
+  const isCanteenMode = !isCentralCommittee && isCanteenCommittee;
   const navigate = useNavigate();
   const location = useLocation();
   const { t, lang } = useLanguage();
@@ -350,7 +353,9 @@ export default function StudentManagement() {
                 {t('studentMgmtTitle') || 'Student Management Console'}
               </h1>
               <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-                {t('studentMgmtSubtitle') || 'Directory, bilingual records, individual & bulk CRUD actions'}
+                {isCanteenMode
+                  ? 'Canteen token roster, dining schedules, exceptions, dietary preferences & lock controls'
+                  : (t('studentMgmtSubtitle') || 'Directory, bilingual records, individual & bulk CRUD actions')}
               </p>
             </div>
           </div>
@@ -366,13 +371,15 @@ export default function StudentManagement() {
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
 
-          <button
-            onClick={() => { feedback('tick'); setCsvModalOpen(true); }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('importCsvBtn') || 'Import / Export'}</span>
-          </button>
+          {isCentralCommittee && (
+            <button
+              onClick={() => { feedback('tick'); setCsvModalOpen(true); }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{t('importCsvBtn') || 'Import / Export'}</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -405,13 +412,15 @@ export default function StudentManagement() {
             <span>Home</span>
           </button>
 
-          <button
-            onClick={handleOpenAddStudent}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all transform active:scale-95"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>{t('addStudentBtn') || '+ Add Student'}</span>
-          </button>
+          {isCentralCommittee && (
+            <button
+              onClick={handleOpenAddStudent}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/25 transition-all transform active:scale-95"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>{t('addStudentBtn') || '+ Add Student'}</span>
+            </button>
+          )}
         </div>
       </div>
 

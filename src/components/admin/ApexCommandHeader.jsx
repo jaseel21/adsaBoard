@@ -27,6 +27,7 @@ export default function ApexCommandHeader({
   onOpenLockModal,
   onToggleLock,
   onOpenStaffModal,
+  isCentralCommittee = false,
   roleBadge,
   user,
 }) {
@@ -166,49 +167,63 @@ export default function ApexCommandHeader({
 
           {/* Action Trigger Buttons */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Staff Roles Modal Trigger */}
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playPop();
-                hapticEngine.lightTap();
-                if (onOpenStaffModal) onOpenStaffModal();
-              }}
-              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-              title="Manage Staff Roles & Access Delegation"
-            >
-              <Users className="w-4 h-4" />
-            </button>
+            {/* Staff Roles Modal Trigger (Central Committee only) */}
+            {isCentralCommittee && onOpenStaffModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  hapticEngine.lightTap();
+                  onOpenStaffModal();
+                }}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
+                title="Manage Staff Roles & Access Delegation"
+              >
+                <Users className="w-4 h-4" />
+              </button>
+            )}
 
-            {/* Cutoff Window Editor Trigger */}
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playPop();
-                hapticEngine.lightTap();
-                if (onOpenLockModal) onOpenLockModal();
-              }}
-              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-              title="Configure Schedule & Locking Rules"
-            >
-              <Sliders className="w-4 h-4" />
-            </button>
+            {/* Cutoff Window Editor Trigger (Central Committee only) */}
+            {isCentralCommittee && onOpenLockModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  hapticEngine.lightTap();
+                  onOpenLockModal();
+                }}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
+                title="Configure Schedule & Locking Rules"
+              >
+                <Sliders className="w-4 h-4" />
+              </button>
+            )}
 
-            {/* Master Lock Switch Pill */}
+            {/* Master Lock Switch Pill (Interactive for Central Committee, Informational for Canteen Committee) */}
             <button
               type="button"
+              disabled={!isCentralCommittee || !onToggleLock}
               onClick={() => {
-                soundEngine.playMechanicalClick();
-                hapticEngine.mediumTick();
-                if (onToggleLock) onToggleLock();
+                if (isCentralCommittee && onToggleLock) {
+                  soundEngine.playMechanicalClick();
+                  hapticEngine.mediumTick();
+                  onToggleLock();
+                }
               }}
-              className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs shadow-md transition-all transform active:scale-95 ${
+              className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs shadow-md transition-all ${
+                !isCentralCommittee ? 'cursor-default opacity-90' : 'transform active:scale-95 cursor-pointer'
+              } ${
                 effectiveMode === 'force_unlocked'
                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25'
                   : effectiveMode === 'force_locked'
                   ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/25'
                   : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/25'
               }`}
+              title={
+                isCentralCommittee
+                  ? 'Toggle Master Board Lock / Override'
+                  : 'Board cutoff schedule enforced by Central Committee'
+              }
             >
               {effectiveMode === 'force_unlocked' ? (
                 <>

@@ -109,10 +109,23 @@ service cloud.firestore {
         // A) Central Committee & Devs have full update capability
         isCentralCommittee() ||
         
-        // B) Canteen Sub-Committee can update dietary restrictions & operational notes only
+        // B) Canteen Sub-Committee: Operational dining authority only (routines, exceptions, dietary, block/unblock).
+        // Personal profile data (name, room, phone, batch, password, token number) cannot be altered.
         (
           isCanteenCommittee() &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['obj2', 'dietary', 'dietaryNotes', 'updatedAt'])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'obj',
+            'obj2',
+            'dietary',
+            'dietaryNotes',
+            'block',
+            'blockReason',
+            'dateExceptions',
+            'templates',
+            'diningHistory',
+            'lastUpdatedBy',
+            'updatedAt'
+          ])
         ) ||
         
         // C) Student Self-Service: Strictly restricted to meal routine & calendar exceptions for non-blocked tokens.

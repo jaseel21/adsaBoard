@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -19,6 +19,8 @@ import { dialog } from '../../utils/dialog';
 import firebase from '../../firebase/config';
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
+import { AuthContext } from '../../store/AuthContext';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/auditLogger';
 import {
   formatFriendlyDate,
   getActiveStudentException,
@@ -40,6 +42,7 @@ export default function AdminTokenPopover({
   onOpenFullDrawer,
   onStudentUpdated,
 }) {
+  const { user, role } = useContext(AuthContext);
   const { feedback } = useFeedback();
   const { t } = useLanguage();
   const [toggling, setToggling] = useState(false);
@@ -84,10 +87,22 @@ export default function AdminTokenPopover({
         .set(
           {
             dateExceptions: updatedExceptions,
+            lastUpdatedBy: user?.email || 'admin',
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
         );
+
+      logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: nextState ? 'QUICK_MEAL_ON' : 'QUICK_MEAL_OFF',
+        severity: AUDIT_SEVERITIES.INFO,
+        targetId: student.id,
+        targetName: `Token #${student.tokenNo} (${nameEn})`,
+        summary: `${mealKey.toUpperCase()} turned ${nextState ? 'ON' : 'OFF'} for ${formatFriendlyDate(targetDateIST)}`,
+        performedBy: user?.email || 'admin',
+        role: role || 'canteen_committee',
+      });
 
       feedback('success');
       const mealLabel = isLunch ? (t('navLunch') || 'Lunch') : (t('navBreakfast') || 'Breakfast');
@@ -145,8 +160,20 @@ export default function AdminTokenPopover({
         .update({
           block: nextBlock,
           blockReason: nextBlock ? 'Locked by admin from Master Board' : '',
+          lastUpdatedBy: user?.email || 'admin',
           updatedAt: new Date().toISOString(),
         });
+
+      logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: nextBlock ? 'TOKEN_LOCKED' : 'TOKEN_UNLOCKED',
+        severity: nextBlock ? AUDIT_SEVERITIES.WARNING : AUDIT_SEVERITIES.INFO,
+        targetId: student.id,
+        targetName: `Token #${student.tokenNo} (${nameEn})`,
+        summary: `Token #${student.tokenNo} (${nameEn}) ${nextBlock ? 'frozen/locked' : 'unlocked/re-activated'} from Master Board popover`,
+        performedBy: user?.email || 'admin',
+        role: role || 'canteen_committee',
+      });
 
       feedback('success');
       dialog.toast.success(
