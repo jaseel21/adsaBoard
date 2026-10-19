@@ -53,6 +53,7 @@ import {
 import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
 import TokenBoardGuideModal from './guide/TokenBoardGuideModal';
 import AdvancedExportModal from './export/AdvancedExportModal';
+import HeroMealCountersDock from './HeroMealCountersDock';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -342,80 +343,102 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Authoritative Live IST Clock & Cutoff Telemetry Dock */}
-            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto flex-shrink-0">
-              {/* Server Clock Card */}
-              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/10 hover:bg-white/15 border border-white/15 backdrop-blur-xl transition-all shadow-inner space-y-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-emerald-200">
-                    <CalendarDays className="w-4 h-4 text-emerald-400" />
-                    <span>{dayFull || t('istCalendar', 'IST Calendar')}</span>
-                  </div>
-                  {isSynced && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                      <span>{t('syncedBadge', 'Synced')}</span>
-                    </span>
-                  )}
-                </div>
+            {/* Pro-Motion 3D Flippable Meal Counters Dock (Tomorrow default & Today) */}
+            <HeroMealCountersDock
+              studentsList={studentsList}
+              todayIST={todayIST}
+              dayShort={dayShort}
+              dayFull={dayFull}
+              loadingData={loadingData}
+            />
+          </div>
 
-                <div className="flex items-baseline gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      feedback('tick');
-                      setIs24Hour((prev) => !prev);
-                    }}
-                    className="font-mono font-black text-2xl xs:text-3xl sm:text-4xl text-white tracking-wider hover:text-emerald-300 transition-colors cursor-pointer select-none"
-                    title={t('clockFormatTitle', 'Click to toggle 12h / 24h format')}
-                  >
-                    {is24Hour ? timeHms : time12 || '--:--:--'}
-                  </button>
-                  <span className="text-xs font-mono font-bold text-emerald-300 px-1.5 py-0.5 rounded bg-white/10">
-                    IST
-                  </span>
-                </div>
-
-                <div className="text-[11px] text-emerald-200/80 font-medium truncate">
+          {/* ========================================================================= */}
+          {/* RE-POSITIONED AUTHORITATIVE TELEMETRY COMMAND STRIP (HERO BASE DOCK)      */}
+          {/* ========================================================================= */}
+          <div className="relative z-10 mt-6 sm:mt-8 pt-4 sm:pt-5 border-t border-white/15 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
+            {/* Left Telemetry Group: Calendar, Live Clock & Anti-Tamper Synced Status */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {/* IST Calendar & Day Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 backdrop-blur-md text-xs font-semibold text-emerald-200 shadow-sm transition-all select-none">
+                <CalendarDays className="w-4 h-4 text-emerald-400" />
+                <span>{dayFull || t('istCalendar', 'IST Calendar')}</span>
+                <span className="text-white/40">•</span>
+                <span className="font-mono text-white/90">
                   {longDate || t('syncingServerTime', 'Synchronizing authoritative server time...')}
-                </div>
+                </span>
               </div>
 
-              {/* Dynamic Cutoff Status Pill Card */}
+              {/* Authoritative Live IST Clock */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-950 border border-emerald-400/30 text-white shadow-inner backdrop-blur-md transition-all select-none">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setIs24Hour((prev) => !prev);
+                  }}
+                  className="font-mono font-black text-sm sm:text-base text-white tracking-wider hover:text-emerald-300 transition-colors cursor-pointer select-none"
+                  title={t('clockFormatTitle', 'Click to toggle 12h / 24h format')}
+                >
+                  {is24Hour ? timeHms : time12 || '--:--:--'}
+                </button>
+                <span className="text-[10px] font-mono font-bold text-emerald-300 px-1.5 py-0.5 rounded bg-white/10">
+                  IST
+                </span>
+                {isSynced && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    <span>{t('syncedBadge', 'Synced')}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right Telemetry Group: Dynamic Cutoff Pill & Token Board Guide */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Dynamic Cutoff Status Pill */}
               <div
-                className={`p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border backdrop-blur-xl transition-all flex items-center justify-between gap-3 shadow-inner ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md text-xs font-semibold shadow-inner transition-all ${
                   !isTomorrowLocked
                     ? 'bg-emerald-950/70 border-emerald-400/30 text-emerald-200'
                     : 'bg-amber-950/70 border-amber-400/30 text-amber-200'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      !isTomorrowLocked ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
-                    }`}
-                  >
-                    {!isTomorrowLocked ? <Clock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold block">{statusBadge}</span>
-                    <span className="text-[10px] opacity-80 block">
-                      {!isTomorrowLocked ? t('cutoffAtTime', 'Cutoff at {time}').replace('{time}', endTime || '2:00 PM IST') : t('nextDaySelectionsClosed', 'Next-day selections closed')}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    feedback('tick');
-                    setIsGuideOpen(true);
-                  }}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  title={t('viewTokenBoardGuide', 'View Token Board Guide')}
+                <div
+                  className={`w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    !isTomorrowLocked
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-amber-500/20 text-amber-400'
+                  }`}
                 >
-                  <HelpCircle className="w-4 h-4" />
-                </button>
+                  {!isTomorrowLocked ? <Clock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                </div>
+                <span className="font-bold">{statusBadge}</span>
+                <span className="text-white/40">•</span>
+                <span className="text-[11px] opacity-80 font-mono">
+                  {!isTomorrowLocked
+                    ? t('cutoffAtTime', 'Cutoff at {time}').replace('{time}', endTime || '2:00 PM IST')
+                    : t('nextDaySelectionsClosed', 'Next-day selections closed')}
+                </span>
               </div>
+
+              {/* Guide Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setIsGuideOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-sm"
+                title={t('viewTokenBoardGuide', 'View Token Board Guide')}
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-emerald-300" />
+                <span className="hidden sm:inline">{t('guide', 'Guide')}</span>
+              </button>
             </div>
           </div>
         </section>

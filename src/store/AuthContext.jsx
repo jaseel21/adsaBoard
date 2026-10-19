@@ -10,6 +10,8 @@ import {
   getRoleHomeRoute,
 } from '../utils/rbac';
 
+import { seedSuperAdmin } from '../utils/authSeeder';
+
 export const AuthContext = createContext(null);
 
 export default function Context({ children }) {
@@ -38,79 +40,108 @@ export default function Context({ children }) {
       }
 
       try {
+        const normalizedEmail = (currentUser.email || '').toLowerCase().trim();
+
+        // 1. Maintain registry of authenticated accounts for Staff Management selection
+        try {
+          await firebase
+            .firestore()
+            .collection('auth_users')
+            .doc(currentUser.uid)
+            .set(
+              {
+                uid: currentUser.uid,
+                email: normalizedEmail,
+                displayName: currentUser.displayName || normalizedEmail.split('@')[0] || 'Auth User',
+                lastSeenAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+        } catch (authRegistryErr) {
+          console.warn('Could not update auth_users registry:', authRegistryErr);
+        }
+
+        // 2. Dynamically seed Super Admin if this is navarmp@gmail.com or designated seed
+        await seedSuperAdmin(currentUser);
+
+        // 3. Setup real-time listener for live role updates on staff_users
         const staffRef = firebase.firestore().collection('staff_users').doc(currentUser.uid);
-        
-        // Setup real-time listener for live role updates without requiring re-login
+
         unsubStaff = staffRef.onSnapshot(
           async (snapshot) => {
             if (snapshot.exists) {
               const data = snapshot.data();
-              setStaffProfile(data);
-              setRole(data.role || ROLES.CENTRAL_COMMITTEE);
+              // Only active accounts receive operational roles
+              if (data.status === 'active') {
+                setStaffProfile(data);
+                setRole(data.role || null);
+              } else {
+                setStaffProfile(data);
+                setRole(null); // Inactive or suspended accounts have zero administrative privileges
+              }
+              setLoadingAuth(false);
             } else {
-              // Check if account was pre-provisioned by email in staff_users
-              let assignedRole = ROLES.CENTRAL_COMMITTEE;
-              let assignedDept = 'ADSA Central Committee';
-              let assignedName = currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Staff Member');
-
+              // 4. Check if account was pre-provisioned by email in staff_users before sign in
+              let preProvisionedDoc = null;
               try {
                 const emailQuery = await firebase
                   .firestore()
                   .collection('staff_users')
-                  .where('email', '==', (currentUser.email || '').toLowerCase().trim())
+                  .where('email', '==', normalizedEmail)
                   .limit(1)
                   .get();
 
                 if (!emailQuery.empty) {
-                  const existingData = emailQuery.docs[0].data();
-                  assignedRole = existingData.role || assignedRole;
-                  assignedDept = existingData.department || assignedDept;
-                  assignedName = existingData.displayName || assignedName;
+                  preProvisionedDoc = emailQuery.docs[0];
                 }
               } catch (qErr) {
                 console.warn('Could not query staff_users by email:', qErr);
               }
 
-              const initialProfile = {
-                uid: currentUser.uid,
-                email: currentUser.email || '',
-                displayName: assignedName,
-                role: assignedRole,
-                department: assignedDept,
-                status: 'active',
-                createdAt: new Date().toISOString(),
-                lastLoginAt: new Date().toISOString(),
-              };
+              if (preProvisionedDoc && preProvisionedDoc.exists) {
+                const preData = preProvisionedDoc.data();
+                const updatedProfile = {
+                  ...preData,
+                  uid: currentUser.uid,
+                  lastLoginAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                };
 
-              // Persist bootstrapped profile so future lookups are indexed by UID
-              try {
-                await staffRef.set(initialProfile, { merge: true });
-              } catch (writeErr) {
-                console.warn('Could not auto-write staff profile to Firestore:', writeErr);
+                // Link UID to canonical staff document
+                try {
+                  await staffRef.set(updatedProfile, { merge: true });
+                  // If the pre-provisioned doc had a dummy ID, cleanup is optional or handled
+                } catch (linkErr) {
+                  console.warn('Could not bind UID to staff profile:', linkErr);
+                }
+
+                if (updatedProfile.status === 'active') {
+                  setStaffProfile(updatedProfile);
+                  setRole(updatedProfile.role || null);
+                } else {
+                  setStaffProfile(updatedProfile);
+                  setRole(null);
+                }
+              } else {
+                // FAIL-SECURE: Do NOT auto-grant Central Committee. Unprovisioned users have null role.
+                setStaffProfile(null);
+                setRole(null);
               }
 
-              setStaffProfile(initialProfile);
-              setRole(assignedRole);
+              setLoadingAuth(false);
             }
-            setLoadingAuth(false);
           },
           (err) => {
-            console.warn('Staff profile snapshot listener error, using in-memory fallback:', err);
-            const fallbackRole = resolveDefaultRoleByEmail(currentUser.email);
-            setRole(fallbackRole);
-            setStaffProfile({
-              uid: currentUser.uid,
-              email: currentUser.email || '',
-              displayName: currentUser.email?.split('@')[0] || 'Committee Staff',
-              role: fallbackRole,
-            });
+            console.warn('Staff profile snapshot listener error, using fail-secure fallback:', err);
+            setRole(null);
+            setStaffProfile(null);
             setLoadingAuth(false);
           }
         );
       } catch (err) {
         console.error('Error initializing staff profile:', err);
-        const fallbackRole = resolveDefaultRoleByEmail(currentUser.email);
-        setRole(fallbackRole);
+        setRole(null);
+        setStaffProfile(null);
         setLoadingAuth(false);
       }
     });
@@ -136,9 +167,11 @@ export default function Context({ children }) {
   );
 
   const isDeveloper = role === ROLES.DEVELOPER;
+  const isSuperAdmin = isDeveloper;
   const isCentralCommittee = role === ROLES.CENTRAL_COMMITTEE || role === ROLES.DEVELOPER;
   const isCanteenCommittee = role === ROLES.CANTEEN_COMMITTEE || isCentralCommittee;
   const isCook = role === ROLES.COOK;
+  const isAuthorizedStaff = Boolean(role && staffProfile?.status === 'active');
 
   const roleBadge = useMemo(() => getRoleBadgeInfo(role), [role]);
   const homeRoute = useMemo(() => getRoleHomeRoute(role), [role]);
@@ -164,6 +197,8 @@ export default function Context({ children }) {
       hasRole,
       hasPermission,
       isDeveloper,
+      isSuperAdmin,
+      isAuthorizedStaff,
       isCentralCommittee,
       isCanteenCommittee,
       isCook,
@@ -179,6 +214,8 @@ export default function Context({ children }) {
       hasRole,
       hasPermission,
       isDeveloper,
+      isSuperAdmin,
+      isAuthorizedStaff,
       isCentralCommittee,
       isCanteenCommittee,
       isCook,

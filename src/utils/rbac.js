@@ -4,6 +4,7 @@
  */
 
 export const ROLES = {
+  SUPER_ADMIN: 'developer', // Canonical Super Admin identifier matching Firestore rules
   DEVELOPER: 'developer',
   CENTRAL_COMMITTEE: 'central_committee',
   CANTEEN_COMMITTEE: 'canteen_committee',
@@ -12,7 +13,7 @@ export const ROLES = {
 };
 
 export const ROLE_LABELS = {
-  [ROLES.DEVELOPER]: 'System Developer',
+  [ROLES.DEVELOPER]: 'Super Admin / Developer',
   [ROLES.CENTRAL_COMMITTEE]: 'ADSA Central Committee',
   [ROLES.CANTEEN_COMMITTEE]: 'Canteen Sub-Committee',
   [ROLES.COOK]: 'Kitchen Staff / Cook',
@@ -21,8 +22,8 @@ export const ROLE_LABELS = {
 
 export const ROLE_BADGES = {
   [ROLES.DEVELOPER]: {
-    label: 'Developer',
-    fullLabel: 'System Architect / Developer',
+    label: 'Super Admin',
+    fullLabel: 'System Architect & Super Admin',
     color: 'purple',
     badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-300 dark:border-purple-600/40',
   },
@@ -165,9 +166,17 @@ export function getRoleBadgeInfo(role) {
 }
 
 /**
- * Fallback default role assignment for unprovisioned staff accounts
+ * Check if a given role is Super Admin / Developer
+ */
+export function isSuperAdminRole(role) {
+  return role === ROLES.DEVELOPER || role === ROLES.SUPER_ADMIN;
+}
+
+/**
+ * Fallback default role assignment for unprovisioned staff accounts.
+ * Returns null to enforce a strict fail-secure security model.
  * (All authentic role resolution is loaded dynamically from Firestore staff_users)
  */
 export function resolveDefaultRoleByEmail() {
-  return ROLES.CENTRAL_COMMITTEE;
+  return null;
 }

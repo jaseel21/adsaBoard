@@ -48,16 +48,50 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 1. STAFF USERS DIRECTORY
+    // 1. STAFF USERS DIRECTORY & RBAC
     // ==========================================
     match /staff_users/{userId} {
-      // Public directory read for staff selector and role authorization
-      // (Passwords are NOT in Firestore; securely managed by Firebase Auth)
-      allow read: if true;
+      // Secure directory read: Authenticated users only (no anonymous public enumeration)
+      allow read: if isAuthenticated();
       
-      // Self-bootstrapping on initial sign in or update by Central Committee / Devs
-      allow create: if isAuthenticated() && (request.auth.uid == userId || isCentralCommittee());
-      allow update, delete: if isCentralCommittee();
+      // Dynamic Seeding & Creation:
+      // - Super Admin / Developer has full creation capability
+      // - Designated seed account (navarmp@gmail.com) can bootstrap developer role
+      // - Central Committee can provision sub-committee and kitchen staff (cannot self-escalate to developer)
+      allow create: if isAuthenticated() && (
+        isDeveloper() ||
+        request.auth.token.email == 'navarmp@gmail.com' ||
+        (isCentralCommittee() && request.resource.data.role != 'developer' && request.resource.data.isSuperAdmin != true)
+      );
+
+      // Updates & Revocations:
+      // - Developers / Super Admins can update or delete any record
+      // - Designated seed account (navarmp@gmail.com) can self-heal/update their own profile
+      // - Central Committee can manage only non-developer staff (cannot edit/delete Super Admins)
+      allow update: if isAuthenticated() && (
+        isDeveloper() ||
+        (request.auth.uid == userId && request.auth.token.email == 'navarmp@gmail.com') ||
+        (
+          isCentralCommittee() &&
+          resource.data.role != 'developer' &&
+          resource.data.isSuperAdmin != true &&
+          request.resource.data.role != 'developer' &&
+          request.resource.data.isSuperAdmin != true
+        )
+      );
+
+      allow delete: if isAuthenticated() && (
+        isDeveloper() ||
+        (isCentralCommittee() && resource.data.role != 'developer' && resource.data.isSuperAdmin != true)
+      );
+    }
+
+    // ==========================================
+    // 1B. AUTH USERS REGISTRY (User Selection Directory)
+    // ==========================================
+    match /auth_users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isCentralCommittee());
     }
 
     // ==========================================
