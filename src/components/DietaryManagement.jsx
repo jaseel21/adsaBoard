@@ -38,6 +38,7 @@ import 'jspdf-autotable';
 import { dialog } from '../utils/dialog';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import {
   subscribeToPreferences,
   addPreference,
@@ -327,6 +328,24 @@ export default function DietaryManagement() {
         });
 
         await batch.commit();
+
+        await logAuditEvent({
+          category: AUDIT_CATEGORIES.DIETARY,
+          action: 'AVOIDER_REMOVE',
+          severity: AUDIT_SEVERITIES.NOTICE,
+          target: { type: 'dietary', id: selectedCatId, label: `${catName} Avoiders` },
+          changes: {
+            diffSummary: `Removed ${count} student(s) from ${catName} avoiders list`,
+            fieldsChanged: [`obj2.${selectedCatId}`],
+            before: { count },
+            after: { count: 0 },
+          },
+          metadata: {
+            batchCount: count,
+            category: selectedCatId,
+          },
+        });
+
         setSelectedAvoiderIds(new Set());
         feedback('success');
         dialog.toast.success(
@@ -365,6 +384,24 @@ export default function DietaryManagement() {
       });
 
       await batch.commit();
+
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.DIETARY,
+        action: 'AVOIDER_ADD',
+        severity: AUDIT_SEVERITIES.NOTICE,
+        target: { type: 'dietary', id: selectedCatId, label: `${catName} Avoiders` },
+        changes: {
+          diffSummary: `Added ${count} student(s) to ${catName} avoiders list`,
+          fieldsChanged: [`obj2.${selectedCatId}`],
+          before: null,
+          after: { count },
+        },
+        metadata: {
+          batchCount: count,
+          category: selectedCatId,
+        },
+      });
+
       setStudentsToAdd(new Set());
       setAddModalOpen(false);
       setAddModalSearch('');

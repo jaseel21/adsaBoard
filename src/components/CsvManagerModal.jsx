@@ -235,16 +235,15 @@ export default function CsvManagerModal({
     URL.revokeObjectURL(url);
   };
 
-  // Export current students to CSV
+  // Export current students to CSV (Hardened: Passwords excluded for data protection)
   const handleExportCsv = () => {
     feedback('tick');
-    const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'password', 'batch', 'roomNo', 'phone', 'status'];
+    const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'batch', 'roomNo', 'phone', 'status'];
     const rows = allStudents.map(s => [
       s.tokenNo,
       `"${(s.nameEn || s.name || '').replace(/"/g, '""')}"`,
       `"${(s.nameMl || '').replace(/"/g, '""')}"`,
       `"${(s.username || s.uname || String(s.tokenNo || '')).replace(/"/g, '""')}"`,
-      `"${(s.password || '').replace(/"/g, '""')}"`,
       `"${(s.batch || 'General').replace(/"/g, '""')}"`,
       `"${(s.roomNo || '').replace(/"/g, '""')}"`,
       `"${(s.phone || '').replace(/"/g, '""')}"`,

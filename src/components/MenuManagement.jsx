@@ -59,6 +59,7 @@ import BulkMenuEditModal from './BulkMenuEditModal';
 import PresetManagerModal from './PresetManagerModal';
 import DateGridPickerModal from './ui/DateGridPickerModal';
 import { formatFriendlyDate } from '../utils/studentExceptionService';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 
 const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -191,6 +192,25 @@ export default function MenuManagement() {
         setDefaultTemplate(updatedDataset);
         await saveDefaultTemplate(updatedDataset, user?.email || 'admin');
       }
+
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.MENU,
+        action: 'MENU_SCHEDULE_UPDATE',
+        severity: AUDIT_SEVERITIES.NOTICE,
+        target: { type: 'menu_day', id: `${dayKey}_${slotKey}`, label: `${dayKey.toUpperCase()} ${slotKey.toUpperCase()}` },
+        changes: {
+          diffSummary: `Updated ${dayKey.toUpperCase()} ${slotKey.toUpperCase()}: ${mealData.title || 'Untitled Dish'}`,
+          fieldsChanged: Object.keys(mealData),
+          before: null,
+          after: mealData,
+        },
+        metadata: {
+          mode: editorMode,
+          dishTitle: mealData.title,
+          category: mealData.category,
+        },
+      });
+
       feedback('success');
     } catch (err) {
       console.error('Error saving meal to Firestore:', err);

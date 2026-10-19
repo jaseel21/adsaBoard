@@ -35,9 +35,9 @@ export function addDaysToDate(dateStr, days) {
 export function getDayOfWeekShort(dateStr) {
   if (!dateStr) return 'su';
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dateObj = new Date(y, m - 1, d);
+  const dateObj = new Date(Date.UTC(y, m - 1, d));
   const dayMap = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-  return dayMap[dateObj.getDay()] || 'su';
+  return dayMap[dateObj.getUTCDay()] || 'su';
 }
 
 /**
@@ -46,8 +46,9 @@ export function getDayOfWeekShort(dateStr) {
 export function formatFriendlyDate(dateStr, includeWeekday = true) {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dateObj = new Date(y, m - 1, d);
+  const dateObj = new Date(Date.UTC(y, m - 1, d));
   return dateObj.toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     weekday: includeWeekday ? 'short' : undefined,
     month: 'short',
     day: 'numeric',
@@ -65,8 +66,8 @@ export function getQuickDateOptions() {
 
   // Find upcoming Friday
   const [y, m, d] = today.split('-').map(Number);
-  const todayObj = new Date(y, m - 1, d);
-  const todayDay = todayObj.getDay(); // 0 is Sunday, 5 is Friday
+  const todayObj = new Date(Date.UTC(y, m - 1, d));
+  const todayDay = todayObj.getUTCDay(); // 0 is Sunday, 5 is Friday
   let daysUntilFriday = (5 - todayDay + 7) % 7;
   if (daysUntilFriday === 0) daysUntilFriday = 7; // If today is Friday, pick next Friday
   const nextFriday = addDaysToDate(today, daysUntilFriday);
@@ -111,10 +112,16 @@ export function validateExceptionDate(dateStr) {
 }
 
 /**
- * Clean up past date exceptions (removes keys older than today)
+ * Clean up past date exceptions
+ * Note: Preserves past exceptions by default so that historical records and leave audit logs
+ * are never erased. Can be passed preserveHistory=false if explicitly pruning legacy records.
  */
-export function cleanPastDateExceptions(dateExceptionsMap) {
+export function cleanPastDateExceptions(dateExceptionsMap, preserveHistory = true) {
   if (!dateExceptionsMap || typeof dateExceptionsMap !== 'object') return {};
+  if (preserveHistory) {
+    // Preserve all date exceptions to serve as permanent dining history
+    return { ...dateExceptionsMap };
+  }
   const today = getTodayISTDate();
   const cleaned = {};
   Object.keys(dateExceptionsMap).forEach((dateKey) => {
@@ -123,6 +130,69 @@ export function cleanPastDateExceptions(dateExceptionsMap) {
     }
   });
   return cleaned;
+}
+
+/**
+ * Synchronize and freeze past dining records into an immutable historical ledger (diningHistory).
+ * Automatically resolves unarchived past days using recorded exceptions or routine at that time.
+ *
+ * @param {Object} student - Student record with obj (routine), dateExceptions, obj2 (dietary), diningHistory
+ * @param {number} daysBack - Maximum days to inspect back in history (default 90 days / 1 semester)
+ * @returns {Object} The complete, updated diningHistory map: { [YYYY-MM-DD]: DiningHistoryRecord }
+ */
+export function syncStudentDiningHistory(student, daysBack = 90) {
+  if (!student) return {};
+
+  const todayIST = getTodayISTDate();
+  const existingHistory = student.diningHistory && typeof student.diningHistory === 'object'
+    ? { ...student.diningHistory }
+    : {};
+
+  const exceptions = student.dateExceptions || {};
+  const routine = student.obj || {};
+  const dietarySnapshot = student.obj2 || {};
+
+  let modified = false;
+
+  for (let i = 1; i <= daysBack; i++) {
+    const pastDate = addDaysToDate(todayIST, -i);
+
+    // If already locked in historical ledger, maintain immutable record
+    if (existingHistory[pastDate]) {
+      continue;
+    }
+
+    const dayKey = getDayOfWeekShort(pastDate);
+    const routineBf = routine.breakfast?.[dayKey] !== undefined ? Boolean(routine.breakfast[dayKey]) : true;
+    const routineLunch = routine.lunch?.[dayKey] !== undefined ? Boolean(routine.lunch[dayKey]) : true;
+
+    if (exceptions[pastDate]) {
+      const exc = exceptions[pastDate];
+      existingHistory[pastDate] = {
+        date: pastDate,
+        breakfast: exc.breakfast !== undefined ? Boolean(exc.breakfast) : routineBf,
+        lunch: exc.lunch !== undefined ? Boolean(exc.lunch) : routineLunch,
+        source: 'exception',
+        label: exc.label || 'Scheduled Override / Leave',
+        dietary: dietarySnapshot,
+        archivedAt: new Date().toISOString(),
+      };
+      modified = true;
+    } else {
+      existingHistory[pastDate] = {
+        date: pastDate,
+        breakfast: routineBf,
+        lunch: routineLunch,
+        source: 'routine',
+        label: 'Standard Weekly Schedule',
+        dietary: dietarySnapshot,
+        archivedAt: new Date().toISOString(),
+      };
+      modified = true;
+    }
+  }
+
+  return existingHistory;
 }
 
 /**
@@ -215,9 +285,9 @@ export function getMonthCalendarDays(year, month) {
   const todayIST = getTodayISTDate();
   const maxDate = addDaysToDate(todayIST, 365); // 1-year academic horizon
 
-  const firstDayObj = new Date(year, month, 1);
-  const startDayOfWeek = firstDayObj.getDay(); // 0 is Sunday, 6 is Saturday
-  const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayObj = new Date(Date.UTC(year, month, 1));
+  const startDayOfWeek = firstDayObj.getUTCDay(); // 0 is Sunday, 6 is Saturday
+  const totalDaysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 
   const days = [];
 
@@ -237,8 +307,8 @@ export function getMonthCalendarDays(year, month) {
     const dayStr = String(d).padStart(2, '0');
     const dateStr = `${year}-${monthStr}-${dayStr}`;
 
-    const dateObj = new Date(year, month, d);
-    const dayOfWeek = dayMap[dateObj.getDay()] || 'su';
+    const dateObj = new Date(Date.UTC(year, month, d));
+    const dayOfWeek = dayMap[dateObj.getUTCDay()] || 'su';
     const isToday = dateStr === todayIST;
     const isPast = dateStr < todayIST;
     const isBeyondMax = dateStr > maxDate;
@@ -260,13 +330,42 @@ export function getMonthCalendarDays(year, month) {
 }
 
 /**
- * Calculate effective meal status and exception info for a specific date
+ * Calculate effective meal status and exception info for a specific date.
+ * If dateStr is in the past (< todayIST), it seamlessly queries the immutable diningHistory
+ * ledger, falling back to preserved dateExceptions or the baseline weekly routine.
  */
 export function calculateEffectiveDateMeals(student, dateStr) {
+  const todayIST = getTodayISTDate();
+  const isPast = dateStr < todayIST;
+  const isToday = dateStr === todayIST;
+
   const dayKey = getDayOfWeekShort(dateStr);
   const routineBf = student?.obj?.breakfast?.[dayKey] !== undefined ? Boolean(student.obj.breakfast[dayKey]) : true;
   const routineLunch = student?.obj?.lunch?.[dayKey] !== undefined ? Boolean(student.obj.lunch[dayKey]) : true;
 
+  // 1. If it's a past date, check diningHistory ledger first
+  if (isPast && student?.diningHistory && student.diningHistory[dateStr]) {
+    const hist = student.diningHistory[dateStr];
+    const bf = Boolean(hist.breakfast);
+    const lu = Boolean(hist.lunch);
+    return {
+      breakfast: bf,
+      lunch: lu,
+      routineBreakfast: routineBf,
+      routineLunch: routineLunch,
+      hasException: hist.source === 'exception',
+      isAllOn: bf && lu,
+      isAllOff: !bf && !lu,
+      isPartial: (bf && !lu) || (!bf && lu),
+      label: hist.label || '',
+      source: hist.source || 'routine',
+      isHistory: true,
+      archivedAt: hist.archivedAt || '',
+      dietary: hist.dietary || student?.obj2 || {},
+    };
+  }
+
+  // 2. Check active or preserved dateExceptions
   const exception = student?.dateExceptions?.[dateStr];
   const hasException = Boolean(exception);
 
@@ -287,27 +386,52 @@ export function calculateEffectiveDateMeals(student, dateStr) {
     isAllOff,
     isPartial,
     label: exception?.label || '',
+    source: hasException ? 'exception' : 'routine',
+    isHistory: isPast,
+    dietary: student?.obj2 || {},
   };
 }
 
 /**
- * Calculate meal stats for a specific month
+ * Calculate meal stats for a specific month with bifurcated historical attendance vs upcoming schedule.
  */
 export function calculateMonthStats(student, year, month) {
   const totalDays = new Date(year, month + 1, 0).getDate();
   const monthStr = String(month + 1).padStart(2, '0');
+  const todayIST = getTodayISTDate();
 
   let activeLunchDays = 0;
   let activeBreakfastDays = 0;
   let monthOverridesCount = 0;
 
+  let pastDaysCount = 0;
+  let pastLunchesTaken = 0;
+  let pastBreakfastsTaken = 0;
+  let pastLeavesCount = 0; // days where both lunch and breakfast were OFF
+
+  let upcomingDaysCount = 0;
+  let upcomingLunchesScheduled = 0;
+  let upcomingBreakfastsScheduled = 0;
+
   for (let d = 1; d <= totalDays; d++) {
     const dayStr = String(d).padStart(2, '0');
     const dateStr = `${year}-${monthStr}-${dayStr}`;
     const meals = calculateEffectiveDateMeals(student, dateStr);
+
     if (meals.lunch) activeLunchDays++;
     if (meals.breakfast) activeBreakfastDays++;
     if (meals.hasException) monthOverridesCount++;
+
+    if (dateStr < todayIST) {
+      pastDaysCount++;
+      if (meals.lunch) pastLunchesTaken++;
+      if (meals.breakfast) pastBreakfastsTaken++;
+      if (!meals.lunch && !meals.breakfast) pastLeavesCount++;
+    } else {
+      upcomingDaysCount++;
+      if (meals.lunch) upcomingLunchesScheduled++;
+      if (meals.breakfast) upcomingBreakfastsScheduled++;
+    }
   }
 
   return {
@@ -315,6 +439,16 @@ export function calculateMonthStats(student, year, month) {
     activeLunchDays,
     activeBreakfastDays,
     monthOverridesCount,
+    // Granular Historical Ledger Stats
+    pastDaysCount,
+    pastLunchesTaken,
+    pastBreakfastsTaken,
+    pastLeavesCount,
+    // Upcoming Planned Schedule Stats
+    upcomingDaysCount,
+    upcomingLunchesScheduled,
+    upcomingBreakfastsScheduled,
+    isFullyPastMonth: pastDaysCount === totalDays,
   };
 }
 

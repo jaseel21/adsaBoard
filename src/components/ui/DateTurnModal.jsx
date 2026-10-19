@@ -16,20 +16,14 @@ import {
   Moon,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
+import { useLanguage } from '../../store/LanguageContext';
+import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
 import {
   formatFriendlyDate,
   getDayOfWeekShort,
-  getTodayISTDate,
   addDaysToDate,
   calculateEffectiveDateMeals,
 } from '../../utils/studentExceptionService';
-
-const QUICK_REASONS = [
-  'Leave / Going Home',
-  'Fasting',
-  'Out of Campus / Travel',
-  'Exam / Event',
-];
 
 export default function DateTurnModal({
   isOpen,
@@ -41,9 +35,19 @@ export default function DateTurnModal({
   onApplyRange,
 }) {
   const { feedback } = useFeedback();
+  const { t } = useLanguage();
+  const { getDateLockStatus, todayIST } = useTokenLockStatus();
 
-  const todayIST = useMemo(() => getTodayISTDate(), []);
+  const quickReasons = useMemo(() => [
+    { key: 'home', label: t('reasonHome', 'Leave / Going Home') },
+    { key: 'fasting', label: t('reasonFasting', 'Fasting') },
+    { key: 'travel', label: t('reasonTravel', 'Out of Campus / Travel') },
+    { key: 'exam', label: t('reasonExam', 'Exam / Event') },
+  ], [t]);
+
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
+  const lockInfo = useMemo(() => (dateStr ? getDateLockStatus(dateStr) : { isLocked: false }), [getDateLockStatus, dateStr]);
+  const isDateLocked = Boolean(lockInfo.isLocked);
 
   // Determine current meal status from student routine + existing exception
   const statusInfo = useMemo(() => {
@@ -101,6 +105,10 @@ export default function DateTurnModal({
   };
 
   const handleResetToRoutine = () => {
+    if (isDateLocked) {
+      feedback('warning');
+      return;
+    }
     feedback('warning');
     if (onRemoveException) {
       onRemoveException(dateStr);
@@ -109,6 +117,10 @@ export default function DateTurnModal({
   };
 
   const handleConfirmSave = () => {
+    if (isDateLocked) {
+      feedback('warning');
+      return;
+    }
     feedback('success');
     if (isRangeMode && onApplyRange && rangeEndDate >= dateStr) {
       onApplyRange(dateStr, rangeEndDate, {
@@ -151,7 +163,7 @@ export default function DateTurnModal({
         <div className="flex items-start gap-3.5 pr-8">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white font-mono font-extrabold text-base flex flex-col items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
             <span>{dateStr.split('-')[2]}</span>
-            <span className="text-[9px] uppercase font-sans font-bold -mt-1 opacity-80">{dayKey}</span>
+            <span className="text-[9px] uppercase font-sans font-bold -mt-1 opacity-80">{t('days.' + dayKey) || dayKey}</span>
           </div>
 
           <div className="space-y-0.5">
@@ -161,7 +173,7 @@ export default function DateTurnModal({
               </h3>
               {isToday && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-                  Today
+                  {t('todayBadge', 'Today')}
                 </span>
               )}
             </div>
@@ -170,21 +182,34 @@ export default function DateTurnModal({
               {statusInfo.hasException ? (
                 <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
-                  Custom Override Active: {statusInfo.label || 'Modified'}
+                  {t('customOverrideTag', 'Custom Override Active: {label}').replace('{label}', statusInfo.label || 'Modified')}
                 </span>
               ) : (
                 <span>
-                  Following Weekly Schedule ({routineBf ? 'Breakfast ON' : 'Breakfast OFF'}, {routineLunch ? 'Lunch ON' : 'Lunch OFF'})
+                  {t('followingWeeklyRoutine', 'Following Weekly Schedule ({bf}, {lu})')
+                    .replace('{bf}', routineBf ? `${t('navBreakfast') || 'Breakfast'} ON` : `${t('navBreakfast') || 'Breakfast'} OFF`)
+                    .replace('{lu}', routineLunch ? `${t('navLunch') || 'Lunch'} ON` : `${t('navLunch') || 'Lunch'} OFF`)}
                 </span>
               )}
             </p>
           </div>
         </div>
 
+        {/* Lock Alert Banner if cutoff has passed */}
+        {isDateLocked && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-700 dark:text-amber-300">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold block">{t('dateLockedTitle', 'Updates Closed for this Date')}</span>
+              <span className="opacity-90">{lockInfo.reason || t('dateLockedDesc', 'Updates are locked to preserve kitchen preparations.')}</span>
+            </div>
+          </div>
+        )}
+
         {/* ================= TACTILE MEAL SWITCHES ================= */}
         <div className="space-y-3 pt-1">
           <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
-            Turn Meals On or Off for this Date
+            {t('turnMealsOnOffDate', 'Turn Meals On or Off for this Date')}
           </span>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -213,10 +238,10 @@ export default function DateTurnModal({
                 </div>
                 <div>
                   <span className="text-sm font-bold block text-gray-900 dark:text-white">
-                    Breakfast
+                    {t('navBreakfast') || 'Breakfast'}
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Routine: {routineBf ? 'ON' : 'OFF'}
+                    {t('routineWeekly', 'Routine')}: {routineBf ? 'ON' : 'OFF'}
                   </span>
                 </div>
               </div>
@@ -257,10 +282,10 @@ export default function DateTurnModal({
                 </div>
                 <div>
                   <span className="text-sm font-bold block text-gray-900 dark:text-white">
-                    Lunch
+                    {t('navLunch') || 'Lunch'}
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Routine: {routineLunch ? 'ON' : 'OFF'}
+                    {t('routineWeekly', 'Routine')}: {routineLunch ? 'ON' : 'OFF'}
                   </span>
                 </div>
               </div>
@@ -281,7 +306,7 @@ export default function DateTurnModal({
         {/* ================= ONE-TAP PRESET BUTTONS ================= */}
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">
-            1-Tap Quick Actions
+            {t('oneTapQuickActions', '1-Tap Quick Actions')}
           </span>
           <div className="grid grid-cols-3 gap-2">
             <button
@@ -289,8 +314,8 @@ export default function DateTurnModal({
               onClick={handleTurnDayOff}
               className="py-2.5 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/20 hover:bg-rose-100 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center"
             >
-              <span className="text-[11px] leading-tight">🛑 All OFF</span>
-              <span className="text-[9px] font-normal opacity-75">Leave / Fast</span>
+              <span className="text-[11px] leading-tight">{t('allOffAction', '🛑 All OFF')}</span>
+              <span className="text-[9px] font-normal opacity-75">{t('allOffSub', 'Leave / Fast')}</span>
             </button>
 
             <button
@@ -298,8 +323,8 @@ export default function DateTurnModal({
               onClick={handleTurnDayOn}
               className="py-2.5 px-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center"
             >
-              <span className="text-[11px] leading-tight">🟢 All ON</span>
-              <span className="text-[9px] font-normal opacity-75">Attend Meals</span>
+              <span className="text-[11px] leading-tight">{t('allOnAction', '🟢 All ON')}</span>
+              <span className="text-[9px] font-normal opacity-75">{t('allOnSub', 'Attend Meals')}</span>
             </button>
 
             <button
@@ -307,8 +332,8 @@ export default function DateTurnModal({
               onClick={handleResetToRoutine}
               className="py-2.5 px-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 hover:bg-gray-200 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center"
             >
-              <span className="text-[11px] leading-tight">🔄 Reset Routine</span>
-              <span className="text-[9px] font-normal opacity-75">Clear Override</span>
+              <span className="text-[11px] leading-tight">{t('resetRoutineAction', '🔄 Reset Routine')}</span>
+              <span className="text-[9px] font-normal opacity-75">{t('clearOverrideSub', 'Clear Override')}</span>
             </button>
           </div>
         </div>
@@ -316,24 +341,24 @@ export default function DateTurnModal({
         {/* Optional Reason Tag */}
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">
-            Reason / Tag (Optional)
+            {t('reasonTagLabel', 'Reason / Tag (Optional)')}
           </label>
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {QUICK_REASONS.map((r) => (
+            {quickReasons.map((r) => (
               <button
-                key={r}
+                key={r.key}
                 type="button"
                 onClick={() => {
                   feedback('tick');
-                  setReasonLabel(r);
+                  setReasonLabel(r.label);
                 }}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                  reasonLabel === r
+                  reasonLabel === r.label
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                 }`}
               >
-                {r}
+                {r.label}
               </button>
             ))}
           </div>
@@ -341,7 +366,7 @@ export default function DateTurnModal({
             type="text"
             value={reasonLabel}
             onChange={(e) => setReasonLabel(e.target.value)}
-            placeholder="e.g. Visiting home, Medical appointment, Fasting..."
+            placeholder={t('reasonPlaceholder', 'e.g. Visiting home, Medical appointment, Fasting...')}
             className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           />
         </div>
@@ -351,7 +376,7 @@ export default function DateTurnModal({
           <label className="flex items-center justify-between cursor-pointer">
             <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-blue-500" />
-              <span>Apply across Multiple Days (Leave Range)</span>
+              <span>{t('applyAcrossMultipleDays', 'Apply across Multiple Days (Leave Range)')}</span>
             </span>
             <input
               type="checkbox"
@@ -371,10 +396,10 @@ export default function DateTurnModal({
               className="pt-2 border-t border-gray-200/60 dark:border-white/5 space-y-2 text-xs"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-gray-500">From: <strong>{dateStr}</strong></span>
+                <span className="text-gray-500">{t('fromLabel', 'From:')} <strong>{dateStr}</strong></span>
                 <span className="text-gray-400">→</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-gray-500">Until:</span>
+                  <span className="text-gray-500">{t('untilLabel', 'Until:')}</span>
                   <input
                     type="date"
                     min={dateStr}
@@ -386,7 +411,9 @@ export default function DateTurnModal({
                 </div>
               </div>
               <p className="text-[10px] text-gray-400">
-                This will apply {localBf ? 'Breakfast ON' : 'Breakfast OFF'} and {localLunch ? 'Lunch ON' : 'Lunch OFF'} to all dates in this range.
+                {t('rangeNotice', 'This will apply {bf} and {lu} to all dates in this range.')
+                  .replace('{bf}', localBf ? `${t('navBreakfast') || 'Breakfast'} ON` : `${t('navBreakfast') || 'Breakfast'} OFF`)
+                  .replace('{lu}', localLunch ? `${t('navLunch') || 'Lunch'} ON` : `${t('navLunch') || 'Lunch'} OFF`)}
               </p>
             </motion.div>
           )}
@@ -402,16 +429,21 @@ export default function DateTurnModal({
             }}
             className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
-            Cancel
+            {t('cancel', 'Cancel')}
           </button>
 
           <button
             type="button"
             onClick={handleConfirmSave}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-extrabold text-xs shadow-md shadow-emerald-500/25 hover:from-emerald-700 hover:to-green-700 active:scale-95 transition-all flex items-center gap-1.5"
+            disabled={isDateLocked}
+            className={`px-5 py-2.5 rounded-xl text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 ${
+              isDateLocked
+                ? 'bg-gray-400 dark:bg-gray-600 opacity-50 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-emerald-600 to-green-600 shadow-emerald-500/25 hover:from-emerald-700 hover:to-green-700 active:scale-95'
+            }`}
           >
             <Check className="w-4 h-4" />
-            <span>{isRangeMode ? 'Apply to Date Range' : 'Save Date Setting'}</span>
+            <span>{isDateLocked ? t('dateLockedBadge', 'Locked (Cutoff Passed)') : (isRangeMode ? t('applyToDateRange', 'Apply to Date Range') : t('saveDateSetting', 'Save Date Setting'))}</span>
           </button>
         </div>
       </motion.div>

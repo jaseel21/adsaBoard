@@ -17,8 +17,8 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
+import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
 import {
-  getTodayISTDate,
   addDaysToDate,
   getDayOfWeekShort,
 } from '../../utils/studentExceptionService';
@@ -32,12 +32,12 @@ export default function StudentTemplateModal({
   onDeleteCustomTemplate,
 }) {
   const { feedback } = useFeedback();
+  const { getDateLockStatus, todayIST } = useTokenLockStatus();
   const [templateName, setTemplateName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   if (!isOpen) return null;
 
-  const todayIST = getTodayISTDate();
   const customTemplates = student?.templates || [];
 
   // ================= 1. BUILT-IN TEMPLATES =================
@@ -46,8 +46,7 @@ export default function StudentTemplateModal({
   const handleApplyWeekendLeave = (allWeekends = false) => {
     feedback('pop');
     const [y, m, d] = todayIST.split('-').map(Number);
-    const todayObj = new Date(y, m - 1, d);
-    const dayOfWeek = todayObj.getDay(); // 0 is Sunday, 5 is Friday, 6 is Saturday
+    const dayOfWeek = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 
     const newExceptions = { ...(student?.dateExceptions || {}) };
 
@@ -60,16 +59,15 @@ export default function StudentTemplateModal({
       const friDate = addDaysToDate(todayIST, daysUntilFriday);
       const satDate = addDaysToDate(todayIST, daysUntilFriday + 1);
 
-      // Check boundary (within academic horizon)
-      if (friDate <= addDaysToDate(todayIST, 365)) {
+      // Check boundary and lock status
+      if (friDate <= addDaysToDate(todayIST, 365) && !getDateLockStatus(friDate).isLocked) {
         newExceptions[friDate] = {
           breakfast: false,
           lunch: false,
           label: 'Weekend Leave (Fri)',
         };
       }
-      if (satDate <= addDaysToDate(todayIST, 365)) {
-        // Friday -breakfast and lunch, saturday breakfast
+      if (satDate <= addDaysToDate(todayIST, 365) && !getDateLockStatus(satDate).isLocked) {
         const currentSatLunch = student?.obj?.lunch?.sa !== undefined ? Boolean(student.obj.lunch.sa) : true;
         newExceptions[satDate] = {
           breakfast: false,
@@ -92,6 +90,7 @@ export default function StudentTemplateModal({
 
     for (let i = 0; i <= 30; i++) {
       const d = addDaysToDate(todayIST, i);
+      if (getDateLockStatus(d).isLocked) continue; // Respect cutoff lock for tomorrow or past
       const dayKey = getDayOfWeekShort(d);
       if (dayKey === 'mo' || dayKey === 'th') {
         const curBf = student?.obj?.breakfast?.[dayKey] !== undefined ? Boolean(student.obj.breakfast[dayKey]) : true;
@@ -115,6 +114,7 @@ export default function StudentTemplateModal({
     const newExceptions = { ...(student?.dateExceptions || {}) };
     for (let i = 0; i <= 30; i++) {
       const d = addDaysToDate(todayIST, i);
+      if (getDateLockStatus(d).isLocked) continue; // Respect cutoff lock for tomorrow or past
       newExceptions[d] = {
         breakfast: true,
         lunch: true,
@@ -133,6 +133,7 @@ export default function StudentTemplateModal({
     const newExceptions = { ...(student?.dateExceptions || {}) };
     for (let i = 1; i <= 3; i++) {
       const d = addDaysToDate(todayIST, i);
+      if (getDateLockStatus(d).isLocked) continue; // Respect cutoff lock for tomorrow or past
       newExceptions[d] = {
         breakfast: false,
         lunch: false,
@@ -168,11 +169,17 @@ export default function StudentTemplateModal({
     setShowCreateForm(false);
   };
 
-  // Apply a custom template created by the student
+  // Apply a custom template created by the student (strictly preserving locked dates)
   const handleApplyCustom = (tpl) => {
     feedback('pop');
     if (onApplyTemplate) {
-      onApplyTemplate(tpl.dateExceptions || {}, `Template "${tpl.name}" Applied`);
+      const merged = { ...(student?.dateExceptions || {}) };
+      Object.entries(tpl.dateExceptions || {}).forEach(([dateKey, val]) => {
+        if (!getDateLockStatus(dateKey).isLocked) {
+          merged[dateKey] = val;
+        }
+      });
+      onApplyTemplate(merged, `Template "${tpl.name}" Applied`);
     }
     onClose();
   };
@@ -393,7 +400,7 @@ export default function StudentTemplateModal({
           {/* List of Custom Templates */}
           {customTemplates.length === 0 && !showCreateForm ? (
             <div className="p-4 rounded-2xl border border-dashed border-gray-200 dark:border-white/10 text-center text-xs text-gray-400">
-              You haven't saved any personal templates yet. Customize your dates and click "Save Current as Template".
+              You haven&apos;t saved any personal templates yet. Customize your dates and click &ldquo;Save Current as Template&rdquo;.
             </div>
           ) : (
             <div className="space-y-2">

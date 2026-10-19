@@ -9,8 +9,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
+import { useLanguage } from '../../store/LanguageContext';
+import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
 import {
-  getTodayISTDate,
   addDaysToDate,
   getMonthCalendarDays,
   formatFriendlyDate,
@@ -28,10 +29,12 @@ export default function DateGridPickerModal({
   onSelectDate,
   minDate = '',
   maxDate = '',
-  title = 'Select Calendar Date',
+  title,
 }) {
   const { feedback } = useFeedback();
-  const todayIST = useMemo(() => getTodayISTDate(), []);
+  const { t } = useLanguage();
+  const { todayIST } = useTokenLockStatus();
+  const resolvedTitle = title || t('selectCalendarDate', 'Select Calendar Date');
 
   const [activeDate, setActiveDate] = useState(() => selectedDate || todayIST);
 
@@ -81,7 +84,8 @@ export default function DateGridPickerModal({
 
   const calendarDays = getMonthCalendarDays(currentYear, currentMonth);
 
-  const dayHeaders = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const dayKeys = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+  const dayHeaders = dayKeys.map((k) => t('days.' + k) || k.toUpperCase());
 
   const handleDayClick = (dateStr) => {
     feedback('pop');
@@ -111,7 +115,7 @@ export default function DateGridPickerModal({
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">{resolvedTitle}</h3>
               <p className="text-[11px] text-gray-500">{activeDate ? formatFriendlyDate(activeDate, true) : 'Pick a date'}</p>
             </div>
           </div>
@@ -136,7 +140,7 @@ export default function DateGridPickerModal({
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-xs font-extrabold text-gray-900 dark:text-white">
-            {MONTH_NAMES[currentMonth]} {currentYear}
+            {t('monthsFull.' + currentMonth) || MONTH_NAMES[currentMonth]} {currentYear}
           </span>
           <button
             type="button"
@@ -201,14 +205,14 @@ export default function DateGridPickerModal({
             onClick={() => handleDayClick(todayIST)}
             className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500"
           >
-            Today
+            {t('today', 'Today')}
           </button>
           <button
             type="button"
             onClick={() => handleDayClick(addDaysToDate(todayIST, 1))}
             className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500"
           >
-            Tomorrow
+            {t('tomorrow', 'Tomorrow')}
           </button>
         </div>
 
@@ -222,14 +226,14 @@ export default function DateGridPickerModal({
             }}
             className="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"
           >
-            Cancel
+            {t('cancel', 'Cancel')}
           </button>
           <button
             type="button"
             onClick={handleConfirm}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold text-xs shadow-md shadow-emerald-500/20 hover:from-emerald-700 hover:to-green-700"
           >
-            Select Date
+            {t('confirmSelection', 'Select Date')}
           </button>
         </div>
       </motion.div>

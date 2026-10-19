@@ -18,6 +18,9 @@ import {
   LayoutGrid,
   Bookmark,
   Plane,
+  Clock,
+  History,
+  ShieldCheck,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
@@ -26,8 +29,8 @@ import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
 import DateTokenButton from './DateTokenButton';
 import StudentTemplateModal from './StudentTemplateModal';
 import DateTurnModal from './DateTurnModal';
+import DateHistoryDetailModal from './DateHistoryDetailModal';
 import {
-  getTodayISTDate,
   addDaysToDate,
   getMonthCalendarDays,
   calculateEffectiveDateMeals,
@@ -52,9 +55,8 @@ export default function DateGridMatrix({
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  const todayIST = useMemo(() => getTodayISTDate(), []);
+  const { getDateLockStatus, isTomorrowLocked, tomorrowIST, todayIST, endTime } = useTokenLockStatus();
   const maxDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]); // Full 1-year academic calendar
-  const { getDateLockStatus, isTomorrowLocked, tomorrowIST, endTime } = useTokenLockStatus();
 
   // Two Separate Toggles: 'lunch' vs 'breakfast' (just like in the Home page)
   const [activeMeal, setActiveMeal] = useState('lunch');
@@ -71,6 +73,7 @@ export default function DateGridMatrix({
 
   // Active view: 'grid' or 'list'
   const [activeView, setActiveView] = useState('grid');
+  const [activeListTab, setActiveListTab] = useState('upcoming'); // 'upcoming' | 'history'
 
   // Template modal state
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -78,6 +81,11 @@ export default function DateGridMatrix({
   // Range Leave / Date Turn Modal state
   const [showTurnModal, setShowTurnModal] = useState(false);
   const [selectedModalDate, setSelectedModalDate] = useState(null);
+
+  // Historical Record Details Modal state
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
+  const [selectedHistoryMeals, setSelectedHistoryMeals] = useState(null);
 
   // Month navigation
   const handlePrevMonth = () => {
@@ -123,19 +131,37 @@ export default function DateGridMatrix({
       activeBreakfastDays: monthStats.activeBreakfastDays,
       monthOverridesCount: monthStats.monthOverridesCount,
       scheduledCount,
+      totalDays: monthStats.totalDays,
+      pastDaysCount: monthStats.pastDaysCount || 0,
+      pastLunchesTaken: monthStats.pastLunchesTaken || 0,
+      pastBreakfastsTaken: monthStats.pastBreakfastsTaken || 0,
+      pastLeavesCount: monthStats.pastLeavesCount || 0,
+      upcomingDaysCount: monthStats.upcomingDaysCount || 0,
+      upcomingLunchesScheduled: monthStats.upcomingLunchesScheduled || 0,
+      upcomingBreakfastsScheduled: monthStats.upcomingBreakfastsScheduled || 0,
+      isFullyPastMonth: Boolean(monthStats.isFullyPastMonth),
     };
   }, [student, currentYear, currentMonth]);
 
+  // Click handler to inspect past day's historical ledger record
+  const handleHistoryClick = (dateStr) => {
+    feedback('tick');
+    const meals = calculateEffectiveDateMeals(student, dateStr);
+    setSelectedHistoryDate(dateStr);
+    setSelectedHistoryMeals(meals);
+    setShowHistoryModal(true);
+  };
+
   // Day of week column headers
   const dayHeaders = useMemo(() => [
-    { key: 'su', label: 'Sun' },
-    { key: 'mo', label: 'Mon' },
-    { key: 'tu', label: 'Tue' },
-    { key: 'we', label: 'Wed' },
-    { key: 'th', label: 'Thu' },
-    { key: 'fr', label: 'Fri' },
-    { key: 'sa', label: 'Sat' },
-  ], []);
+    { key: 'su', label: t('days.su', 'Sun') },
+    { key: 'mo', label: t('days.mo', 'Mon') },
+    { key: 'tu', label: t('days.tu', 'Tue') },
+    { key: 'we', label: t('days.we', 'Wed') },
+    { key: 'th', label: t('days.th', 'Thu') },
+    { key: 'fr', label: t('days.fr', 'Fri') },
+    { key: 'sa', label: t('days.sa', 'Sat') },
+  ], [t]);
 
   // ================= 1. SINGLE CLICK TO TURN ON AND OFF =================
   const handleSingleClickToggle = (dateStr) => {
@@ -366,7 +392,7 @@ export default function DateGridMatrix({
                 />
               )}
               <Utensils className="w-3.5 h-3.5 xs:w-4 xs:h-4 relative z-10 flex-shrink-0" />
-              <span className="relative z-10">Lunch</span>
+              <span className="relative z-10">{t('navLunch') || 'Lunch'}</span>
               <span className="relative z-10 px-1.5 xs:px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-bold">
                 {stats.activeLunchDays} ON
               </span>
@@ -393,7 +419,7 @@ export default function DateGridMatrix({
                 />
               )}
               <Coffee className="w-3.5 h-3.5 xs:w-4 xs:h-4 relative z-10 flex-shrink-0" />
-              <span className="relative z-10">Breakfast</span>
+              <span className="relative z-10">{t('navBreakfast') || 'Breakfast'}</span>
               <span className="relative z-10 px-1.5 xs:px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-bold">
                 {stats.activeBreakfastDays} ON
               </span>
@@ -401,7 +427,7 @@ export default function DateGridMatrix({
           </div>
 
           <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 hidden sm:inline">
-            👉 Single-click any date below to toggle <strong>{activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'}</strong>
+            👉 {t('singleClickToggleHelper', 'Single-click any date below to toggle')} <strong>{activeMeal === 'lunch' ? (t('navLunch') || 'Lunch') : (t('navBreakfast') || 'Breakfast')}</strong>
           </span>
         </div>
 
@@ -420,7 +446,7 @@ export default function DateGridMatrix({
             </button>
 
             <span className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white min-w-[110px] xs:min-w-[125px] text-center px-1">
-              {MONTH_NAMES[currentMonth]} {currentYear}
+              {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {currentYear}
             </span>
 
             <button
@@ -437,11 +463,11 @@ export default function DateGridMatrix({
               onClick={handleJumpToToday}
               className="px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
             >
-              Today
+              {t('todayBtn', 'Today')}
             </button>
           </div>
 
-          {/* Templates Launcher Button (Requirement 3) */}
+          {/* Templates Launcher Button */}
           <button
             type="button"
             onClick={() => {
@@ -451,7 +477,7 @@ export default function DateGridMatrix({
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-md shadow-purple-500/20 active:scale-95 transition-all flex items-center gap-1.5"
           >
             <Bookmark className="w-3.5 h-3.5" />
-            <span>Templates</span>
+            <span>{t('templatesBtn', 'Templates')}</span>
             {(student?.templates?.length > 0 || stats.scheduledCount > 0) && (
               <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse" />
             )}
@@ -470,7 +496,7 @@ export default function DateGridMatrix({
                   ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
               }`}
-              title="Calendar Grid View"
+              title={t('calendarGridView', 'Calendar Grid View')}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -485,19 +511,78 @@ export default function DateGridMatrix({
                   ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
               }`}
-              title="Scheduled Overrides List"
+              title={t('scheduledOverridesList', 'Scheduled Overrides List')}
             >
               <List className="w-4 h-4" />
             </button>
           </div>
         </div>
+
+        {/* ROW 3: BIFURCATED MONTHLY STATS STRIP (HISTORY VS UPCOMING) */}
+        <div className="w-full pt-3 mt-1 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-2.5 flex-wrap text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            {stats.pastDaysCount > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold">
+                <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <span>
+                  {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {t('historyPrefix', 'History')}: <strong>{stats.pastLunchesTaken} Lu</strong> • <strong>{stats.pastBreakfastsTaken} Bf</strong> {t('takenSuffix', 'Taken')}
+                  {stats.pastLeavesCount > 0 && (
+                    <span className="text-rose-600 dark:text-rose-400 ml-1">({stats.pastLeavesCount} {t('leaveDaysCount', 'leave days')})</span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {stats.upcomingDaysCount > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-800 dark:text-blue-300 font-bold">
+                <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                <span>
+                  {t('upcomingPrefix', 'Upcoming')}: <strong>{stats.upcomingLunchesScheduled} Lu</strong> • <strong>{stats.upcomingBreakfastsScheduled} Bf</strong> {t('scheduledSuffix', 'Scheduled')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <span className="text-[11px] text-gray-400 dark:text-gray-500 hidden md:inline">
+            {t('pastRecordClickHint', '💡 Click any past date to inspect archived dining record')}
+          </span>
+        </div>
       </div>
 
+      {/* ================= ARCHIVED MONTH BANNER ================= */}
+      {stats.isFullyPastMonth && (
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/20 text-emerald-950 dark:text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
+                {t('archivedLedgerTitle', 'Archived Dining Ledger for')} {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {currentYear}
+              </h4>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                {t('archivedLedgerDesc', 'All {totalDays} days in this month are finalized and locked for mess billing integrity. Attended: {lunches} Lunches, {breakfasts} Breakfasts.')
+                  .replace('{totalDays}', stats.totalDays)
+                  .replace('{lunches}', stats.pastLunchesTaken)
+                  .replace('{breakfasts}', stats.pastBreakfastsTaken)}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleJumpToToday}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all self-start sm:self-center flex-shrink-0"
+          >
+            {t('backToCurrentMonth', 'Back to Current Month')}
+          </button>
+        </div>
+      )}
+
       {/* ================= QUICK SHORTCUTS STRIP (WITH WEEKEND RULE & RANGE TOOL) ================= */}
-      {editable && (
+      {editable && !stats.isFullyPastMonth && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
           <span className="text-[11px] text-gray-400 uppercase tracking-wider flex-shrink-0">
-            Fast Action:
+            {t('fastActions', 'Fast Action:')}
           </span>
 
           {/* Multi-Day Leave / Date Range Modal Launcher */}
@@ -512,7 +597,7 @@ export default function DateGridMatrix({
             title="Book leave or set overrides across multiple consecutive dates"
           >
             <CalendarDays className="w-3.5 h-3.5" />
-            <span>Schedule Leave / Date Range</span>
+            <span>{t('customRangeLeave', 'Schedule Leave / Date Range')}</span>
           </button>
 
           {/* Weekend: Friday -breakfast and lunch, Saturday breakfast */}
@@ -523,7 +608,7 @@ export default function DateGridMatrix({
             title="Turns OFF Friday Breakfast & Lunch, and Saturday Breakfast (Lunch stays ON)"
           >
             <Plane className="w-3.5 h-3.5" />
-            <span>Turn Weekend OFF (Fri Bf/Lu + Sat Bf)</span>
+            <span>{t('turnWeekendOffDesc', 'Turn Weekend OFF (Fri Bf/Lu + Sat Bf)')}</span>
           </button>
 
           <button
@@ -531,7 +616,7 @@ export default function DateGridMatrix({
             onClick={handleTurnAllActiveMealOn}
             className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-500/20 transition-all flex-shrink-0 active:scale-95"
           >
-            🟢 Turn All {activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'} ON
+            🟢 {t('turnAllMealOn', 'Turn All {meal} ON').replace('{meal}', activeMeal === 'lunch' ? (t('navLunch') || 'Lunch') : (t('navBreakfast') || 'Breakfast'))}
           </button>
 
           <button
@@ -539,7 +624,7 @@ export default function DateGridMatrix({
             onClick={handleTurnAllActiveMealOff}
             className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-500/20 transition-all flex-shrink-0 active:scale-95"
           >
-            🔴 Turn All {activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'} OFF
+            🔴 {t('turnAllMealOff', 'Turn All {meal} OFF').replace('{meal}', activeMeal === 'lunch' ? (t('navLunch') || 'Lunch') : (t('navBreakfast') || 'Breakfast'))}
           </button>
 
           {sortedExceptionDates.length > 0 && (
@@ -548,7 +633,7 @@ export default function DateGridMatrix({
               onClick={handleClearAllExceptions}
               className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-rose-100 text-gray-700 hover:text-rose-600 dark:bg-white/5 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 border border-gray-200/60 dark:border-white/5 transition-all flex-shrink-0 active:scale-95 ml-auto"
             >
-              🔄 Reset Routine ({sortedExceptionDates.length})
+              🔄 {t('resetRoutine', 'Reset Routine')} ({sortedExceptionDates.length})
             </button>
           )}
         </div>
@@ -604,6 +689,7 @@ export default function DateGridMatrix({
                   hasException={meals.hasException}
                   exceptionLabel={meals.label}
                   onClick={handleSingleClickToggle}
+                  onHistoryClick={handleHistoryClick}
                   onLockedClick={(d, reason) => {
                     feedback('warning');
                     dialog.toast.warning(
@@ -621,144 +707,263 @@ export default function DateGridMatrix({
             <div className="flex items-center gap-3 flex-wrap">
               <span className="flex items-center gap-1.5">
                 <span className={`w-2.5 h-2.5 rounded-full ${activeMeal === 'lunch' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                {activeMeal === 'lunch' ? 'Lunch ON' : 'Breakfast ON'}
+                {activeMeal === 'lunch' ? `${t('navLunch') || 'Lunch'} ON` : `${t('navBreakfast') || 'Breakfast'} ON`}
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                {activeMeal === 'lunch' ? 'Lunch OFF' : 'Breakfast OFF'}
+                {activeMeal === 'lunch' ? `${t('navLunch') || 'Lunch'} OFF` : `${t('navBreakfast') || 'Breakfast'} OFF`}
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-yellow-300 border border-amber-600" />
-                Custom Override
+                {t('customOverride', 'Custom Override')}
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-black/40 text-amber-300 border border-amber-500/40 flex items-center justify-center text-[7px] font-mono">🔒</span>
-                Locked (Cutoff)
+                {t('lockedCutoff', 'Locked (Cutoff)')}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-400 flex items-center justify-center text-[7px] font-mono">🕒</span>
+                {t('archivedHistory', 'Archived History (Click to view)')}
               </span>
             </div>
             <span className="font-bold text-gray-600 dark:text-gray-300">
-              ⚡ 1-Click turns {activeMeal.toUpperCase()} on/off directly
+              ⚡ {t('singleClickTurnsMeal', '1-Click turns {meal} on/off directly').replace('{meal}', (activeMeal === 'lunch' ? (t('navLunch') || 'Lunch') : (t('navBreakfast') || 'Breakfast')).toUpperCase())}
             </span>
           </div>
         </div>
       ) : (
         /* ================= VIEW 2: SCHEDULED OVERRIDES LIST ================= */
-        <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 p-4 sm:p-6 shadow-sm backdrop-blur-xl space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 p-4 sm:p-6 shadow-sm backdrop-blur-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h4 className="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-emerald-500" />
-              <span>Scheduled Date Overrides ({sortedExceptionDates.length})</span>
+              <span>{t('dateOverridesAndLedger', 'Date Overrides & Dining Ledger')}</span>
             </h4>
+
+            {/* List View Tabs: Upcoming vs Past History */}
+            <div className="flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 text-xs font-bold self-start sm:self-center">
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setActiveListTab('upcoming');
+                }}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeListTab === 'upcoming'
+                    ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {t('upcomingOverridesTab', 'Upcoming Overrides')} ({sortedExceptionDates.filter((d) => d >= todayIST).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setActiveListTab('history');
+                }}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeListTab === 'history'
+                    ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {t('pastLeavesLedgerTab', 'Past Leaves & Ledger')} ({sortedExceptionDates.filter((d) => d < todayIST).length})
+              </button>
+            </div>
           </div>
 
-          {sortedExceptionDates.length === 0 ? (
-            <div className="p-8 text-center rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
-              <Calendar className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-              <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                No active date exceptions scheduled.
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">
-                Your standard weekly dining routine will apply every day. Click any day in Grid View to toggle.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {sortedExceptionDates.map((dateKey) => {
-                const exc = student?.dateExceptions?.[dateKey];
-                const isBfOn = Boolean(exc?.breakfast);
-                const isLuOn = Boolean(exc?.lunch);
-
+          {activeListTab === 'upcoming' ? (
+            /* Tab A: Upcoming Overrides */
+            (() => {
+              const upcomingDates = sortedExceptionDates.filter((d) => d >= todayIST);
+              if (upcomingDates.length === 0) {
                 return (
-                  <div
-                    key={dateKey}
-                    className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex items-center justify-between gap-2"
-                  >
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-gray-900 dark:text-white">
-                          {formatFriendlyDate(dateKey, true)}
-                        </span>
-                        {dateKey === todayIST && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600">
-                            Today
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-gray-400 block font-mono">
-                        {dateKey} {exc?.label ? `• ${exc.label}` : ''}
-                      </span>
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            feedback('pop');
-                            const updated = {
-                              ...(student?.dateExceptions || {}),
-                              [dateKey]: { ...exc, breakfast: !isBfOn },
-                            };
-                            if (onSaveExceptions) onSaveExceptions(updated);
-                          }}
-                          className={`px-2 py-0.5 rounded-md transition-colors ${
-                            isBfOn
-                              ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-                              : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
-                          }`}
-                        >
-                          ☕ Bf: {isBfOn ? 'ON' : 'OFF'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            feedback('pop');
-                            const updated = {
-                              ...(student?.dateExceptions || {}),
-                              [dateKey]: { ...exc, lunch: !isLuOn },
-                            };
-                            if (onSaveExceptions) onSaveExceptions(updated);
-                          }}
-                          className={`px-2 py-0.5 rounded-md transition-colors ${
-                            isLuOn
-                              ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                              : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
-                          }`}
-                        >
-                          🍲 Lunch: {isLuOn ? 'ON' : 'OFF'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          setSelectedModalDate(dateKey);
-                          setShowTurnModal(true);
-                        }}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
-                        title="Edit override settings & reason"
-                      >
-                        <Calendar className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('warning');
-                          const updated = removeDateException(student?.dateExceptions || {}, dateKey);
-                          if (onSaveExceptions) onSaveExceptions(updated);
-                        }}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                        title="Remove override"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  <div className="p-8 text-center rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
+                    <Calendar className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                      {t('noUpcomingOverrides', 'No upcoming date exceptions scheduled.')}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {t('standardWeeklyRoutineApplies', 'Your standard weekly dining routine will apply every day. Click any day in Grid View to toggle.')}
+                    </p>
                   </div>
                 );
-              })}
-            </div>
+              }
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {upcomingDates.map((dateKey) => {
+                    const exc = student?.dateExceptions?.[dateKey];
+                    const isBfOn = Boolean(exc?.breakfast);
+                    const isLuOn = Boolean(exc?.lunch);
+
+                    return (
+                      <div
+                        key={dateKey}
+                        className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex items-center justify-between gap-2"
+                      >
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black text-gray-900 dark:text-white">
+                              {formatFriendlyDate(dateKey, true)}
+                            </span>
+                            {dateKey === todayIST && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600">
+                                {t('today', 'Today')}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-gray-400 block font-mono">
+                            {dateKey} {exc?.label ? `• ${exc.label}` : ''}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('pop');
+                                const updated = {
+                                  ...(student?.dateExceptions || {}),
+                                  [dateKey]: { ...exc, breakfast: !isBfOn },
+                                };
+                                if (onSaveExceptions) onSaveExceptions(updated);
+                              }}
+                              className={`px-2 py-0.5 rounded-md transition-colors ${
+                                isBfOn
+                                  ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                                  : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                              }`}
+                            >
+                              ☕ Bf: {isBfOn ? 'ON' : 'OFF'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('pop');
+                                const updated = {
+                                  ...(student?.dateExceptions || {}),
+                                  [dateKey]: { ...exc, lunch: !isLuOn },
+                                };
+                                if (onSaveExceptions) onSaveExceptions(updated);
+                              }}
+                              className={`px-2 py-0.5 rounded-md transition-colors ${
+                                isLuOn
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                              }`}
+                            >
+                              🍲 Lunch: {isLuOn ? 'ON' : 'OFF'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              feedback('tick');
+                              setSelectedModalDate(dateKey);
+                              setShowTurnModal(true);
+                            }}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                            title="Edit override settings & reason"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              feedback('warning');
+                              const updated = removeDateException(student?.dateExceptions || {}, dateKey);
+                              if (onSaveExceptions) onSaveExceptions(updated);
+                            }}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                            title="Remove override"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
+          ) : (
+            /* Tab B: Past Leaves & History Ledger */
+            (() => {
+              const pastDates = sortedExceptionDates.filter((d) => d < todayIST).reverse();
+              if (pastDates.length === 0) {
+                return (
+                  <div className="p-8 text-center rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
+                    <ShieldCheck className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                    <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                      {t('noCustomPastOverrides', 'No custom past overrides recorded.')}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {t('standardWeeklyRoutineFollowed', 'Standard weekly routine was followed for past dates. Click any past day in Grid View to inspect individual records.')}
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {pastDates.map((dateKey) => {
+                    const exc = student?.dateExceptions?.[dateKey];
+                    const isBfOn = Boolean(exc?.breakfast);
+                    const isLuOn = Boolean(exc?.lunch);
+
+                    return (
+                      <div
+                        key={dateKey}
+                        className="p-3.5 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-gray-200/70 dark:border-white/5 flex items-center justify-between gap-2"
+                      >
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black text-gray-900 dark:text-white">
+                              {formatFriendlyDate(dateKey, true)}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400 font-mono">
+                              {t('archived', 'Archived')}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-gray-400 block font-mono">
+                            {dateKey} {exc?.label ? `• ${exc.label}` : ''}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold">
+                            <span className={`px-2 py-0.5 rounded-md ${
+                              isBfOn
+                                ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                            }`}>
+                              ☕ Bf: {isBfOn ? 'ON' : 'OFF'}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-md ${
+                              isLuOn
+                                ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                            }`}>
+                              🍲 Lunch: {isLuOn ? 'ON' : 'OFF'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleHistoryClick(dateKey)}
+                          className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-emerald-500 hover:text-white dark:bg-white/5 dark:hover:bg-emerald-600 text-gray-600 dark:text-gray-300 text-[10px] font-bold transition-all shadow-xs flex items-center gap-1 flex-shrink-0"
+                          title={t('inspectHistoricalBreakdown', 'Inspect historical breakdown')}
+                        >
+                          <Clock className="w-3 h-3" />
+                          <span>{t('view', 'View')}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
           )}
         </div>
       )}
@@ -793,6 +998,20 @@ export default function DateGridMatrix({
           />
         )}
       </AnimatePresence>
+
+      {/* ================= HISTORICAL RECORD DETAILS MODAL ================= */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <DateHistoryDetailModal
+            isOpen={showHistoryModal}
+            onClose={() => setShowHistoryModal(false)}
+            dateStr={selectedHistoryDate}
+            meals={selectedHistoryMeals}
+            student={student}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

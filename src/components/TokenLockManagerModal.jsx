@@ -20,25 +20,29 @@ import {
 import { dialog } from '../utils/dialog';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus, formatTime12 } from '../utils/useTokenLockStatus';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { subscribeToCanteenConfig, updateSectionChunkSize } from '../utils/canteenConfigService';
+import { useLanguage } from '../store/LanguageContext';
 
 const PRESETS = [
-  { label: 'Standard (2 PM – 11 PM)', start: '14:00', end: '23:00' },
-  { label: 'Extended (12 PM – Midnight)', start: '12:00', end: '23:59' },
-  { label: 'Early Cutoff (2 PM – 9 PM)', start: '14:00', end: '21:00' },
-  { label: 'Full Day (6 AM – 11 PM)', start: '06:00', end: '23:00' },
+  { label: 'Standard (11:00 PM Cutoff)', start: '00:00', end: '23:00' },
+  { label: 'Midnight (11:59 PM Cutoff)', start: '00:00', end: '23:59' },
+  { label: 'Early (9:00 PM Cutoff)', start: '00:00', end: '21:00' },
+  { label: 'Evening (10:00 PM Cutoff)', start: '00:00', end: '22:00' },
 ];
 
 const DAYS_META = [
-  { key: 'su', label: 'Sun', full: 'Sunday' },
-  { key: 'mo', label: 'Mon', full: 'Monday' },
-  { key: 'tu', label: 'Tue', full: 'Tuesday' },
-  { key: 'we', label: 'Wed', full: 'Wednesday' },
-  { key: 'th', label: 'Thu', full: 'Thursday' },
-  { key: 'fr', label: 'Fri', full: 'Friday' },
-  { key: 'sa', label: 'Sat', full: 'Saturday' },
+  { key: 'su', label: 'Sun', full: 'Sunday', fullKey: 'daysFull.0' },
+  { key: 'mo', label: 'Mon', full: 'Monday', fullKey: 'daysFull.1' },
+  { key: 'tu', label: 'Tue', full: 'Tuesday', fullKey: 'daysFull.2' },
+  { key: 'we', label: 'Wed', full: 'Wednesday', fullKey: 'daysFull.3' },
+  { key: 'th', label: 'Thu', full: 'Thursday', fullKey: 'daysFull.4' },
+  { key: 'fr', label: 'Fri', full: 'Friday', fullKey: 'daysFull.5' },
+  { key: 'sa', label: 'Sat', full: 'Saturday', fullKey: 'daysFull.6' },
 ];
 
 export default function TokenLockManagerModal({ isOpen, onClose }) {
+  const { t } = useLanguage();
   const { feedback } = useFeedback();
   const {
     config,
@@ -56,18 +60,29 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
 
   // Working form state
   const [mode, setMode] = useState(config.overrideMode || 'auto');
-  const [startInput, setStartInput] = useState(config.window?.startTime || '14:00');
+  const [startInput, setStartInput] = useState(config.window?.startTime || '00:00');
   const [endInput, setEndInput] = useState(config.window?.endTime || '23:00');
   const [scheduleEnabled, setScheduleEnabled] = useState(Boolean(config.schedule?.enabled));
   const [daySchedules, setDaySchedules] = useState(() => config.schedule?.days || {});
   const [overrideReason, setOverrideReason] = useState(config.temporaryOverride?.reason || '');
+  const [sectionChunkSize, setSectionChunkSize] = useState(25);
   const [saving, setSaving] = useState(false);
+
+  // Sync section chunk size from database
+  useEffect(() => {
+    const unsub = subscribeToCanteenConfig((cfg) => {
+      if (cfg?.sectionChunkSize) {
+        setSectionChunkSize(cfg.sectionChunkSize);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Sync state whenever modal opens or config updates from Firestore
   useEffect(() => {
     if (isOpen) {
       setMode(config.overrideMode || (config.status ? 'force_unlocked' : 'auto'));
-      setStartInput(config.window?.startTime || '14:00');
+      setStartInput(config.window?.startTime || '00:00');
       setEndInput(config.window?.endTime || '23:00');
       setScheduleEnabled(Boolean(config.schedule?.enabled));
       setDaySchedules(config.schedule?.days || {});
@@ -119,6 +134,21 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
 
     setSaving(false);
     if (result.success) {
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: 'OVERRIDE_APPLIED',
+        severity: AUDIT_SEVERITIES.WARNING,
+        target: { type: 'system_config', id: 'tokenboard', label: 'Token Board Cutoff' },
+        changes: {
+          diffSummary: `Temporary unlock activated for ${label}`,
+          fieldsChanged: ['temporaryOverride'],
+          before: null,
+          after: { active: true, minutes: durationMinutes, expiresAt },
+        },
+        metadata: {
+          reason: `Temporary Admin Extension (${label})`,
+        },
+      });
       dialog.toast.success('Temporary Unlock Active', `Tokens unlocked for ${label}.`);
       onClose();
     } else {
@@ -139,6 +169,18 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
         mode: 'force_unlocked',
         expiresAt: null,
         reason: '',
+      },
+    });
+    await logAuditEvent({
+      category: AUDIT_CATEGORIES.TOKENS,
+      action: 'OVERRIDE_CANCELLED',
+      severity: AUDIT_SEVERITIES.NOTICE,
+      target: { type: 'system_config', id: 'tokenboard', label: 'Token Board Cutoff' },
+      changes: {
+        diffSummary: 'Temporary unlock override was cancelled early',
+        fieldsChanged: ['temporaryOverride'],
+        before: { active: true },
+        after: { active: false },
       },
     });
     setSaving(false);
@@ -167,6 +209,25 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
 
       const result = await saveLockConfig(updates);
       if (result.success) {
+        await updateSectionChunkSize(sectionChunkSize, {
+          displayName: 'Committee Admin',
+          role: 'admin',
+        });
+        await logAuditEvent({
+          category: AUDIT_CATEGORIES.TOKENS,
+          action: 'CUTOFF_WINDOW_CHANGE',
+          severity: mode === 'force_locked' ? AUDIT_SEVERITIES.CRITICAL : AUDIT_SEVERITIES.WARNING,
+          target: { type: 'system_config', id: 'tokenboard', label: 'Cutoff Rules' },
+          changes: {
+            diffSummary: `Cutoff Mode: ${mode.toUpperCase()}, Window: ${startInput} - ${endInput}`,
+            fieldsChanged: ['overrideMode', 'window', 'schedule'],
+            before: null,
+            after: updates,
+          },
+          metadata: {
+            reason: overrideReason.trim() || 'Cutoff configuration updated by committee admin',
+          },
+        });
         dialog.toast.success('Configuration Saved', 'Token locking rules updated in real-time.');
         onClose();
       } else {
@@ -205,13 +266,13 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span>Token Cutoff & Locking Engine</span>
+                <span>{t('tokenCutoffEngine', 'Token Cutoff & Locking Engine')}</span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  IST Synced
+                  {t('istSynced', 'IST Synced')}
                 </span>
               </h2>
               <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Configure update windows, cutoff deadlines, and emergency overrides.
+                {t('configureWindowsDesc', 'Configure update windows, cutoff deadlines, and emergency overrides.')}
               </p>
             </div>
           </div>
@@ -230,37 +291,37 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
           <div className="flex items-center justify-between text-xs">
             <span className="font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-emerald-500" />
-              Live Server IST Time: <strong className="font-mono text-gray-900 dark:text-white">{currentTime || '--:--:--'}</strong>
+              {t('liveServerIstTime', 'Live Server IST Time:')} <strong className="font-mono text-gray-900 dark:text-white">{currentTime || '--:--:--'}</strong>
             </span>
             <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-              Active Mode: <b>{effectiveMode.toUpperCase()}</b>
+              {t('activeModeColon', 'Active Mode:')} <b>{effectiveMode.toUpperCase()}</b>
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="p-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/5">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">Today ({todayIST})</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase block">{t('today', 'Today')} ({todayIST})</span>
               <span className="font-black text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1 mt-0.5">
-                <Lock className="w-3 h-3" /> Closed
+                <Lock className="w-3 h-3" /> {t('closed', 'Closed')}
               </span>
             </div>
 
             <div className="p-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/5">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">Tomorrow ({tomorrowIST})</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase block">{t('tomorrow', 'Tomorrow')} ({tomorrowIST})</span>
               <span className={`font-black flex items-center justify-center gap-1 mt-0.5 ${
                 !isTomorrowLocked
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-amber-600 dark:text-amber-400'
               }`}>
                 {!isTomorrowLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                {!isTomorrowLocked ? 'Open for Edits' : 'Locked (Cutoff)'}
+                {!isTomorrowLocked ? t('openForEdits', 'Open for Edits') : t('lockedCutoff', 'Locked (Cutoff)')}
               </span>
             </div>
 
             <div className="p-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/5">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">Future Dates</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase block">{t('futureDates', 'Future Dates')}</span>
               <span className="font-black text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1 mt-0.5">
-                <Unlock className="w-3 h-3" /> Always Open
+                <Unlock className="w-3 h-3" /> {t('alwaysOpen', 'Always Open')}
               </span>
             </div>
           </div>
@@ -272,7 +333,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
             <div className="flex items-center gap-2">
               <Timer className="w-4 h-4 text-amber-500 animate-pulse" />
               <span>
-                <b>Timed Temporary Unlock Active:</b> {config.temporaryOverride.reason || 'Manual extension in progress'}
+                <b>{t('timedUnlockActive', 'Timed Temporary Unlock Active:')}</b> {config.temporaryOverride.reason || 'Manual extension in progress'}
               </span>
             </div>
             <button
@@ -280,7 +341,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
               onClick={handleCancelTemporaryOverride}
               className="px-2.5 py-1 rounded-lg bg-amber-200/80 hover:bg-amber-300 dark:bg-amber-900/60 dark:hover:bg-amber-800 font-bold text-[11px] text-amber-900 dark:text-amber-100 transition-colors"
             >
-              Cancel Extension
+              {t('cancelExtension', 'Cancel Extension')}
             </button>
           </div>
         )}
@@ -289,7 +350,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
           {/* Section 1: Master Operating Mode */}
           <div className="space-y-2.5">
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              1. Master Operating Mode
+              {t('masterOperatingMode', '1. Master Operating Mode')}
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -309,12 +370,12 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-xs flex items-center gap-1.5">
                     <Clock className="w-4 h-4 text-emerald-500" />
-                    Automatic Schedule
+                    {t('autoSchedule', 'Automatic Schedule')}
                   </span>
                   {mode === 'auto' && <Check className="w-4 h-4 text-emerald-500" />}
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                  Strictly enforces daily time window. Locks tomorrow after cutoff, keeps future dates open.
+                  {t('autoScheduleDesc', 'Updates for tomorrow remain open all day until the cutoff deadline passes on the day before. Future dates remain open for advance booking.')}
                 </p>
               </button>
 
@@ -334,12 +395,12 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-xs flex items-center gap-1.5">
                     <Unlock className="w-4 h-4 text-blue-500" />
-                    Force Unlocked (24/7)
+                    {t('forceUnlocked247', 'Force Unlocked (24/7)')}
                   </span>
                   {mode === 'force_unlocked' && <Check className="w-4 h-4 text-blue-500" />}
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                  Emergency override. Bypasses all cutoff hours; students can update any date anytime.
+                  {t('forceUnlockedDesc', 'Emergency override. Bypasses all cutoff hours; students can update any date anytime.')}
                 </p>
               </button>
 
@@ -359,12 +420,12 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-xs flex items-center gap-1.5">
                     <Lock className="w-4 h-4 text-rose-500" />
-                    Emergency Freeze
+                    {t('emergencyFreeze', 'Emergency Freeze')}
                   </span>
                   {mode === 'force_locked' && <Check className="w-4 h-4 text-rose-500" />}
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                  Complete lockdown. Pauses student login and prohibits all edits across all dates.
+                  {t('emergencyFreezeDesc', 'Complete lockdown. Pauses student login and prohibits all edits across all dates.')}
                 </p>
               </button>
             </div>
@@ -374,16 +435,16 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                2. Dynamic Daily Cutoff Window
+                {t('dynamicDailyCutoffWindow', '2. Daily Cutoff Schedule & Deadline')}
               </label>
               <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                Current: <b>{formatTime12(startInput)} – {formatTime12(endInput)}</b>
+                {t('currentColon', 'Cutoff Deadline:')} <b>{formatTime12(endInput)}</b>
               </span>
             </div>
 
             {/* Presets Strip */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              <span className="text-[11px] text-gray-400 font-semibold flex-shrink-0">Presets:</span>
+              <span className="text-[11px] text-gray-400 font-semibold flex-shrink-0">{t('presetsColon', 'Presets:')}</span>
               {PRESETS.map((p) => (
                 <button
                   key={p.label}
@@ -400,7 +461,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                  Window Opens (Start Time):
+                  {t('windowOpensStart', 'Window Opens (Start Time):')}
                 </span>
                 <div className="relative">
                   <input
@@ -418,7 +479,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
 
               <div className="space-y-1.5">
                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                  Cutoff Deadline (End Time):
+                  {t('cutoffDeadlineEnd', 'Cutoff Deadline (End Time):')}
                 </span>
                 <div className="relative">
                   <input
@@ -441,9 +502,9 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
-                Quick Temporary Extension
+                {t('quickTemporaryExtension', 'Quick Temporary Extension')}
               </span>
-              <span className="text-[11px] text-gray-500">Auto-reverts to schedule upon expiry</span>
+              <span className="text-[11px] text-gray-500">{t('autoRevertsDesc', 'Auto-reverts to schedule upon expiry')}</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -477,7 +538,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
                 onClick={() => handleQuickTimedUnlock(360, 'Until Midnight')}
                 className="py-2 px-3 rounded-xl bg-white dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-800 dark:text-gray-200 transition-colors"
               >
-                Until Midnight
+                {t('untilMidnight', 'Until Midnight')}
               </button>
             </div>
           </div>
@@ -487,10 +548,10 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider block">
-                  Day-of-Week Custom Cutoff Schedules
+                  {t('dayOfWeekCustomCutoffs', 'Day-of-Week Custom Cutoff Schedules')}
                 </span>
                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                  Enable custom deadlines for specific days (e.g. earlier Friday cutoff at 9:00 PM)
+                  {t('enableCustomDeadlinesDesc', 'Enable custom deadlines for specific days (e.g. earlier Friday cutoff at 9:00 PM)')}
                 </span>
               </div>
 
@@ -515,7 +576,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
                       className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs"
                     >
                       <span className="font-bold text-gray-700 dark:text-gray-200 w-16">
-                        {day.full}:
+                        {day.fullKey ? t(day.fullKey, day.full) : day.full}:
                       </span>
                       <div className="flex items-center gap-1.5 font-mono">
                         <input
@@ -539,16 +600,54 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Section 5: Note / Audit Trail */}
+          {/* Section 5: Mess Distribution Section Size Configuration */}
+          <div className="border border-gray-200/80 dark:border-white/10 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider block flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-emerald-500" />
+                  Mess Distribution Section Size
+                </span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Tokens per section column for kitchen manifests &amp; dining distribution
+                </span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                {sectionChunkSize} tokens / section
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {[15, 20, 25, 30, 40, 50].map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setSectionChunkSize(sz);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    sectionChunkSize === sz
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-emerald-500/40'
+                  }`}
+                >
+                  {sz} tokens {sz === 25 ? '(Default)' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 6: Note / Audit Trail */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Override Reason / Audit Note (Optional)
+              {t('overrideReasonAuditNote', 'Override Reason / Audit Note (Optional)')}
             </label>
             <input
               type="text"
               value={overrideReason}
               onChange={(e) => setOverrideReason(e.target.value)}
-              placeholder="e.g. Extended window for Ramadan or Exam preparations"
+              placeholder={t('overrideReasonPlaceholder', 'e.g. Extended window for Ramadan or Exam preparations')}
               className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
@@ -560,7 +659,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
-              Cancel
+              {t('cancel', 'Cancel')}
             </button>
             <button
               type="submit"
@@ -568,7 +667,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-extrabold text-xs shadow-md shadow-emerald-500/25 active:scale-95 transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving...' : 'Apply & Save Locking Rules'}</span>
+              <span>{saving ? t('saving', 'Saving...') : t('applyAndSaveRules', 'Apply & Save Locking Rules')}</span>
             </button>
           </div>
         </form>

@@ -12,10 +12,12 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useFeedback } from '../utils/useFeedback';
+import { useLanguage } from '../store/LanguageContext';
 
 export default function NotFound() {
   const navigate = useNavigate();
   const { feedback } = useFeedback();
+  const { t } = useLanguage();
 
   const handleGoBack = () => {
     feedback('tick');
@@ -79,15 +81,15 @@ export default function NotFound() {
         >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/20 text-xs font-bold text-emerald-700 dark:text-emerald-300">
             <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Page Relocated or Not Found</span>
+            <span>{t('pageNotFound', 'Page Relocated or Not Found')}</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Lost in the Canteen Corridors?
+            {t('lostInCorridors', 'Lost in the Canteen Corridors?')}
           </h1>
 
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 max-w-lg mx-auto leading-relaxed">
-            The page, meal menu, or token record you are looking for is unavailable or has moved to a new hall.
+            {t('notFoundDesc', 'The page, meal menu, or token record you are looking for is unavailable or has moved to a new hall.')}
           </p>
         </motion.div>
 
@@ -108,10 +110,10 @@ export default function NotFound() {
             </div>
             <div>
               <span className="text-xs font-bold text-gray-900 dark:text-white block group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                Token Board Matrix
+                {t('tokenBoardMatrix', 'Token Board Matrix')}
               </span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block">
-                Live tokens & meal counts
+                {t('liveTokensAndCounts', 'Live tokens & meal counts')}
               </span>
             </div>
           </button>
@@ -126,10 +128,10 @@ export default function NotFound() {
             </div>
             <div>
               <span className="text-xs font-bold text-gray-900 dark:text-white block group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                Canteen Menu
+                {t('canteenMenuConsole', 'Canteen Menu')}
               </span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block">
-                Weekly dishes & timings
+                {t('weeklyDishesTimings', 'Weekly dishes & timings')}
               </span>
             </div>
           </button>
@@ -144,10 +146,10 @@ export default function NotFound() {
             </div>
             <div>
               <span className="text-xs font-bold text-gray-900 dark:text-white block group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                Student Portal
+                {t('navStudentPortal', 'Student Portal')}
               </span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block">
-                Update meal reservations
+                {t('updateMealReservations', 'Update meal reservations')}
               </span>
             </div>
           </button>
@@ -165,7 +167,7 @@ export default function NotFound() {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Go Back to Previous Page</span>
+            <span>{t('goBack', 'Go Back to Previous Page')}</span>
           </button>
 
           <button
@@ -173,14 +175,14 @@ export default function NotFound() {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all transform active:scale-95"
           >
             <Home className="w-4 h-4" />
-            <span>Return to Main Board</span>
+            <span>{t('returnToBoard', 'Return to Main Board')}</span>
           </button>
         </motion.div>
 
         {/* Security / System Footer Note */}
         <div className="pt-6 border-t border-gray-200/60 dark:border-white/5 flex items-center justify-center gap-1.5 text-xs text-gray-400">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>Alathurpadi Dars Students Association (ADSA) • Official Token System</span>
+          <span>{t('officialTokenSystem', 'Alathurpadi Dars Students Association (ADSA) • Official Token System')}</span>
         </div>
       </div>
     </div>

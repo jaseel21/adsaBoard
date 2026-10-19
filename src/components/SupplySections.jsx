@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Utensils, Coffee, ArrowLeft, Layers, Printer, FileDown } from 'lucide-react';
+import { Utensils, Coffee, ArrowLeft, Layers, Printer, FileDown, Sliders } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
 import { useFeedback } from '../utils/useFeedback';
 import { useLanguage } from '../store/LanguageContext';
+import { exportSinglePageCombinedManifestPDF } from '../utils/publicDocumentExporter';
+import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
+import AdvancedExportModal from './export/AdvancedExportModal';
 import {
-  getTodayISTDate,
   addDaysToDate,
   getEffectiveStudentMealStatus,
 } from '../utils/studentExceptionService';
@@ -35,10 +37,10 @@ export default function SupplySections({ defaultMeal }) {
   // Section Display Options: 'batch' (Academic Batches 1-7) | 'size' (Numeric chunks)
   const [sectionMode, setSectionMode] = useState('batch');
   const [customChunkSize, setCustomChunkSize] = useState(25);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const { timeHms, dayShort, longDate } = useWorldTime('Asia/Kolkata');
+  const { timeHms, dayShort, longDate, todayIST } = useWorldTime('Asia/Kolkata');
   const [day, setDay] = useState('');
-  const todayIST = useMemo(() => getTodayISTDate(), []);
 
   // Synchronize target meal date (after 2:00 PM IST, view next day's supply)
   const isPostCutoff = Boolean(timeHms && timeHms >= '14:00:00');
@@ -80,7 +82,16 @@ export default function SupplySections({ defaultMeal }) {
         }
       );
 
-    return () => unsub();
+    const unsubCanteen = subscribeToCanteenConfig((cfg) => {
+      if (cfg?.sectionChunkSize) {
+        setCustomChunkSize(cfg.sectionChunkSize);
+      }
+    });
+
+    return () => {
+      unsub();
+      unsubCanteen();
+    };
   }, []);
 
   // Compute dynamic sections based on selected mode
@@ -153,58 +164,21 @@ export default function SupplySections({ defaultMeal }) {
 
   const exportSupplyPdf = () => {
     feedback('tick');
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const isLunchMeal = activeMeal === 'lunch';
-
-    doc.setFontSize(16);
-    doc.setTextColor(isLunchMeal ? 5 : 217, isLunchMeal ? 150 : 119, isLunchMeal ? 105 : 6);
-    doc.text(
-      `Alathurpadi Dars - ${isLunchMeal ? 'Lunch' : 'Breakfast'} Kitchen Supply Breakdown`,
-      14,
-      18
-    );
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(
-      `Date: ${targetDateIST} (${(day || '').toUpperCase()}) | Total Students: ${documents.length}`,
-      14,
-      25
-    );
-
-    const columns = dynamicSections.map((sec) => ({
-      header: `${sec.name}\n(${sec.activeCount} Served)`,
-      dataKey: `s${sec.id}`,
-    }));
-
-    const maxSkipped = Math.max(...dynamicSections.map((s) => s.canceledTokens.length), 1);
-    const tableBody = Array.from({ length: maxSkipped }).map((_, rIdx) => {
-      const row = {};
-      dynamicSections.forEach((sec) => {
-        row[`s${sec.id}`] =
-          sec.canceledTokens[rIdx] !== undefined ? `#${sec.canceledTokens[rIdx]}` : '-';
+    try {
+      exportSinglePageCombinedManifestPDF({
+        targetDateIST,
+        dayKey: day,
+        dayFull: isPostCutoff ? 'Tomorrow' : dayShort,
+        documents,
+        category: sectionMode === 'size' ? 'sections' : 'batches',
+        sort: 'ascending',
+        chunkSize: Number(customChunkSize) || 25,
       });
-      return row;
-    });
-
-    doc.autoTable({
-      columns,
-      body: tableBody,
-      startY: 32,
-      theme: 'grid',
-      headStyles: {
-        fillColor: isLunchMeal ? [5, 150, 105] : [217, 119, 6],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 9,
-      },
-      bodyStyles: { fontSize: 8, halign: 'center' },
-    });
-
-    doc.save(
-      `ADSA_Kitchen_${activeMeal.toUpperCase()}_${targetDateIST}.pdf`
-    );
-    feedback('success');
+      feedback('success');
+    } catch (err) {
+      console.error('Error generating combined kitchen PDF:', err);
+      feedback('warning');
+    }
   };
 
   if (loading) {
@@ -311,13 +285,26 @@ export default function SupplySections({ defaultMeal }) {
             </button>
           </div>
 
-          <button
-            onClick={exportSupplyPdf}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95"
-          >
-            <FileDown className="w-4 h-4" />
-            <span>Export Kitchen PDF</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={exportSupplyPdf}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>Export Manifest</span>
+            </button>
+
+            <button
+              onClick={() => {
+                feedback('tick');
+                setIsExportModalOpen(true);
+              }}
+              title="Advanced Export Customizer"
+              className="p-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all active:scale-95 border border-gray-200/80 dark:border-white/10"
+            >
+              <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -429,6 +416,18 @@ export default function SupplySections({ defaultMeal }) {
           );
         })}
       </div>
+
+      {/* Advanced Export Customizer Modal */}
+      <AdvancedExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        exportType="supply"
+        targetDateIST={targetDateIST}
+        dayKey={day}
+        dayFull={isPostCutoff ? 'Tomorrow' : dayShort}
+        documents={documents}
+        sectionChunkSize={customChunkSize}
+      />
     </div>
   );
 }

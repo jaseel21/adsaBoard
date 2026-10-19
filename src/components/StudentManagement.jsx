@@ -950,7 +950,13 @@ export default function StudentManagement() {
       {/* Slide-Over Drawer for Individual CRUD */}
       <StudentDrawer
         isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditingStudent(null);
+          if (location.search.includes('token=') || location.search.includes('add=')) {
+            navigate('/student-management', { replace: true });
+          }
+        }}
         student={editingStudent}
         existingTokens={existingTokens}
         existingBatches={allBatches}

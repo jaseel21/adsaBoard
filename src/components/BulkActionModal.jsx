@@ -14,12 +14,14 @@ import {
   Download,
   Copy,
   Sparkles,
-  } from 'lucide-react';
+  RefreshCw,
+} from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { subscribeToPreferences } from '../utils/preferenceService';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 
 export default function BulkActionModal({
   isOpen,
@@ -118,6 +120,22 @@ export default function BulkActionModal({
         await batch.commit();
         setProgress(Math.round(((i + 1) / chunks.length) * 100));
       }
+
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: 'BULK_STUDENT_UPDATE',
+        severity: AUDIT_SEVERITIES.WARNING,
+        target: { type: 'student', id: 'bulk', label: `Bulk Meal Update (${count} Students)` },
+        changes: {
+          diffSummary: `Bulk updated ${targetMeal.toUpperCase()} for ${count} students to ${mealActionVal ? 'ON' : 'OFF'}`,
+          fieldsChanged: [targetMeal],
+        },
+        metadata: {
+          batchCount: count,
+          meal: targetMeal,
+          status: mealActionVal,
+        },
+      });
 
       dialog.toast.success('Meals Updated', `Successfully updated meal schedules for ${count} students.`);
       if (onCompleted) onCompleted();
@@ -238,6 +256,23 @@ export default function BulkActionModal({
 
         await batch.commit();
       }
+
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.STUDENTS,
+        action: newBlockStatus ? 'STUDENT_BLOCK' : 'STUDENT_UNBLOCK',
+        severity: newBlockStatus ? AUDIT_SEVERITIES.CRITICAL : AUDIT_SEVERITIES.NOTICE,
+        target: { type: 'student', id: 'bulk', label: `Bulk Status Update (${count} Students)` },
+        changes: {
+          diffSummary: `Mass ${newBlockStatus ? 'BLOCKED' : 'UNBLOCKED'} ${count} students`,
+          fieldsChanged: ['block', 'blockReason'],
+          before: { block: !newBlockStatus },
+          after: { block: newBlockStatus, blockReason: newBlockStatus ? bulkBlockReason.trim() : '' },
+        },
+        metadata: {
+          batchCount: count,
+          reason: bulkBlockReason.trim() || undefined,
+        },
+      });
 
       dialog.toast.success(
         newBlockStatus ? 'Students Blocked' : 'Students Unblocked',

@@ -1,6 +1,7 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import Home from './components/Home';
+import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import StudentPort from './components/StudentPort';
 import Navbar from './components/NavBar';
@@ -14,106 +15,173 @@ import AdminLogin from './components/AdminLogin';
 import StudentManagement from './components/StudentManagement';
 import MenuManagement from './components/MenuManagement';
 import DietaryManagement from './components/DietaryManagement';
+import AuditTrail from './components/audit/AuditTrail';
+import KitchenDisplay from './components/KitchenDisplay';
+import GuidePage from './components/guide/GuidePage';
 import NotFound from './components/NotFound';
 import AdminRoute from './components/guards/AdminRoute';
+import RoleRoute from './components/guards/RoleRoute';
 import StudentRoute from './components/guards/StudentRoute';
+import AuthenticatedRoute from './components/guards/AuthenticatedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import { DialogProvider } from './components/ui/AppDialog';
-import firebase from './firebase/config';
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
 import { LanguageProvider } from './store/LanguageContext';
+import { ROLES } from './utils/rbac';
 import './App.css';
 
 function AppContent() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, homeRoute } = useContext(AuthContext);
   const location = useLocation();
 
   const isAdmin =
     location.pathname.startsWith('/admin') ||
     location.pathname === '/alogin' ||
+    location.pathname === '/kitchen' ||
     location.pathname.startsWith('/student-management');
 
-  useEffect(() => {
-    const unsubscribe = firebase.auth().onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, [setUser]);
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
       <Navbar isAdmin={isAdmin} />
-      <main className="flex-1 flex flex-col">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/menu" element={<Fmenu />} />
-          <Route path="/list" element={<List />} />
-          <Route path="/lunch" element={<SupplySections defaultMeal="lunch" />} />
-          <Route path="/breakfast" element={<SupplySections defaultMeal="breakfast" />} />
+      <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden">
+        <ErrorBoundary>
+          <Routes>
+            {/* Public Landing Page */}
+            <Route path="/" element={<LandingPage />} />
 
-          {/* Student Portal (Protected by Student Session) */}
-          <Route
-            path="/student-portal"
-            element={
-              <StudentRoute>
-                <StudentPort />
-              </StudentRoute>
-            }
-          />
+            {/* Protected Interactive Token Board (Students or Staff Only) */}
+            <Route
+              path="/board"
+              element={
+                <AuthenticatedRoute>
+                  <Home />
+                </AuthenticatedRoute>
+              }
+            />
 
-          {/* Committee Admin Routes (Strictly Protected by AdminRoute Guard) */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <Admin />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/menu"
-            element={
-              <AdminRoute>
-                <MenuManagement />
-              </AdminRoute>
-            }
-          />
-          <Route path="/menu-management" element={<Navigate to="/admin/menu" replace />} />
-          <Route
-            path="/student-management"
-            element={
-              <AdminRoute>
-                <StudentManagement />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/dietary"
-            element={
-              <AdminRoute>
-                <DietaryManagement />
-              </AdminRoute>
-            }
-          />
-          <Route path="/admin/avoiders" element={<Navigate to="/admin/dietary" replace />} />
-          <Route path="/dietary-management" element={<Navigate to="/admin/dietary" replace />} />
+            {/* Protected Canteen Food Menu (Students or Staff Only) */}
+            <Route
+              path="/menu"
+              element={
+                <AuthenticatedRoute notice="Access restricted: Please authenticate with your student token or committee credentials to view the Canteen Food Menu.">
+                  <Fmenu />
+                </AuthenticatedRoute>
+              }
+            />
 
-          {/* Legacy Redirects */}
-          <Route path="/add-student" element={<Navigate to="/student-management?add=true" replace />} />
-          <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
-          <Route path="/astudent-port" element={<Navigate to="/student-management" replace />} />
-          <Route path="/m-tokens" element={<Navigate to="/student-management" replace />} />
-          <Route path="/pdfg" element={<Navigate to="/lunch" replace />} />
-          <Route
-            path="/alogin"
-            element={user ? <Navigate to="/admin" replace /> : <AdminLogin />}
-          />
+            {/* Public Document Downloads & Information */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/list" element={<List />} />
+            <Route path="/lunch" element={<SupplySections defaultMeal="lunch" />} />
+            <Route path="/breakfast" element={<SupplySections defaultMeal="breakfast" />} />
+            <Route path="/guide" element={<GuidePage />} />
 
-          {/* 404 Catch-All Fallback Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Student Portal (Protected by Student Session) */}
+            <Route
+              path="/student-portal"
+              element={
+                <StudentRoute>
+                  <StudentPort />
+                </StudentRoute>
+              }
+            />
+
+            {/* Dedicated Kitchen Display System (Cooks, Canteen Committee, Central, Devs) */}
+            <Route
+              path="/kitchen"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.COOK,
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <KitchenDisplay />
+                </RoleRoute>
+              }
+            />
+            <Route path="/kds" element={<Navigate to="/kitchen" replace />} />
+            <Route path="/cook-portal" element={<Navigate to="/kitchen" replace />} />
+
+            {/* Master Board & Student Management (Strictly Central Committee & Devs) */}
+            <Route
+              path="/admin"
+              element={
+                <RoleRoute allowedRoles={[ROLES.CENTRAL_COMMITTEE, ROLES.DEVELOPER]}>
+                  <Admin />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/student-management"
+              element={
+                <RoleRoute allowedRoles={[ROLES.CENTRAL_COMMITTEE, ROLES.DEVELOPER]}>
+                  <StudentManagement />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/admin/audit-logs"
+              element={
+                <RoleRoute allowedRoles={[ROLES.CENTRAL_COMMITTEE, ROLES.DEVELOPER]}>
+                  <AuditTrail />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/audit" element={<Navigate to="/admin/audit-logs" replace />} />
+            <Route path="/audit-logs" element={<Navigate to="/admin/audit-logs" replace />} />
+
+            {/* Menu & Dietary Consoles (Canteen Sub-Committee, Central, Devs) */}
+            <Route
+              path="/admin/menu"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <MenuManagement />
+                </RoleRoute>
+              }
+            />
+            <Route path="/menu-management" element={<Navigate to="/admin/menu" replace />} />
+            <Route
+              path="/admin/dietary"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <DietaryManagement />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/avoiders" element={<Navigate to="/admin/dietary" replace />} />
+            <Route path="/dietary-management" element={<Navigate to="/admin/dietary" replace />} />
+
+            {/* Legacy Redirects */}
+            <Route path="/add-student" element={<Navigate to="/student-management?add=true" replace />} />
+            <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
+            <Route path="/astudent-port" element={<Navigate to="/student-management" replace />} />
+            <Route path="/m-tokens" element={<Navigate to="/student-management" replace />} />
+            <Route path="/pdfg" element={<Navigate to="/lunch" replace />} />
+            <Route
+              path="/alogin"
+              element={user ? <Navigate to={homeRoute || '/admin'} replace /> : <AdminLogin />}
+            />
+
+            {/* 404 Catch-All Fallback Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
       <Footer />
     </div>

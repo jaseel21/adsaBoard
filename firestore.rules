@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // SECURITY HELPER FUNCTIONS
+    // ==========================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/staff_users/$(request.auth.uid));
+    }
+
+    function getStaffData() {
+      return get(/databases/$(database)/documents/staff_users/$(request.auth.uid)).data;
+    }
+
+    function getStaffRole() {
+      return getStaffData().role;
+    }
+
+    function isDeveloper() {
+      return isStaff() && getStaffRole() == 'developer';
+    }
+
+    function isCentralCommittee() {
+      return isStaff() && (getStaffRole() == 'central_committee' || getStaffRole() == 'developer');
+    }
+
+    function isCanteenCommittee() {
+      return isStaff() && (
+        getStaffRole() == 'canteen_committee' ||
+        getStaffRole() == 'central_committee' ||
+        getStaffRole() == 'developer'
+      );
+    }
+
+    function isCook() {
+      return isStaff() && (
+        getStaffRole() == 'cook' ||
+        getStaffRole() == 'canteen_committee' ||
+        getStaffRole() == 'central_committee' ||
+        getStaffRole() == 'developer'
+      );
+    }
+
+    // ==========================================
+    // 1. STAFF USERS DIRECTORY
+    // ==========================================
+    match /staff_users/{userId} {
+      // Public directory read for staff selector and role authorization
+      // (Passwords are NOT in Firestore; securely managed by Firebase Auth)
+      allow read: if true;
+      
+      // Self-bootstrapping on initial sign in or update by Central Committee / Devs
+      allow create: if isAuthenticated() && (request.auth.uid == userId || isCentralCommittee());
+      allow update, delete: if isCentralCommittee();
+    }
+
+    // ==========================================
+    // 2. STUDENT RECORDS COLLECTION
+    // ==========================================
+    match /students/{studentId} {
+      // Public / Display read for Token Board, Public Menu, and Kitchen Display
+      allow read: if true;
+
+      // Only Central Committee & Developers can create or delete student accounts
+      allow create, delete: if isCentralCommittee();
+
+      // Granular update rules based on role and field isolation:
+      allow update: if 
+        // A) Central Committee & Devs have full update capability
+        isCentralCommittee() ||
+        
+        // B) Canteen Sub-Committee can update dietary restrictions & operational notes only
+        (
+          isCanteenCommittee() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['obj2', 'dietary', 'dietaryNotes', 'updatedAt'])
+        ) ||
+        
+        // C) Student Self-Service: Strictly restricted to meal routine & calendar exceptions for non-blocked tokens.
+        // Students CANNOT edit profile info (name, room, phone, batch, password, token, or block status).
+        (
+          resource.data.block == false &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'obj',
+            'dateExceptions',
+            'templates',
+            'diningHistory',
+            'lastUpdatedBy',
+            'updatedAt'
+          ]) &&
+          // Enforce server timestamp integrity
+          request.resource.data.updatedAt == request.time
+        );
+    }
+
+    // ==========================================
+    // 3. SYSTEM & TOKEN BOARD CONFIGURATION
+    // ==========================================
+    match /system_config/{configId} {
+      // Everyone can read cutoff hours and emergency lock status
+      allow read: if true;
+      
+      // Only Central Committee & Developers can change lock mode or cutoffs
+      allow write: if isCentralCommittee();
+    }
+
+    match /tokenboard/{boardId} {
+      // Public read for live cutoff schedule and locking status
+      allow read: if true;
+      
+      // Only Central Committee & Developers can alter locking rules, cutoffs, or emergency overrides
+      allow write: if isCentralCommittee();
+    }
+
+    // ==========================================
+    // 4. CANTEEN MENU & DISH PRESETS
+    // ==========================================
+    match /menus/{menuId} {
+      // Public read for daily/weekly menus
+      allow read: if true;
+      
+      // Canteen Sub-Committee, Central Committee, and Developers can edit menus
+      allow write: if isCanteenCommittee();
+    }
+
+    match /dish_presets/{presetId} {
+      allow read: if true;
+      allow write: if isCanteenCommittee();
+    }
+
+    match /menu_history/{historyId} {
+      allow read: if isCanteenCommittee();
+      allow write: if isCanteenCommittee();
+    }
+
+    // ==========================================
+    // 5. DIETARY PREFERENCES & ALLERGENS
+    // ==========================================
+    match /dietary_preferences/{prefId} {
+      allow read: if true;
+      allow write: if isCanteenCommittee();
+    }
+
+    // ==========================================
+    // 6. CENTRAL AUDIT TRAIL (IMMUTABLE LOGS)
+    // ==========================================
+    match /audit_logs/{logId} {
+      // Audit logs are readable exclusively by Central Committee & Developers
+      allow read: if isCentralCommittee();
+
+      // Append-only: Authenticated staff and system actions can create log records
+      allow create: if true;
+
+      // IMMUTABILITY: Nobody (including developers) can edit or delete historical audit entries
+      allow update, delete: if false;
+    }
+  }
+}

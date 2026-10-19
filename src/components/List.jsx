@@ -18,7 +18,7 @@ const MenuTable = () => {
   const [rejectionsByPref, setRejectionsByPref] = useState({});
   const [loading, setLoading] = useState(true);
 
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
 
   useEffect(() => {
@@ -142,10 +142,10 @@ const MenuTable = () => {
         <div>
           <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-emerald-500" />
-            Dietary Avoiders Matrix
+            {t('dietaryAvoidersMatrix', 'Dietary Avoiders Matrix')}
           </h1>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Tokens with specific meat/fish exclusions for kitchen reference (Dynamic Preferences)
+            {t('dietaryAvoidersSubtitle', 'Tokens with specific meat/fish exclusions for kitchen reference (Dynamic Preferences)')}
           </p>
         </div>
 
@@ -159,7 +159,7 @@ const MenuTable = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all"
             >
               <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Manage Avoiders</span>
+              <span>{t('manageAvoiders', 'Manage Avoiders')}</span>
             </button>
           )}
 
@@ -171,7 +171,7 @@ const MenuTable = () => {
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Board</span>
+            <span>{t('navHome', 'Board')}</span>
           </button>
 
           <button
@@ -179,7 +179,7 @@ const MenuTable = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
           >
             <FileDown className="w-4 h-4" />
-            <span>Export Kitchen PDF</span>
+            <span>{t('exportKitchenPdf', 'Export Kitchen PDF')}</span>
           </button>
         </div>
       </div>
@@ -188,19 +188,20 @@ const MenuTable = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {preferences.map((p) => {
           const count = (rejectionsByPref[p.id] || []).length;
+          const prefLabel = lang === 'ml' && p.labelMl ? p.labelMl : p.labelEn;
           return (
             <div
               key={p.id}
               className="p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 text-center shadow-xs"
             >
               <span className="text-xs font-bold text-gray-600 dark:text-gray-400 block">
-                {p.labelEn} Excluded
+                {prefLabel} {t('excluded', 'Excluded')}
               </span>
               <span className="text-2xl font-extrabold text-rose-500 block mt-1">
                 {count}
               </span>
               <span className="text-[10px] text-gray-400 block mt-0.5">
-                {documents.length - count} accepted
+                {documents.length - count} {t('accepted', 'accepted')}
               </span>
             </div>
           );

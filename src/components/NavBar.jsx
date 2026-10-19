@@ -26,14 +26,30 @@ import {
   ShieldCheck,
   CheckCircle2,
   UserCheck,
+  Activity,
+  HelpCircle,
+  ChefHat,
+  Layers,
+  Printer,
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import ThemeSwitch from './ThemeSwitch';
 import LanguageSwitch from './LanguageSwitch';
+import StaffManagementModal from './StaffManagementModal';
 
 const Navbar = ({ isAdmin }) => {
-  const { user } = useContext(AuthContext);
+  const {
+    user,
+    role,
+    staffProfile,
+    roleBadge,
+    isCook,
+    isCanteenCommittee,
+    isCentralCommittee,
+    isDeveloper,
+    homeRoute,
+  } = useContext(AuthContext);
   const { stdata, logoutStudent } = useContext(DataOfOne);
   const { t } = useLanguage();
   const { feedback } = useFeedback();
@@ -56,10 +72,31 @@ const Navbar = ({ isAdmin }) => {
     enabled: Boolean(user && isAdmin),
   });
 
+  // Shared Campus Computer Kiosk Protection: Auto-logout student after 2.5 mins of inactivity
+  useIdleTimer({
+    timeoutMs: 150000,
+    warningMs: 25000,
+    onTimeout: () => {
+      if (stdata) {
+        if (logoutStudent) logoutStudent();
+        feedback('warning');
+        dialog.toast.info(
+          t('sessionExpired', 'Session Expired'),
+          t('sessionExpiredStudent', 'Student session signed out automatically to protect public campus terminals.')
+        );
+        if (location.pathname === '/student-portal') {
+          navigate('/');
+        }
+      }
+    },
+    enabled: Boolean(stdata && !user),
+  });
+
   const [email, setEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [supplyDropdownOpen, setSupplyDropdownOpen] = useState(false);
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
 
   const supplyDropdownRef = useRef(null);
   const adminDropdownRef = useRef(null);
@@ -99,10 +136,10 @@ const Navbar = ({ isAdmin }) => {
 
   const handleLogout = async () => {
     const confirmed = await dialog.confirm({
-      title: t('navLogout') || 'Logout',
-      message: 'Are you sure you want to sign out of the ADSA Committee console?',
-      confirmText: t('navLogout') || 'Yes, Logout',
-      cancelText: t('cancel') || 'Cancel',
+      title: t('navLogout', 'Logout'),
+      message: t('logoutConfirmMsg', 'Are you sure you want to sign out of the ADSA Committee console?'),
+      confirmText: t('navLogout', 'Yes, Logout'),
+      cancelText: t('cancel', 'Cancel'),
       confirmColor: 'rose',
       icon: 'warning',
     });
@@ -162,7 +199,7 @@ const Navbar = ({ isAdmin }) => {
                 )}
               </div>
               <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 -mt-0.5 hidden sm:block">
-                {isAdmin ? 'Committee Command Console' : t('appSubtitle')}
+                {isAdmin ? t('committeeCommandConsole', 'Committee Command Console') : t('appSubtitle')}
               </span>
             </div>
           </div>
@@ -182,57 +219,95 @@ const Navbar = ({ isAdmin }) => {
                   <span>{t('navHome') || 'Home'}</span>
                 </button>
 
-                {/* Master Board */}
+                {/* Master Board (Central Committee & Devs) */}
+                {isCentralCommittee && (
+                  <button
+                    onClick={() => handleNav('/admin')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                      location.pathname === '/admin' || location.pathname === '/alogin'
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('masterBoard', 'Master Board')}</span>
+                  </button>
+                )}
+
+                {/* Students Management Console (Central Committee & Devs) */}
+                {isCentralCommittee && (
+                  <button
+                    onClick={() => handleNav('/student-management')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                      isActive('/student-management')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('studentsConsole', 'Students')}</span>
+                  </button>
+                )}
+
+                {/* Canteen Menu Console (Canteen Sub-Committee, Central, Devs) */}
+                {isCanteenCommittee && (
+                  <button
+                    onClick={() => handleNav('/admin/menu')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                      isActive('/admin/menu') || isActive('/menu-management')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('canteenMenuConsole', 'Menu')}</span>
+                  </button>
+                )}
+
+                {/* Dietary Management Console (Canteen Sub-Committee, Central, Devs) */}
+                {isCanteenCommittee && (
+                  <button
+                    onClick={() => handleNav('/admin/dietary')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                      isActive('/admin/dietary') || isActive('/dietary-management') || isActive('/admin/avoiders')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('dietaryAvoidersConsole', 'Dietary')}</span>
+                  </button>
+                )}
+
+                {/* Dedicated Kitchen Display Console (Cooks, Canteen Sub-Committee, Central, Devs) */}
                 <button
-                  onClick={() => handleNav('/admin')}
+                  onClick={() => handleNav('/kitchen')}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    location.pathname === '/admin' || location.pathname === '/alogin'
+                    isActive('/kitchen')
                       ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
                   }`}
+                  title="Kitchen Preparation & Live Headcounts"
                 >
-                  <Sliders className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Master Board</span>
+                  <ChefHat className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{t('kitchen', 'Kitchen')}</span>
                 </button>
 
-                {/* Students Management Console */}
-                <button
-                  onClick={() => handleNav('/student-management')}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    isActive('/student-management')
-                      ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{t('navStudentMgmt') || 'Students'}</span>
-                </button>
-
-                {/* Canteen Menu Console */}
-                <button
-                  onClick={() => handleNav('/admin/menu')}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    isActive('/admin/menu') || isActive('/menu-management')
-                      ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{t('navMenuMgmt') || 'Menu'}</span>
-                </button>
-
-                {/* Dietary Management Console */}
-                <button
-                  onClick={() => handleNav('/admin/dietary')}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    isActive('/admin/dietary') || isActive('/dietary-management') || isActive('/admin/avoiders')
-                      ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{t('navDietary') || 'Dietary'}</span>
-                </button>
+                {/* Audit Trail & Activity Console (Central Committee & Devs) */}
+                {isCentralCommittee && (
+                  <button
+                    onClick={() => handleNav('/admin/audit-logs')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                      isActive('/admin/audit-logs') || isActive('/admin/audit')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
+                    title="Audit Trail & System Logs"
+                  >
+                    <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('auditTrailLogs', 'Audit Log')}</span>
+                  </button>
+                )}
 
                 {/* Supply Dropdown */}
                 <div className="relative" ref={supplyDropdownRef}>
@@ -247,7 +322,7 @@ const Navbar = ({ isAdmin }) => {
                         : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
                     }`}
                   >
-                    <span>Supply</span>
+                    <span>{t('navSupply', 'Supply')}</span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 transition-transform duration-200 ${
                         supplyDropdownOpen ? 'rotate-180' : ''
@@ -284,7 +359,7 @@ const Navbar = ({ isAdmin }) => {
                           className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                         >
                           <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
-                          <span>Public Menu Display</span>
+                          <span>{t('canteenMenuDisplay', 'Canteen Food Menu')}</span>
                         </button>
                       </motion.div>
                     )}
@@ -297,7 +372,7 @@ const Navbar = ({ isAdmin }) => {
                 <button
                   onClick={() => handleNav('/')}
                   className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    isActive('/')
+                    location.pathname === '/'
                       ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
                       : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
                   }`}
@@ -305,7 +380,22 @@ const Navbar = ({ isAdmin }) => {
                   {t('navHome')}
                 </button>
 
-                {/* Supply Dropdown */}
+                {/* Authenticated Token Board link (visible if student or staff is logged in) */}
+                {(stdata?.tokenNo || user) && (
+                  <button
+                    onClick={() => handleNav('/board')}
+                    className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all duration-200 ${
+                      isActive('/board')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('tokenBoard', 'Token Board')}</span>
+                  </button>
+                )}
+
+                {/* Supply & Kitchen Documents Dropdown */}
                 <div className="relative" ref={supplyDropdownRef}>
                   <button
                     onClick={() => {
@@ -313,12 +403,12 @@ const Navbar = ({ isAdmin }) => {
                       setSupplyDropdownOpen(!supplyDropdownOpen);
                     }}
                     className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all duration-200 ${
-                      isActive('/lunch') || isActive('/breakfast')
+                      isActive('/lunch') || isActive('/breakfast') || isActive('/list')
                         ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
                         : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
                     }`}
                   >
-                    <span>{t('navSupply')}</span>
+                    <span>{t('navSupply', 'Kitchen Documents')}</span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 transition-transform duration-200 ${
                         supplyDropdownOpen ? 'rotate-180' : ''
@@ -333,48 +423,42 @@ const Navbar = ({ isAdmin }) => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -6, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
+                        className="absolute left-0 mt-2 w-52 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
                       >
                         <button
                           onClick={() => handleNav('/lunch')}
                           className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                         >
-                          <Utensils className="w-4 h-4 text-emerald-500" />
-                          <span>{t('navLunch')}</span>
+                          <Printer className="w-4 h-4 text-emerald-500" />
+                          <span>Supply Manifest (Breakfast + Lunch)</span>
                         </button>
+                        <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
                         <button
-                          onClick={() => handleNav('/breakfast')}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                          onClick={() => handleNav('/list')}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                         >
-                          <Coffee className="w-4 h-4 text-amber-500" />
-                          <span>{t('navBreakfast')}</span>
+                          <FileText className="w-4 h-4 text-rose-500" />
+                          <span>Dietary Avoiders Matrix</span>
                         </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
-                <button
-                  onClick={() => handleNav('/menu')}
-                  className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    isActive('/menu')
-                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {t('navMenu') || 'Menu'}
-                </button>
-
-                <button
-                  onClick={() => handleNav('/list')}
-                  className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    isActive('/list')
-                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {t('navList')}
-                </button>
+                {/* Authenticated Food Menu link (visible if student or staff is logged in) */}
+                {(stdata?.tokenNo || user) && (
+                  <button
+                    onClick={() => handleNav('/menu')}
+                    className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all duration-200 ${
+                      isActive('/menu')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/40'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100/60 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('navMenu') || 'Food Menu'}</span>
+                  </button>
+                )}
 
                 {/* Direct Student Portal Key CTA Button or Active Session Pill */}
                 {stdata && stdata.tokenNo ? (
@@ -410,15 +494,27 @@ const Navbar = ({ isAdmin }) => {
                   </button>
                 )}
 
-                {/* Admin Console shortcut if committee is logged in while viewing public pages */}
+                {/* Staff Console shortcut if staff is logged in while viewing public pages */}
                 {user && !isAdmin && (
                   <button
-                    onClick={() => handleNav('/admin')}
+                    onClick={() => handleNav(homeRoute || '/admin')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all ml-1"
-                    title="Open Committee Admin Console"
+                    title="Open Designated Staff Console"
                   >
-                    <Sliders className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Admin Console</span>
+                    {isCook ? (
+                      <ChefHat className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : isCanteenCommittee && !isCentralCommittee ? (
+                      <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <Sliders className="w-3.5 h-3.5 text-emerald-500" />
+                    )}
+                    <span>
+                      {isCook
+                        ? t('kitchenPortal', 'Kitchen Portal')
+                        : isCanteenCommittee && !isCentralCommittee
+                        ? t('canteenMenuConsole', 'Canteen Console')
+                        : t('adminConsole', 'Admin Console')}
+                    </span>
                   </button>
                 )}
               </>
@@ -435,7 +531,7 @@ const Navbar = ({ isAdmin }) => {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs transition-all"
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="max-w-[120px] truncate">{user ? 'Committee' : 'Sign In'}</span>
+                  <span className="max-w-[130px] truncate">{roleBadge?.label || (user ? 'Staff' : 'Sign In')}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${adminDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -446,13 +542,34 @@ const Navbar = ({ isAdmin }) => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -6, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-2xl py-2 z-50 backdrop-blur-xl"
+                      className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-2xl py-2 z-50 backdrop-blur-xl"
                     >
                       {user && (
-                        <div className="px-3.5 py-2 border-b border-gray-100 dark:border-white/10">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Signed In As</p>
-                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{email || 'ADSA Admin'}</p>
+                        <div className="px-3.5 py-2.5 border-b border-gray-100 dark:border-white/10 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('staffRole', 'Staff Role')}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleBadge?.badgeClass || ''}`}>
+                              {roleBadge?.label}
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                            {staffProfile?.displayName || email || 'Staff User'}
+                          </p>
+                          <p className="text-[10px] text-gray-400 truncate">
+                            {staffProfile?.department || email}
+                          </p>
                         </div>
+                      )}
+
+                      {/* Go to Primary Role Console */}
+                      {user && (
+                        <button
+                          onClick={() => handleNav(homeRoute || '/')}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                        >
+                          <Sliders className="w-4 h-4 text-emerald-500" />
+                          <span>{t('myPrimaryConsole', 'My Primary Console')}</span>
+                        </button>
                       )}
 
                       {/* Go to Public Home Page */}
@@ -461,40 +578,88 @@ const Navbar = ({ isAdmin }) => {
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                       >
                         <Home className="w-4 h-4 text-emerald-500" />
-                        <span>{t('navHome') || 'Home Page (Public)'}</span>
+                        <span>{t('homePagePublic', 'Home Page (Landing)')}</span>
                       </button>
 
+                      {/* Go to Token Board */}
                       <button
-                        onClick={() => handleNav('/student-management')}
+                        onClick={() => handleNav('/board')}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                       >
-                        <Users className="w-4 h-4 text-emerald-500" />
-                        <span>Students Console</span>
+                        <Layers className="w-4 h-4 text-emerald-500" />
+                        <span>{t('tokenBoard', 'Token Board')}</span>
                       </button>
 
+                      {/* Kitchen Display Link (All staff) */}
                       <button
-                        onClick={() => handleNav('/admin/menu')}
+                        onClick={() => handleNav('/kitchen')}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                       >
-                        <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
-                        <span>Canteen Menu Console</span>
+                        <ChefHat className="w-4 h-4 text-emerald-500" />
+                        <span>{t('kitchenDisplaySystem', 'Kitchen Display System')}</span>
                       </button>
 
-                      <button
-                        onClick={() => handleNav('/admin/dietary')}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                      >
-                        <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
-                        <span>{t('navDietaryMgmt') || 'Dietary & Avoiders Console'}</span>
-                      </button>
+                      {/* Menu & Dietary (Canteen Sub-Committee, Central, Devs) */}
+                      {isCanteenCommittee && (
+                        <>
+                          <button
+                            onClick={() => handleNav('/admin/menu')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                            <span>{t('canteenMenuConsole', 'Canteen Menu Console')}</span>
+                          </button>
 
-                      <button
-                        onClick={() => handleNav('/admin')}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                      >
-                        <Sliders className="w-4 h-4 text-emerald-500" />
-                        <span>Master Token Board</span>
-                      </button>
+                          <button
+                            onClick={() => handleNav('/admin/dietary')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                            <span>{t('dietaryAvoidersConsole', 'Dietary & Avoiders')}</span>
+                          </button>
+                        </>
+                      )}
+
+                      {/* Master Board & Students (Central Committee & Devs only) */}
+                      {isCentralCommittee && (
+                        <>
+                          <button
+                            onClick={() => handleNav('/admin')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <Sliders className="w-4 h-4 text-emerald-500" />
+                            <span>{t('masterBoard', 'Master Token Board')}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleNav('/student-management')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <Users className="w-4 h-4 text-emerald-500" />
+                            <span>{t('studentsConsole', 'Students Console')}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleNav('/admin/audit-logs')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <Activity className="w-4 h-4 text-emerald-500" />
+                            <span>{t('auditTrailLogs', 'Audit Trail Logs')}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              feedback('tick');
+                              setStaffModalOpen(true);
+                              setAdminDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                            <span>{t('staffRolesAccess', 'Staff Roles & Access')}</span>
+                          </button>
+                        </>
+                      )}
 
                       <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
 
@@ -522,8 +687,21 @@ const Navbar = ({ isAdmin }) => {
             )}
           </nav>
 
-          {/* Right Action Island: Language + Theme Switches + Mobile Hamburger */}
+          {/* Right Action Island: Language + Theme Switches + Guide Button + Mobile Hamburger */}
           <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* Quick Guide Trigger Icon Button */}
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/guide');
+              }}
+              className="p-2 sm:px-2.5 sm:py-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/70 dark:border-white/10 transition-all flex items-center gap-1.5 active:scale-95 text-xs font-bold"
+              title="Token Board Guide (/guide or press '?')"
+            >
+              <HelpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="hidden xl:inline">{t('tokenBoardGuide') || 'Guide'}</span>
+            </button>
+
             <LanguageSwitch />
             <ThemeSwitch />
 
@@ -559,7 +737,7 @@ const Navbar = ({ isAdmin }) => {
                 <>
                   <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-2">
                     <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                      Committee Admin Panel
+                      {t('committeeAdminPanel', 'Committee Admin Panel')}
                     </p>
                   </div>
 
@@ -569,82 +747,112 @@ const Navbar = ({ isAdmin }) => {
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                   >
                     <Home className="w-4 h-4 text-emerald-500" />
-                    <span>{t('navHome') || 'Home Page (Public)'}</span>
+                    <span>{t('homePagePublic', 'Home Page (Public)')}</span>
                   </button>
 
+                  {/* Kitchen Display Link (All staff) */}
                   <button
-                    onClick={() => handleNav('/admin')}
+                    onClick={() => handleNav('/kitchen')}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                      isActive('/admin')
+                      isActive('/kitchen')
                         ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
                   >
-                    <Sliders className="w-4 h-4 text-emerald-500" />
-                    <span>Master Token Board</span>
+                    <ChefHat className="w-4 h-4 text-emerald-500" />
+                    <span>{t('kitchenDisplaySystem', 'Kitchen Display System')}</span>
                   </button>
 
-                  <button
-                    onClick={() => handleNav('/student-management')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                      isActive('/student-management')
-                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <Users className="w-4 h-4 text-emerald-500" />
-                    <span>{t('navStudentMgmt') || 'Students Console'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleNav('/admin/menu')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                      isActive('/admin/menu') || isActive('/menu-management')
-                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
-                    <span>{t('navMenuMgmt') || 'Canteen Menu Console'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleNav('/admin/dietary')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                      isActive('/admin/dietary') || isActive('/dietary-management') || isActive('/admin/avoiders')
-                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
-                    <span>{t('navDietaryMgmt') || 'Dietary & Avoiders'}</span>
-                  </button>
-
-                  {/* Supply Quick Grid */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* Master Token Board (Central Committee & Devs) */}
+                  {isCentralCommittee && (
                     <button
-                      onClick={() => handleNav('/lunch')}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20 active:scale-95"
+                      onClick={() => handleNav('/admin')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/admin')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
                     >
-                      <Utensils className="w-3.5 h-3.5" />
-                      <span>{t('navLunch')}</span>
+                      <Sliders className="w-4 h-4 text-emerald-500" />
+                      <span>{t('masterBoard', 'Master Token Board')}</span>
                     </button>
+                  )}
 
+                  {/* Student Management (Central Committee & Devs) */}
+                  {isCentralCommittee && (
                     <button
-                      onClick={() => handleNav('/breakfast')}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-500/20 active:scale-95"
+                      onClick={() => handleNav('/student-management')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/student-management')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
                     >
-                      <Coffee className="w-3.5 h-3.5" />
-                      <span>{t('navBreakfast')}</span>
+                      <Users className="w-4 h-4 text-emerald-500" />
+                      <span>{t('studentsConsole', 'Students Console')}</span>
                     </button>
-                  </div>
+                  )}
+
+                  {/* Canteen Menu (Canteen Sub-Committee, Central, Devs) */}
+                  {isCanteenCommittee && (
+                    <button
+                      onClick={() => handleNav('/admin/menu')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/admin/menu') || isActive('/menu-management')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                      <span>{t('canteenMenuConsole', 'Canteen Menu Console')}</span>
+                    </button>
+                  )}
+
+                  {/* Dietary & Avoiders (Canteen Sub-Committee, Central, Devs) */}
+                  {isCanteenCommittee && (
+                    <button
+                      onClick={() => handleNav('/admin/dietary')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/admin/dietary') || isActive('/dietary-management') || isActive('/admin/avoiders')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                      <span>{t('dietaryAvoidersConsole', 'Dietary & Avoiders')}</span>
+                    </button>
+                  )}
+
+                  {/* Audit Logs (Central Committee & Devs) */}
+                  {isCentralCommittee && (
+                    <button
+                      onClick={() => handleNav('/admin/audit-logs')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/admin/audit-logs') || isActive('/admin/audit')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <Activity className="w-4 h-4 text-emerald-500" />
+                      <span>{t('auditTrailLogs', 'Audit Log & Radar')}</span>
+                    </button>
+                  )}
+
+                  {/* Supply Quick Button */}
+                  <button
+                    onClick={() => handleNav('/lunch')}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20 active:scale-95"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Supply Manifest (Breakfast + Lunch - 1 Page)</span>
+                  </button>
 
                   <button
                     onClick={() => handleNav('/')}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-500/20 mt-1"
                   >
                     <Home className="w-3.5 h-3.5" />
-                    <span>{t('navHome') || 'Go to Home Page (Public)'}</span>
+                    <span>{t('homePagePublic', 'Go to Home Page (Public)')}</span>
                   </button>
                 </>
               ) : (
@@ -652,7 +860,7 @@ const Navbar = ({ isAdmin }) => {
                   <button
                     onClick={() => handleNav('/')}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                      isActive('/')
+                      location.pathname === '/'
                         ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
@@ -661,6 +869,36 @@ const Navbar = ({ isAdmin }) => {
                     <span>{t('navHome')}</span>
                   </button>
 
+                  {/* Authenticated Token Board link */}
+                  {(stdata?.tokenNo || user) && (
+                    <button
+                      onClick={() => handleNav('/board')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/board')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4 text-emerald-500" />
+                      <span>{t('tokenBoard', 'Token Board')}</span>
+                    </button>
+                  )}
+
+                  {/* Authenticated Food Menu link */}
+                  {(stdata?.tokenNo || user) && (
+                    <button
+                      onClick={() => handleNav('/menu')}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                        isActive('/menu')
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                      <span>{t('navMenu') || 'Food Menu'}</span>
+                    </button>
+                  )}
+
                   {stdata && stdata.tokenNo ? (
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/60 dark:border-emerald-500/30">
                       <button
@@ -668,7 +906,7 @@ const Navbar = ({ isAdmin }) => {
                         className="flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-300"
                       >
                         <UserCheck className="w-4 h-4 text-emerald-600" />
-                        <span>Token #{stdata.tokenNo} Portal</span>
+                        <span>Token #{stdata.tokenNo} {t('tokenPortal', 'Portal')}</span>
                       </button>
                       <button
                         onClick={() => {
@@ -680,7 +918,7 @@ const Navbar = ({ isAdmin }) => {
                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-bold"
                       >
                         <LogOut className="w-3 h-3" />
-                        <span>Exit</span>
+                        <span>{t('exit', 'Exit')}</span>
                       </button>
                     </div>
                   ) : (
@@ -705,29 +943,33 @@ const Navbar = ({ isAdmin }) => {
                     <span>{t('navList')}</span>
                   </button>
 
-                  <div className="grid grid-cols-3 gap-2 pt-1">
+                  <button
+                    onClick={() => handleNav('/guide')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                      isActive('/guide')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <HelpCircle className="w-4 h-4 text-emerald-500" />
+                    <span>{t('tokenBoardGuide') || 'Token Board Guide'}</span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       onClick={() => handleNav('/lunch')}
                       className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20 active:scale-95"
                     >
-                      <Utensils className="w-3.5 h-3.5" />
-                      <span>{t('navLunch')}</span>
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Supply Manifest</span>
                     </button>
 
                     <button
-                      onClick={() => handleNav('/breakfast')}
-                      className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-500/20 active:scale-95"
+                      onClick={() => handleNav('/list')}
+                      className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-500/20 active:scale-95"
                     >
-                      <Coffee className="w-3.5 h-3.5" />
-                      <span>{t('navBreakfast')}</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleNav('/menu')}
-                      className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-500/20 active:scale-95"
-                    >
-                      <UtensilsCrossed className="w-3.5 h-3.5" />
-                      <span>{t('navMenu') || 'Menu'}</span>
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>{t('navList') || 'Dietary Matrix'}</span>
                     </button>
                   </div>
 
@@ -738,7 +980,7 @@ const Navbar = ({ isAdmin }) => {
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
                   >
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>{user ? 'Admin Console' : 'Committee Login'}</span>
+                    <span>{user ? t('adminConsole', 'Admin Console') : t('committeeLogin', 'Committee Login')}</span>
                   </button>
                 </>
               )}
@@ -759,6 +1001,12 @@ const Navbar = ({ isAdmin }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Staff Roles & Delegation Modal */}
+      <StaffManagementModal
+        isOpen={staffModalOpen}
+        onClose={() => setStaffModalOpen(false)}
+      />
     </header>
   );
 };

@@ -21,13 +21,15 @@ import {
   CalendarDays,
   LayoutGrid,
   Calendar,
+  RefreshCw,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { subscribeToPreferences } from '../utils/preferenceService';
-import { cleanPastDateExceptions } from '../utils/studentExceptionService';
+import { cleanPastDateExceptions, syncStudentDiningHistory } from '../utils/studentExceptionService';
+import { logAuditEvent, calculateObjectDiff, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import DateGridMatrix from './ui/DateGridMatrix';
 
 const defaultMealDays = {
@@ -125,7 +127,7 @@ export default function StudentDrawer({
       setLunch(student.obj?.lunch ? { ...defaultMealDays, ...student.obj.lunch } : defaultMealDays);
       setBreakfast(student.obj?.breakfast ? { ...defaultMealDays, ...student.obj.breakfast } : defaultMealDays);
       setDietary(student.obj2 ? { ...defaultDietary, ...student.obj2 } : defaultDietary);
-      setDateExceptions(student.dateExceptions ? cleanPastDateExceptions(student.dateExceptions) : {});
+      setDateExceptions(student.dateExceptions ? { ...student.dateExceptions } : {});
       setStudentTemplates(Array.isArray(student.templates) ? student.templates : []);
     } else {
       // Create Mode
@@ -222,8 +224,8 @@ export default function StudentDrawer({
   // Check token collision
   const tokenNum = parseInt(tokenNo, 10);
   const isDuplicateToken = !isNaN(tokenNum) && existingTokens.some(t => {
-    if (isEdit && student && student.tokenNo === tokenNum) return false;
-    return t === tokenNum;
+    if (isEdit && student && Number(student.tokenNo) === tokenNum) return false;
+    return Number(t) === tokenNum;
   });
 
   const handleSubmit = async (e) => {
@@ -264,7 +266,14 @@ export default function StudentDrawer({
       blockReason: block ? blockReason.trim() : '',
       obj: { lunch, breakfast },
       obj2: dietary,
-      dateExceptions: cleanPastDateExceptions(dateExceptions),
+      dateExceptions: { ...(dateExceptions || {}) },
+      diningHistory: syncStudentDiningHistory({
+        ...student,
+        obj: { lunch, breakfast },
+        obj2: dietary,
+        dateExceptions,
+        diningHistory: student?.diningHistory || {},
+      }),
       templates: studentTemplates,
       updatedAt: new Date().toISOString()
     };
@@ -273,6 +282,22 @@ export default function StudentDrawer({
       const db = firebase.firestore();
       if (isEdit) {
         await db.collection('students').doc(student.id).set(payload, { merge: true });
+        
+        // Audit log delta
+        const diff = calculateObjectDiff(student, payload);
+        await logAuditEvent({
+          category: AUDIT_CATEGORIES.STUDENTS,
+          action: 'STUDENT_UPDATE',
+          severity: AUDIT_SEVERITIES.NOTICE,
+          target: { type: 'student', id: student.id, label: `Token #${tokenNum} (${nameEn})`, tokenNo: Number(tokenNum) },
+          changes: {
+            diffSummary: `Student Token #${tokenNum} updated: ${diff.fieldsChanged.join(', ') || 'No fields changed'}`,
+            fieldsChanged: diff.fieldsChanged,
+            before: diff.before,
+            after: diff.after,
+          },
+        });
+
         dialog.toast.success(
           t('studentSavedSuccess') || 'Saved Successfully',
           `Token #${tokenNum} (${nameEn}) updated.`
@@ -281,6 +306,20 @@ export default function StudentDrawer({
       } else {
         payload.createdAt = new Date().toISOString();
         const docRef = await db.collection('students').add(payload);
+
+        await logAuditEvent({
+          category: AUDIT_CATEGORIES.STUDENTS,
+          action: 'STUDENT_CREATE',
+          severity: AUDIT_SEVERITIES.NOTICE,
+          target: { type: 'student', id: docRef.id, label: `Token #${tokenNum} (${nameEn})`, tokenNo: Number(tokenNum) },
+          changes: {
+            diffSummary: `Created new student Token #${tokenNum} (${nameEn})`,
+            fieldsChanged: Object.keys(payload),
+            before: null,
+            after: payload,
+          },
+        });
+
         dialog.toast.success(
           'Student Created',
           `Token #${tokenNum} (${nameEn}) added successfully!`
@@ -315,6 +354,25 @@ export default function StudentDrawer({
       setDeleting(true);
       try {
         await firebase.firestore().collection('students').doc(student.id).delete();
+
+        await logAuditEvent({
+          category: AUDIT_CATEGORIES.STUDENTS,
+          action: 'STUDENT_DELETE',
+          severity: AUDIT_SEVERITIES.CRITICAL,
+          target: {
+            type: 'student',
+            id: student.id,
+            label: `Token #${student.tokenNo} (${student.nameEn || student.name || 'Student'})`,
+            tokenNo: Number(student.tokenNo),
+          },
+          changes: {
+            diffSummary: `Permanently deleted student record for Token #${student.tokenNo}`,
+            fieldsChanged: ['deleted'],
+            before: student,
+            after: null,
+          },
+        });
+
         dialog.toast.success(t('studentDeletedSuccess') || 'Deleted!', `Token #${student.tokenNo} removed.`);
         if (onDeleted) onDeleted(student.id);
         onClose();
@@ -340,23 +398,27 @@ export default function StudentDrawer({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div key="student-drawer-root" className="fixed inset-0 z-50 overflow-hidden">
           {/* Backdrop */}
           <motion.div
+            key="student-drawer-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
           />
 
           {/* Drawer Container */}
           <motion.div
+            key="student-drawer-panel"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed inset-y-0 right-0 w-full sm:max-w-xl md:max-w-2xl bg-white dark:bg-[#0c1412] border-l border-gray-200/80 dark:border-white/10 shadow-2xl z-50 flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-y-0 right-0 w-full sm:max-w-xl md:max-w-2xl bg-white dark:bg-[#0c1412] border-l border-gray-200/80 dark:border-white/10 shadow-2xl z-10 flex flex-col overflow-hidden"
           >
             {/* Drawer Header */}
             <div className="p-4 sm:p-6 border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
@@ -814,7 +876,9 @@ export default function StudentDrawer({
                               tokenNo,
                               nameEn,
                               obj: { lunch, breakfast },
+                              obj2: dietary,
                               dateExceptions,
+                              diningHistory: student?.diningHistory || {},
                               templates: studentTemplates,
                             }}
                             onSaveExceptions={(updated) => setDateExceptions(updated)}
@@ -958,7 +1022,7 @@ export default function StudentDrawer({
               </div>
             </form>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

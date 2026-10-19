@@ -12,12 +12,16 @@ import {
   Printer,
   Edit3,
   CheckCircle,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 import { AuthContext } from '../store/AuthContext';
+import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useWorldTime } from '../utils/time';
 import { subscribeToWeeklyMenu, DEFAULT_WEEKLY_MENU } from '../utils/menuService';
+import { ROLES, hasRole } from '../utils/rbac';
 
 const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -30,10 +34,17 @@ const CATEGORY_STYLES = {
 
 const MenuTable = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user, userRole } = useContext(AuthContext);
+  const { stdata } = useContext(DataOfOne);
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const { dayShort } = useWorldTime('Asia/Kolkata');
+
+  const canManageMenu = hasRole(userRole, [
+    ROLES.CANTEEN_COMMITTEE,
+    ROLES.CENTRAL_COMMITTEE,
+    ROLES.DEVELOPER,
+  ]);
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
   const [dayFilter, setDayFilter] = useState('all'); // 'all' | 'today' | 'tomorrow'
@@ -89,50 +100,72 @@ const MenuTable = () => {
       {/* Top Header Card */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         <div className="space-y-1">
-          <h1 className="text-lg xs:text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-lg xs:text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
             <Utensils className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
             <span>{t('navMenu') || 'Weekly Canteen Menu'}</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600/30">
-              Live Schedule
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600/30">
+              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+              <span>{t('authenticatedMenu', 'Protected Schedule')}</span>
             </span>
           </h1>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-            Weekly meal schedule served at Alathurpadi Dars dining hall
+            {t('weeklyCanteenSubtitle', 'Internal weekly meal schedule served at Alathurpadi Dars dining hall')}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 self-stretch sm:self-auto justify-start sm:justify-end">
-          {/* Admin shortcut button (visible to Committee, or routes to Login if public) */}
-          <button
-            onClick={() => {
-              feedback('tick');
-              navigate(user ? '/admin/menu' : '/alogin', {
-                state: { from: '/admin/menu', notice: 'Please sign in with committee credentials to modify the weekly menu.' },
-              });
-            }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>{user ? (t('menuManagement') || 'Manage Menu') : 'Committee Edit'}</span>
-          </button>
+          {/* Admin shortcut button (strictly for authorized Committee/Staff) */}
+          {canManageMenu && (
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/admin/menu');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{t('menuManagement') || 'Manage Menu'}</span>
+            </button>
+          )}
+
+          {/* Student shortcut to return to their personal portal */}
+          {stdata?.tokenNo && (
+            <button
+              onClick={() => {
+                feedback('tick');
+                navigate('/student-portal');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-500/30 font-bold text-xs shadow-xs transition-all active:scale-95"
+              title="Return to Student Portal"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{t('tokenPortal', 'Portal')} (#{stdata.tokenNo})</span>
+            </button>
+          )}
 
           <button
             onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print</span>
+            <span>{t('print', 'Print')}</span>
           </button>
 
           <button
             onClick={() => {
               feedback('tick');
-              navigate('/');
+              if (stdata?.tokenNo) {
+                navigate('/student-portal');
+              } else if (user) {
+                navigate('/board');
+              } else {
+                navigate('/');
+              }
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Board</span>
+            <span>{stdata?.tokenNo ? (t('backToPortal', 'Back to Portal')) : (t('backToBoard', 'Back to Board'))}</span>
           </button>
         </div>
       </div>
@@ -184,7 +217,7 @@ const MenuTable = () => {
         </div>
 
         <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block pr-2">
-          🕒 Synced with IST Serving Hours
+          🕒 {t('syncedWithIST', 'Synced with IST Serving Hours')}
         </span>
       </div>
 
@@ -210,24 +243,24 @@ const MenuTable = () => {
               <div className="flex items-center justify-between mb-3">
                 <span className="font-extrabold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-emerald-500" />
-                  {item.dayName}
+                  {t(`daysFull.${key}`) || item.dayName}
                 </span>
 
                 <div className="flex items-center gap-1">
                   {isArchived ? (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">
-                      Canteen Closed
+                      {t('canteenClosed', 'Canteen Closed')}
                     </span>
                   ) : (
                     <>
                       {isToday && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white animate-pulse">
-                          Today
+                          {t('today', 'Today')}
                         </span>
                       )}
                       {isTomorrow && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">
-                          Tomorrow
+                          {t('tomorrow', 'Tomorrow')}
                         </span>
                       )}
                     </>
@@ -237,7 +270,7 @@ const MenuTable = () => {
 
               {isArchived ? (
                 <div className="p-3 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs">
-                  ℹ️ <strong>Canteen Closed:</strong> {item.archiveReason || 'Routine Off Day'}
+                  ℹ️ <strong>{t('canteenClosed', 'Canteen Closed')}:</strong> {item.archiveReason || t('routineOffDay', 'Routine Off Day')}
                 </div>
               ) : (
                 <>
@@ -253,14 +286,14 @@ const MenuTable = () => {
                       <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-500/20">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-extrabold text-[11px] text-amber-800 dark:text-amber-400 flex items-center gap-1">
-                            ☕ Breakfast
+                            ☕ {t('breakfast', 'Breakfast')}
                           </span>
                           {item.breakfast?.timing && (
                             <span className="text-[10px] text-gray-400 font-mono">{item.breakfast.timing}</span>
                           )}
                         </div>
                         <span className="text-gray-900 dark:text-white font-bold block">
-                          {item.breakfast?.title || 'No dish set'}
+                          {item.breakfast?.title || t('noDishSet', 'No dish set')}
                         </span>
                         {item.breakfast?.items?.length > 0 && (
                           <span className="text-[10px] text-gray-600 dark:text-gray-400">
@@ -275,14 +308,14 @@ const MenuTable = () => {
                       <div className="p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/20">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-extrabold text-[11px] text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-                            🍲 Lunch
+                            🍲 {t('lunch', 'Lunch')}
                           </span>
                           {item.lunch?.timing && (
                             <span className="text-[10px] text-gray-400 font-mono">{item.lunch.timing}</span>
                           )}
                         </div>
                         <span className="text-gray-900 dark:text-white font-bold block">
-                          {item.lunch?.title || 'No dish set'}
+                          {item.lunch?.title || t('noDishSet', 'No dish set')}
                         </span>
                         {item.lunch?.items?.length > 0 && (
                           <span className="text-[10px] text-gray-600 dark:text-gray-400">
@@ -297,14 +330,14 @@ const MenuTable = () => {
                       <div className="p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-500/20">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-extrabold text-[11px] text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                            🫖 Evening Tea
+                            🫖 {t('eveningTea', 'Evening Tea')}
                           </span>
                           {item.evening?.timing && (
                             <span className="text-[10px] text-gray-400 font-mono">{item.evening.timing}</span>
                           )}
                         </div>
                         <span className="text-gray-800 dark:text-gray-200 font-bold block">
-                          {item.evening?.title || 'No dish set'}
+                          {item.evening?.title || t('noDishSet', 'No dish set')}
                         </span>
                         {item.evening?.items?.length > 0 && (
                           <span className="text-[10px] text-gray-600 dark:text-gray-400">
@@ -319,14 +352,14 @@ const MenuTable = () => {
                       <div className="p-2.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-500/20">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-extrabold text-[11px] text-purple-800 dark:text-purple-400 flex items-center gap-1">
-                            🌙 Dinner
+                            🌙 {t('dinner', 'Dinner')}
                           </span>
                           {item.dinner?.timing && (
                             <span className="text-[10px] text-gray-400 font-mono">{item.dinner.timing}</span>
                           )}
                         </div>
                         <span className="text-gray-800 dark:text-gray-200 font-bold block">
-                          {item.dinner?.title || 'No dish set'}
+                          {item.dinner?.title || t('noDishSet', 'No dish set')}
                         </span>
                         {item.dinner?.items?.length > 0 && (
                           <span className="text-[10px] text-gray-600 dark:text-gray-400">
@@ -350,26 +383,26 @@ const MenuTable = () => {
             <thead className="bg-gray-50/80 dark:bg-[#131d1a]">
               <tr>
                 <th className="py-4 px-5 font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-36">
-                  Day
+                  {t('day', 'Day')}
                 </th>
                 {hasVisibleBreakfast && (
                   <th className="py-4 px-5 font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                    ☕ Breakfast
+                    ☕ {t('breakfast', 'Breakfast')}
                   </th>
                 )}
                 {hasVisibleLunch && (
                   <th className="py-4 px-5 font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-                    🍲 Lunch
+                    🍲 {t('lunch', 'Lunch')}
                   </th>
                 )}
                 {hasVisibleEvening && (
                   <th className="py-4 px-5 font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-                    🫖 Evening Tea
+                    🫖 {t('eveningTea', 'Evening Tea')}
                   </th>
                 )}
                 {hasVisibleDinner && (
                   <th className="py-4 px-5 font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider">
-                    🌙 Dinner
+                    🌙 {t('dinner', 'Dinner')}
                   </th>
                 )}
               </tr>
@@ -384,11 +417,11 @@ const MenuTable = () => {
                   return (
                     <tr key={key} className="bg-amber-50/40 dark:bg-amber-950/10">
                       <td className="py-4 px-5 font-bold text-amber-700 dark:text-amber-400">
-                        {item.dayName}
-                        <span className="block text-[10px] text-amber-600 font-normal">Off-Day</span>
+                        {t(`daysFull.${key}`) || item.dayName}
+                        <span className="block text-[10px] text-amber-600 font-normal">{t('offDay', 'Off-Day')}</span>
                       </td>
                       <td colSpan={totalCols - 1} className="py-4 px-5 text-amber-800 dark:text-amber-300 italic text-xs">
-                        🔒 Canteen Closed — {item.archiveReason || 'Routine Off Day. No dining hall supply.'}
+                        🔒 {t('canteenClosed', 'Canteen Closed')} — {item.archiveReason || t('canteenClosedRoutineNotice', 'Routine Off Day. No dining hall supply.')}
                       </td>
                     </tr>
                   );
@@ -405,10 +438,10 @@ const MenuTable = () => {
                   >
                     <td className="py-4 px-5 align-top">
                       <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
-                        <span>{item.dayName}</span>
+                        <span>{t(`daysFull.${key}`) || item.dayName}</span>
                         {isToday && (
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-white">
-                            Today
+                            {t('today', 'Today')}
                           </span>
                         )}
                       </div>
@@ -461,7 +494,7 @@ const MenuTable = () => {
                                     CATEGORY_STYLES[item.lunch.category] || CATEGORY_STYLES.Veg
                                   }`}
                                 >
-                                  {item.lunch.category}
+                                  {item.lunch.category === 'Veg' ? (t('catVeg') || 'Veg') : item.lunch.category === 'Non-Veg' ? (t('catNonVeg') || 'Non-Veg') : item.lunch.category === 'Egg' ? (t('catEgg') || 'Egg') : item.lunch.category === 'Special' ? (t('catSpecial') || 'Special') : item.lunch.category}
                                 </span>
                               )}
                             </div>

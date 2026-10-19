@@ -252,47 +252,59 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
 
   const isShowingTomorrow = displayedDayKey === tomorrowKey;
 
+  const getLocalizedStatusLabel = (label) => {
+    if (!label) return '';
+    if (label === 'Serving Right Now') return t('cookingNow', label);
+    if (label === 'Upcoming Meal') return t('upcomingMeal', label);
+    if (label === 'Lunch Time') return t('lunchTime', label);
+    if (label === 'Evening Refreshment') return t('eveningRefreshment', label);
+    if (label === 'Dinner / Supper') return t('dinnerSupper', label);
+    if (label === "Tomorrow's Highlight") return t('tomorrowHighlight', label);
+    if (label === 'Today’s Meal' || label === "Today's Meal") return t('todayMeal', label);
+    return label;
+  };
+
   return (
-    <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-white/85 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl transition-all duration-300">
+    <div className="relative overflow-hidden w-full max-w-full min-w-0 p-4 xs:p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl transition-all duration-300">
       
       {/* Decorative ambient gradient */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-gradient-to-br from-emerald-500/10 via-amber-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
 
       {/* Header Bar */}
       <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-sm shadow-emerald-500/30">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-sm shadow-emerald-500/30 shrink-0">
             <ChefHat className="w-4 h-4" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
                 {t('nextMealSpotlight') || 'Canteen Meal Radar'}
-              </h2>np
+              </h2>
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
               {isShowingTomorrow
-                ? `Previewing tomorrow's dining schedule (${displayedDayData?.dayName || 'Tomorrow'})`
-                : `Live meal schedule for today (${displayedDayData?.dayName || 'Today'})`}
+                ? `${t('previewingTomorrow', "Previewing tomorrow's dining schedule")} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('tomorrow', 'Tomorrow')})`
+                : `${t('liveScheduleToday', 'Live meal schedule for today')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('today', 'Today')})`}
             </p>
           </div>
         </div>
 
         {/* Today vs Tomorrow Switcher Pill */}
-        <div className="flex items-center p-1 rounded-2xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 self-stretch sm:self-auto">
+        <div className="flex items-center p-1 rounded-2xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 w-full sm:w-auto min-w-0">
           <button
             onClick={() => {
               feedback('tick');
               setActiveTab('today');
             }}
-            className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 sm:flex-none min-w-0 px-2.5 xs:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-center truncate ${
               !isShowingTomorrow
                 ? 'bg-white dark:bg-[#192420] text-emerald-600 dark:text-emerald-400 shadow-xs'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {t('todaysMeals') || "Today's Menu"}
-            {todayDayData?.isArchived && ' (Closed)'}
+            {todayDayData?.isArchived && ` (${t('closed', 'Closed')})`}
           </button>
 
           <button
@@ -300,14 +312,14 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
               feedback('tick');
               setActiveTab('tomorrow');
             }}
-            className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 sm:flex-none min-w-0 px-2.5 xs:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-center truncate ${
               isShowingTomorrow
                 ? 'bg-white dark:bg-[#192420] text-emerald-600 dark:text-emerald-400 shadow-xs'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {t('tomorrowsMeals') || "Tomorrow's Menu"}
-            {tomorrowDayData?.isArchived && ' (Closed)'}
+            {tomorrowDayData?.isArchived && ` (${t('closed', 'Closed')})`}
           </button>
         </div>
       </div>
@@ -319,11 +331,11 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             <div className="flex items-center gap-2">
               <UtensilsCrossed className="w-5 h-5 text-amber-500" />
               <h3 className="font-extrabold text-base text-amber-900 dark:text-amber-200">
-                {displayedDayData.dayName} — Canteen Closed
+                {t(`daysFull.${displayedDayKey}`) || displayedDayData.dayName} — {t('canteenClosed', 'Canteen Closed')}
               </h3>
             </div>
             <p className="text-xs text-amber-800 dark:text-amber-300">
-              {displayedDayData.archiveReason || 'Canteen routine off. No meals scheduled for this day.'}
+              {displayedDayData.archiveReason || t('canteenClosedRoutine', 'Canteen routine off. No meals scheduled for this day.')}
             </p>
           </div>
 
@@ -335,7 +347,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
               }}
               className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition-colors"
             >
-              View Tomorrow&apos;s Meals →
+              {t('viewTomorrowsMeals', "View Tomorrow's Meals →")}
             </button>
           )}
         </div>
@@ -347,7 +359,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
                   <Sparkles className="w-3 h-3" />
-                  <span>{spotlightMeal.statusLabel}</span>
+                  <span>{getLocalizedStatusLabel(spotlightMeal.statusLabel)}</span>
                 </span>
 
                 {/* Only render category badge if category actually exists */}
@@ -357,7 +369,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
                       CATEGORY_TAGS[spotlightMeal.category]?.badgeClass || CATEGORY_TAGS.Veg.badgeClass
                     }`}
                   >
-                    {spotlightMeal.category}
+                    {spotlightMeal.category === 'Veg' ? (t('catVeg') || 'Veg') : spotlightMeal.category === 'Non-Veg' ? (t('catNonVeg') || 'Non-Veg') : spotlightMeal.category === 'Egg' ? (t('catEgg') || 'Egg') : spotlightMeal.category === 'Special' ? (t('catSpecial') || 'Special') : spotlightMeal.category}
                   </span>
                 )}
 
@@ -392,19 +404,19 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
               {/* Exact Meal-Specific Headcount */}
               {spotlightMeal.slotKey === 'lunch' && (
                 <span className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-emerald-200 dark:border-emerald-500/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                  🍲 {displayedLunchCount} booked orders for Lunch
+                  🍲 {displayedLunchCount} {t('bookedOrdersForLunch', 'booked orders for Lunch')}
                 </span>
               )}
 
               {spotlightMeal.slotKey === 'breakfast' && (
                 <span className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-amber-200 dark:border-amber-500/20 text-[11px] font-bold text-amber-700 dark:text-amber-400">
-                  ☕ {displayedBreakfastCount} booked orders for Breakfast
+                  ☕ {displayedBreakfastCount} {t('bookedOrdersForBreakfast', 'booked orders for Breakfast')}
                 </span>
               )}
 
               {(spotlightMeal.slotKey === 'evening' || spotlightMeal.slotKey === 'dinner') && (
                 <span className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-[11px] font-medium text-gray-600 dark:text-gray-400">
-                  ✨ Open Dining (No Token Required)
+                  ✨ {t('openDiningNoToken', 'Open Dining (No Token Required)')}
                 </span>
               )}
             </div>
@@ -418,11 +430,11 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
           </div>
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
             {isShowingTomorrow
-              ? `No meals scheduled yet for tomorrow (${displayedDayData?.dayName || 'Tomorrow'})`
-              : `No meals scheduled yet for today (${displayedDayData?.dayName || 'Today'})`}
+              ? `${t('noMealsScheduledTomorrow', 'No meals scheduled yet for tomorrow')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('tomorrow', 'Tomorrow')})`
+              : `${t('noMealsScheduledToday', 'No meals scheduled yet for today')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('today', 'Today')})`}
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
-            Menu is currently empty. Dishes will appear once updated by Canteen Management.
+            {t('menuEmptyNotice', 'Menu is currently empty. Dishes will appear once updated by Canteen Management.')}
           </p>
         </div>
       )}
@@ -430,14 +442,10 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
       {/* Day Overview Strip: Render ONLY ACTIVE slots */}
       {!isDayArchived && activeSlots.length > 0 && (
         <div
-          className={`relative z-10 grid gap-2.5 ${
+          className={`relative z-10 grid gap-2.5 min-w-0 ${
             activeSlots.length === 1
               ? 'grid-cols-1'
-              : activeSlots.length === 2
-              ? 'grid-cols-1 sm:grid-cols-2'
-              : activeSlots.length === 3
-              ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3'
-              : 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-4'
+              : 'grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4'
           }`}
         >
           {activeSlots.map((slot) => {
@@ -448,7 +456,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             return (
               <div
                 key={slot.key}
-                className="p-3 rounded-2xl border bg-gray-50/80 dark:bg-white/[0.03] border-gray-200/70 dark:border-white/5 transition-all space-y-1.5"
+                className="p-3 rounded-2xl border bg-gray-50/80 dark:bg-white/[0.03] border-gray-200/70 dark:border-white/5 transition-all space-y-1.5 min-w-0"
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -465,7 +473,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
                 </div>
 
                 <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                  {slotData.title || (hasContent ? slotData.items?.[0] : 'No dish set')}
+                  {slotData.title || (hasContent ? slotData.items?.[0] : t('noDishSet', 'No dish set'))}
                 </p>
 
                 {slotData.items?.length > 0 && (
@@ -479,11 +487,11 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${slot.badgeBg}`}
                     >
-                      {slot.key === 'breakfast' ? '☕' : '🍲'} {slot.count} Booked
+                      {slot.key === 'breakfast' ? '☕' : '🍲'} {slot.count} {t('booked', 'Booked')}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-gray-200/60 dark:border-white/5">
-                      Open (No token)
+                      {t('openNoToken', 'Open (No token)')}
                     </span>
                   )}
                 </div>
@@ -496,7 +504,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
       {/* Footer link to Weekly Schedule */}
       <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-xs">
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
-          📍 Alathurpadi Dars Dining Hall
+          📍 {t('diningHallLoc', 'Alathurpadi Dars Dining Hall')}
         </span>
 
         <button

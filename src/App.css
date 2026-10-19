@@ -1,6 +1,10 @@
 /* App.css - Cleaned up to support dynamic theming */
 #root {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }

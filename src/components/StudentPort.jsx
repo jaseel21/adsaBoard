@@ -20,6 +20,7 @@ import {
   X,
   LogOut,
   RotateCcw,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
@@ -30,13 +31,14 @@ import { useFeedback } from '../utils/useFeedback';
 import { useIdleTimer } from '../utils/useIdleTimer';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import {
-  getTodayISTDate,
   addDaysToDate,
   formatFriendlyDate,
   getQuickDateOptions,
   validateExceptionDate,
   cleanPastDateExceptions,
+  syncStudentDiningHistory,
   getDayOfWeekShort,
 } from '../utils/studentExceptionService';
 
@@ -46,11 +48,14 @@ function StudentPort() {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const {
+    todayIST,
     isTomorrowLocked,
     tomorrowIST,
     tomorrowDayShort,
     startTime,
     endTime,
+    isTimeVerified,
+    isDeviceDesynced,
   } = useTokenLockStatus();
 
   // Public Kiosk Inactivity Protection: Auto-logout after 90 seconds of inactivity
@@ -95,7 +100,6 @@ function StudentPort() {
     dateExceptions: stdata?.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {},
   }));
 
-  const todayIST = useMemo(() => getTodayISTDate(), []);
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
 
   // Days list for weekly standard schedule
@@ -142,6 +146,7 @@ function StudentPort() {
         dateExceptions: initExceptions,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stdata?.tokenNo, stdata?.documentId]);
 
   // Compare meal routine
@@ -212,26 +217,6 @@ function StudentPort() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  if (!stdata || !stdata.tokenNo) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
-          <Clock className="w-8 h-8" />
-        </div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">No Active Session</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 mb-4">
-          Please log in with your student token to update your dining preferences.
-        </p>
-        <button
-          onClick={() => navigate('/login')}
-          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold text-xs shadow-md"
-        >
-          Return to Student Login
-        </button>
-      </div>
-    );
-  }
-
   // Weekly Lunch Toggles
   const toggleLunchDay = (dayKey) => {
     if (dayKey === tomorrowDayShort && isTomorrowLocked) {
@@ -291,10 +276,12 @@ function StudentPort() {
         lunch,
         breakfast,
       },
+      obj2: dietary,
       dateExceptions,
+      diningHistory: stdata?.diningHistory || {},
       templates,
     }),
-    [stdata, lunch, breakfast, dateExceptions, templates]
+    [stdata, lunch, breakfast, dietary, dateExceptions, templates]
   );
 
   // Custom Template Persistence
@@ -336,7 +323,14 @@ function StudentPort() {
       if (!targetDocId) {
         throw new Error('Student document reference not found. Please log in again.');
       }
-      const cleanedExceptions = cleanPastDateExceptions(dateExceptions);
+
+      // Anti-tamper pre-flight verification: If time sync failed and client clock is manipulated, refuse save
+      if (!isTimeVerified && isDeviceDesynced) {
+        throw new Error('System time verification required: Device clock mismatch detected. Please verify your internet connection to sync time.');
+      }
+      
+      // Preserve all dateExceptions (both upcoming and past) so history is never erased
+      const exceptionsToSave = { ...(dateExceptions || {}) };
 
       // Safeguard: If tomorrow is locked past cutoff, preserve tomorrow's baseline status
       if (isTomorrowLocked) {
@@ -348,25 +342,61 @@ function StudentPort() {
           ? baselineExc.lunch
           : Boolean(savedBaseline.lunch?.[tomorrowDayShort]);
 
-        cleanedExceptions[tomorrowIST] = {
-          ...(cleanedExceptions[tomorrowIST] || {}),
+        exceptionsToSave[tomorrowIST] = {
+          ...(exceptionsToSave[tomorrowIST] || {}),
           breakfast: baselineBf,
           lunch: baselineLu,
-          label: cleanedExceptions[tomorrowIST]?.label || 'Cutoff Locked (Preserved)',
+          label: exceptionsToSave[tomorrowIST]?.label || 'Cutoff Locked (Preserved)',
         };
       }
+
+      // Synchronize and lock past dining history into immutable ledger
+      const syncedHistory = syncStudentDiningHistory({
+        ...stdata,
+        obj: { lunch, breakfast },
+        obj2: dietary,
+        dateExceptions: exceptionsToSave,
+        diningHistory: stdata?.diningHistory || {},
+      });
 
       const payload = {
         obj: {
           lunch,
           breakfast,
         },
-        dateExceptions: cleanedExceptions,
+        dateExceptions: exceptionsToSave,
+        diningHistory: syncedHistory,
         templates,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
 
       await firebase.firestore().collection('students').doc(targetDocId).set(payload, { merge: true });
+
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: 'TOKEN_TOGGLE',
+        severity: AUDIT_SEVERITIES.INFO,
+        actor: {
+          uid: targetDocId,
+          email: `token${stdata.tokenNo}@student.adsa`,
+          displayName: stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`,
+          role: 'student',
+          tokenNo: Number(stdata.tokenNo),
+        },
+        target: {
+          type: 'student',
+          id: targetDocId,
+          label: `Token #${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'})`,
+          tokenNo: Number(stdata.tokenNo),
+        },
+        changes: {
+          diffSummary: `Student Token #${stdata.tokenNo} updated weekly schedule and exceptions`,
+          fieldsChanged: ['obj', 'dateExceptions'],
+        },
+        metadata: {
+          portalAction: 'student_save_schedule',
+        },
+      });
 
       // Update local context
       const updatedStdata = {
@@ -375,14 +405,15 @@ function StudentPort() {
           lunch,
           breakfast,
         },
-        dateExceptions: cleanedExceptions,
+        dateExceptions: exceptionsToSave,
+        diningHistory: syncedHistory,
       };
       setStdata(updatedStdata);
-      setDateExceptions(cleanedExceptions);
+      setDateExceptions(exceptionsToSave);
       setSavedBaseline({
         lunch: { ...lunch },
         breakfast: { ...breakfast },
-        dateExceptions: { ...cleanedExceptions },
+        dateExceptions: { ...exceptionsToSave },
       });
 
       if (shouldLogout) {
@@ -461,6 +492,26 @@ function StudentPort() {
 
   const sortedExceptionDates = Object.keys(dateExceptions).sort();
 
+  if (!stdata || !stdata.tokenNo) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
+          <Clock className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">No Active Session</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 mb-4">
+          Please log in with your student token to update your dining preferences.
+        </p>
+        <button
+          onClick={() => navigate('/login')}
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold text-xs shadow-md"
+        >
+          Return to Student Login
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-32 sm:pb-36 space-y-8">
       
@@ -481,6 +532,13 @@ function StudentPort() {
                     {stdata.batch}
                   </span>
                 )}
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 select-none"
+                  title="Institutional student identity details are managed by ADSA Central Committee and cannot be edited by students"
+                >
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>{t('officialRecordReadOnly', 'Official Record • Read-Only')}</span>
+                </span>
               </div>
               {stdata.nameMl && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-malayalam">
@@ -490,9 +548,9 @@ function StudentPort() {
               <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-gray-500 dark:text-gray-400">
                 <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${!isTomorrowLocked ? 'text-emerald-500' : 'text-amber-500'}`} />
                 <span>
-                  Daily cutoff: {startTime} – {endTime} IST •{' '}
+                  {t('dailyCutoffHeader', 'Daily cutoff:')} {endTime} IST •{' '}
                   <strong className={!isTomorrowLocked ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
-                    Tomorrow is {!isTomorrowLocked ? 'Open' : 'Locked'}
+                    {!isTomorrowLocked ? t('tomorrowIsOpen', 'Tomorrow is Open') : t('tomorrowIsLocked', 'Tomorrow is Locked')}
                   </strong>
                 </span>
               </div>
@@ -506,7 +564,20 @@ function StudentPort() {
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Board</span>
+              <span>{t('backToBoard', 'Back to Board')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                navigate('/menu');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300/50 dark:border-emerald-500/30 transition-colors"
+              title="View Weekly Food Menu"
+            >
+              <UtensilsCrossed className="w-4 h-4" />
+              <span>{t('viewCanteenMenu', 'View Food Menu')}</span>
             </button>
 
             {/* In-Header Save Preferences button when dirty */}
@@ -523,7 +594,7 @@ function StudentPort() {
                   title="Save dining preferences"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Saving...' : (t('savePreferences') || 'Save Preferences')}</span>
+                  <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
                 </motion.button>
               )}
             </AnimatePresence>
@@ -548,10 +619,10 @@ function StudentPort() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                Weekly Dining Routine
+                {t('weeklyDiningRoutine', 'Weekly Dining Routine')}
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Your standard 7-day schedule for breakfast and lunch.
+                {t('weeklyRoutineSubtitle', 'Your standard 7-day schedule for breakfast and lunch.')}
               </p>
             </div>
           </div>
@@ -570,7 +641,7 @@ function StudentPort() {
                       {t('navBreakfast') || 'Breakfast'}
                     </h3>
                     <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-                      Morning meal schedule
+                      {t('morningMealSchedule', 'Morning meal schedule')}
                     </p>
                   </div>
                 </div>
@@ -580,7 +651,7 @@ function StudentPort() {
                   onClick={() => selectAllBreakfast(!allBreakfastSelected)}
                   className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
                 >
-                  {allBreakfastSelected ? 'Deselect All' : 'Select All'}
+                  {allBreakfastSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
                 </button>
               </div>
 
@@ -625,7 +696,7 @@ function StudentPort() {
                       {t('navLunch') || 'Lunch'}
                     </h3>
                     <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-                      Afternoon meal schedule
+                      {t('afternoonMealSchedule', 'Afternoon meal schedule')}
                     </p>
                   </div>
                 </div>
@@ -635,7 +706,7 @@ function StudentPort() {
                   onClick={() => selectAllLunch(!allLunchSelected)}
                   className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
                 >
-                  {allLunchSelected ? 'Deselect All' : 'Select All'}
+                  {allLunchSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
                 </button>
               </div>
 
@@ -676,10 +747,10 @@ function StudentPort() {
             <div>
               <h2 className="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-emerald-500" />
-                <span>Upcoming Dining Calendar & Date Overrides</span>
+                <span>{t('upcomingDiningCalendar', 'Upcoming Dining Calendar & Date Overrides')}</span>
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Planning to miss meals or attend extra meals on specific dates? Click any date cell in the tactile grid below to turn meals <strong className="text-emerald-600 dark:text-emerald-400">ON (Green)</strong> or <strong className="text-rose-600 dark:text-rose-400">OFF (Red)</strong>. Your regular weekly routine automatically resumes once the date passes.
+                {t('calendarHelpText', 'Planning to miss meals or attend extra meals on specific dates? Click any date cell in the tactile grid below to turn meals ON (Green) or OFF (Red). Your regular weekly routine automatically resumes once the date passes.')}
               </p>
             </div>
           </div>
@@ -699,17 +770,17 @@ function StudentPort() {
               <Sparkles className="w-5 h-5 text-emerald-500" />
               <div>
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                  Assigned Dietary Preferences
+                  {t('assignedDietaryPreferences', 'Assigned Dietary Preferences')}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Your registered dietary allowances for non-veg / meat items served in the canteen.
+                  {t('dietaryAllowancesDesc', 'Your registered dietary allowances for non-veg / meat items served in the canteen.')}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 dark:text-gray-400 self-start sm:self-center">
               <Lock className="w-3.5 h-3.5 text-gray-400" />
-              <span>Admin Managed</span>
+              <span>{t('adminManaged', 'Admin Managed')}</span>
             </div>
           </div>
 
@@ -737,7 +808,7 @@ function StudentPort() {
                         : 'bg-rose-500 text-white'
                     }`}
                   >
-                    {isIncluded ? 'Included' : 'Excluded'}
+                    {isIncluded ? t('included', 'Included') : t('excluded', 'Excluded')}
                   </span>
                 </div>
               );
@@ -747,7 +818,7 @@ function StudentPort() {
           <div className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex items-start gap-2.5 text-[11px] text-gray-500 dark:text-gray-400">
             <Info className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
             <span>
-              Dietary preferences are managed exclusively by the ADSA Canteen Committee to ensure accurate ingredient purchasing. To request a dietary exemption change, please speak with the mess supervisor.
+              {t('dietaryCommitteeNote', 'Dietary preferences are managed exclusively by the ADSA Canteen Committee to ensure accurate ingredient purchasing. To request a dietary exemption change, please speak with the mess supervisor.')}
             </span>
           </div>
         </div>
@@ -758,8 +829,8 @@ function StudentPort() {
             <Info className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span>
               {isDirty
-                ? 'You have pending modifications. Click "Save & Exit" to apply and sign out.'
-                : 'All dining preferences are currently saved.'}
+                ? t('pendingModifications', 'You have pending modifications. Click "Save Preferences" to apply.')
+                : t('allSavedPrompt', 'All dining preferences are currently saved.')}
             </span>
           </div>
 
@@ -774,7 +845,7 @@ function StudentPort() {
               }`}
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving...' : (t('savePreferences') || 'Save Preferences')}</span>
+              <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
             </button>
           </div>
         </div>
@@ -794,10 +865,10 @@ function StudentPort() {
                 <div className="min-w-0">
                   <span className="text-xs sm:text-sm font-extrabold text-amber-700 dark:text-amber-400 block truncate">
                     <span className="hidden xs:inline">{t('unsavedChanges') || 'Unsaved Changes'}</span>
-                    <span className="xs:hidden">Unsaved</span>
+                    <span className="xs:hidden">{t('unsaved', 'Unsaved')}</span>
                   </span>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate">
-                    {changedCount} {changedCount === 1 ? 'change' : 'changes'}
+                    {changedCount} {changedCount === 1 ? t('changeSingle', 'change') : t('changesCount', 'changes')}
                   </span>
                 </div>
               </>
@@ -807,10 +878,10 @@ function StudentPort() {
                 <div className="min-w-0">
                   <span className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 block truncate">
                     <span className="hidden xs:inline">{t('allChangesSaved') || 'All Preferences Saved'}</span>
-                    <span className="xs:hidden">Saved</span>
+                    <span className="xs:hidden">{t('saved', 'Saved')}</span>
                   </span>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
-                    Up to date
+                    {t('upToDate', 'Up to date')}
                   </span>
                 </div>
               </>
@@ -846,7 +917,7 @@ function StudentPort() {
               title="Save dining preferences"
             >
               <Save className="w-4 h-4" />
-              <span>{saving ? 'Saving...' : (t('savePreferences') || 'Save Preferences')}</span>
+              <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
             </button>
           </div>
         </motion.div>
@@ -867,10 +938,10 @@ function StudentPort() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                  Still here? (Public Computer Safety)
+                  {t('publicComputerSafety', 'Still here? (Public Computer Safety)')}
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  To protect your token on this public computer, your session will automatically log out in:
+                  {t('publicComputerWarning', 'To protect your token on this public computer, your session will automatically log out in:')}
                 </p>
                 <div className="text-3xl font-mono font-black text-amber-500 mt-2">
                   {remainingSeconds}s
@@ -882,14 +953,14 @@ function StudentPort() {
                   onClick={resetTimer}
                   className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold text-xs shadow-md"
                 >
-                  Stay Logged In
+                  {t('stayLoggedIn', 'Stay Logged In')}
                 </button>
                 <button
                   type="button"
                   onClick={handleKioskTimeout}
                   className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 font-bold text-xs"
                 >
-                  Exit Now
+                  {t('exitNow', 'Exit Now')}
                 </button>
               </div>
             </motion.div>

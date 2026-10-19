@@ -5,7 +5,8 @@ export const LanguageContext = createContext({
   langPref: 'system',
   setLangPref: () => {},
   lang: 'en',
-  t: (key) => key,
+  language: 'en',
+  t: (key, fallback) => (fallback !== undefined ? fallback : key),
 });
 
 export const LanguageProvider = ({ children }) => {
@@ -43,18 +44,39 @@ export const LanguageProvider = ({ children }) => {
     document.documentElement.setAttribute('lang', resolved);
   }, [langPref]);
 
-  const t = (key) => {
+  const t = (key, fallback) => {
+    if (!key) return '';
     const dict = translations[lang] || translations.en;
-    if (dict[key] !== undefined) return dict[key];
-    if (translations.en[key] !== undefined) return translations.en[key];
-    return key;
+    
+    // Direct key lookup
+    if (dict && dict[key] !== undefined) return dict[key];
+    if (translations.en && translations.en[key] !== undefined) return translations.en[key];
+
+    // Dot-notation lookup (e.g. 'days.su' or 'months.0')
+    if (typeof key === 'string' && key.includes('.')) {
+      const parts = key.split('.');
+      let val = dict;
+      for (const p of parts) {
+        val = val?.[p];
+      }
+      if (val !== undefined) return val;
+
+      let enVal = translations.en;
+      for (const p of parts) {
+        enVal = enVal?.[p];
+      }
+      if (enVal !== undefined) return enVal;
+    }
+
+    return fallback !== undefined ? fallback : key;
   };
 
   return (
-    <LanguageContext.Provider value={{ langPref, setLangPref, lang, t }}>
+    <LanguageContext.Provider value={{ langPref, setLangPref, lang, language: lang, t }}>
       {children}
     </LanguageContext.Provider>
   );
 };
 
 export const useLanguage = () => useContext(LanguageContext);
+

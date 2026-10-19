@@ -44,20 +44,20 @@ export const DEFAULT_LOCK_CONFIG = {
   status: false, // legacy boolean
   overrideMode: 'auto', // 'auto' | 'force_unlocked' | 'force_locked'
   window: {
-    startTime: '14:00', // 2:00 PM IST
-    endTime: '23:00',   // 11:00 PM IST
+    startTime: '00:00', // Open all day before cutoff
+    endTime: '23:00',   // 11:00 PM IST cutoff deadline
     timezone: 'Asia/Kolkata',
   },
   schedule: {
     enabled: false,
     days: {
-      su: { startTime: '14:00', endTime: '23:00' },
-      mo: { startTime: '14:00', endTime: '23:00' },
-      tu: { startTime: '14:00', endTime: '23:00' },
-      we: { startTime: '14:00', endTime: '23:00' },
-      th: { startTime: '14:00', endTime: '23:00' },
-      fr: { startTime: '14:00', endTime: '23:00' },
-      sa: { startTime: '14:00', endTime: '23:00' },
+      su: { startTime: '00:00', endTime: '23:00' },
+      mo: { startTime: '00:00', endTime: '23:00' },
+      tu: { startTime: '00:00', endTime: '23:00' },
+      we: { startTime: '00:00', endTime: '23:00' },
+      th: { startTime: '00:00', endTime: '23:00' },
+      fr: { startTime: '00:00', endTime: '23:00' },
+      sa: { startTime: '00:00', endTime: '23:00' },
     },
   },
   temporaryOverride: {
@@ -72,7 +72,7 @@ export const DEFAULT_LOCK_CONFIG = {
  * Upgraded Unified Hook for Token Board Updation Locking & Cutoff Schedules
  */
 export function useTokenLockStatus() {
-  const { timeHms } = useWorldTime('Asia/Kolkata');
+  const { timeHms, todayIST: worldTodayIST, isSynced, isDeviceDesynced, syncSource } = useWorldTime('Asia/Kolkata');
   const [config, setConfig] = useState(DEFAULT_LOCK_CONFIG);
   const [loadingConfig, setLoadingConfig] = useState(true);
 
@@ -123,7 +123,8 @@ export function useTokenLockStatus() {
     return () => unsub();
   }, []);
 
-  const todayIST = useMemo(() => getTodayISTDate(), []);
+  // Reactively track today's date in IST from the anti-tamper time engine
+  const todayIST = worldTodayIST || getTodayISTDate();
   const tomorrowIST = useMemo(() => addDaysToDate(todayIST, 1), [todayIST]);
   const todayDayShort = useMemo(() => getDayOfWeekShort(todayIST), [todayIST]);
   const tomorrowDayShort = useMemo(() => getDayOfWeekShort(tomorrowIST), [tomorrowIST]);
@@ -170,14 +171,14 @@ export function useTokenLockStatus() {
     return config.status ? 'force_unlocked' : 'auto';
   }, [temporaryOverrideActive, config.temporaryOverride, config.overrideMode, config.status]);
 
-  const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '14:00:00'), [activeWindow.startTime]);
+  const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '00:00:00'), [activeWindow.startTime]);
   const endTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.endTime, '23:00:00'), [activeWindow.endTime]);
 
-  // Is current time inside today's update window for tomorrow's meals?
+  // Is current time before today's cutoff deadline for tomorrow's meals?
   const isTimeInWindow = useMemo(() => {
-    if (!timeHms) return false;
-    return timeHms >= startTimeHms && timeHms <= endTimeHms;
-  }, [timeHms, startTimeHms, endTimeHms]);
+    if (!timeHms) return true;
+    return timeHms <= endTimeHms;
+  }, [timeHms, endTimeHms]);
 
   /**
    * Granular Date Lock Evaluator:
@@ -237,30 +238,43 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 3. Tomorrow (The cutoff target): Locked outside the time window, unlocked inside it
+      // 3. Tomorrow (The cutoff target): Open all day before cutoff deadline on the day before (e.g. 11:00 PM IST).
+      // Only locked after the cutoff deadline passes on the day before.
       if (targetDateStr === tomorrowIST) {
-        if (isTimeInWindow) {
+        // Anti-tamper check: If clock is unverified and device settings were tampered, lock tomorrow to prevent bypass
+        if (!isSynced && isDeviceDesynced) {
           return {
-            isLocked: false,
-            reason: `Open for tomorrow until ${formatTime12(activeWindow.endTime)}.`,
-            code: 'TOMORROW_OPEN',
+            isLocked: true,
+            reason: 'System time verification required: Device clock mismatch detected. Please check network connection.',
+            code: 'TIME_DESYNC_BLOCKED',
             isTomorrow: true,
             isToday: false,
             isPast: false,
+            isPastCutoff: true,
           };
         }
 
         const isPastCutoff = Boolean(timeHms && timeHms > endTimeHms);
+        if (isPastCutoff) {
+          return {
+            isLocked: true,
+            reason: `Tomorrow's cutoff passed at ${formatTime12(activeWindow.endTime)}. Changes are locked for kitchen prep.`,
+            code: 'CUTOFF_PASSED',
+            isTomorrow: true,
+            isToday: false,
+            isPast: false,
+            isPastCutoff: true,
+          };
+        }
+
         return {
-          isLocked: true,
-          reason: isPastCutoff
-            ? `Tomorrow's cutoff passed at ${formatTime12(activeWindow.endTime)}. Changes are locked for kitchen prep.`
-            : `Next-day meal updates open at ${formatTime12(activeWindow.startTime)}.`,
-          code: isPastCutoff ? 'CUTOFF_PASSED' : 'BEFORE_WINDOW',
+          isLocked: false,
+          reason: `Open for tomorrow until cutoff at ${formatTime12(activeWindow.endTime)}.`,
+          code: 'TOMORROW_OPEN',
           isTomorrow: true,
           isToday: false,
           isPast: false,
-          isPastCutoff,
+          isPastCutoff: false,
         };
       }
 
@@ -274,7 +288,7 @@ export function useTokenLockStatus() {
         isPast: false,
       };
     },
-    [effectiveMode, todayIST, tomorrowIST, isTimeInWindow, timeHms, endTimeHms, activeWindow]
+    [effectiveMode, todayIST, tomorrowIST, timeHms, endTimeHms, activeWindow, isSynced, isDeviceDesynced]
   );
 
   // Quick state for tomorrow's cutoff
@@ -295,12 +309,8 @@ export function useTokenLockStatus() {
     if (!isTomorrowLocked) {
       return `Next Day Open until ${formatTime12(activeWindow.endTime, false)}`;
     }
-    const isPastCutoff = Boolean(timeHms && timeHms > endTimeHms);
-    if (isPastCutoff) {
-      return `Next Day Locked (${formatTime12(activeWindow.endTime, false)} Cutoff)`;
-    }
-    return `Next Day Opens ${formatTime12(activeWindow.startTime, false)}`;
-  }, [effectiveMode, isTomorrowLocked, activeWindow, timeHms, endTimeHms]);
+    return `Next Day Locked (${formatTime12(activeWindow.endTime, false)} Cutoff)`;
+  }, [effectiveMode, isTomorrowLocked, activeWindow]);
 
   // Persistence helper to update configuration in Firestore
   const saveLockConfig = useCallback(async (updates) => {
@@ -349,6 +359,12 @@ export function useTokenLockStatus() {
     rawStartTime: activeWindow.startTime,
     rawEndTime: activeWindow.endTime,
     currentTime: timeHms,
+
+    // Anti-Tamper & Sync Status
+    isSynced,
+    isDeviceDesynced,
+    isTimeVerified: Boolean(isSynced || !isDeviceDesynced),
+    syncSource,
 
     // Status & Config
     statusBadge,

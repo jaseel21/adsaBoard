@@ -63,7 +63,8 @@ function Login() {
         };
         setStdata(studentData);
         feedback('success');
-        navigate('/student-portal');
+        const returnUrl = location.state?.from;
+        navigate(returnUrl || '/student-portal');
       } else {
         feedback('warning');
         setErr('Invalid token number or password');
@@ -73,7 +74,7 @@ function Login() {
       feedback('warning');
       setErr('Failed to login. Please try again.');
     }
-  }, [token, pass, setStdata, navigate, feedback]);
+  }, [token, pass, setStdata, navigate, feedback, location.state?.from]);
 
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
@@ -155,10 +156,10 @@ function Login() {
               <KeyRound className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-              {t('navStudentPortal') || 'Student Portal'}
+              {t('studentPortalLogin', 'Student Portal')}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Enter your token number and password to manage meal selections
+              {t('enterTokenNumber', 'Enter your token number and password to manage meal selections')}
             </p>
           </div>
 
@@ -167,8 +168,8 @@ function Login() {
             <div className="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 flex items-start gap-3 text-xs text-rose-800 dark:text-rose-200 leading-relaxed">
               <Lock className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
               <div>
-                <span className="font-bold block">Portal is Under Emergency Lockdown</span>
-                Token updates have been temporarily paused by administration. Please check back later.
+                <span className="font-bold block">{t('portalUnderEmergencyLockdown', 'Portal is Under Emergency Lockdown')}</span>
+                {t('portalEmergencyLockdownDesc', 'Token updates have been temporarily paused by administration. Please check back later.')}
               </div>
             </div>
           )}
@@ -178,12 +179,20 @@ function Login() {
             <div className="p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
               <div>
-                <span className="font-bold block">Next-Day Cutoff Active</span>
+                <span className="font-bold block">{t('nextDayCutoffActive', 'Next-Day Cutoff Active')}</span>
                 {tomorrowLockInfo.reason || `Tomorrow's meal updates are closed (cutoff was ${endTime}).`}
                 <span className="block mt-0.5 text-[11px] opacity-85">
-                  You can sign in now to update any future dates (subsequent days, next week, or schedule leaves).
+                  {t('futureDatesUpdateNotice', 'You can sign in now to update any future dates (subsequent days, next week, or schedule leaves).')}
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Security Guard or Redirect Notice */}
+          {location.state?.notice && !err && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+              <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{location.state.notice}</span>
             </div>
           )}
 
@@ -260,15 +269,15 @@ function Login() {
               }`}
             >
               {isLoading ? (
-                <span>Verifying...</span>
+                <span>{t('verifying', 'Verifying...')}</span>
               ) : !isPortalAccessible ? (
                 <>
                   <Lock className="w-4 h-4 text-rose-500" />
-                  <span>Token Portal Frozen ({statusBadge})</span>
+                  <span>{t('tokenPortalFrozen', 'Token Portal Frozen')} ({statusBadge})</span>
                 </>
               ) : (
                 <>
-                  <span>Sign In to Portal</span>
+                  <span>{t('signInToPortal', 'Sign In to Portal')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -285,12 +294,12 @@ function Login() {
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Token Board</span>
+              <span>{t('backToTokenBoard', 'Back to Token Board')}</span>
             </button>
 
             <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center justify-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Official Alathurpadi Dars Canteen System</span>
+              <span>{t('officialCanteenSystem', 'Official Alathurpadi Dars Canteen System')}</span>
             </span>
           </div>
         </div>
