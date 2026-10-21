@@ -43,6 +43,7 @@ import WalkthroughTour from './guide/WalkthroughTour';
 import TokenBoardControls from './ui/TokenBoardControls';
 import TokenBoardDateRibbon from './ui/TokenBoardDateRibbon';
 import TokenCard from './ui/TokenCard';
+import TokenButton from './ui/TokenButton';
 import './Home.css';
 
 // Animated Rolling Counter Component
@@ -86,62 +87,6 @@ const RollingCounter = ({ value, label, colorClass, glowClass, icon: Icon, badge
   );
 };
 
-// Tactile Square Token Button
-const TokenButton = ({ doc, isOn, onLeave, onClick, onBlockedClick }) => {
-  const isBlocked = Boolean(doc.block);
-
-  return (
-    <motion.button
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.92 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-      onClick={() => {
-        if (isBlocked) {
-          onBlockedClick(doc);
-        } else {
-          onClick(doc);
-        }
-      }}
-      aria-label={`Token ${doc.tokenNo}`}
-      className={`
-        relative group flex items-center justify-center flex-shrink-0
-        w-10 h-10 xs:w-11 xs:h-11 min-[380px]:w-12 min-[380px]:h-12 sm:w-14 sm:h-14 aspect-square rounded-xl xs:rounded-2xl select-none font-extrabold
-        text-[11px] xs:text-xs min-[380px]:text-sm sm:text-base tracking-tight font-mono
-        shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400/50
-        ${
-          isBlocked
-            ? 'bg-gradient-to-b from-gray-700 to-gray-900 text-gray-300 border border-gray-600/40 shadow-inner'
-            : onLeave
-            ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-amber-500/25 border-2 border-amber-300'
-            : isOn
-            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 hover:shadow-glow-emerald border border-emerald-400/40'
-            : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 hover:shadow-glow-red border border-rose-400/40'
-        }
-      `}
-    >
-      {!isBlocked && (
-        <span className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      )}
-
-      {isBlocked ? (
-        <Lock className="w-4 h-4 text-gray-300" />
-      ) : (
-        <span className="relative z-10 leading-none">{doc.tokenNo}</span>
-      )}
-
-      {/* Mini indicator dot / leave badge */}
-      {onLeave ? (
-        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-300 animate-pulse" />
-      ) : (
-        <span
-          className={`absolute bottom-1 w-1 h-1 rounded-full ${
-            isBlocked ? 'bg-gray-400' : isOn ? 'bg-white/80' : 'bg-white/60'
-          }`}
-        />
-      )}
-    </motion.button>
-  );
-};
 
 export default function Home() {
   const navigate = useNavigate();
@@ -830,6 +775,26 @@ export default function Home() {
 
               {/* Modal Body */}
               <div className="p-4 xs:p-6 space-y-4 xs:space-y-5 overflow-y-auto max-h-[calc(90dvh-110px)] pb-safe">
+                {/* Admin Blocked/Locked Notice */}
+                {Boolean(detailsDoc.block) && (
+                  <div className="p-3.5 xs:p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 flex items-start gap-2.5 xs:gap-3">
+                    <ShieldAlert className="w-4 h-4 xs:w-5 xs:h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-xs text-red-900 dark:text-red-200">
+                      <span className="font-bold block">
+                        {t('tokenLockedByAdmin', `Token #${detailsDoc.tokenNo} Locked by Admin`).replace('{token}', detailsDoc.tokenNo)}
+                      </span>
+                      <span className="block mt-0.5">
+                        {t('studentTokenSuspendedDesc', 'This student account has been administratively suspended. Dining privileges and self-service token changes are paused.')}
+                      </span>
+                      {detailsDoc.blockReason && (
+                        <span className="block mt-1.5 font-medium italic">
+                          {t('blockReasonLabel', 'Reason')}: &ldquo;{detailsDoc.blockReason}&rdquo;
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Active Date Exception Notice if any for today / target date */}
                 {(() => {
                   const activeExc = getActiveStudentException(detailsDoc, targetDateIST);

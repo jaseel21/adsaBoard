@@ -12,6 +12,8 @@ import {
   RotateCcw,
   UtensilsCrossed,
   Sparkles,
+  Utensils,
+  Coffee,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
@@ -23,6 +25,7 @@ import { useLanguage } from '../../store/LanguageContext';
 export default function TokenBoardControls({
   controller,
   showDensityToggle = true,
+  showMealToggle = true,
   className = '',
 }) {
   const { t, lang } = useLanguage();
@@ -49,12 +52,55 @@ export default function TokenBoardControls({
     resetAllFilters,
     hasActiveFilters,
     metrics,
+    isLunch,
+    toggleMeal,
   } = controller;
 
   return (
     <div
       className={`p-3.5 xs:p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-3 sm:space-y-4 w-full max-w-full min-w-0 overflow-hidden ${className}`}
     >
+      {/* Row 0: Breakfast / Lunch Meal Toggle */}
+      {showMealToggle && toggleMeal && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase tracking-wider shrink-0">
+            {t('mealLabel', 'Meal:')}
+          </span>
+          <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex-1 sm:flex-none">
+            <button
+              type="button"
+              onClick={() => {
+                feedback('pop');
+                toggleMeal('lunch');
+              }}
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                isLunch
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-sm shadow-emerald-500/20'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>{t('navLunch', 'Lunch')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                feedback('pop');
+                toggleMeal('breakfast');
+              }}
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                !isLunch
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/20'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Coffee className="w-3.5 h-3.5" />
+              <span>{t('navBreakfast', 'Breakfast')}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Row 1: Search Bar & Primary View Category / Density Controls */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4 min-w-0">
         
@@ -256,7 +302,7 @@ export default function TokenBoardControls({
             { id: 'all', label: t('allTokens', 'All Tokens'), count: metrics.total, color: 'text-gray-700 dark:text-gray-300' },
             { id: 'active', label: t('statusServing', 'Active Serving'), count: metrics.activeCount, color: 'text-emerald-700 dark:text-emerald-300' },
             { id: 'off', label: t('statusCanceled', 'Canceled / Off'), count: metrics.offCount, color: 'text-rose-700 dark:text-rose-300' },
-            { id: 'leave', label: t('statusOnLeave', 'On Leave'), count: metrics.leaveCount, color: 'text-amber-700 dark:text-amber-300' },
+            { id: 'leave', label: t('statusOnLeave', 'On Leave'), count: metrics.leaveCount, color: 'text-rose-700 dark:text-rose-300' },
             { id: 'blocked', label: t('statusBlockedLocked', 'Blocked / Locked'), count: metrics.blockedCount, color: 'text-gray-500 dark:text-gray-400' },
           ].map((chip) => {
             const isSelected = statusFilter === chip.id;

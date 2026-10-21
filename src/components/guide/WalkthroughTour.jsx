@@ -58,9 +58,9 @@ const TOUR_STEPS = [
     title: 'Tactile Token Buttons & Inspection',
     titleMl: 'ടോക്കൺ ബട്ടണുകളും വിവരങ്ങളും',
     description:
-      'Green = Active; Red = Skipped; Amber = Single-Day Exception; Dark = Blocked. Tap any token to inspect their 7-day schedule!',
+      'Green = Active; Red = Skipped or on Leave; Dark = Blocked. Tap any token to inspect their 7-day schedule!',
     descriptionMl:
-      'പച്ച = ഭക്ഷണം ഉണ്ട്, ചുവപ്പ് = ഒഴിവാക്കി, ആംബർ = ലീവ്, ഡാർക്ക് = ബ്ലോക്ക്. ടാപ്പ് ചെയ്ത് ഫുൾ ഷെഡ്യൂൾ പരിശോധിക്കാം!',
+      'പച്ച = ഭക്ഷണം ഉണ്ട്, ചുവപ്പ് = ഒഴിവാക്കി / ലീവ്, ഡാർക്ക് = ബ്ലോക്ക്. ടാപ്പ് ചെയ്ത് ഫുൾ ഷെഡ്യൂൾ പരിശോധിക്കാം!',
     badge: '5 of 6',
   },
   {

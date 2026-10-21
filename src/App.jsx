@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import Home from './components/Home';
+import StudentDashboard from './components/StudentDashboard';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import StudentPort from './components/StudentPort';
@@ -47,28 +48,14 @@ function AppContent() {
       <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden">
         <ErrorBoundary>
           <Routes>
-            {/* Public Landing Page */}
-            <Route path="/" element={<LandingPage />} />
+            {/* Unified Public Student Dashboard / Home */}
+            <Route path="/" element={<StudentDashboard />} />
 
-            {/* Protected Interactive Token Board (Students or Staff Only) */}
-            <Route
-              path="/board"
-              element={
-                <AuthenticatedRoute>
-                  <Home />
-                </AuthenticatedRoute>
-              }
-            />
+            {/* Public Interactive Token Board */}
+            <Route path="/board" element={<Home />} />
 
-            {/* Protected Canteen Food Menu (Students or Staff Only) */}
-            <Route
-              path="/menu"
-              element={
-                <AuthenticatedRoute notice="Access restricted: Please authenticate with your student token or committee credentials to view the Canteen Food Menu.">
-                  <Fmenu />
-                </AuthenticatedRoute>
-              }
-            />
+            {/* Public Canteen Food Menu */}
+            <Route path="/menu" element={<Fmenu />} />
 
             {/* Public Document Downloads & Information */}
             <Route path="/login" element={<Login />} />

@@ -44,7 +44,12 @@ const hasDishContent = (slotData) => {
   return hasTitle || hasItems;
 };
 
-export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0, breakfastOrdersCount = 0 }) {
+export default function NextMealSpotlight({
+  documents = [],
+  lunchOrdersCount = 0,
+  breakfastOrdersCount = 0,
+  showSpotlightBanner = true,
+}) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
@@ -351,7 +356,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             </button>
           )}
         </div>
-      ) : spotlightMeal ? (
+      ) : showSpotlightBanner && spotlightMeal ? (
         /* Main Spotlight Banner (Rendered ONLY when there is actual dish content) */
         <div className="relative z-10 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-green-50/60 dark:from-emerald-950/30 dark:via-[#121f1c]/40 dark:to-emerald-950/20 border border-emerald-300/60 dark:border-emerald-500/20 shadow-xs mb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -422,7 +427,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             </div>
           </div>
         </div>
-      ) : (
+      ) : showSpotlightBanner ? (
         /* Empty State Banner: Rendered cleanly when menu has no active dishes set */
         <div className="relative z-10 p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.02] border border-dashed border-gray-300 dark:border-white/10 mb-4 text-center">
           <div className="w-10 h-10 mx-auto mb-2 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
@@ -437,7 +442,7 @@ export default function NextMealSpotlight({ documents = [], lunchOrdersCount = 0
             {t('menuEmptyNotice', 'Menu is currently empty. Dishes will appear once updated by Canteen Management.')}
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* Day Overview Strip: Render ONLY ACTIVE slots */}
       {!isDayArchived && activeSlots.length > 0 && (

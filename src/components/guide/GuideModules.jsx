@@ -159,7 +159,7 @@ export const StudentPortalTips = () => {
               1. Single-Day Override (Leaving for a Day?)
             </strong>
             <span>
-              In the Student Portal, click on the target date in the calendar and flip Breakfast or Lunch to OFF. This creates an <strong>Amber</strong> temporary leave that automatically expires after 24 hours.
+              In the Student Portal, click on the target date in the calendar and flip Breakfast or Lunch to OFF. This creates a temporary leave that automatically expires after 24 hours. The token will show as <strong>Red</strong> on the board.
             </span>
           </div>
 

@@ -51,8 +51,6 @@ export default function TokenCard({
       className={`relative group rounded-2xl p-3.5 sm:p-4 bg-white/90 dark:bg-[#0f1715]/90 border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between gap-2.5 select-none ${
         isBlocked
           ? 'border-gray-300 dark:border-white/10 opacity-75'
-          : onLeave
-          ? 'border-amber-300 dark:border-amber-500/30 bg-amber-500/[0.03]'
           : isOn
           ? 'border-emerald-300/80 dark:border-emerald-500/25 bg-emerald-500/[0.02]'
           : 'border-rose-300/80 dark:border-rose-500/25 bg-rose-500/[0.02]'
@@ -63,17 +61,20 @@ export default function TokenCard({
         <div className="flex items-center gap-2.5 min-w-0">
           {/* Tactile Token Number Square */}
           <div
-            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-extrabold font-mono text-sm sm:text-base text-white shadow-sm flex-shrink-0 ${
+            className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-extrabold font-mono text-sm sm:text-base text-white shadow-sm flex-shrink-0 ${
               isBlocked
                 ? 'bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-600'
-                : onLeave
-                ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/25 border border-amber-300'
                 : isOn
                 ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/25 border border-emerald-400'
                 : 'bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/25 border border-rose-400'
             }`}
           >
-            {isBlocked ? <Lock className="w-4 h-4 text-white" /> : tokenNumber}
+            {tokenNumber}
+            {isBlocked && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center shadow-sm z-10">
+                <Lock className="w-2.5 h-2.5 text-gray-300" />
+              </span>
+            )}
           </div>
 
           {/* Student Names */}
@@ -97,7 +98,7 @@ export default function TokenCard({
               <span>{t('locked', 'Locked')}</span>
             </span>
           ) : onLeave ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/30 animate-pulse">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
               <CalendarDays className="w-2.5 h-2.5" />
               <span>{t('leave', 'Leave')}</span>
             </span>

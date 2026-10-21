@@ -47,14 +47,14 @@ const ColorSystemLegend = () => {
     },
     {
       id: 'leave',
-      title: t('colorAmberTitle') || 'Amber Orange (Single-Day Leave)',
-      desc: t('colorAmberDesc') || 'Temporary 1-day override active for the selected date. Automatically resets tomorrow.',
-      previewClass: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-amber-500/30 border-2 border-amber-300',
+      title: t('colorLeaveTitle') || 'Rose Red (Single-Day Leave / OFF)',
+      desc: t('colorLeaveDesc') || 'Student has a temporary single-day override OR opted out for this date. Token displays as red — same as routine OFF. Check the details modal for the specific reason.',
+      previewClass: 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/30 border border-rose-400/50',
       badge: '1-DAY EXCEPTION',
-      badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+      badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
       tokenNumber: '108',
       icon: CalendarDays,
-      leaveDot: true,
+      dot: 'bg-white/60',
       sound: 'success',
     },
     {
@@ -116,10 +116,10 @@ const ColorSystemLegend = () => {
           </div>
           <div>
             <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-              Deterministic Color Taxonomy
+              Simplified Color Taxonomy
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-300">
-              High-contrast, WCAG AAA compliant color grammar delivering instantaneous visual status without reading text.
+              3-color system: Green for active servings, Red for any OFF state (routine or temporary leave), Dark for admin-blocked tokens.
             </p>
           </div>
         </div>
@@ -147,10 +147,12 @@ const ColorSystemLegend = () => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.94 }}
                 onClick={() => feedback('success')}
-                className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 text-white border-2 border-amber-300 shadow-xl shadow-amber-500/30 flex items-center justify-center font-mono font-black text-3xl select-none relative cursor-pointer group"
+                className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-500 to-red-600 text-white border border-rose-400 shadow-xl shadow-rose-500/30 flex items-center justify-center font-mono font-black text-3xl select-none relative cursor-pointer group"
               >
-                {/* Yellow Pulsing Leave Dot */}
-                <span className="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-yellow-300 animate-pulse border-2 border-orange-600 shadow-md" />
+                {/* CalendarDays icon badge for single-day leaves */}
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-700 border border-rose-400 flex items-center justify-center shadow-md">
+                  <CalendarDays className="w-3 h-3 text-white" />
+                </span>
                 <span>108</span>
                 {/* Center attendance dot */}
                 <span className="absolute bottom-2 w-2 h-2 rounded-full bg-white/80" />
@@ -158,12 +160,12 @@ const ColorSystemLegend = () => {
 
               {/* Callout Arrow: Leave Dot */}
               <div className="hidden sm:block absolute -top-4 -right-28 text-left">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                  <span className="w-2 h-2 rounded-full bg-yellow-400" />
-                  <span>Leave Dot (Single-Day Override)</span>
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                  <CalendarDays className="w-3 h-3" />
+                  <span>Leave Badge (Single-Day)</span>
                 </div>
                 <div className="text-[10px] text-gray-500 dark:text-gray-400 w-32 leading-tight">
-                  Pulsing amber dot signals temporary exception for today.
+                  CalendarDays icon badge signals a temporary exception. Token is red like any OFF state.
                 </div>
               </div>
 
@@ -183,10 +185,10 @@ const ColorSystemLegend = () => {
           <div className="space-y-3.5 text-xs">
             <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-500/20">
               <span className="font-extrabold text-emerald-800 dark:text-emerald-300 block mb-0.5">
-                1. Regular Baseline vs Temporary Exception
+                1. Simplified 3-Color System
               </span>
               <p className="text-gray-600 dark:text-gray-300">
-                A student has a weekly schedule (Mon-Sun). When an Amber token appears, it means a <strong>Single-Day Exception</strong> was scheduled for today. Tomorrow, their regular schedule automatically resumes!
+                All OFF states — whether from the weekly routine or a single-day exception — display as <strong>Red</strong>. Tap any red token to view the details modal and see if it&apos;s a routine OFF or a temporary leave.
               </p>
             </div>
 
