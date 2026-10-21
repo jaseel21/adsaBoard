@@ -25,12 +25,12 @@ const TOUR_STEPS = [
   },
   {
     target: 'meal-toggle',
-    title: 'Lunch & Breakfast Switcher',
-    titleMl: 'ഉച്ചഭക്ഷണവും പ്രഭാതഭക്ഷണവും തിരഞ്ഞെടുക്കൽ',
+    title: 'Breakfast & Lunch Switcher',
+    titleMl: 'പ്രഭാതഭക്ഷണവും ഉച്ചഭക്ഷണവും തിരഞ്ഞെടുക്കൽ',
     description:
-      'Seamlessly toggle between Lunch (Emerald) and Breakfast (Amber) to inspect real-time prep numbers for each dining slot.',
+      'Seamlessly toggle between Breakfast (Amber) and Lunch (Emerald) to inspect real-time prep numbers for each dining slot.',
     descriptionMl:
-      'ഉച്ചഭക്ഷണവും പ്രഭാതഭക്ഷണവും തമ്മിൽ എളുപ്പത്തിൽ മാറ്റാനും ഓരോന്നിന്റെയും കൃത്യമായ എണ്ണം കാണാനും സാധിക്കുന്നു.',
+      'പ്രഭാതഭക്ഷണവും ഉച്ചഭക്ഷണവും തമ്മിൽ എളുപ്പത്തിൽ മാറ്റാനും ഓരോന്നിന്റെയും കൃത്യമായ എണ്ണം കാണാനും സാധിക്കുന്നു.',
     badge: '2 of 6',
   },
   {

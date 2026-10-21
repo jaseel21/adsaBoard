@@ -69,7 +69,7 @@ export default function Admin() {
 
   // Unified Token Board Controller Hook
   const controller = useTokenBoardController({
-    autoEveningShift: false, // In Admin Master Board, committee explicitly controls the preview date
+    autoEveningShift: true, // Today before window open time (eg. 2 PM), Tomorrow after open time
     initialMeal: location.state?.isLunch !== undefined ? (location.state.isLunch ? 'lunch' : 'breakfast') : 'lunch',
     initialViewCategory: 'all',
     initialViewDensity: 'matrix',
@@ -329,33 +329,6 @@ export default function Admin() {
             onClick={() => {
               soundEngine.playPop();
               hapticEngine.lightTap();
-              toggleMeal('lunch');
-            }}
-            className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
-              isLunch
-                ? 'text-white'
-                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            {isLunch && (
-              <motion.div
-                layoutId="adminActiveMealPill"
-                className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-md"
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              />
-            )}
-            <Utensils className="w-3.5 h-3.5 relative z-10 shrink-0" />
-            <span className="relative z-10">{t('navLunch') || 'Lunch'}</span>
-            <span className="relative z-10 px-1.5 py-0.2 rounded-md bg-white/20 text-[10px] font-bold">
-              {metrics.lunchCount}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop();
-              hapticEngine.lightTap();
               toggleMeal('breakfast');
             }}
             className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
@@ -375,6 +348,33 @@ export default function Admin() {
             <span className="relative z-10">{t('navBreakfast') || 'Breakfast'}</span>
             <span className="relative z-10 px-1.5 py-0.2 rounded-md bg-white/20 text-[10px] font-bold">
               {metrics.breakfastCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playPop();
+              hapticEngine.lightTap();
+              toggleMeal('lunch');
+            }}
+            className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
+              isLunch
+                ? 'text-white'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            {isLunch && (
+              <motion.div
+                layoutId="adminActiveMealPill"
+                className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-md"
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+            <Utensils className="w-3.5 h-3.5 relative z-10 shrink-0" />
+            <span className="relative z-10">{t('navLunch') || 'Lunch'}</span>
+            <span className="relative z-10 px-1.5 py-0.2 rounded-md bg-white/20 text-[10px] font-bold">
+              {metrics.lunchCount}
             </span>
           </button>
         </div>

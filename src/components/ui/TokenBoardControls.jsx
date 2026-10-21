@@ -71,21 +71,6 @@ export default function TokenBoardControls({
               type="button"
               onClick={() => {
                 feedback('pop');
-                toggleMeal('lunch');
-              }}
-              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                isLunch
-                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-sm shadow-emerald-500/20'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Utensils className="w-3.5 h-3.5" />
-              <span>{t('navLunch', 'Lunch')}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                feedback('pop');
                 toggleMeal('breakfast');
               }}
               className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
@@ -96,6 +81,21 @@ export default function TokenBoardControls({
             >
               <Coffee className="w-3.5 h-3.5" />
               <span>{t('navBreakfast', 'Breakfast')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                feedback('pop');
+                toggleMeal('lunch');
+              }}
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                isLunch
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-sm shadow-emerald-500/20'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>{t('navLunch', 'Lunch')}</span>
             </button>
           </div>
         </div>

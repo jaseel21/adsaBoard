@@ -73,7 +73,7 @@ export default function MealEditModal({
   const [isArchived, setIsArchived] = useState(false);
   const [archiveReason, setArchiveReason] = useState('');
 
-  const slotInfo = SLOT_CONFIGS[slotKey] || SLOT_CONFIGS.lunch;
+  const slotInfo = SLOT_CONFIGS[slotKey] || SLOT_CONFIGS.breakfast;
   const Icon = slotInfo.icon;
 
   useEffect(() => {

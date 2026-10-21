@@ -16,7 +16,11 @@ import {
   Layers,
 } from 'lucide-react';
 import MealFlipCard from './MealFlipCard';
-import { getEffectiveStudentMealStatus, addDaysToDate } from '../utils/studentExceptionService';
+import {
+  getEffectiveStudentMealStatus,
+  addDaysToDate,
+  getDefaultBoardDayOffset,
+} from '../utils/studentExceptionService';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 
@@ -26,8 +30,9 @@ const DAYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
  * HeroMealCountersDock
  * 
  * Interactive, pro-motion dock housing Breakfast & Lunch 3D flip counter cards.
- * Placed at the former location of Time & Date in the Landing Page Hero.
- * Defaults to Tomorrow (offset 1) with instant toggle to Today (offset 0).
+ * Defaults:
+ * - 12:00 AM to board updation window open time (eg. 2:00 PM): Today (offset 0)
+ * - Window open time to 12:00 AM (midnight): Tomorrow (offset 1)
  */
 export default function HeroMealCountersDock({
   studentsList = [],
@@ -35,12 +40,25 @@ export default function HeroMealCountersDock({
   dayShort = '',
   dayFull = '',
   loadingData = false,
+  windowOpenTime = '14:00',
+  defaultOffset = null,
 }) {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  // Day Offset: 1 = Tomorrow (DEFAULT as requested), 0 = Today
-  const [dayOffset, setDayOffset] = useState(1);
+  // Day Offset: 0 = Today (12 AM to board open time), 1 = Tomorrow (board open time to 12 AM)
+  const [dayOffset, setDayOffset] = React.useState(() => {
+    if (typeof defaultOffset === 'number') return defaultOffset;
+    return getDefaultBoardDayOffset(null, windowOpenTime);
+  });
+  const [userToggled, setUserToggled] = React.useState(false);
+
+  // Sync if defaultOffset prop changes and user hasn't manually clicked
+  React.useEffect(() => {
+    if (!userToggled && typeof defaultOffset === 'number') {
+      setDayOffset(defaultOffset);
+    }
+  }, [defaultOffset, userToggled]);
 
   // Independent Flip States for Breakfast and Lunch
   const [isBreakfastFlipped, setIsBreakfastFlipped] = useState(false);
@@ -130,6 +148,7 @@ export default function HeroMealCountersDock({
   const handleSelectDay = (offset) => {
     if (offset === dayOffset) return;
     feedback('tick');
+    setUserToggled(true);
     setDayOffset(offset);
   };
 
@@ -171,29 +190,9 @@ export default function HeroMealCountersDock({
       {/* DOCK CONTROLS BAR: DAY SELECTOR & QUICK FLIP TOGGLE       */}
       {/* ========================================================= */}
       <div className="p-1.5 sm:p-2 rounded-2xl bg-white/10 dark:bg-white/5 border border-white/15 backdrop-blur-xl flex flex-wrap items-center justify-between gap-2 shadow-inner">
-        {/* Segmented Day Switcher: Tomorrow (Default) | Today */}
+        {/* Segmented Day Switcher: Today | Tomorrow */}
         <div className="flex items-center p-0.5 rounded-xl bg-black/20 dark:bg-black/30 border border-white/10 relative">
-          {/* Tomorrow (Default) Button */}
-          <button
-            type="button"
-            onClick={() => handleSelectDay(1)}
-            className={`relative px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer z-10 ${
-              dayOffset === 1 ? 'text-white' : 'text-emerald-200/70 hover:text-white'
-            }`}
-          >
-            {dayOffset === 1 && (
-              <motion.div
-                layoutId="activeMealDayGlider"
-                className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 shadow-md shadow-emerald-500/30 border border-emerald-400/30"
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-              />
-            )}
-            <span className="relative z-10 flex items-center gap-1">
-              <span>{t('tomorrow', 'Tomorrow')}</span>
-            </span>
-          </button>
-
-          {/* Today (Live) Button */}
+          {/* Today Button */}
           <button
             type="button"
             onClick={() => handleSelectDay(0)}
@@ -211,6 +210,26 @@ export default function HeroMealCountersDock({
             <span className="relative z-10 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               <span>{t('today', 'Today')}</span>
+            </span>
+          </button>
+
+          {/* Tomorrow Button */}
+          <button
+            type="button"
+            onClick={() => handleSelectDay(1)}
+            className={`relative px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer z-10 ${
+              dayOffset === 1 ? 'text-white' : 'text-emerald-200/70 hover:text-white'
+            }`}
+          >
+            {dayOffset === 1 && (
+              <motion.div
+                layoutId="activeMealDayGlider"
+                className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 shadow-md shadow-emerald-500/30 border border-emerald-400/30"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10 flex items-center gap-1">
+              <span>{t('tomorrow', 'Tomorrow')}</span>
             </span>
           </button>
         </div>

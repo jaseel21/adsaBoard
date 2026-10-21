@@ -266,26 +266,7 @@ const ColorSystemLegend = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Lunch vs Breakfast Slot Distinction */}
-          <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-500/20 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Utensils className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-xs text-gray-900 dark:text-white">
-                  Lunch Slot (ഉച്ചഭക്ഷണം)
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                  Emerald Green
-                </span>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                Active midday meal. Monitored for rice, curries, sides, and protein portioning.
-              </p>
-            </div>
-          </div>
-
+          {/* Breakfast vs Lunch Slot Distinction */}
           <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-500/20 flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
               <Coffee className="w-5 h-5" />
@@ -301,6 +282,25 @@ const ColorSystemLegend = () => {
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                 Morning tiffin operations. Governs early morning attendance rosters.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-500/20 flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Utensils className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xs text-gray-900 dark:text-white">
+                  Lunch Slot (ഉച്ചഭക്ഷണം)
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  Emerald Green
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                Active midday meal. Monitored for rice, curries, sides, and protein portioning.
               </p>
             </div>
           </div>

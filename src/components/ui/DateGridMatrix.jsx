@@ -58,8 +58,8 @@ export default function DateGridMatrix({
   const { getDateLockStatus, isTomorrowLocked, tomorrowIST, todayIST, endTime } = useTokenLockStatus();
   const maxDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]); // Full 1-year academic calendar
 
-  // Two Separate Toggles: 'lunch' vs 'breakfast' (just like in the Home page)
-  const [activeMeal, setActiveMeal] = useState('lunch');
+  // Two Separate Toggles: 'breakfast' vs 'lunch' (just like in the Home page)
+  const [activeMeal, setActiveMeal] = useState('breakfast');
 
   // Initial month view from today's IST date
   const [currentYear, setCurrentYear] = useState(() => {
@@ -368,36 +368,9 @@ export default function DateGridMatrix({
       {/* ================= HEADER CONTROLS ================= */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 xs:gap-4 p-3.5 xs:p-4 sm:p-5 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
         
-        {/* ROW 1: TWO SEPARATE TOGGLES (LUNCH vs BREAKFAST) */}
+        {/* ROW 1: TWO SEPARATE TOGGLES (BREAKFAST vs LUNCH) */}
         <div className="flex items-center gap-2 xs:gap-3 flex-wrap w-full sm:w-auto">
           <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 relative w-full sm:w-auto">
-            {/* Lunch Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                feedback('pop');
-                setActiveMeal('lunch');
-              }}
-              className={`relative flex items-center justify-center gap-1.5 xs:gap-2 px-3.5 xs:px-5 py-2 xs:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all duration-200 flex-1 sm:flex-none ${
-                activeMeal === 'lunch'
-                  ? 'text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              {activeMeal === 'lunch' && (
-                <motion.div
-                  layoutId="activeDateGridMealPill"
-                  className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-md"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <Utensils className="w-3.5 h-3.5 xs:w-4 xs:h-4 relative z-10 flex-shrink-0" />
-              <span className="relative z-10">{t('navLunch') || 'Lunch'}</span>
-              <span className="relative z-10 px-1.5 xs:px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-bold">
-                {stats.activeLunchDays} ON
-              </span>
-            </button>
-
             {/* Breakfast Toggle */}
             <button
               type="button"
@@ -422,6 +395,33 @@ export default function DateGridMatrix({
               <span className="relative z-10">{t('navBreakfast') || 'Breakfast'}</span>
               <span className="relative z-10 px-1.5 xs:px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-bold">
                 {stats.activeBreakfastDays} ON
+              </span>
+            </button>
+
+            {/* Lunch Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                feedback('pop');
+                setActiveMeal('lunch');
+              }}
+              className={`relative flex items-center justify-center gap-1.5 xs:gap-2 px-3.5 xs:px-5 py-2 xs:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition-all duration-200 flex-1 sm:flex-none ${
+                activeMeal === 'lunch'
+                  ? 'text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {activeMeal === 'lunch' && (
+                <motion.div
+                  layoutId="activeDateGridMealPill"
+                  className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-md"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Utensils className="w-3.5 h-3.5 xs:w-4 xs:h-4 relative z-10 flex-shrink-0" />
+              <span className="relative z-10">{t('navLunch') || 'Lunch'}</span>
+              <span className="relative z-10 px-1.5 xs:px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-bold">
+                {stats.activeLunchDays} ON
               </span>
             </button>
           </div>
@@ -525,7 +525,7 @@ export default function DateGridMatrix({
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold">
                 <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <span>
-                  {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {t('historyPrefix', 'History')}: <strong>{stats.pastLunchesTaken} Lu</strong> • <strong>{stats.pastBreakfastsTaken} Bf</strong> {t('takenSuffix', 'Taken')}
+                  {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {t('historyPrefix', 'History')}: <strong>{stats.pastBreakfastsTaken} Bf</strong> • <strong>{stats.pastLunchesTaken} Lu</strong> {t('takenSuffix', 'Taken')}
                   {stats.pastLeavesCount > 0 && (
                     <span className="text-rose-600 dark:text-rose-400 ml-1">({stats.pastLeavesCount} {t('leaveDaysCount', 'leave days')})</span>
                   )}
@@ -537,7 +537,7 @@ export default function DateGridMatrix({
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-800 dark:text-blue-300 font-bold">
                 <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                 <span>
-                  {t('upcomingPrefix', 'Upcoming')}: <strong>{stats.upcomingLunchesScheduled} Lu</strong> • <strong>{stats.upcomingBreakfastsScheduled} Bf</strong> {t('scheduledSuffix', 'Scheduled')}
+                  {t('upcomingPrefix', 'Upcoming')}: <strong>{stats.upcomingBreakfastsScheduled} Bf</strong> • <strong>{stats.upcomingLunchesScheduled} Lu</strong> {t('scheduledSuffix', 'Scheduled')}
                 </span>
               </div>
             )}
@@ -561,10 +561,10 @@ export default function DateGridMatrix({
                 {t('archivedLedgerTitle', 'Archived Dining Ledger for')} {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {currentYear}
               </h4>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('archivedLedgerDesc', 'All {totalDays} days in this month are finalized and locked for mess billing integrity. Attended: {lunches} Lunches, {breakfasts} Breakfasts.')
+                {t('archivedLedgerDesc', 'All {totalDays} days in this month are finalized and locked for mess billing integrity. Attended: {breakfasts} Breakfasts, {lunches} Lunches.')
                   .replace('{totalDays}', stats.totalDays)
-                  .replace('{lunches}', stats.pastLunchesTaken)
-                  .replace('{breakfasts}', stats.pastBreakfastsTaken)}
+                  .replace('{breakfasts}', stats.pastBreakfastsTaken)
+                  .replace('{lunches}', stats.pastLunchesTaken)}
               </p>
             </div>
           </div>

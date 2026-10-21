@@ -21,6 +21,68 @@ export function getTodayISTDate() {
 }
 
 /**
+ * Normalizes HH:mm or HH:mm:ss string to HH:mm:ss format
+ */
+export function normalizeTimeToHms(timeStr, defaultTime = '14:00:00') {
+  if (!timeStr) return defaultTime;
+  const parts = String(timeStr).trim().split(':');
+  const h = String(parts[0] || '00').padStart(2, '0');
+  const m = String(parts[1] || '00').padStart(2, '0');
+  const s = String(parts[2] || '00').padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+/**
+ * Checks if current time is within or past the board updation window open time.
+ * Standard rule across complete web:
+ * - 12:00 AM (00:00:00) to Board Updation Window Open Time (default '14:00:00' / 2:00 PM): Returns false (Today)
+ * - Board Updation Window Open Time to 12:00 AM (midnight): Returns true (Tomorrow)
+ */
+export function isPastBoardWindowOpenTime(timeHms, openTime = '14:00') {
+  let currentHms = timeHms;
+  if (!currentHms) {
+    try {
+      currentHms = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }).format(new Date());
+    } catch (_) {
+      const now = new Date();
+      currentHms = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+  }
+
+  const normalizedOpen = normalizeTimeToHms(openTime, '14:00:00');
+  // If openTime was explicitly configured as '00:00', treat 2:00 PM (14:00:00) as the switch boundary
+  const effectiveOpen = normalizedOpen === '00:00:00' ? '14:00:00' : normalizedOpen;
+
+  return currentHms >= effectiveOpen;
+}
+
+/**
+ * Returns the default day offset (0 for Today, 1 for Tomorrow) based on time of day:
+ * 12:00 AM - Board Updation Window Open Time (e.g. 2:00 PM): 0 (Today)
+ * Board Updation Window Open Time - 12:00 AM: 1 (Tomorrow)
+ */
+export function getDefaultBoardDayOffset(timeHms, openTime = '14:00') {
+  return isPastBoardWindowOpenTime(timeHms, openTime) ? 1 : 0;
+}
+
+/**
+ * Returns the default target date string ('YYYY-MM-DD') based on time of day:
+ * 12:00 AM - Board Updation Window Open Time (e.g. 2:00 PM): Today (IST)
+ * Board Updation Window Open Time - 12:00 AM: Tomorrow (IST)
+ */
+export function getDefaultBoardTargetDate(timeHms, openTime = '14:00', todayIST = null) {
+  const baseToday = todayIST || getTodayISTDate();
+  const offset = getDefaultBoardDayOffset(timeHms, openTime);
+  return offset === 1 ? addDaysToDate(baseToday, 1) : baseToday;
+}
+
+/**
  * Add days to a YYYY-MM-DD date string
  */
 export function addDaysToDate(dateStr, days) {

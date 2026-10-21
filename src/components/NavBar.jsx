@@ -340,18 +340,18 @@ const Navbar = ({ isAdmin }) => {
                         className="absolute left-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-2xl py-1.5 z-50 backdrop-blur-xl"
                       >
                         <button
-                          onClick={() => handleNav('/lunch')}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                        >
-                          <Utensils className="w-4 h-4 text-emerald-500" />
-                          <span>{t('navLunch')}</span>
-                        </button>
-                        <button
                           onClick={() => handleNav('/breakfast')}
                           className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                         >
                           <Coffee className="w-4 h-4 text-amber-500" />
                           <span>{t('navBreakfast')}</span>
+                        </button>
+                        <button
+                          onClick={() => handleNav('/lunch')}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                        >
+                          <Utensils className="w-4 h-4 text-emerald-500" />
+                          <span>{t('navLunch')}</span>
                         </button>
                         <div className="h-px bg-gray-100 dark:bg-white/10 my-1" />
                         <button
@@ -381,7 +381,7 @@ const Navbar = ({ isAdmin }) => {
                 </button>
 
                 {/* Authenticated Token Board link (visible if student or staff is logged in) */}
-                {(stdata?.tokenNo || user) && (
+                {/* {(stdata?.tokenNo || user) && (
                   <button
                     onClick={() => handleNav('/board')}
                     className={`relative px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all duration-200 ${
@@ -393,7 +393,7 @@ const Navbar = ({ isAdmin }) => {
                     <Layers className="w-3.5 h-3.5 text-emerald-500" />
                     <span>{t('tokenBoard', 'Token Board')}</span>
                   </button>
-                )}
+                )} */}
 
                 {/* Supply & Kitchen Documents Dropdown */}
                 <div className="relative" ref={supplyDropdownRef}>

@@ -225,8 +225,8 @@ export const KitchenAndSheets = () => {
 export const ShortcutsAndGestures = () => {
   const shortcuts = [
     { key: '?', desc: 'Open / Close this Interactive Guide' },
-    { key: 'L', desc: 'Instant switch to Lunch slot' },
     { key: 'B', desc: 'Instant switch to Breakfast slot' },
+    { key: 'L', desc: 'Instant switch to Lunch slot' },
     { key: '/', desc: 'Focus live Search bar' },
     { key: 'Esc', desc: 'Close any open modal or drawer' },
   ];

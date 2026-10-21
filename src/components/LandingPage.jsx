@@ -71,13 +71,23 @@ export default function LandingPage() {
     startTime,
     endTime,
     isPortalAccessible,
+    defaultDayOffset,
   } = useTokenLockStatus();
 
   const [is24Hour, setIs24Hour] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // Document Manifest Target Selection: 'today' (0) | 'tomorrow' (1) - defaults to today
-  const [manifestDayOffset, setManifestDayOffset] = useState(0);
+  // Document Manifest Target Selection: 'today' (0) | 'tomorrow' (1)
+  // Defaults: 12 AM to window open time (eg. 2 PM) -> Today (0), open time to 12 AM -> Tomorrow (1)
+  const [manifestDayOffset, setManifestDayOffset] = useState(() => defaultDayOffset ?? 0);
+  const [hasManifestUserToggled, setHasManifestUserToggled] = useState(false);
+
+  // Keep manifest offset in sync with default until user explicitly toggles
+  useEffect(() => {
+    if (!hasManifestUserToggled && typeof defaultDayOffset === 'number') {
+      setManifestDayOffset(defaultDayOffset);
+    }
+  }, [defaultDayOffset, hasManifestUserToggled]);
 
   // PDF Export Feedback States
   const [exportingSupply, setExportingSupply] = useState(false);
@@ -343,13 +353,15 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Pro-Motion 3D Flippable Meal Counters Dock (Tomorrow default & Today) */}
+            {/* Pro-Motion 3D Flippable Meal Counters Dock */}
             <HeroMealCountersDock
               studentsList={studentsList}
               todayIST={todayIST}
               dayShort={dayShort}
               dayFull={dayFull}
               loadingData={loadingData}
+              windowOpenTime={startTime || '14:00'}
+              defaultOffset={defaultDayOffset}
             />
           </div>
 
@@ -617,6 +629,7 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   feedback('tick');
+                  setHasManifestUserToggled(true);
                   setManifestDayOffset(0);
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
@@ -630,6 +643,7 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   feedback('tick');
+                  setHasManifestUserToggled(true);
                   setManifestDayOffset(1);
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${

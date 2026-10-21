@@ -41,7 +41,7 @@ export default function BulkActionModal({
   const [progress, setProgress] = useState(0);
 
   // Meals state
-  const [targetMeal, setTargetMeal] = useState('lunch'); // 'lunch' | 'breakfast' | 'both'
+  const [targetMeal, setTargetMeal] = useState('breakfast'); // 'breakfast' | 'lunch' | 'both'
   const [mealDays, setMealDays] = useState({
     su: true, mo: true, tu: true, we: true, th: true, fr: true, sa: true
   });
@@ -495,8 +495,8 @@ export default function BulkActionModal({
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'lunch', label: 'Lunch Only', icon: Utensils },
                     { id: 'breakfast', label: 'Breakfast Only', icon: Coffee },
+                    { id: 'lunch', label: 'Lunch Only', icon: Utensils },
                     { id: 'both', label: 'Both Meals', icon: Sparkles },
                   ].map(item => (
                     <button

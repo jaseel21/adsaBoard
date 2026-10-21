@@ -32,8 +32,10 @@ import { dialog } from '../utils/dialog';
 import {
   addDaysToDate,
   getEffectiveStudentMealStatus,
+  isPastBoardWindowOpenTime,
 } from '../utils/studentExceptionService';
 import { subscribeToPreferences } from '../utils/preferenceService';
+import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 
 export default function KitchenDisplay() {
   const navigate = useNavigate();
@@ -41,7 +43,7 @@ export default function KitchenDisplay() {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  const [activeMeal, setActiveMeal] = useState('lunch'); // 'lunch' | 'breakfast'
+  const [activeMeal, setActiveMeal] = useState('breakfast'); // 'breakfast' | 'lunch'
   const [students, setStudents] = useState([]);
   const [preferences, setPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,22 +52,27 @@ export default function KitchenDisplay() {
   const [dietFilter, setDietFilter] = useState('ALL'); // 'ALL' | 'SPECIAL_ONLY'
 
   const { timeHms, dayShort, todayIST } = useWorldTime('Asia/Kolkata');
+  const { activeWindow } = useTokenLockStatus();
+  const openTime = activeWindow?.startTime || '14:00';
 
-  // Post 2:00 PM cutoff, kitchen cooks prepare for the next day!
-  const isPostCutoff = Boolean(timeHms && timeHms >= '14:00:00');
+  // Day selection mode: defaults to Today before open time (eg. 2 PM), Tomorrow after open time
+  const [dayMode, setDayMode] = useState('auto'); // 'auto' | 'today' | 'tomorrow'
+  const isPostCutoff = isPastBoardWindowOpenTime(timeHms, openTime);
+  const isShowingTomorrow = dayMode === 'tomorrow' || (dayMode === 'auto' && isPostCutoff);
+
   const targetDateIST = useMemo(() => {
-    return isPostCutoff ? addDaysToDate(todayIST, 1) : todayIST;
-  }, [isPostCutoff, todayIST]);
+    return isShowingTomorrow ? addDaysToDate(todayIST, 1) : todayIST;
+  }, [isShowingTomorrow, todayIST]);
 
   const targetDayKey = useMemo(() => {
     if (!dayShort) return 'su';
     const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
     const currentIndex = days.indexOf(dayShort.toLowerCase().slice(0, 2));
-    if (isPostCutoff) {
+    if (isShowingTomorrow) {
       return days[(currentIndex + 1) % 7];
     }
     return days[currentIndex >= 0 ? currentIndex : 0];
-  }, [dayShort, isPostCutoff]);
+  }, [dayShort, isShowingTomorrow]);
 
   // Load preferences
   useEffect(() => {
@@ -299,20 +306,6 @@ export default function KitchenDisplay() {
             <button
               onClick={() => {
                 feedback('tick');
-                setActiveMeal('lunch');
-              }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeMeal === 'lunch'
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              <Utensils className="w-3.5 h-3.5" />
-              <span>{t('lunchShift', 'Lunch Shift')}</span>
-            </button>
-            <button
-              onClick={() => {
-                feedback('tick');
                 setActiveMeal('breakfast');
               }}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -323,6 +316,20 @@ export default function KitchenDisplay() {
             >
               <Coffee className="w-3.5 h-3.5" />
               <span>{t('breakfastShift', 'Breakfast Shift')}</span>
+            </button>
+            <button
+              onClick={() => {
+                feedback('tick');
+                setActiveMeal('lunch');
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeMeal === 'lunch'
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>{t('lunchShift', 'Lunch Shift')}</span>
             </button>
           </div>
 
@@ -338,8 +345,8 @@ export default function KitchenDisplay() {
       </div>
 
       {/* Target Shift Banner (Today vs Tomorrow) */}
-      <div className="flex items-center justify-between text-xs px-2 text-gray-500 dark:text-gray-400">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs px-2 text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2 flex-wrap">
           <Calendar className="w-4 h-4 text-emerald-500" />
           <span>
             {t('preparingFor', 'Preparing for:')}{' '}
@@ -347,7 +354,40 @@ export default function KitchenDisplay() {
               {targetDateIST} ({targetDayKey.toUpperCase()})
             </strong>
           </span>
-          {isPostCutoff && (
+
+          {/* Today / Tomorrow Switcher Pill */}
+          <div className="inline-flex p-0.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-[11px] font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setDayMode('today');
+              }}
+              className={`px-2.5 py-1 rounded-lg transition-all ${
+                !isShowingTomorrow
+                  ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-xs font-black'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {t('today', 'Today')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setDayMode('tomorrow');
+              }}
+              className={`px-2.5 py-1 rounded-lg transition-all ${
+                isShowingTomorrow
+                  ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-xs font-black'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {t('tomorrow', 'Tomorrow')}
+            </button>
+          </div>
+
+          {isShowingTomorrow && isPostCutoff && (
             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50">
               {t('nextDayCutoffNotice', 'Next-Day Service (After 2:00 PM Cutoff)')}
             </span>

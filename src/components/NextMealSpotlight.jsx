@@ -21,7 +21,13 @@ import {
   determineActiveMealSlot,
   DEFAULT_WEEKLY_MENU,
 } from '../utils/menuService';
-import { getTodayISTDate, addDaysToDate, getEffectiveStudentMealStatus } from '../utils/studentExceptionService';
+import {
+  getTodayISTDate,
+  addDaysToDate,
+  getEffectiveStudentMealStatus,
+  isPastBoardWindowOpenTime,
+} from '../utils/studentExceptionService';
+import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 
 const DAYS_ORDER = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -54,6 +60,8 @@ export default function NextMealSpotlight({
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const { timeHms, dayShort } = useWorldTime('Asia/Kolkata');
+  const { activeWindow } = useTokenLockStatus();
+  const openTime = activeWindow?.startTime || '14:00';
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
   const [activeTab, setActiveTab] = useState('auto'); // 'today' | 'tomorrow' | 'auto'
@@ -66,17 +74,18 @@ export default function NextMealSpotlight({
   }, []);
 
   // Determine current day and tomorrow's day
+  // Defaults: 12 AM to board updation open time (eg. 2 PM) -> Today, open time to 12 AM -> Tomorrow
   const { todayKey, tomorrowKey, isPostCutoff } = useMemo(() => {
     const current = (dayShort || 'fr').toLowerCase();
     const currIdx = DAYS_ORDER.indexOf(current) !== -1 ? DAYS_ORDER.indexOf(current) : 5;
     const nextIdx = (currIdx + 1) % 7;
-    const postCutoff = timeHms && timeHms >= '14:00:00';
+    const postCutoff = isPastBoardWindowOpenTime(timeHms, openTime);
     return {
       todayKey: current,
       tomorrowKey: DAYS_ORDER[nextIdx],
       isPostCutoff: postCutoff,
     };
-  }, [dayShort, timeHms]);
+  }, [dayShort, timeHms, openTime]);
 
   const todayDayData = weeklyMenu[todayKey];
   const tomorrowDayData = weeklyMenu[tomorrowKey];
@@ -182,7 +191,7 @@ export default function NextMealSpotlight({
       return null;
     } else {
       // Tomorrow highlight: search in priority order for any slot with content
-      const preferenceOrder = ['lunch', 'breakfast', 'evening', 'dinner'];
+      const preferenceOrder = ['breakfast', 'lunch', 'evening', 'dinner'];
       for (const s of preferenceOrder) {
         if (hasDishContent(displayedDayData[s])) {
           const slotData = displayedDayData[s];

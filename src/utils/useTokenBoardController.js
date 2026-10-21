@@ -7,9 +7,12 @@ import {
   getDayOfWeekShort,
   getActiveStudentException,
   getEffectiveStudentMealStatus,
+  isPastBoardWindowOpenTime,
+  getDefaultBoardDayOffset,
 } from './studentExceptionService';
 import { subscribeToPreferences } from './preferenceService';
 import { subscribeToCanteenConfig } from './canteenConfigService';
+import { useTokenLockStatus } from './useTokenLockStatus';
 
 /**
  * Custom hook providing a unified, reactive controller for the Token Board across
@@ -26,10 +29,11 @@ import { subscribeToCanteenConfig } from './canteenConfigService';
  */
 export function useTokenBoardController(options = {}) {
   const {
-    autoEveningShift = false,
+    autoEveningShift = true,
     initialMeal = 'lunch',
     initialViewCategory = 'all',
     initialViewDensity = 'matrix',
+    windowOpenTime = null,
   } = options;
 
   // Real-time Data States
@@ -67,11 +71,19 @@ export function useTokenBoardController(options = {}) {
     deviceOffsetMinutes,
   } = useWorldTime('Asia/Kolkata');
 
+  // Real-time Token Board Cutoff & Window Configuration
+  const { activeWindow } = useTokenLockStatus();
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const todayIST = useMemo(() => getTodayISTDate(), [longDate]);
 
-  // Determine target date based on mode and optional autoEveningShift (after 2:00 PM IST)
-  const isPostEveningCutoff = Boolean(autoEveningShift && timeHms && timeHms >= '14:00:00');
+  // Determine target date based on mode and board updation window open time:
+  // 12:00 AM - Window Open Time (e.g. 2:00 PM): Today
+  // Window Open Time (e.g. 2:00 PM) - 12:00 AM: Tomorrow
+  const effectiveOpenTime = windowOpenTime || activeWindow?.startTime || '14:00';
+  const isPostEveningCutoff = Boolean(
+    autoEveningShift && isPastBoardWindowOpenTime(timeHms, effectiveOpenTime)
+  );
 
   const targetDateIST = useMemo(() => {
     if (dateMode === 'today') {
@@ -83,7 +95,9 @@ export function useTokenBoardController(options = {}) {
     if (dateMode === 'custom' && customDate) {
       return customDate;
     }
-    // 'auto' mode: If autoEveningShift is enabled and past 2:00 PM, show tomorrow by default
+    // 'auto' mode:
+    // If past window open time (e.g. 2:00 PM), show tomorrow by default
+    // Otherwise before open time (12:00 AM - 2:00 PM), show today by default
     if (isPostEveningCutoff) {
       return addDaysToDate(todayIST, 1);
     }

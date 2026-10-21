@@ -14,6 +14,7 @@ import {
   Lock,
   Sparkles,
   Users,
+  User,
   Filter,
   ArrowRight,
   ShieldAlert,
@@ -288,18 +289,6 @@ export default function Home() {
           {/* Quick Counter Cards with Drill-Down Filtering */}
           <div className="grid grid-cols-2 gap-2 xs:gap-3 w-full md:w-auto min-w-0">
             <RollingCounter
-              value={metrics.lunchCount}
-              label={t('navLunch') || 'Lunch'}
-              badge={isPostEveningCutoff ? 'Tomorrow' : undefined}
-              colorClass="bg-gradient-to-br from-emerald-500 to-green-600"
-              glowClass={isLunch ? 'border-emerald-400 ring-2 ring-emerald-500/30' : 'border-emerald-500/30 dark:border-emerald-500/20'}
-              icon={Utensils}
-              onClick={() => {
-                feedback('pop');
-                toggleMeal('lunch');
-              }}
-            />
-            <RollingCounter
               value={metrics.breakfastCount}
               label={t('navBreakfast') || 'Breakfast'}
               badge={isPostEveningCutoff ? 'Tomorrow' : undefined}
@@ -309,6 +298,18 @@ export default function Home() {
               onClick={() => {
                 feedback('pop');
                 toggleMeal('breakfast');
+              }}
+            />
+            <RollingCounter
+              value={metrics.lunchCount}
+              label={t('navLunch') || 'Lunch'}
+              badge={isPostEveningCutoff ? 'Tomorrow' : undefined}
+              colorClass="bg-gradient-to-br from-emerald-500 to-green-600"
+              glowClass={isLunch ? 'border-emerald-400 ring-2 ring-emerald-500/30' : 'border-emerald-500/30 dark:border-emerald-500/20'}
+              icon={Utensils}
+              onClick={() => {
+                feedback('pop');
+                toggleMeal('lunch');
               }}
             />
           </div>
@@ -733,11 +734,22 @@ export default function Home() {
               className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]"
             >
               {/* Header Banner */}
-              <div className="relative bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 p-4 xs:p-6 text-white flex-shrink-0">
+              <div
+                className={`relative p-4 xs:p-6 text-white flex-shrink-0 ${
+                  detailsDoc.block
+                    ? 'bg-gradient-to-r from-gray-800 via-gray-800 to-gray-900'
+                    : 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800'
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 xs:gap-3.5 min-w-0">
-                    <div className="w-11 h-11 xs:w-14 xs:h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-extrabold text-lg xs:text-2xl shadow-inner border border-white/30 flex-shrink-0">
+                    <div className="relative w-11 h-11 xs:w-14 xs:h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-extrabold text-lg xs:text-2xl shadow-inner border border-white/30 flex-shrink-0">
                       {detailsDoc.tokenNo}
+                      {Boolean(detailsDoc.block) && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-white/40 flex items-center justify-center shadow-xs">
+                          <Lock className="w-2.5 h-2.5 text-white" />
+                        </span>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -746,7 +758,11 @@ export default function Home() {
                         </h2>
                       </div>
                       {detailsDoc.nameMl && (
-                        <p className="text-xs text-emerald-100 font-medium mt-0.5 truncate font-malayalam">
+                        <p
+                          className={`text-xs font-medium mt-0.5 truncate font-malayalam ${
+                            detailsDoc.block ? 'text-gray-300' : 'text-emerald-100'
+                          }`}
+                        >
                           {detailsDoc.nameMl}
                         </p>
                       )}
@@ -754,7 +770,16 @@ export default function Home() {
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 border border-white/20">
                           {detailsDoc.batch || t('generalBatch', 'General Batch')}
                         </span>
-                        <span className="text-[10px] xs:text-[11px] text-emerald-100 flex items-center gap-1 font-mono">
+                        {detailsDoc.roomNo && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/15 border border-white/15">
+                            Room {detailsDoc.roomNo}
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] xs:text-[11px] flex items-center gap-1 font-mono ${
+                            detailsDoc.block ? 'text-gray-300' : 'text-emerald-100'
+                          }`}
+                        >
                           @{detailsDoc.username || detailsDoc.uname || detailsDoc.tokenNo}
                         </span>
                       </div>
@@ -766,7 +791,7 @@ export default function Home() {
                       feedback('tick');
                       setDetailsDoc(null);
                     }}
-                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0"
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0 cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -775,168 +800,198 @@ export default function Home() {
 
               {/* Modal Body */}
               <div className="p-4 xs:p-6 space-y-4 xs:space-y-5 overflow-y-auto max-h-[calc(90dvh-110px)] pb-safe">
-                {/* Admin Blocked/Locked Notice */}
-                {Boolean(detailsDoc.block) && (
-                  <div className="p-3.5 xs:p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 flex items-start gap-2.5 xs:gap-3">
-                    <ShieldAlert className="w-4 h-4 xs:w-5 xs:h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                    <div className="text-xs text-red-900 dark:text-red-200">
-                      <span className="font-bold block">
-                        {t('tokenLockedByAdmin', `Token #${detailsDoc.tokenNo} Locked by Admin`).replace('{token}', detailsDoc.tokenNo)}
-                      </span>
-                      <span className="block mt-0.5">
-                        {t('studentTokenSuspendedDesc', 'This student account has been administratively suspended. Dining privileges and self-service token changes are paused.')}
-                      </span>
-                      {detailsDoc.blockReason && (
-                        <span className="block mt-1.5 font-medium italic">
-                          {t('blockReasonLabel', 'Reason')}: &ldquo;{detailsDoc.blockReason}&rdquo;
+                {detailsDoc.block ? (
+                  /* ================= BLOCKED STUDENT VIEW: ONLY PERSONAL DETAILS & NOTICE ================= */
+                  <div className="space-y-4">
+                    {/* Admin Blocked Alert */}
+                    <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <ShieldAlert className="w-5 h-5" />
+                      </div>
+                      <div className="text-xs text-red-900 dark:text-red-200 min-w-0 flex-1">
+                        <span className="font-extrabold text-sm block">
+                          {t('tokenLockedByAdmin', `Token #${detailsDoc.tokenNo} Locked by Admin`).replace('{token}', detailsDoc.tokenNo)}
                         </span>
-                      )}
+                        <span className="block mt-1 leading-relaxed text-red-800 dark:text-red-300">
+                          {t('studentTokenSuspendedDesc', 'This student account has been administratively suspended. Dining privileges and token changes are paused.')}
+                        </span>
+                        {detailsDoc.blockReason && (
+                          <div className="mt-2.5 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
+                            <span className="font-bold text-red-950 dark:text-red-200">
+                              {t('blockReasonLabel', 'Reason')}:
+                            </span>{' '}
+                            <span className="italic font-medium">&ldquo;{detailsDoc.blockReason}&rdquo;</span>
+                          </div>
+                        )}
+                        <span className="block mt-2 text-[11px] text-red-700/80 dark:text-red-300/80">
+                          {t('consultOffice', 'Please consult the ADSA Office or Canteen Secretary to resolve status.')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Simple Close button instead of login */}
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          feedback('tick');
+                          setDetailsDoc(null);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs transition-colors cursor-pointer shadow-sm"
+                      >
+                        {t('closeNotice', 'Close')}
+                      </button>
                     </div>
                   </div>
-                )}
-
-                {/* Active Date Exception Notice if any for today / target date */}
-                {(() => {
-                  const activeExc = getActiveStudentException(detailsDoc, targetDateIST);
-                  if (activeExc) {
-                    const bfStatus = activeExc.breakfast !== undefined ? (activeExc.breakfast ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)')) : null;
-                    const luStatus = activeExc.lunch !== undefined ? (activeExc.lunch ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)')) : null;
-                    return (
-                      <div className="p-3.5 xs:p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 flex items-start gap-2.5 xs:gap-3">
-                        <CalendarDays className="w-4 h-4 xs:w-5 xs:h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div className="text-xs text-amber-900 dark:text-amber-200">
-                          <span className="font-bold block">
-                            {t('singleDayExceptionActive', 'Single-Day Exception Active for')} {formatFriendlyDate(targetDateIST)}
-                          </span>
-                          <span className="block mt-0.5">
-                            {bfStatus && <>{t('navBreakfast', 'Breakfast')}: <strong>{bfStatus}</strong> </>}
-                            {luStatus && <>• {t('navLunch', 'Lunch')}: <strong>{luStatus}</strong></>}
-                          </span>
-                          <span className="text-[11px] opacity-75 block mt-1">
-                            {targetDateIST === todayIST
-                              ? t('regularRoutineResumesTomorrow', 'Regular weekly dining routine automatically resumes tomorrow.')
-                              : t('singleDayOverrideTomorrow', 'Single-day override scheduled for tomorrow.')}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Breakfast Schedule Grid */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                      <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{t('navBreakfast') || 'Breakfast Routine'}</span>
-                    </span>
-                    <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Opt-in')}</span>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 xs:gap-1.5">
-                    {daysList.map(({ key, label }) => {
-                      const active = detailsDoc.obj?.breakfast?.[key] === true;
-                      const isCurrentDay = key === effectiveDay;
-                      return (
-                        <div
-                          key={key}
-                          className={`p-2 rounded-xl text-center border font-mono transition-all ${
-                            isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
-                          } ${
-                            active
-                              ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
-                              : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
-                          }`}
-                        >
-                          <span className="block text-[10px] font-bold uppercase">{label}</span>
-                          <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Lunch Schedule Grid */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                      <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>{t('navLunch') || 'Lunch Routine'}</span>
-                    </span>
-                    <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Opt-in')}</span>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 xs:gap-1.5">
-                    {daysList.map(({ key, label }) => {
-                      const active = detailsDoc.obj?.lunch?.[key] === true;
-                      const isCurrentDay = key === effectiveDay;
-                      return (
-                        <div
-                          key={key}
-                          className={`p-2 rounded-xl text-center border font-mono transition-all ${
-                            isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
-                          } ${
-                            active
-                              ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
-                              : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
-                          }`}
-                        >
-                          <span className="block text-[10px] font-bold uppercase">{label}</span>
-                          <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Dietary Inclusions & Exemptions */}
-                <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-white/5">
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    {t('dietaryPreferencesLabel', 'Dietary Inclusions & Exemptions')}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 xs:gap-2">
-                    {preferencesList.map((pref) => {
-                      const isIncluded =
-                        detailsDoc.obj2 && detailsDoc.obj2[pref.id] !== undefined
-                          ? Boolean(detailsDoc.obj2[pref.id])
-                          : true;
-                      return (
-                        <span
-                          key={pref.id}
-                          className={`inline-flex items-center gap-1.5 px-2.5 xs:px-3 py-1 rounded-xl text-xs font-bold border transition-colors ${
-                            isIncluded
-                              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20'
-                              : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/20'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          <span>{lang === 'ml' && pref.labelMl ? pref.labelMl : (pref.labelEn || pref.name)}</span>
-                          {!isIncluded && <span className="text-[10px] opacity-80">({t('exempt', 'Exempt')})</span>}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Quick Action Button to Update Own Token */}
-                <div className="pt-2">
-                  <button
-                    onClick={() => {
-                      feedback('tick');
-                      setDetailsDoc(null);
-                      if (!portalStatus.isOpen) {
-                        setLockedPortalAlertOpen(true);
-                      } else {
-                        navigate(`/login?token=${detailsDoc.tokenNo}`);
+                ) : (
+                  /* ================= ACTIVE / UNBLOCKED STUDENT VIEW: FULL SCHEDULES & PREFERENCES ================= */
+                  <>
+                    {/* Active Date Exception Notice if any for today / target date */}
+                    {(() => {
+                      const activeExc = getActiveStudentException(detailsDoc, targetDateIST);
+                      if (activeExc) {
+                        const bfStatus = activeExc.breakfast !== undefined ? (activeExc.breakfast ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)')) : null;
+                        const luStatus = activeExc.lunch !== undefined ? (activeExc.lunch ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)')) : null;
+                        return (
+                          <div className="p-3.5 xs:p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 flex items-start gap-2.5 xs:gap-3">
+                            <CalendarDays className="w-4 h-4 xs:w-5 xs:h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-xs text-amber-900 dark:text-amber-200">
+                              <span className="font-bold block">
+                                {t('singleDayExceptionActive', 'Single-Day Exception Active for')} {formatFriendlyDate(targetDateIST)}
+                              </span>
+                              <span className="block mt-0.5">
+                                {bfStatus && <>{t('navBreakfast', 'Breakfast')}: <strong>{bfStatus}</strong> </>}
+                                {luStatus && <>• {t('navLunch', 'Lunch')}: <strong>{luStatus}</strong></>}
+                              </span>
+                              <span className="text-[11px] opacity-75 block mt-1">
+                                {targetDateIST === todayIST
+                                  ? t('regularRoutineResumesTomorrow', 'Regular weekly dining routine automatically resumes tomorrow.')
+                                  : t('singleDayOverrideTomorrow', 'Single-day override scheduled for tomorrow.')}
+                              </span>
+                            </div>
+                          </div>
+                        );
                       }
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all"
-                  >
-                    <span>{t('areYouStudent', `Are you Student #${detailsDoc.tokenNo}? Update your Preferences`).replace('{token}', detailsDoc.tokenNo)}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+                      return null;
+                    })()}
+
+                    {/* Breakfast Schedule Grid */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <Coffee className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{t('navBreakfast') || 'Breakfast Routine'}</span>
+                        </span>
+                        <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Opt-in')}</span>
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1 xs:gap-1.5">
+                        {daysList.map(({ key, label }) => {
+                          const active = detailsDoc.obj?.breakfast?.[key] === true;
+                          const isCurrentDay = key === effectiveDay;
+                          return (
+                            <div
+                              key={key}
+                              className={`p-2 rounded-xl text-center border font-mono transition-all ${
+                                isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
+                              } ${
+                                active
+                                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
+                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
+                              }`}
+                            >
+                              <span className="block text-[10px] font-bold uppercase">{label}</span>
+                              <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Lunch Schedule Grid */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>{t('navLunch') || 'Lunch Routine'}</span>
+                        </span>
+                        <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Opt-in')}</span>
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-1 xs:gap-1.5">
+                        {daysList.map(({ key, label }) => {
+                          const active = detailsDoc.obj?.lunch?.[key] === true;
+                          const isCurrentDay = key === effectiveDay;
+                          return (
+                            <div
+                              key={key}
+                              className={`p-2 rounded-xl text-center border font-mono transition-all ${
+                                isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
+                              } ${
+                                active
+                                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
+                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
+                              }`}
+                            >
+                              <span className="block text-[10px] font-bold uppercase">{label}</span>
+                              <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Dietary Inclusions & Exemptions */}
+                    <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-white/5">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        {t('dietaryPreferencesLabel', 'Dietary Inclusions & Exemptions')}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5 xs:gap-2">
+                        {preferencesList.map((pref) => {
+                          const isIncluded =
+                            detailsDoc.obj2 && detailsDoc.obj2[pref.id] !== undefined
+                              ? Boolean(detailsDoc.obj2[pref.id])
+                              : true;
+                          return (
+                            <span
+                              key={pref.id}
+                              className={`inline-flex items-center gap-1.5 px-2.5 xs:px-3 py-1 rounded-xl text-xs font-bold border transition-colors ${
+                                isIncluded
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20'
+                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/20'
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                              <span>{lang === 'ml' && pref.labelMl ? pref.labelMl : (pref.labelEn || pref.name)}</span>
+                              {!isIncluded && <span className="text-[10px] opacity-80">({t('exempt', 'Exempt')})</span>}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Quick Action Button to Update Own Token */}
+                    <div className="pt-2">
+                      <button
+                        onClick={() => {
+                          feedback('tick');
+                          setDetailsDoc(null);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        onClickCapture={() => {
+                          if (!portalStatus.isOpen) {
+                            setLockedPortalAlertOpen(true);
+                          } else {
+                            navigate(`/login?token=${detailsDoc.tokenNo}`);
+                          }
+                        }}
+                      >
+                        <span>{t('areYouStudent', `Are you Student #${detailsDoc.tokenNo}? Update your Preferences`).replace('{token}', detailsDoc.tokenNo)}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           </div>

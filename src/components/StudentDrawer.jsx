@@ -844,59 +844,6 @@ export default function StudentDrawer({
               {/* TAB 2: MEALS & DIETARY */}
               {activeTab === 'meals' && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  {/* Lunch Schedule */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                          <Utensils className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">{t('lunchSchedule') || 'Weekly Lunch Schedule'}</h4>
-                          <p className="text-[11px] text-gray-500">Green = Opted-in for meal; Red = Skipped</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setAllLunch(true)}
-                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
-                        >
-                          All ON
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAllLunch(false)}
-                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-colors"
-                        >
-                          All OFF
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                      {daysList.map((d) => {
-                        const active = Boolean(lunch[d.key]);
-                        return (
-                          <button
-                            key={d.key}
-                            type="button"
-                            onClick={() => toggleLunchDay(d.key)}
-                            title={`${d.label}: Lunch is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
-                            className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold font-mono text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
-                              active
-                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
-                                : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-sm shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
-                            }`}
-                          >
-                            <span className="truncate w-full text-center">{d.label}</span>
-                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-white/90" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   {/* Breakfast Schedule */}
                   <div className="p-4 sm:p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-3">
                     <div className="flex items-center justify-between">
@@ -936,6 +883,59 @@ export default function StudentDrawer({
                             type="button"
                             onClick={() => toggleBreakfastDay(d.key)}
                             title={`${d.label}: Breakfast is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
+                            className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold font-mono text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
+                              active
+                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
+                                : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-sm shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
+                            }`}
+                          >
+                            <span className="truncate w-full text-center">{d.label}</span>
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-white/90" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Lunch Schedule */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                          <Utensils className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">{t('lunchSchedule') || 'Weekly Lunch Schedule'}</h4>
+                          <p className="text-[11px] text-gray-500">Green = Opted-in for meal; Red = Skipped</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setAllLunch(true)}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
+                        >
+                          All ON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAllLunch(false)}
+                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-colors"
+                        >
+                          All OFF
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                      {daysList.map((d) => {
+                        const active = Boolean(lunch[d.key]);
+                        return (
+                          <button
+                            key={d.key}
+                            type="button"
+                            onClick={() => toggleLunchDay(d.key)}
+                            title={`${d.label}: Lunch is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
                             className={`py-2.5 sm:py-3 px-0.5 rounded-xl font-bold font-mono text-[10px] sm:text-xs flex flex-col items-center justify-center gap-1 transition-all min-w-0 ${
                               active
                                 ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'

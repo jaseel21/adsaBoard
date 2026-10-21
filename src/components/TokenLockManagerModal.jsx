@@ -25,10 +25,10 @@ import { subscribeToCanteenConfig, updateSectionChunkSize } from '../utils/cante
 import { useLanguage } from '../store/LanguageContext';
 
 const PRESETS = [
-  { label: 'Standard (11:00 PM Cutoff)', start: '00:00', end: '23:00' },
-  { label: 'Midnight (11:59 PM Cutoff)', start: '00:00', end: '23:59' },
-  { label: 'Early (9:00 PM Cutoff)', start: '00:00', end: '21:00' },
-  { label: 'Evening (10:00 PM Cutoff)', start: '00:00', end: '22:00' },
+  { label: 'Standard (2:00 PM - 11:00 PM Cutoff)', start: '14:00', end: '23:00' },
+  { label: 'Midnight (2:00 PM - 11:59 PM Cutoff)', start: '14:00', end: '23:59' },
+  { label: 'Early (2:00 PM - 9:00 PM Cutoff)', start: '14:00', end: '21:00' },
+  { label: 'Evening (2:00 PM - 10:00 PM Cutoff)', start: '14:00', end: '22:00' },
 ];
 
 const DAYS_META = [
@@ -60,7 +60,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
 
   // Working form state
   const [mode, setMode] = useState(config.overrideMode || 'auto');
-  const [startInput, setStartInput] = useState(config.window?.startTime || '00:00');
+  const [startInput, setStartInput] = useState(config.window?.startTime || '14:00');
   const [endInput, setEndInput] = useState(config.window?.endTime || '23:00');
   const [scheduleEnabled, setScheduleEnabled] = useState(Boolean(config.schedule?.enabled));
   const [daySchedules, setDaySchedules] = useState(() => config.schedule?.days || {});
@@ -82,7 +82,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
   useEffect(() => {
     if (isOpen) {
       setMode(config.overrideMode || (config.status ? 'force_unlocked' : 'auto'));
-      setStartInput(config.window?.startTime || '00:00');
+      setStartInput(config.window?.startTime || '14:00');
       setEndInput(config.window?.endTime || '23:00');
       setScheduleEnabled(Boolean(config.schedule?.enabled));
       setDaySchedules(config.schedule?.days || {});

@@ -89,7 +89,7 @@ export default function MenuManagement() {
 
   // Active edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingSlot, setEditingSlot] = useState('lunch');
+  const [editingSlot, setEditingSlot] = useState('breakfast');
 
   // Overrides modal state
   const [overrides, setOverrides] = useState({});

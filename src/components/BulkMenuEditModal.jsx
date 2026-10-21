@@ -31,11 +31,11 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
   const { feedback } = useFeedback();
 
   const [selectedDays, setSelectedDays] = useState(['mo', 'tu', 'we', 'th', 'fr']);
-  const [selectedSlot, setSelectedSlot] = useState('lunch');
+  const [selectedSlot, setSelectedSlot] = useState('breakfast');
   const [title, setTitle] = useState('');
   const [itemsStr, setItemsStr] = useState('');
   const [category, setCategory] = useState('Veg');
-  const [timing, setTiming] = useState('12:30 PM - 02:00 PM');
+  const [timing, setTiming] = useState('07:00 AM - 08:30 AM');
   const [presetsMap, setPresetsMap] = useState({});
   const [saving, setSaving] = useState(false);
 

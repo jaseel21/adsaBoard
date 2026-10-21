@@ -14,7 +14,9 @@ import AdvancedExportModal from './export/AdvancedExportModal';
 import {
   addDaysToDate,
   getEffectiveStudentMealStatus,
+  isPastBoardWindowOpenTime,
 } from '../utils/studentExceptionService';
+import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 
 export default function SupplySections({ defaultMeal }) {
   const navigate = useNavigate();
@@ -40,25 +42,29 @@ export default function SupplySections({ defaultMeal }) {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const { timeHms, dayShort, longDate, todayIST } = useWorldTime('Asia/Kolkata');
+  const { activeWindow } = useTokenLockStatus();
+  const openTime = activeWindow?.startTime || '14:00';
+
+  // Day selection mode: defaults to Today before open time (eg. 2 PM), Tomorrow after open time
+  const [dayMode, setDayMode] = useState('auto'); // 'auto' | 'today' | 'tomorrow'
+  const isPostCutoff = isPastBoardWindowOpenTime(timeHms, openTime);
+  const isShowingTomorrow = dayMode === 'tomorrow' || (dayMode === 'auto' && isPostCutoff);
   const [day, setDay] = useState('');
 
-  // Synchronize target meal date (after 2:00 PM IST, view next day's supply)
-  const isPostCutoff = Boolean(timeHms && timeHms >= '14:00:00');
   const targetDateIST = useMemo(() => {
-    return isPostCutoff ? addDaysToDate(todayIST, 1) : todayIST;
-  }, [isPostCutoff, todayIST]);
+    return isShowingTomorrow ? addDaysToDate(todayIST, 1) : todayIST;
+  }, [isShowingTomorrow, todayIST]);
 
   useEffect(() => {
-    if (!dayShort || !timeHms) return;
+    if (!dayShort) return;
     const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-    if (isPostCutoff) {
-      const currentIndex = days.indexOf(dayShort);
-      const nextDay = days[(currentIndex + 1) % 7];
-      setDay(nextDay);
+    const currentIndex = days.indexOf(dayShort.toLowerCase());
+    if (isShowingTomorrow) {
+      setDay(days[(currentIndex + 1) % 7]);
     } else {
-      setDay(dayShort);
+      setDay(days[currentIndex >= 0 ? currentIndex : 0]);
     }
-  }, [timeHms, dayShort, isPostCutoff]);
+  }, [dayShort, isShowingTomorrow]);
 
   // Reactive real-time student subscription
   useEffect(() => {
@@ -168,7 +174,7 @@ export default function SupplySections({ defaultMeal }) {
       exportSinglePageCombinedManifestPDF({
         targetDateIST,
         dayKey: day,
-        dayFull: isPostCutoff ? 'Tomorrow' : dayShort,
+        dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
         documents,
         category: sectionMode === 'size' ? 'sections' : 'batches',
         sort: 'ascending',
@@ -222,25 +228,43 @@ export default function SupplySections({ defaultMeal }) {
           </div>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
             Canceled and active token breakdown for kitchen tables and dining hall sections
-            {isPostCutoff ? ' (Showing Tomorrow\'s Manifest)' : ''}
+            {isShowingTomorrow ? " (Showing Tomorrow's Manifest)" : " (Showing Today's Manifest)"}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start sm:justify-end">
-          {/* Meal Toggle Switch */}
-          <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
+          {/* Day Toggle Switch */}
+          <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-bold">
             <button
-              onClick={() => handleMealSwitch('lunch')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                isLunchMeal
-                  ? 'bg-emerald-500 text-white shadow-sm'
+              onClick={() => {
+                feedback('tick');
+                setDayMode('today');
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all ${
+                !isShowingTomorrow
+                  ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-sm font-black'
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
               }`}
             >
-              <Utensils className="w-3.5 h-3.5" />
-              <span>Lunch</span>
+              Today
             </button>
+            <button
+              onClick={() => {
+                feedback('tick');
+                setDayMode('tomorrow');
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all ${
+                isShowingTomorrow
+                  ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-sm font-black'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
+              }`}
+            >
+              Tomorrow
+            </button>
+          </div>
 
+          {/* Meal Toggle Switch */}
+          <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
             <button
               onClick={() => handleMealSwitch('breakfast')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -251,6 +275,18 @@ export default function SupplySections({ defaultMeal }) {
             >
               <Coffee className="w-3.5 h-3.5" />
               <span>Breakfast</span>
+            </button>
+
+            <button
+              onClick={() => handleMealSwitch('lunch')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                isLunchMeal
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
+              }`}
+            >
+              <Utensils className="w-3.5 h-3.5" />
+              <span>Lunch</span>
             </button>
           </div>
 
@@ -424,7 +460,7 @@ export default function SupplySections({ defaultMeal }) {
         exportType="supply"
         targetDateIST={targetDateIST}
         dayKey={day}
-        dayFull={isPostCutoff ? 'Tomorrow' : dayShort}
+        dayFull={isShowingTomorrow ? 'Tomorrow' : dayShort}
         documents={documents}
         sectionChunkSize={customChunkSize}
       />

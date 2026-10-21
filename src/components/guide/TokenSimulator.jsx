@@ -68,7 +68,7 @@ const TokenSimulator = () => {
   const { feedback, soundEnabled, setSoundEnabled, hapticsEnabled, setHapticsEnabled } = useFeedback();
   const [tokens, setTokens] = useState(INITIAL_SIMULATOR_TOKENS);
   const [selectedTokenNo, setSelectedTokenNo] = useState('07');
-  const [simulatedMeal, setSimulatedMeal] = useState('lunch');
+  const [simulatedMeal, setSimulatedMeal] = useState('breakfast');
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   const selectedToken = tokens.find((t) => t.tokenNo === selectedTokenNo) || tokens[0];
@@ -198,19 +198,6 @@ const TokenSimulator = () => {
               <button
                 onClick={() => {
                   feedback('tick');
-                  setSimulatedMeal('lunch');
-                }}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  simulatedMeal === 'lunch'
-                    ? 'bg-white dark:bg-[#1a2521] text-emerald-600 shadow-sm'
-                    : 'text-gray-500'
-                }`}
-              >
-                Lunch
-              </button>
-              <button
-                onClick={() => {
-                  feedback('tick');
                   setSimulatedMeal('breakfast');
                 }}
                 className={`px-2.5 py-1 rounded-lg transition-all ${
@@ -220,6 +207,19 @@ const TokenSimulator = () => {
                 }`}
               >
                 Breakfast
+              </button>
+              <button
+                onClick={() => {
+                  feedback('tick');
+                  setSimulatedMeal('lunch');
+                }}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  simulatedMeal === 'lunch'
+                    ? 'bg-white dark:bg-[#1a2521] text-emerald-600 shadow-sm'
+                    : 'text-gray-500'
+                }`}
+              >
+                Lunch
               </button>
             </div>
           </div>

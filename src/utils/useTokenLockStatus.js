@@ -6,7 +6,17 @@ import {
   addDaysToDate,
   getDayOfWeekShort,
   formatFriendlyDate,
+  normalizeTimeToHms,
+  isPastBoardWindowOpenTime,
+  getDefaultBoardDayOffset,
+  getDefaultBoardTargetDate,
 } from './studentExceptionService';
+
+export {
+  isPastBoardWindowOpenTime,
+  getDefaultBoardDayOffset,
+  getDefaultBoardTargetDate,
+};
 
 const TOKENBOARD_DOC_ID = 'g8iJVNn2RQkysjMAvX1h';
 
@@ -26,38 +36,27 @@ export function formatTime12(timeStr, includeTz = true) {
 }
 
 /**
- * Normalizes HH:mm to HH:mm:ss
- */
-function normalizeTimeToHms(timeStr, defaultTime = '00:00:00') {
-  if (!timeStr) return defaultTime;
-  const parts = timeStr.trim().split(':');
-  const h = String(parts[0] || '00').padStart(2, '0');
-  const m = String(parts[1] || '00').padStart(2, '0');
-  const s = String(parts[2] || '00').padStart(2, '0');
-  return `${h}:${m}:${s}`;
-}
-
-/**
  * Default Token Board Configuration
+ * Default updation window: 2:00 PM (14:00) open time to 11:00 PM (23:00) cutoff deadline
  */
 export const DEFAULT_LOCK_CONFIG = {
   status: false, // legacy boolean
   overrideMode: 'auto', // 'auto' | 'force_unlocked' | 'force_locked'
   window: {
-    startTime: '00:00', // Open all day before cutoff
+    startTime: '14:00', // 2:00 PM IST board updation window open time
     endTime: '23:00',   // 11:00 PM IST cutoff deadline
     timezone: 'Asia/Kolkata',
   },
   schedule: {
     enabled: false,
     days: {
-      su: { startTime: '00:00', endTime: '23:00' },
-      mo: { startTime: '00:00', endTime: '23:00' },
-      tu: { startTime: '00:00', endTime: '23:00' },
-      we: { startTime: '00:00', endTime: '23:00' },
-      th: { startTime: '00:00', endTime: '23:00' },
-      fr: { startTime: '00:00', endTime: '23:00' },
-      sa: { startTime: '00:00', endTime: '23:00' },
+      su: { startTime: '14:00', endTime: '23:00' },
+      mo: { startTime: '14:00', endTime: '23:00' },
+      tu: { startTime: '14:00', endTime: '23:00' },
+      we: { startTime: '14:00', endTime: '23:00' },
+      th: { startTime: '14:00', endTime: '23:00' },
+      fr: { startTime: '14:00', endTime: '23:00' },
+      sa: { startTime: '14:00', endTime: '23:00' },
     },
   },
   temporaryOverride: {
@@ -171,8 +170,23 @@ export function useTokenLockStatus() {
     return config.status ? 'force_unlocked' : 'auto';
   }, [temporaryOverrideActive, config.temporaryOverride, config.overrideMode, config.status]);
 
-  const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '00:00:00'), [activeWindow.startTime]);
+  const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '14:00:00'), [activeWindow.startTime]);
   const endTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.endTime, '23:00:00'), [activeWindow.endTime]);
+
+  // Board updation window open time
+  const windowOpenHms = useMemo(() => {
+    return normalizeTimeToHms(activeWindow.startTime, '14:00:00');
+  }, [activeWindow.startTime]);
+
+  // Is current time within/past the board updation window open time?
+  // 12:00 AM - window open time: false (default Today)
+  // window open time - 12:00 AM: true (default Tomorrow)
+  const isPostWindowOpen = useMemo(() => {
+    return isPastBoardWindowOpenTime(timeHms, activeWindow.startTime || '14:00');
+  }, [timeHms, activeWindow.startTime]);
+
+  const defaultDayOffset = isPostWindowOpen ? 1 : 0;
+  const defaultTargetDateIST = defaultDayOffset === 1 ? tomorrowIST : todayIST;
 
   // Is current time before today's cutoff deadline for tomorrow's meals?
   const isTimeInWindow = useMemo(() => {
@@ -352,13 +366,17 @@ export function useTokenLockStatus() {
     effectiveMode,
     isTimeInWindow,
 
-    // Active Window Details
+    // Active Window Details & Board Updation Defaults
     activeWindow,
     startTime: formatTime12(activeWindow.startTime),
     endTime: formatTime12(activeWindow.endTime),
     rawStartTime: activeWindow.startTime,
     rawEndTime: activeWindow.endTime,
     currentTime: timeHms,
+    windowOpenHms,
+    isPostWindowOpen,
+    defaultDayOffset,
+    defaultTargetDateIST,
 
     // Anti-Tamper & Sync Status
     isSynced,
