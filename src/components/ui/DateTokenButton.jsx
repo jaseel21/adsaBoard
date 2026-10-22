@@ -26,7 +26,7 @@ export default function DateTokenButton({
   lockReason = '',
   breakfast = true,
   lunch = true,
-  activeMeal = 'lunch', // 'lunch' | 'breakfast' | 'both'
+  activeMeal = 'breakfast', // 'breakfast' | 'lunch' | 'both'
   hasException = false,
   exceptionLabel = '',
   onClick,

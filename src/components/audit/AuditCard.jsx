@@ -19,6 +19,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { formatAuditTime } from '../../utils/auditLogger';
+import { isTokenAudit } from '../../utils/tokenAuditHelper';
 import AuditDiffViewer from './AuditDiffViewer';
 
 /**
@@ -121,7 +122,7 @@ export default function AuditCard({ log, onInspect, onHapticFeedback }) {
   const severityBadge = getSeverityBadge(log.severity);
   const categoryStyle = getCategoryStyles(log.category);
   const hasDiffData = Boolean(
-    log.changes?.fieldsChanged?.length || log.changes?.before || log.changes?.after
+    log.changes?.fieldsChanged?.length || log.changes?.before || log.changes?.after || isTokenAudit(log)
   );
 
   const handleToggleExpand = (e) => {
@@ -260,7 +261,7 @@ export default function AuditCard({ log, onInspect, onHapticFeedback }) {
             transition={{ duration: 0.22, ease: 'easeInOut' }}
             className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-white/10 overflow-hidden"
           >
-            <AuditDiffViewer changes={log.changes} compact={true} />
+            <AuditDiffViewer log={log} changes={log.changes} compact={true} />
           </motion.div>
         )}
       </AnimatePresence>

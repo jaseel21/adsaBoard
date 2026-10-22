@@ -206,5 +206,47 @@ service cloud.firestore {
       // IMMUTABILITY: Nobody (including developers) can edit or delete historical audit entries
       allow update, delete: if false;
     }
+
+    // ==========================================
+    // 7. BROADCAST NOTIFICATIONS & ANNOUNCEMENTS
+    // ==========================================
+    match /notifications/{notificationId} {
+      // Public & all authenticated users can read active, published notices
+      // Admins (Canteen Committee, Central, Devs) can view drafts, scheduled, and archived items
+      allow read: if resource.data.status == 'active' || isCanteenCommittee();
+
+      // Only Canteen Sub-Committee, Central Committee, and Developers can create or modify broadcasts
+      allow create: if isCanteenCommittee() && 
+        request.resource.data.title is string &&
+        request.resource.data.body is string &&
+        request.resource.data.status in ['active', 'draft', 'scheduled', 'archived'];
+
+      allow update: if isCanteenCommittee() || 
+        // Allow clients to increment telemetry stats (viewCount, ackCount)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']));
+
+    // ==========================================
+    // 8. SUPPORT TICKETS & CARE CONCIERGE
+    // ==========================================
+    match /support_tickets/{ticketId} {
+      // Public / Student read access (for tracking by ticket ID / token) and full staff triage read
+      allow read: if true;
+
+      // Creation open to students, campus diners, and staff
+      allow create: if request.resource.data.ticketNumber is string &&
+        request.resource.data.category is string &&
+        request.resource.data.status == 'new';
+
+      // Updates:
+      // - Staff (Canteen Committee, Central, Developers) can update any field
+      // - Students can append to the communication thread without modifying status or notes
+      allow update: if isCanteenCommittee() ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['thread', 'updatedAt'])
+        );
+
+      // Deletions strictly restricted to Central Committee & Developers
+      allow delete: if isCentralCommittee();
+    }
   }
 }

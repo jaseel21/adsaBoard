@@ -25,6 +25,9 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import { useWorldTime } from '../utils/time';
 import { useFeedback } from '../utils/useFeedback';
 import { useLanguage } from '../store/LanguageContext';
@@ -50,6 +53,7 @@ export default function KitchenDisplay() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('ALL');
   const [dietFilter, setDietFilter] = useState('ALL'); // 'ALL' | 'SPECIAL_ONLY'
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   const { timeHms, dayShort, todayIST } = useWorldTime('Asia/Kolkata');
   const { activeWindow } = useTokenLockStatus();
@@ -210,9 +214,8 @@ export default function KitchenDisplay() {
     });
   }, [mealMetrics.specialCareList, searchQuery, selectedBatch]);
 
-  // One-click Kitchen Dispatch PDF Print
-  const handlePrintKitchenSheet = () => {
-    feedback('tick');
+  // Helper to generate the Kitchen Dispatch jsPDF Document
+  const generateKitchenDispatchDoc = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
     doc.setFont('helvetica', 'bold');
@@ -273,8 +276,57 @@ export default function KitchenDisplay() {
       });
     }
 
-    doc.save(`ADSA_Kitchen_Prep_${activeMeal}_${targetDateIST}.pdf`);
-    dialog.toast.success('Print Sheet Ready', `Generated PDF dispatch report for ${activeMeal}.`);
+    const filename = `ADSA_Kitchen_Prep_${activeMeal}_${targetDateIST}.pdf`;
+    return {
+      doc,
+      filename,
+      title: `Kitchen Prep Dispatch (${activeMeal.toUpperCase()})`,
+      subtitle: `Target Date: ${targetDateIST} • ${mealMetrics.totalTakingMeal} Portions`,
+    };
+  };
+
+  // Direct In-App Preview
+  const handleViewKitchenSheet = () => {
+    feedback('tick');
+    const res = generateKitchenDispatchDoc();
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  // Direct Physical Print
+  const handlePrintKitchenSheet = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateKitchenDispatchDoc();
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
+    } catch (e) {
+      console.error('Print kitchen sheet failed:', e);
+    }
+  };
+
+  // Direct Share (WhatsApp / System)
+  const handleShareKitchenSheet = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateKitchenDispatchDoc();
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `${title} • Headcount: ${mealMetrics.totalTakingMeal} portions for ${activeMeal.toUpperCase()}`,
+      });
+    } catch (e) {
+      console.error('Share kitchen sheet failed:', e);
+    }
+  };
+
+  // Direct Download
+  const handleDownloadKitchenSheet = () => {
+    feedback('tick');
+    const { doc, filename } = generateKitchenDispatchDoc();
+    doc.save(filename);
+    dialog.toast.success('Downloaded', `Saved ${filename}`);
   };
 
   return (
@@ -333,14 +385,17 @@ export default function KitchenDisplay() {
             </button>
           </div>
 
-          <button
-            onClick={handlePrintKitchenSheet}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white text-emerald-950 hover:bg-emerald-50 font-bold text-xs shadow-md transition-all active:scale-95"
-            title="Download formatted kitchen dispatch PDF"
-          >
-            <Printer className="w-4 h-4 text-emerald-700" />
-            <span className="hidden sm:inline">{t('printDispatchSheet', 'Print Dispatch Sheet')}</span>
-          </button>
+          <div className="min-w-[190px]">
+            <ExportActionMenu
+              onView={handleViewKitchenSheet}
+              onDownload={handleDownloadKitchenSheet}
+              onPrint={handlePrintKitchenSheet}
+              onShare={handleShareKitchenSheet}
+              label={t('printDispatchSheet', 'Print Dispatch Sheet')}
+              colorTheme="teal"
+              defaultAction="print"
+            />
+          </div>
         </div>
       </div>
 
@@ -616,6 +671,13 @@ export default function KitchenDisplay() {
           </div>
         )}
       </div>
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
+      />
     </div>
   );
 }

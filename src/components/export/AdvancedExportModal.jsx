@@ -24,7 +24,12 @@ import {
   exportManifestCSV,
   exportDietaryAvoidersPDF,
   exportDietaryCSV,
+  generateSinglePageCombinedManifestDoc,
+  generateDietaryAvoidersDoc,
+  generateManifestCSVData,
+  generateDietaryCSVData,
 } from '../../utils/publicDocumentExporter';
+import UniversalDocumentModal from './UniversalDocumentModal';
 import { getCachedCanteenConfig } from '../../utils/canteenConfigService';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
@@ -60,6 +65,7 @@ export default function AdvancedExportModal({
   const [selectedBatches, setSelectedBatches] = useState(BATCH_OPTIONS);
   const [selectedDietaryCategories, setSelectedDietaryCategories] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   // Initialize selected dietary preferences
   useEffect(() => {
@@ -138,6 +144,64 @@ export default function AdvancedExportModal({
       }
       return [...prev, pId];
     });
+  };
+
+  const handlePreviewAndActions = () => {
+    feedback('tick');
+    try {
+      let docPayload = null;
+      if (exportType === 'supply') {
+        if (format === 'csv') {
+          const res = generateManifestCSVData({
+            targetDateIST,
+            dayKey,
+            dayFull,
+            documents,
+            sortOrder: sort,
+            chunkSize: activeChunkSize,
+            category,
+          });
+          docPayload = { type: 'csv', ...res };
+        } else {
+          const res = generateSinglePageCombinedManifestDoc({
+            targetDateIST,
+            dayKey,
+            dayFull,
+            documents,
+            category,
+            sort,
+            chunkSize: activeChunkSize,
+            mealFilter,
+            statusFilter,
+            selectedBatches: category === 'batches' ? selectedBatches : null,
+          });
+          docPayload = { type: 'pdf', ...res };
+        }
+      } else {
+        if (format === 'csv') {
+          const res = generateDietaryCSVData({
+            preferences,
+            documents,
+            rejectionsByPref,
+            sortOrder: sort,
+            selectedCategories: selectedDietaryCategories,
+          });
+          docPayload = { type: 'csv', ...res };
+        } else {
+          const res = generateDietaryAvoidersDoc({
+            preferences,
+            documents,
+            rejectionsByPref,
+            sort,
+            selectedCategories: selectedDietaryCategories,
+          });
+          docPayload = { type: 'pdf', ...res };
+        }
+      }
+      setUniversalDoc({ isOpen: true, data: docPayload });
+    } catch (e) {
+      console.error('Error generating document preview:', e);
+    }
   };
 
   const handleExecuteExport = async () => {
@@ -617,23 +681,21 @@ export default function AdvancedExportModal({
               <span>Reset to Defaults</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  feedback('tick');
-                  onClose();
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-white/10 transition-all"
+                onClick={handlePreviewAndActions}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/40 text-teal-700 dark:text-teal-300 font-bold text-xs transition-all active:scale-95 cursor-pointer border border-teal-200/60 dark:border-teal-500/20"
               >
-                Cancel
+                <Eye className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                <span>{t('previewAndActions', 'Preview & Actions')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExecuteExport}
                 disabled={isExporting}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>{isExporting ? 'Generating...' : `Export ${format.toUpperCase()}`}</span>
@@ -642,6 +704,13 @@ export default function AdvancedExportModal({
           </div>
         </motion.div>
       </div>
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
+      />
     </AnimatePresence>
   );
 }

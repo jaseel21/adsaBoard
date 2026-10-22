@@ -60,6 +60,17 @@ class HapticController {
   warningBuzz() {
     this.vibrate([25, 40, 30]);
   }
+
+  // Notification arrival double-tap
+  notificationAlert() {
+    this.vibrate([12, 35, 18]);
+  }
+
+  // Urgent notice attention sequence
+  urgentAlert() {
+    this.vibrate([25, 40, 25, 40, 40]);
+  }
 }
 
 export const hapticEngine = new HapticController();
+

@@ -30,7 +30,7 @@ import { useTokenLockStatus } from './useTokenLockStatus';
 export function useTokenBoardController(options = {}) {
   const {
     autoEveningShift = true,
-    initialMeal = 'lunch',
+    initialMeal = 'breakfast',
     initialViewCategory = 'all',
     initialViewDensity = 'matrix',
     windowOpenTime = null,

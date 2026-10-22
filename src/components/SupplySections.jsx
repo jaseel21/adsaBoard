@@ -8,9 +8,15 @@ import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
 import { useFeedback } from '../utils/useFeedback';
 import { useLanguage } from '../store/LanguageContext';
-import { exportSinglePageCombinedManifestPDF } from '../utils/publicDocumentExporter';
+import {
+  exportSinglePageCombinedManifestPDF,
+  generateSinglePageCombinedManifestDoc,
+} from '../utils/publicDocumentExporter';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
 import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
 import AdvancedExportModal from './export/AdvancedExportModal';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import {
   addDaysToDate,
   getEffectiveStudentMealStatus,
@@ -27,8 +33,8 @@ export default function SupplySections({ defaultMeal }) {
   // Determine initial meal from prop or pathname
   const initialMeal = useMemo(() => {
     if (defaultMeal) return defaultMeal;
-    if (location.pathname.includes('breakfast')) return 'breakfast';
-    return 'lunch';
+    if (location.pathname.includes('lunch')) return 'lunch';
+    return 'breakfast';
   }, [defaultMeal, location.pathname]);
 
   const [activeMeal, setActiveMeal] = useState(initialMeal);
@@ -40,6 +46,7 @@ export default function SupplySections({ defaultMeal }) {
   const [sectionMode, setSectionMode] = useState('batch');
   const [customChunkSize, setCustomChunkSize] = useState(25);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   const { timeHms, dayShort, longDate, todayIST } = useWorldTime('Asia/Kolkata');
   const { activeWindow } = useTokenLockStatus();
@@ -166,6 +173,69 @@ export default function SupplySections({ defaultMeal }) {
     feedback('pop');
     setActiveMeal(newMeal);
     navigate(newMeal === 'breakfast' ? '/breakfast' : '/lunch', { replace: true });
+  };
+
+  const handleViewSupplyPdf = () => {
+    feedback('tick');
+    const res = generateSinglePageCombinedManifestDoc({
+      targetDateIST,
+      dayKey: day,
+      dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+      documents,
+      category: sectionMode === 'size' ? 'sections' : 'batches',
+      sort: 'ascending',
+      chunkSize: Number(customChunkSize) || 25,
+      mealFilter: activeMeal,
+      statusFilter: 'canceled_only',
+    });
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handlePrintSupplyPdf = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateSinglePageCombinedManifestDoc({
+        targetDateIST,
+        dayKey: day,
+        dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+        documents,
+        category: sectionMode === 'size' ? 'sections' : 'batches',
+        sort: 'ascending',
+        chunkSize: Number(customChunkSize) || 25,
+        mealFilter: activeMeal,
+        statusFilter: 'canceled_only',
+      });
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
+    } catch (err) {
+      console.error('Print supply sections error:', err);
+    }
+  };
+
+  const handleShareSupplyPdf = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateSinglePageCombinedManifestDoc({
+        targetDateIST,
+        dayKey: day,
+        dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+        documents,
+        category: sectionMode === 'size' ? 'sections' : 'batches',
+        sort: 'ascending',
+        chunkSize: Number(customChunkSize) || 25,
+        mealFilter: activeMeal,
+        statusFilter: 'canceled_only',
+      });
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `${title} (${activeMeal.toUpperCase()}) • Service Date: ${targetDateIST}`,
+      });
+    } catch (err) {
+      console.error('Share supply sections error:', err);
+    }
   };
 
   const exportSupplyPdf = () => {
@@ -321,25 +391,20 @@ export default function SupplySections({ defaultMeal }) {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={exportSupplyPdf}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95"
-            >
-              <FileDown className="w-4 h-4" />
-              <span>Export Manifest</span>
-            </button>
-
-            <button
-              onClick={() => {
+          <div className="flex items-center gap-1.5 min-w-[200px]">
+            <ExportActionMenu
+              onView={handleViewSupplyPdf}
+              onDownload={exportSupplyPdf}
+              onPrint={handlePrintSupplyPdf}
+              onShare={handleShareSupplyPdf}
+              onCustomize={() => {
                 feedback('tick');
                 setIsExportModalOpen(true);
               }}
-              title="Advanced Export Customizer"
-              className="p-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 transition-all active:scale-95 border border-gray-200/80 dark:border-white/10"
-            >
-              <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            </button>
+              label="Export Manifest"
+              colorTheme={isLunchMeal ? 'emerald' : 'amber'}
+              defaultAction="view"
+            />
           </div>
         </div>
       </div>
@@ -463,6 +528,12 @@ export default function SupplySections({ defaultMeal }) {
         dayFull={isShowingTomorrow ? 'Tomorrow' : dayShort}
         documents={documents}
         sectionChunkSize={customChunkSize}
+      />
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
       />
     </div>
   );

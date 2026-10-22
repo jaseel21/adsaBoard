@@ -272,7 +272,7 @@ export default function AuditInspectorDrawer({
                 State Changes & Value Deltas
               </h4>
               <div className="p-4 rounded-2xl bg-white dark:bg-[#14201c] border border-gray-200/80 dark:border-white/10 shadow-sm">
-                <AuditDiffViewer changes={log.changes} compact={false} />
+                <AuditDiffViewer log={log} changes={log.changes} compact={false} />
               </div>
             </div>
 

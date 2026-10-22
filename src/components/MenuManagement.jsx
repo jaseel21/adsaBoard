@@ -30,10 +30,13 @@ import {
   Users,
   Home,
 } from 'lucide-react';
-import { dialog } from '../utils/dialog';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import { AuthContext } from '../store/AuthContext';
+import { dialog } from '../utils/dialog';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useWorldTime } from '../utils/time';
@@ -96,6 +99,7 @@ export default function MenuManagement() {
   const [showOverridesModal, setShowOverridesModal] = useState(false);
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [showPresetManagerModal, setShowPresetManagerModal] = useState(false);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
   const [newOverrideDate, setNewOverrideDate] = useState('');
   const [showFeastDatePicker, setShowFeastDatePicker] = useState(false);
   const [newOverrideTitle, setNewOverrideTitle] = useState('');
@@ -517,78 +521,126 @@ export default function MenuManagement() {
     }
   };
 
-  // Export printable canteen menu PDF
+  // Generate Menu PDF Document Object
+  const generateMenuPDFDoc = () => {
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+
+    // Title & Header Branding
+    doc.setFillColor(16, 185, 129); // Emerald 500
+    doc.rect(0, 0, 297, 24, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ALATHURPADI DARS CANTEEN - WEEKLY DINING SCHEDULE', 148.5, 12, { align: 'center' });
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Alathurpadi Juma Masjid, Malappuram | ADSA T-Board Official Notice', 148.5, 18, { align: 'center' });
+
+    // Table Rows
+    const rows = DAY_KEYS.map((k) => {
+      const d = activeDataset[k] || DEFAULT_WEEKLY_MENU[k];
+      if (d.isArchived) {
+        return [
+          d.dayName,
+          `ARCHIVED - CANTEEN CLOSED\n(${d.archiveReason || 'Routine Off'})`,
+          '-',
+          '-',
+          '-',
+          d.note || 'Canteen Off',
+        ];
+      }
+      return [
+        d.dayName,
+        d.breakfast?.isArchived ? 'ARCHIVED' : `${d.breakfast?.title || 'Empty'}\n[${d.breakfast?.timing || '07:00-08:30'}]`,
+        d.lunch?.isArchived ? 'ARCHIVED' : `${d.lunch?.title || 'Empty'}\n[${d.lunch?.timing || '12:30-14:00'}]`,
+        d.evening?.isArchived ? 'ARCHIVED' : `${d.evening?.title || 'Empty'}\n[${d.evening?.timing || '16:30-17:30'}]`,
+        d.dinner?.isArchived
+          ? 'ARCHIVED'
+          : d.dinner?.isAvailable
+          ? `${d.dinner?.title || 'Empty'}\n[${d.dinner?.timing || '20:30-21:30'}]`
+          : 'Not Served',
+        d.note || '-',
+      ];
+    });
+
+    doc.autoTable({
+      head: [['Day', '☕ Breakfast', '🍲 Lunch', '🫖 Evening Tea', '🌙 Dinner', 'Special Notice']],
+      body: rows,
+      startY: 30,
+      theme: 'striped',
+      styles: {
+        fontSize: 9,
+        cellPadding: 4,
+        valign: 'middle',
+      },
+      headStyles: {
+        fillColor: [15, 23, 21],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 26 },
+        1: { cellWidth: 55 },
+        2: { cellWidth: 62 },
+        3: { cellWidth: 46 },
+        4: { cellWidth: 46 },
+        5: { cellWidth: 42, fontStyle: 'italic' },
+      },
+    });
+
+    const filename = `Alathurpadi_Dars_Weekly_Menu_${new Date().toISOString().slice(0, 10)}.pdf`;
+    return {
+      doc,
+      filename,
+      title: 'Weekly Dining Schedule',
+      subtitle: 'Alathurpadi Dars Canteen Food Menu',
+    };
+  };
+
+  // Direct In-App Preview
+  const handleViewMenuPDF = () => {
+    feedback('tick');
+    const res = generateMenuPDFDoc();
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  // Direct Silent Print
+  const handlePrintMenuPDF = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateMenuPDFDoc();
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
+    } catch (e) {
+      console.error('Direct print menu failed:', e);
+    }
+  };
+
+  // Direct Share
+  const handleShareMenuPDF = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateMenuPDFDoc();
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: 'Alathurpadi Dars Canteen • Weekly Dining Schedule & Menu',
+      });
+    } catch (e) {
+      console.error('Share menu failed:', e);
+    }
+  };
+
+  // Export printable canteen menu PDF (Download)
   const handleExportPDF = () => {
     feedback('pop');
     try {
-      const doc = new jsPDF('landscape', 'mm', 'a4');
-
-      // Title & Header Branding
-      doc.setFillColor(16, 185, 129); // Emerald 500
-      doc.rect(0, 0, 297, 24, 'F');
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('ALATHURPADI DARS CANTEEN - WEEKLY DINING SCHEDULE', 148.5, 12, { align: 'center' });
-
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Alathurpadi Juma Masjid, Malappuram | ADSA T-Board Official Notice', 148.5, 18, { align: 'center' });
-
-      // Table Rows
-      const rows = DAY_KEYS.map((k) => {
-        const d = activeDataset[k] || DEFAULT_WEEKLY_MENU[k];
-        if (d.isArchived) {
-          return [
-            d.dayName,
-            `ARCHIVED - CANTEEN CLOSED\n(${d.archiveReason || 'Routine Off'})`,
-            '-',
-            '-',
-            '-',
-            d.note || 'Canteen Off',
-          ];
-        }
-        return [
-          d.dayName,
-          d.breakfast?.isArchived ? 'ARCHIVED' : `${d.breakfast?.title || 'Empty'}\n[${d.breakfast?.timing || '07:00-08:30'}]`,
-          d.lunch?.isArchived ? 'ARCHIVED' : `${d.lunch?.title || 'Empty'}\n[${d.lunch?.timing || '12:30-14:00'}]`,
-          d.evening?.isArchived ? 'ARCHIVED' : `${d.evening?.title || 'Empty'}\n[${d.evening?.timing || '16:30-17:30'}]`,
-          d.dinner?.isArchived
-            ? 'ARCHIVED'
-            : d.dinner?.isAvailable
-            ? `${d.dinner?.title || 'Empty'}\n[${d.dinner?.timing || '20:30-21:30'}]`
-            : 'Not Served',
-          d.note || '-',
-        ];
-      });
-
-      doc.autoTable({
-        head: [['Day', '☕ Breakfast', '🍲 Lunch', '🫖 Evening Tea', '🌙 Dinner', 'Special Notice']],
-        body: rows,
-        startY: 30,
-        theme: 'striped',
-        styles: {
-          fontSize: 9,
-          cellPadding: 4,
-          valign: 'middle',
-        },
-        headStyles: {
-          fillColor: [15, 23, 21],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 26 },
-          1: { cellWidth: 55 },
-          2: { cellWidth: 62 },
-          3: { cellWidth: 46 },
-          4: { cellWidth: 46 },
-          5: { cellWidth: 42, fontStyle: 'italic' },
-        },
-      });
-
-      doc.save(`Alathurpadi_Dars_Weekly_Menu_${new Date().toISOString().slice(0, 10)}.pdf`);
+      const { doc, filename } = generateMenuPDFDoc();
+      doc.save(filename);
       feedback('success');
     } catch (err) {
       console.error('Error generating menu PDF:', err);
@@ -872,14 +924,18 @@ export default function MenuManagement() {
             <span>Single-Day Feasts ({Object.keys(overrides).length})</span>
           </button>
 
-          {/* Export PDF */}
-          <button
-            onClick={handleExportPDF}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-100 text-xs font-semibold transition-colors"
-          >
-            <Printer className="w-3.5 h-3.5 text-gray-500" />
-            <span>Print PDF</span>
-          </button>
+          {/* Export / Print PDF */}
+          <div className="min-w-[160px]">
+            <ExportActionMenu
+              onView={handleViewMenuPDF}
+              onDownload={handleExportPDF}
+              onPrint={handlePrintMenuPDF}
+              onShare={handleShareMenuPDF}
+              label={t('printPdf', 'Menu PDF')}
+              colorTheme="emerald"
+              defaultAction="view"
+            />
+          </div>
         </div>
       </div>
 
@@ -1360,6 +1416,13 @@ export default function MenuManagement() {
       <PresetManagerModal
         isOpen={showPresetManagerModal}
         onClose={() => setShowPresetManagerModal(false)}
+      />
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
       />
     </div>
   );

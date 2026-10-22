@@ -24,7 +24,7 @@ import { useLanguage } from '../store/LanguageContext';
  * Hardware-accelerated 3D flip with perspective and spring dynamics.
  */
 export default function MealFlipCard({
-  mealType = 'lunch', // 'breakfast' | 'lunch'
+  mealType = 'breakfast', // 'breakfast' | 'lunch'
   activeCount = 0,
   rejectedCount = 0,
   totalStudents = 0,

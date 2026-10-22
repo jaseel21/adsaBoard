@@ -21,6 +21,7 @@ import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
 import { AuthContext } from '../../store/AuthContext';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/auditLogger';
+import { DAY_FULL_NAMES } from '../../utils/tokenAuditHelper';
 import {
   formatFriendlyDate,
   getActiveStudentException,
@@ -93,15 +94,61 @@ export default function AdminTokenPopover({
           { merge: true }
         );
 
-      logAuditEvent({
+      const friendlyDate = formatFriendlyDate(targetDateIST, true);
+      const dayName = DAY_FULL_NAMES[effectiveDay] || effectiveDay;
+      const mealName = isLunch ? 'Lunch' : 'Breakfast';
+      const fieldKey = `${friendlyDate} • ${mealName}`;
+
+      await logAuditEvent({
         category: AUDIT_CATEGORIES.TOKENS,
         action: nextState ? 'QUICK_MEAL_ON' : 'QUICK_MEAL_OFF',
         severity: AUDIT_SEVERITIES.INFO,
-        targetId: student.id,
-        targetName: `Token #${student.tokenNo} (${nameEn})`,
-        summary: `${mealKey.toUpperCase()} turned ${nextState ? 'ON' : 'OFF'} for ${formatFriendlyDate(targetDateIST)}`,
-        performedBy: user?.email || 'admin',
-        role: role || 'canteen_committee',
+        actor: {
+          uid: user?.uid || 'admin',
+          email: user?.email || 'admin@adsa',
+          displayName: user?.displayName || user?.email?.split('@')[0] || 'Admin',
+          role: role || 'canteen_committee',
+        },
+        target: {
+          type: 'student',
+          id: student.id,
+          label: `Token #${student.tokenNo} (${nameEn})`,
+          tokenNo: Number(student.tokenNo),
+        },
+        changes: {
+          diffSummary: `Token #${student.tokenNo} (${nameEn}): ${mealName} turned ${nextState ? 'ON' : 'OFF'} for ${friendlyDate}`,
+          fieldsChanged: [fieldKey],
+          before: { [fieldKey]: isOn },
+          after: { [fieldKey]: nextState },
+          tokenDeltas: [
+            {
+              type: 'quick_toggle',
+              scopeLabel: friendlyDate,
+              date: targetDateIST,
+              day: dayName,
+              dayShort: effectiveDay,
+              meal: mealKey,
+              mealLabel: mealName,
+              previous: isOn,
+              current: nextState,
+              previousLabel: isOn ? 'ON' : 'OFF',
+              currentLabel: nextState ? 'ON' : 'OFF',
+              tokenNo: Number(student.tokenNo),
+              studentName: nameEn,
+              label: `${mealName} for ${friendlyDate}`,
+            },
+          ],
+        },
+        metadata: {
+          date: targetDateIST,
+          day: dayName,
+          dayShort: effectiveDay,
+          meal: mealKey,
+          tokenNo: Number(student.tokenNo),
+          studentName: nameEn,
+          previousState: isOn,
+          currentState: nextState,
+        },
       });
 
       feedback('success');
@@ -164,15 +211,49 @@ export default function AdminTokenPopover({
           updatedAt: new Date().toISOString(),
         });
 
-      logAuditEvent({
+      await logAuditEvent({
         category: AUDIT_CATEGORIES.TOKENS,
         action: nextBlock ? 'TOKEN_LOCKED' : 'TOKEN_UNLOCKED',
         severity: nextBlock ? AUDIT_SEVERITIES.WARNING : AUDIT_SEVERITIES.INFO,
-        targetId: student.id,
-        targetName: `Token #${student.tokenNo} (${nameEn})`,
-        summary: `Token #${student.tokenNo} (${nameEn}) ${nextBlock ? 'frozen/locked' : 'unlocked/re-activated'} from Master Board popover`,
-        performedBy: user?.email || 'admin',
-        role: role || 'canteen_committee',
+        actor: {
+          uid: user?.uid || 'admin',
+          email: user?.email || 'admin@adsa',
+          displayName: user?.displayName || user?.email?.split('@')[0] || 'Admin',
+          role: role || 'canteen_committee',
+        },
+        target: {
+          type: 'student',
+          id: student.id,
+          label: `Token #${student.tokenNo} (${nameEn})`,
+          tokenNo: Number(student.tokenNo),
+        },
+        changes: {
+          diffSummary: `Token #${student.tokenNo} (${nameEn}) ${nextBlock ? 'locked/frozen' : 'unlocked/re-activated'} from Master Board`,
+          fieldsChanged: ['block'],
+          before: { block: !nextBlock },
+          after: { block: nextBlock },
+          tokenDeltas: [
+            {
+              type: 'lock_status',
+              scopeLabel: 'Master Board Access',
+              meal: 'all',
+              mealLabel: 'All Meals',
+              previous: !nextBlock,
+              current: nextBlock,
+              previousLabel: !nextBlock ? 'Active / Unlocked' : 'Frozen / Locked',
+              currentLabel: nextBlock ? 'Frozen / Locked' : 'Active / Unlocked',
+              tokenNo: Number(student.tokenNo),
+              studentName: nameEn,
+              label: 'Account Status',
+            },
+          ],
+        },
+        metadata: {
+          tokenNo: Number(student.tokenNo),
+          studentName: nameEn,
+          previousState: !nextBlock,
+          currentState: nextBlock,
+        },
       });
 
       feedback('success');

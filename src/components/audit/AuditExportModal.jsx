@@ -9,11 +9,15 @@ import {
   Code,
   Calendar,
   Filter,
+  Eye,
+  Printer,
+  Share2,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
 import { dialog } from '../../utils/dialog';
+import UniversalDocumentModal from '../export/UniversalDocumentModal';
 
 export default function AuditExportModal({
   isOpen,
@@ -24,6 +28,7 @@ export default function AuditExportModal({
   const [exportFormat, setExportFormat] = useState('pdf');
   const [dateFilter, setDateFilter] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   if (!isOpen) return null;
 
@@ -41,6 +46,102 @@ export default function AuditExportModal({
     }
     return true;
   });
+
+  const handlePreviewAndActions = () => {
+    if (onHapticFeedback) onHapticFeedback('tick');
+    const nowStr = new Date().toISOString().split('T')[0];
+
+    if (exportFormat === 'pdf') {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      doc.setFontSize(18);
+      doc.setTextColor(5, 150, 105);
+      doc.text('ADSA T-Board • Official Administrative Audit Report', 40, 45);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        `Alathurpadi Dars Students Association • Generated: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} IST`,
+        40,
+        62
+      );
+      doc.text(`Total Records: ${filteredLogsForExport.length} | Range: ${dateFilter.toUpperCase()}`, 40, 76);
+
+      const tableRows = filteredLogsForExport.map((log) => [
+        new Date(log.timestamp).toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }),
+        log.action.replace(/_/g, ' '),
+        log.category?.toUpperCase() || 'SYSTEM',
+        log.severity?.toUpperCase() || 'INFO',
+        log.actor?.displayName || log.actor?.email || 'Admin',
+        log.target?.label || log.target?.id || '-',
+        log.changes?.diffSummary || '-',
+      ]);
+
+      doc.autoTable({
+        startY: 90,
+        head: [['Timestamp (IST)', 'Action', 'Category', 'Severity', 'Actor', 'Target', 'Summary']],
+        body: tableRows,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 4 },
+        headStyles: {
+          fillColor: [5, 150, 105],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 40, right: 40 },
+      });
+
+      setUniversalDoc({
+        isOpen: true,
+        data: {
+          type: 'pdf',
+          doc,
+          title: 'Audit Trail Report',
+          subtitle: `Range: ${dateFilter.toUpperCase()} • ${filteredLogsForExport.length} Records`,
+          filename: `adsa_audit_report_${nowStr}.pdf`,
+        },
+      });
+    } else if (exportFormat === 'csv') {
+      const csvRows = filteredLogsForExport.map((log) => ({
+        ID: log.id,
+        Timestamp: log.timestamp,
+        Action: log.action,
+        Category: log.category,
+        Severity: log.severity,
+        Actor: log.actor?.displayName || log.actor?.email || '',
+        Target: log.target?.label || log.target?.tokenNo || '',
+        Summary: log.changes?.diffSummary || '',
+      }));
+      const csvString = Papa.unparse(csvRows);
+      setUniversalDoc({
+        isOpen: true,
+        data: {
+          type: 'csv',
+          rows: csvRows,
+          csv: csvString,
+          title: 'Audit Trail (CSV)',
+          subtitle: `${filteredLogsForExport.length} Audit Entries`,
+          filename: `adsa_audit_export_${nowStr}.csv`,
+        },
+      });
+    } else if (exportFormat === 'json') {
+      setUniversalDoc({
+        isOpen: true,
+        data: {
+          type: 'json',
+          json: filteredLogsForExport,
+          title: 'Audit Trail JSON Dump',
+          subtitle: `${filteredLogsForExport.length} Records`,
+          filename: `adsa_audit_dump_${nowStr}.json`,
+        },
+      });
+    }
+  };
 
   const handleExport = async () => {
     if (!filteredLogsForExport.length) {
@@ -314,29 +415,45 @@ export default function AuditExportModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => {
                 if (onHapticFeedback) onHapticFeedback('tick');
                 onClose();
               }}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
+              disabled={filteredLogsForExport.length === 0}
+              onClick={handlePreviewAndActions}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 font-bold text-xs transition-all border border-teal-200/60 dark:border-teal-500/20 cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <span>Preview & Actions</span>
+            </button>
+            <button
+              type="button"
               disabled={isExporting || filteredLogsForExport.length === 0}
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50 cursor-pointer"
             >
               <Download className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
-              <span>{isExporting ? 'Generating...' : `Export ${exportFormat.toUpperCase()}`}</span>
+              <span>{isExporting ? 'Generating...' : `Download ${exportFormat.toUpperCase()}`}</span>
             </button>
           </div>
         </motion.div>
       </div>
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
+      />
     </AnimatePresence>
   );
 }

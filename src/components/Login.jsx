@@ -6,6 +6,7 @@ import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
+import { dialog } from '../utils/dialog';
 
 function Login() {
   const [token, setToken] = useState('');
@@ -63,6 +64,13 @@ function Login() {
         };
         setStdata(studentData);
         feedback('success');
+        if (studentData.block) {
+          dialog.toast.info(
+            t('tokenLockedByAdmin') || 'Token Locked by Admin',
+            t('tokenLockedPortalNotice') || 'Your dining token is currently locked. You are viewing your details in Read-Only mode.',
+            4000
+          );
+        }
         const returnUrl = location.state?.from;
         navigate(returnUrl || '/student-portal');
       } else {
@@ -74,7 +82,7 @@ function Login() {
       feedback('warning');
       setErr('Failed to login. Please try again.');
     }
-  }, [token, pass, setStdata, navigate, feedback, location.state?.from]);
+  }, [token, pass, setStdata, navigate, feedback, location.state?.from, t]);
 
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
@@ -90,26 +98,20 @@ function Login() {
         return;
       }
 
-      const blockStatus = await firebase
+      const studentQuery = await firebase
         .firestore()
         .collection('students')
         .where('tokenNo', '==', parseInt(token, 10))
         .get();
 
-      if (!blockStatus.empty) {
-        const statusData = blockStatus.docs[0].data().block;
-        if (statusData === false) {
-          await loginWith();
-        } else {
-          feedback('warning');
-          setErr('Your token has been locked by ADSA Canteen Committee.');
-        }
+      if (!studentQuery.empty) {
+        await loginWith();
       } else {
         feedback('warning');
         setErr('Token not found. Please check and try again.');
       }
     } catch (error) {
-      console.error('Error fetching block status:', error);
+      console.error('Error fetching token status:', error);
       setErr('Error checking token status.');
     } finally {
       setIsLoading(false);

@@ -41,6 +41,7 @@ import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { useWorldTime } from '../utils/time';
 import { subscribeToPreferences } from '../utils/preferenceService';
+import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
 import {
   addDaysToDate,
   formatFriendlyDate,
@@ -49,10 +50,14 @@ import {
 import {
   exportSinglePageCombinedManifestPDF,
   exportDietaryAvoidersPDF,
+  generateSinglePageCombinedManifestDoc,
+  generateDietaryAvoidersDoc,
 } from '../utils/publicDocumentExporter';
-import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
 import TokenBoardGuideModal from './guide/TokenBoardGuideModal';
 import AdvancedExportModal from './export/AdvancedExportModal';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import HeroMealCountersDock from './HeroMealCountersDock';
 
 export default function LandingPage() {
@@ -93,6 +98,7 @@ export default function LandingPage() {
   const [exportingSupply, setExportingSupply] = useState(false);
   const [exportingDietary, setExportingDietary] = useState(false);
   const [advancedExportModal, setAdvancedExportModal] = useState({ isOpen: false, type: 'supply' });
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
   const [sectionChunkSize, setSectionChunkSize] = useState(25);
 
   // Real-time Anonymous Aggregates from Firestore
@@ -200,42 +206,123 @@ export default function LandingPage() {
     };
   }, [studentsList, selectedTargetDateIST, selectedDayKey, preferences]);
 
-  // PDF Export Handlers with Synthesized Feedback
-  const handleDownloadCombinedSupply = async () => {
-    feedback('pop');
-    setExportingSupply(true);
+  // Supply Manifest Actions (View, Print, Share, Download)
+  const handleViewSupplyManifest = () => {
+    feedback('tick');
+    const res = generateSinglePageCombinedManifestDoc({
+      targetDateIST: selectedTargetDateIST,
+      dayKey: selectedDayKey,
+      dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+      documents: studentsList,
+      chunkSize: sectionChunkSize,
+    });
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handlePrintSupplyManifest = async () => {
+    feedback('tick');
     try {
-      exportSinglePageCombinedManifestPDF({
+      const { doc } = generateSinglePageCombinedManifestDoc({
         targetDateIST: selectedTargetDateIST,
         dayKey: selectedDayKey,
         dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
         documents: studentsList,
         chunkSize: sectionChunkSize,
       });
-      feedback('success');
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
     } catch (err) {
-      console.error('Error exporting single-page kitchen manifest PDF:', err);
-      feedback('warning');
-    } finally {
-      setTimeout(() => setExportingSupply(false), 600);
+      console.error('Print manifest error:', err);
     }
   };
 
-  const handleDownloadDietaryAvoiders = async () => {
+  const handleShareSupplyManifest = async () => {
     feedback('pop');
-    setExportingDietary(true);
     try {
-      exportDietaryAvoidersPDF({
+      const { doc, filename, title } = generateSinglePageCombinedManifestDoc({
+        targetDateIST: selectedTargetDateIST,
+        dayKey: selectedDayKey,
+        dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+        documents: studentsList,
+        chunkSize: sectionChunkSize,
+      });
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `${title} (${selectedTargetDateIST}) • Alathurpadi Dars Canteen`,
+      });
+    } catch (err) {
+      console.error('Share manifest error:', err);
+    }
+  };
+
+  const handleDownloadCombinedSupply = () => {
+    feedback('tick');
+    const { doc, filename } = generateSinglePageCombinedManifestDoc({
+      targetDateIST: selectedTargetDateIST,
+      dayKey: selectedDayKey,
+      dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+      documents: studentsList,
+      chunkSize: sectionChunkSize,
+    });
+    doc.save(filename);
+  };
+
+  // Dietary Avoiders Matrix Actions (View, Print, Share, Download)
+  const handleViewDietaryAvoiders = () => {
+    feedback('tick');
+    const res = generateDietaryAvoidersDoc({
+      preferences,
+      documents: studentsList,
+      rejectionsByPref: aggregates.rejectionsMap,
+    });
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handleDownloadDietaryAvoiders = () => {
+    feedback('tick');
+    const { doc, filename } = generateDietaryAvoidersDoc({
+      preferences,
+      documents: studentsList,
+      rejectionsByPref: aggregates.rejectionsMap,
+    });
+    doc.save(filename);
+  };
+
+  const handlePrintDietaryAvoiders = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateDietaryAvoidersDoc({
         preferences,
         documents: studentsList,
         rejectionsByPref: aggregates.rejectionsMap,
       });
-      feedback('success');
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
     } catch (err) {
-      console.error('Error exporting dietary avoiders PDF:', err);
-      feedback('warning');
-    } finally {
-      setTimeout(() => setExportingDietary(false), 600);
+      console.error('Print matrix error:', err);
+    }
+  };
+
+  const handleShareDietaryAvoiders = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateDietaryAvoidersDoc({
+        preferences,
+        documents: studentsList,
+        rejectionsByPref: aggregates.rejectionsMap,
+      });
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `${title} • Alathurpadi Dars Canteen`,
+      });
+    } catch (err) {
+      console.error('Share matrix error:', err);
     }
   };
 
@@ -711,14 +798,20 @@ export default function LandingPage() {
               </div>
 
               <div className="space-y-2 pt-1">
-                <button
-                  onClick={handleDownloadCombinedSupply}
-                  disabled={exportingSupply || loadingData}
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/25 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <FileDown className="w-4 h-4" />
-                  <span>{exportingSupply ? t('generatingSinglePagePdf', 'Generating Single-Page PDF...') : t('quickDownloadManifest', 'Quick Download (Sections • Ascending PDF)')}</span>
-                </button>
+                <ExportActionMenu
+                  onView={handleViewSupplyManifest}
+                  onDownload={handleDownloadCombinedSupply}
+                  onPrint={handlePrintSupplyManifest}
+                  onShare={handleShareSupplyManifest}
+                  onCustomize={() => {
+                    feedback('tick');
+                    setAdvancedExportModal({ isOpen: true, type: 'supply' });
+                  }}
+                  isGenerating={exportingSupply || loadingData}
+                  label={t('quickDownloadManifest', 'Quick Download (Sections • Ascending PDF)')}
+                  colorTheme="emerald"
+                  defaultAction="view"
+                />
 
                 <button
                   type="button"
@@ -726,7 +819,7 @@ export default function LandingPage() {
                     feedback('tick');
                     setAdvancedExportModal({ isOpen: true, type: 'supply' });
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 font-semibold text-xs transition-all active:scale-95 border border-gray-200/80 dark:border-white/10"
+                  className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 font-semibold text-xs transition-all active:scale-95 border border-gray-200/80 dark:border-white/10 cursor-pointer"
                 >
                   <Sliders className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{t('customizeAndExport', 'Customize & Filter (Sections, Batches, Sort, CSV)...')}</span>
@@ -772,14 +865,20 @@ export default function LandingPage() {
               </div>
 
               <div className="space-y-2 pt-1">
-                <button
-                  onClick={handleDownloadDietaryAvoiders}
-                  disabled={exportingDietary || loadingData}
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-500/20 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <FileDown className="w-4 h-4" />
-                  <span>{exportingDietary ? t('generatingMatrixPdf', 'Generating Matrix PDF...') : t('quickDownloadMatrix', 'Quick Download Matrix (Ascending PDF)')}</span>
-                </button>
+                <ExportActionMenu
+                  onView={handleViewDietaryAvoiders}
+                  onDownload={handleDownloadDietaryAvoiders}
+                  onPrint={handlePrintDietaryAvoiders}
+                  onShare={handleShareDietaryAvoiders}
+                  onCustomize={() => {
+                    feedback('tick');
+                    setAdvancedExportModal({ isOpen: true, type: 'dietary' });
+                  }}
+                  isGenerating={exportingDietary || loadingData}
+                  label={t('quickDownloadMatrix', 'Quick Download Matrix (Ascending PDF)')}
+                  colorTheme="rose"
+                  defaultAction="view"
+                />
 
                 <button
                   type="button"
@@ -787,7 +886,7 @@ export default function LandingPage() {
                     feedback('tick');
                     setAdvancedExportModal({ isOpen: true, type: 'dietary' });
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 font-semibold text-xs transition-all active:scale-95 border border-gray-200/80 dark:border-white/10"
+                  className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 font-semibold text-xs transition-all active:scale-95 border border-gray-200/80 dark:border-white/10 cursor-pointer"
                 >
                   <Sliders className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                   <span>{t('customizeAndFilterDietary', 'Customize & Filter Categories (Sort, CSV)...')}</span>
@@ -903,6 +1002,12 @@ export default function LandingPage() {
       <TokenBoardGuideModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
+      />
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
       />
     </div>
   );

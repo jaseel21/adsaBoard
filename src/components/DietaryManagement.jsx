@@ -35,6 +35,9 @@ import {
 import firebase from '../firebase/config';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import { dialog } from '../utils/dialog';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -73,6 +76,7 @@ export default function DietaryManagement() {
   const [preferences, setPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   // Active Main View Tab: 'category' | 'matrix' | 'categories_setup'
   const [activeView, setActiveView] = useState('category');
@@ -534,8 +538,7 @@ export default function DietaryManagement() {
   };
 
   // ================= KITCHEN PDF GENERATION =================
-  const generateKitchenPDF = () => {
-    feedback('tick');
+  const generateDietaryKitchenDoc = () => {
     const doc = new jsPDF('p', 'mm', 'a4');
 
     const activeList = preferences.filter((p) => p.isActive);
@@ -585,7 +588,56 @@ export default function DietaryManagement() {
       bodyStyles: { fontSize: 9, halign: 'center' },
     });
 
-    doc.save(`ADSA_Kitchen_Dietary_Avoiders_${new Date().toISOString().slice(0, 10)}.pdf`);
+    const filename = `ADSA_Kitchen_Dietary_Avoiders_${new Date().toISOString().slice(0, 10)}.pdf`;
+    return {
+      doc,
+      filename,
+      title: 'Dietary Avoiders Kitchen Roster',
+      subtitle: `Official Kitchen Roster • Generated ${new Date().toLocaleDateString('en-GB')}`,
+    };
+  };
+
+  // Direct In-App Preview
+  const handleViewDietaryKitchenDoc = () => {
+    feedback('tick');
+    const res = generateDietaryKitchenDoc();
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  // Direct Print
+  const handlePrintDietaryKitchenDoc = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateDietaryKitchenDoc();
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
+    } catch (e) {
+      console.error('Print dietary roster failed:', e);
+    }
+  };
+
+  // Direct Share
+  const handleShareDietaryKitchenDoc = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateDietaryKitchenDoc();
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: 'Alathurpadi Dars Canteen • Dietary Avoiders Kitchen Roster',
+      });
+    } catch (e) {
+      console.error('Share dietary roster failed:', e);
+    }
+  };
+
+  // Download PDF
+  const generateKitchenPDF = () => {
+    feedback('tick');
+    const { doc, filename } = generateDietaryKitchenDoc();
+    doc.save(filename);
     feedback('success');
   };
 
@@ -704,13 +756,17 @@ export default function DietaryManagement() {
             <span>Students</span>
           </button>
 
-          <button
-            onClick={generateKitchenPDF}
-            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
-          >
-            <FileDown className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('exportKitchenPdf') || 'Export PDF'}</span>
-          </button>
+          <div className="min-w-[170px]">
+            <ExportActionMenu
+              onView={handleViewDietaryKitchenDoc}
+              onDownload={generateKitchenPDF}
+              onPrint={handlePrintDietaryKitchenDoc}
+              onShare={handleShareDietaryKitchenDoc}
+              label={t('exportKitchenPdf', 'Kitchen PDF')}
+              colorTheme="emerald"
+              defaultAction="view"
+            />
+          </div>
 
           <button
             onClick={() => {
@@ -1624,6 +1680,13 @@ export default function DietaryManagement() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
+      />
     </div>
   );
 }

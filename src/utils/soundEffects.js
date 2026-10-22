@@ -162,6 +162,69 @@ class AudioSynthesizer {
       osc.stop(now + 0.11);
     } catch (_) {}
   }
+
+  /**
+   * 5. Crystalline Notification Chime
+   * Harmonic ascending chime (C6 -> E6 -> G6) for incoming broadcasts and opening alerts
+   */
+  playNotificationChime() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const notes = [1046.5, 1318.51, 1567.98]; // C6, E6, G6
+
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        const startAt = now + idx * 0.045;
+        osc.frequency.setValueAtTime(freq, startAt);
+
+        gain.gain.setValueAtTime(0.06, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.0005, startAt + 0.22);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startAt);
+        osc.stop(startAt + 0.23);
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * 6. Dismiss Soft Whoosh
+   * Played when an alert or notification card is dismissed or marked read
+   */
+  playDismissWhoosh() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } catch (_) {}
+  }
 }
 
 export const soundEngine = new AudioSynthesizer();
+

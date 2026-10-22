@@ -22,7 +22,7 @@ import { useFeedback } from '../utils/useFeedback';
 export default function PresetManagerModal({ isOpen, onClose }) {
   const { feedback } = useFeedback();
 
-  const [activeSlot, setActiveSlot] = useState('lunch');
+  const [activeSlot, setActiveSlot] = useState('breakfast');
   const [presetsMap, setPresetsMap] = useState({});
   const [newTitle, setNewTitle] = useState('');
   const [newItemsStr, setNewItemsStr] = useState('');

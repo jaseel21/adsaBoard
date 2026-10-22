@@ -5,6 +5,9 @@ import { FileDown, Sparkles, ArrowLeft, UtensilsCrossed } from 'lucide-react';
 import firebase from '../firebase/config';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { AuthContext } from '../store/AuthContext';
@@ -17,6 +20,7 @@ const MenuTable = () => {
   const [preferences, setPreferences] = useState([]);
   const [rejectionsByPref, setRejectionsByPref] = useState({});
   const [loading, setLoading] = useState(true);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
@@ -67,8 +71,8 @@ const MenuTable = () => {
     setRejectionsByPref(map);
   }, [documents, preferences]);
 
-  const generatePDF = () => {
-    feedback('tick');
+  // Generate Document Object
+  const generateRejectionsDoc = () => {
     const doc = new jsPDF('p', 'mm', 'a4');
 
     const columns = preferences.map((p) => ({
@@ -106,7 +110,52 @@ const MenuTable = () => {
       bodyStyles: { fontSize: 10, halign: 'center' },
     });
 
-    doc.save(`ADSA_Dietary_Rejections_${new Date().toISOString().slice(0, 10)}.pdf`);
+    const filename = `ADSA_Dietary_Rejections_${new Date().toISOString().slice(0, 10)}.pdf`;
+    return {
+      doc,
+      filename,
+      title: 'Dietary Rejections List',
+      subtitle: `Public Roster • Generated ${new Date().toLocaleDateString('en-GB')}`,
+    };
+  };
+
+  const handleViewRejectionsDoc = () => {
+    feedback('tick');
+    const res = generateRejectionsDoc();
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handlePrintRejectionsDoc = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateRejectionsDoc();
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
+    } catch (e) {
+      console.error('Print rejections failed:', e);
+    }
+  };
+
+  const handleShareRejectionsDoc = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateRejectionsDoc();
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: 'Alathurpadi Dars Canteen • Dietary Rejections List',
+      });
+    } catch (e) {
+      console.error('Share rejections failed:', e);
+    }
+  };
+
+  const generatePDF = () => {
+    feedback('tick');
+    const { doc, filename } = generateRejectionsDoc();
+    doc.save(filename);
     feedback('success');
   };
 
@@ -174,13 +223,17 @@ const MenuTable = () => {
             <span>{t('navHome', 'Board')}</span>
           </button>
 
-          <button
-            onClick={generatePDF}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
-          >
-            <FileDown className="w-4 h-4" />
-            <span>{t('exportKitchenPdf', 'Export Kitchen PDF')}</span>
-          </button>
+          <div className="min-w-[170px]">
+            <ExportActionMenu
+              onView={handleViewRejectionsDoc}
+              onDownload={generatePDF}
+              onPrint={handlePrintRejectionsDoc}
+              onShare={handleShareRejectionsDoc}
+              label={t('exportKitchenPdf', 'Export Kitchen PDF')}
+              colorTheme="emerald"
+              defaultAction="view"
+            />
+          </div>
         </div>
       </div>
 
@@ -248,6 +301,12 @@ const MenuTable = () => {
           </table>
         </div>
       </div>
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
+      />
     </div>
   );
 };

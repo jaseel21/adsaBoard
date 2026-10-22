@@ -13,6 +13,8 @@ export const AUDIT_CATEGORIES = {
   DIETARY: 'dietary',
   SECURITY: 'security',
   SYSTEM: 'system',
+  NOTIFICATIONS: 'notifications',
+  SUPPORT: 'support',
 };
 
 export const AUDIT_SEVERITIES = {

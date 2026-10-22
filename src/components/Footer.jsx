@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExternalLink, ShieldCheck, Heart, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ExternalLink, ShieldCheck, Heart, Volume2, VolumeX, Sparkles, HeartHandshake } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { motion } from 'framer-motion';
@@ -75,9 +76,20 @@ const Footer = () => {
               <ExternalLink className="w-4 h-4 opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </a>
 
-            <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{t('systemStatus')}</span>
+            <div className="mt-3 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{t('systemStatus')}</span>
+              </div>
+              <span>•</span>
+              <Link
+                to="/support"
+                onClick={() => feedback('tick')}
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 font-semibold underline decoration-dotted transition-colors flex items-center gap-1"
+              >
+                <HeartHandshake className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{t('navSupport', 'Care & Support')}</span>
+              </Link>
             </div>
           </div>
 

@@ -31,6 +31,7 @@ import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { AuthContext } from '../store/AuthContext';
+import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 
 export default function StudentManagement() {
   const { user, role, isCentralCommittee, isCanteenCommittee } = useContext(AuthContext);
@@ -265,6 +266,46 @@ export default function StudentManagement() {
       await firebase.firestore().collection('students').doc(student.id).update({
         block: nextStatus,
         updatedAt: new Date().toISOString()
+      });
+
+      const stName = student.nameEn || student.name || `Token #${student.tokenNo}`;
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: nextStatus ? 'STUDENT_BLOCK' : 'STUDENT_UNBLOCK',
+        severity: nextStatus ? AUDIT_SEVERITIES.WARNING : AUDIT_SEVERITIES.INFO,
+        target: {
+          type: 'student',
+          id: student.id,
+          label: `Token #${student.tokenNo} (${stName})`,
+          tokenNo: Number(student.tokenNo),
+        },
+        changes: {
+          diffSummary: `Token #${student.tokenNo} (${stName}) was ${nextStatus ? 'blocked/frozen' : 'unblocked/activated'}`,
+          fieldsChanged: ['block'],
+          before: { block: !nextStatus },
+          after: { block: nextStatus },
+          tokenDeltas: [
+            {
+              type: 'lock_status',
+              scopeLabel: 'Student Directory Status',
+              meal: 'all',
+              mealLabel: 'All Meals',
+              previous: !nextStatus,
+              current: nextStatus,
+              previousLabel: !nextStatus ? 'Active / Unlocked' : 'Frozen / Locked',
+              currentLabel: nextStatus ? 'Frozen / Locked' : 'Active / Unlocked',
+              tokenNo: Number(student.tokenNo),
+              studentName: stName,
+              label: 'Account Status',
+            },
+          ],
+        },
+        metadata: {
+          tokenNo: Number(student.tokenNo),
+          studentName: stName,
+          previousState: !nextStatus,
+          currentState: nextStatus,
+        },
       });
 
       setStudents(prev =>

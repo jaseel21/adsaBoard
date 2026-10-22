@@ -24,7 +24,7 @@ import { hapticEngine } from '../../utils/haptics';
 
 export default function ApexOperationsRadar({
   documents = [],
-  isLunch = true,
+  isLunch = false,
   targetDateIST,
   effectiveDay,
   groupedByBatch = {},

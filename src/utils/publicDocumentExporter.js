@@ -194,7 +194,7 @@ export function computeBatchBreakdown({
  *  - Renders single tokens per row by default to utilize page space.
  *  - Only pairs tokens when total height would exceed single page boundary.
  */
-export function exportSinglePageCombinedManifestPDF({
+export function generateSinglePageCombinedManifestDoc({
   targetDateIST,
   dayKey,
   dayFull,
@@ -465,7 +465,20 @@ export function exportSinglePageCombinedManifestPDF({
   }
 
   const fileSlug = `ADSA_Kitchen_Supply_Manifest_${targetDateIST}_${category}_${sort}.pdf`;
-  doc.save(fileSlug);
+  return {
+    doc,
+    filename: fileSlug,
+    title: 'Kitchen Supply Manifest',
+    subtitle: `${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()}) • ${category} • ${sort}`,
+  };
+}
+
+/**
+ * Downloads single-page combined kitchen supply manifest PDF
+ */
+export function exportSinglePageCombinedManifestPDF(params) {
+  const { doc, filename } = generateSinglePageCombinedManifestDoc(params);
+  doc.save(filename);
   return true;
 }
 
@@ -481,7 +494,7 @@ export function exportKitchenSupplyPDF(params) {
  * Displays which token numbers avoid specific dietary categories (e.g. Fish, Beef, Chicken, Egg).
  * Strictly anonymized with zero student personal data.
  */
-export function exportDietaryAvoidersPDF({
+export function generateDietaryAvoidersDoc({
   preferences = [],
   documents = [],
   rejectionsByPref = {},
@@ -593,7 +606,21 @@ export function exportDietaryAvoidersPDF({
   );
 
   const dateSlug = new Date().toISOString().slice(0, 10);
-  doc.save(`ADSA_Dietary_Avoiders_${dateSlug}_${sort}.pdf`);
+  const filename = `ADSA_Dietary_Avoiders_${dateSlug}_${sort}.pdf`;
+  return {
+    doc,
+    filename,
+    title: 'Dietary Avoiders Matrix',
+    subtitle: `Kitchen Dietary Matrix (${sort})`,
+  };
+}
+
+/**
+ * Downloads Dietary Avoiders Matrix PDF
+ */
+export function exportDietaryAvoidersPDF(params) {
+  const { doc, filename } = generateDietaryAvoidersDoc(params);
+  doc.save(filename);
   return true;
 }
 
@@ -601,7 +628,7 @@ export function exportDietaryAvoidersPDF({
  * Generates and downloads a clean CSV spreadsheet of the Kitchen Supply Manifest
  * with UTF-8 BOM encoding for seamless opening in Excel or Google Sheets.
  */
-export function exportManifestCSV({
+export function generateManifestCSVData({
   targetDateIST,
   dayKey,
   dayFull,
@@ -631,11 +658,23 @@ export function exportManifestCSV({
   });
 
   const csv = Papa.unparse(rows);
+  const filename = `ADSA_Kitchen_Supply_Manifest_${targetDateIST}_${category}_${sortOrder}.csv`;
+  return {
+    csv,
+    rows,
+    filename,
+    title: 'Kitchen Supply Manifest (CSV)',
+    subtitle: `${targetDateIST} • ${category} • ${sortOrder}`,
+  };
+}
+
+export function exportManifestCSV(params) {
+  const { csv, filename } = generateManifestCSVData(params);
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `ADSA_Kitchen_Supply_Manifest_${targetDateIST}_${category}_${sortOrder}.csv`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -646,7 +685,7 @@ export function exportManifestCSV({
 /**
  * Generates and downloads a CSV spreadsheet of the Dietary Avoiders Matrix.
  */
-export function exportDietaryCSV({
+export function generateDietaryCSVData({
   preferences = [],
   documents = [],
   rejectionsByPref = {},
@@ -691,12 +730,24 @@ export function exportDietaryCSV({
     });
 
   const csv = Papa.unparse(rows);
+  const dateSlug = new Date().toISOString().slice(0, 10);
+  const filename = `ADSA_Dietary_Avoiders_${dateSlug}_${sortOrder}.csv`;
+  return {
+    csv,
+    rows,
+    filename,
+    title: 'Dietary Avoiders Matrix (CSV)',
+    subtitle: `Dietary Matrix (${sortOrder})`,
+  };
+}
+
+export function exportDietaryCSV(params) {
+  const { csv, filename } = generateDietaryCSVData(params);
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const dateSlug = new Date().toISOString().slice(0, 10);
-  a.download = `ADSA_Dietary_Avoiders_${dateSlug}_${sortOrder}.csv`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

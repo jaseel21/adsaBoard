@@ -20,7 +20,7 @@ import { hapticEngine } from '../../utils/haptics';
 export default function ApexTelemetryHud({
   documents = [],
   filteredDocuments = [],
-  isLunch = true,
+  isLunch = false,
   metrics = {},
   preferencesList = [],
   targetDateIST,

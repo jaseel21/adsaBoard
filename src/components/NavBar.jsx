@@ -31,12 +31,16 @@ import {
   ChefHat,
   Layers,
   Printer,
+  Bell,
+  HeartHandshake,
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import ThemeSwitch from './ThemeSwitch';
 import LanguageSwitch from './LanguageSwitch';
 import StaffManagementModal from './StaffManagementModal';
+import NotificationBell from './notifications/NotificationBell';
+import NotificationTickerBanner from './notifications/NotificationTickerBanner';
 
 const Navbar = ({ isAdmin }) => {
   const {
@@ -157,6 +161,7 @@ const Navbar = ({ isAdmin }) => {
   };
 
   return (
+    <>
     <header
       ref={navRef}
       className="sticky top-0 z-40 w-full bg-white/85 dark:bg-[#080d0b]/90 backdrop-blur-2xl border-b border-gray-200/80 dark:border-white/10 transition-colors duration-300"
@@ -309,6 +314,22 @@ const Navbar = ({ isAdmin }) => {
                   </button>
                 )}
 
+                {/* Notifications & Broadcast Studio (Canteen Sub-Committee, Central, Devs) */}
+                {isCanteenCommittee && (
+                  <button
+                    onClick={() => handleNav('/admin/notifications')}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                      isActive('/admin/notifications')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-white dark:bg-emerald-950/60 shadow-sm border border-emerald-500/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
+                    title="Broadcast Announcements Studio & Ledger"
+                  >
+                    <Bell className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('navNotifications', 'Notices')}</span>
+                  </button>
+                )}
+
                 {/* Supply Dropdown */}
                 <div className="relative" ref={supplyDropdownRef}>
                   <button
@@ -426,7 +447,7 @@ const Navbar = ({ isAdmin }) => {
                         className="absolute left-0 mt-2 w-52 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
                       >
                         <button
-                          onClick={() => handleNav('/lunch')}
+                          onClick={() => handleNav('/breakfast')}
                           className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                         >
                           <Printer className="w-4 h-4 text-emerald-500" />
@@ -617,6 +638,14 @@ const Navbar = ({ isAdmin }) => {
                             <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
                             <span>{t('dietaryAvoidersConsole', 'Dietary & Avoiders')}</span>
                           </button>
+
+                          <button
+                            onClick={() => handleNav('/admin/support')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <HeartHandshake className="w-4 h-4 text-emerald-500" />
+                            <span>{t('adminSupportTitle', 'Support & Feedback')}</span>
+                          </button>
                         </>
                       )}
 
@@ -650,6 +679,14 @@ const Navbar = ({ isAdmin }) => {
                           >
                             <Activity className="w-4 h-4 text-emerald-500" />
                             <span>{t('auditTrailLogs', 'Audit Trail Logs')}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleNav('/admin/notifications')}
+                            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                          >
+                            <Bell className="w-4 h-4 text-emerald-500" />
+                            <span>{t('adminNotificationsTitle', 'Notifications Studio')}</span>
                           </button>
 
                           <button
@@ -706,6 +743,9 @@ const Navbar = ({ isAdmin }) => {
               <HelpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span className="hidden xl:inline">{t('tokenBoardGuide') || 'Guide'}</span>
             </button>
+
+            {/* Universal Notification Bell */}
+            <NotificationBell />
 
             <LanguageSwitch />
             <ThemeSwitch />
@@ -845,7 +885,7 @@ const Navbar = ({ isAdmin }) => {
 
                   {/* Supply Quick Button */}
                   <button
-                    onClick={() => handleNav('/lunch')}
+                    onClick={() => handleNav('/breakfast')}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20 active:scale-95"
                   >
                     <Printer className="w-3.5 h-3.5" />
@@ -960,9 +1000,21 @@ const Navbar = ({ isAdmin }) => {
                     <span>{t('tokenBoardGuide') || 'Token Board Guide'}</span>
                   </button>
 
+                  <button
+                    onClick={() => handleNav('/support')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold ${
+                      isActive('/support')
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <HeartHandshake className="w-4 h-4 text-emerald-500" />
+                    <span>{t('navSupport', 'Care & Support')}</span>
+                  </button>
+
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
-                      onClick={() => handleNav('/lunch')}
+                      onClick={() => handleNav('/breakfast')}
                       className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-500/20 active:scale-95"
                     >
                       <Printer className="w-3.5 h-3.5" />
@@ -1013,6 +1065,9 @@ const Navbar = ({ isAdmin }) => {
         onClose={() => setStaffModalOpen(false)}
       />
     </header>
+    {/* Ambient Broadcast Sticky Banner Marquee */}
+    <NotificationTickerBanner />
+    </>
   );
 };
 

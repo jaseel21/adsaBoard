@@ -23,9 +23,14 @@ import NotFound from './components/NotFound';
 import AdminRoute from './components/guards/AdminRoute';
 import RoleRoute from './components/guards/RoleRoute';
 import StudentRoute from './components/guards/StudentRoute';
-import AuthenticatedRoute from './components/guards/AuthenticatedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { DialogProvider } from './components/ui/AppDialog';
+import { NotificationProvider } from './store/NotificationContext';
+import NotificationDrawer from './components/notifications/NotificationDrawer';
+import ApexNotificationManager from './components/notifications/admin/ApexNotificationManager';
+import CareHubPage from './components/support/CareHubPage';
+import ApexCareFloatingButton from './components/support/ApexCareFloatingButton';
+import SupportCommandCenter from './components/admin/support/SupportCommandCenter';
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
 import { LanguageProvider } from './store/LanguageContext';
@@ -63,6 +68,9 @@ function AppContent() {
             <Route path="/lunch" element={<SupplySections defaultMeal="lunch" />} />
             <Route path="/breakfast" element={<SupplySections defaultMeal="breakfast" />} />
             <Route path="/guide" element={<GuidePage />} />
+            <Route path="/support" element={<CareHubPage />} />
+            <Route path="/feedback" element={<CareHubPage />} />
+            <Route path="/contact" element={<CareHubPage />} />
 
             {/* Student Portal (Protected by Student Session) */}
             <Route
@@ -133,6 +141,41 @@ function AppContent() {
             <Route path="/admin/audit" element={<Navigate to="/admin/audit-logs" replace />} />
             <Route path="/audit-logs" element={<Navigate to="/admin/audit-logs" replace />} />
 
+            {/* Broadcast Notifications & Announcements (Canteen Sub-Committee, Central, Devs) */}
+            <Route
+              path="/admin/notifications"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <ApexNotificationManager />
+                </RoleRoute>
+              }
+            />
+            <Route path="/notifications" element={<Navigate to="/admin/notifications" replace />} />
+
+            {/* Support, Inquiries & Care Center (Canteen Committee, Central, Devs, Cooks) */}
+            <Route
+              path="/admin/support"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                    ROLES.COOK,
+                  ]}
+                >
+                  <SupportCommandCenter />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/feedback" element={<Navigate to="/admin/support" replace />} />
+
             {/* Menu & Dietary Consoles (Canteen Sub-Committee, Central, Devs) */}
             <Route
               path="/admin/menu"
@@ -171,7 +214,7 @@ function AppContent() {
             <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
             <Route path="/astudent-port" element={<Navigate to="/student-management" replace />} />
             <Route path="/m-tokens" element={<Navigate to="/student-management" replace />} />
-            <Route path="/pdfg" element={<Navigate to="/lunch" replace />} />
+            <Route path="/pdfg" element={<Navigate to="/breakfast" replace />} />
             <Route
               path="/alogin"
               element={user ? <Navigate to={homeRoute || '/admin'} replace /> : <AdminLogin />}
@@ -182,6 +225,7 @@ function AppContent() {
           </Routes>
         </ErrorBoundary>
       </main>
+      {!location.pathname.startsWith('/kitchen') && <ApexCareFloatingButton />}
       <Footer />
     </div>
   );
@@ -192,9 +236,12 @@ function App() {
     <ThemeProvider>
       <LanguageProvider>
         <PersonInfo>
-          <DialogProvider>
-            <AppContent />
-          </DialogProvider>
+          <NotificationProvider>
+            <DialogProvider>
+              <AppContent />
+              <NotificationDrawer />
+            </DialogProvider>
+          </NotificationProvider>
         </PersonInfo>
       </LanguageProvider>
     </ThemeProvider>

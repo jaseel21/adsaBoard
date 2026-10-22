@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Utensils,
@@ -7,7 +7,9 @@ import {
   Check,
   Save,
   ArrowLeft,
+  ArrowRight,
   Sparkles,
+  HeartHandshake,
   Calendar,
   Clock,
   AlertTriangle,
@@ -21,6 +23,7 @@ import {
   LogOut,
   RotateCcw,
   UtensilsCrossed,
+  ShieldAlert,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
@@ -32,6 +35,7 @@ import { useIdleTimer } from '../utils/useIdleTimer';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { computeTokenScheduleDeltas } from '../utils/tokenAuditHelper';
 import {
   addDaysToDate,
   formatFriendlyDate,
@@ -40,6 +44,7 @@ import {
   cleanPastDateExceptions,
   syncStudentDiningHistory,
   getDayOfWeekShort,
+  calculateEffectiveDateMeals,
 } from '../utils/studentExceptionService';
 
 function StudentPort() {
@@ -47,15 +52,23 @@ function StudentPort() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
+  const isBlocked = Boolean(stdata?.block);
   const {
     todayIST,
-    isTomorrowLocked,
+    todayDayShort,
+    isTodayLocked,
+    todayLockInfo,
     tomorrowIST,
     tomorrowDayShort,
+    isTomorrowLocked,
+    tomorrowLockInfo,
     startTime,
     endTime,
+    isPostWindowOpen,
     isTimeVerified,
     isDeviceDesynced,
+    isDateLocked,
+    getDateLockStatus,
   } = useTokenLockStatus();
 
   // Public Kiosk Inactivity Protection: Auto-logout after 90 seconds of inactivity
@@ -217,58 +230,7 @@ function StudentPort() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  // Weekly Lunch Toggles
-  const toggleLunchDay = (dayKey) => {
-    if (dayKey === tomorrowDayShort && isTomorrowLocked) {
-      dialog.toast.info(
-        'Tomorrow is Locked',
-        `Tomorrow's meal orders are locked past cutoff (${endTime}). Your routine update for this day will apply starting next week.`
-      );
-    }
-    feedback('pop');
-    setLunch((prev) => ({
-      ...prev,
-      [dayKey]: !prev[dayKey],
-    }));
-  };
-
-  const selectAllLunch = (val) => {
-    feedback('tick');
-    const updated = {};
-    daysList.forEach(({ key }) => {
-      updated[key] = val;
-    });
-    setLunch(updated);
-  };
-
-  // Weekly Breakfast Toggles
-  const toggleBreakfastDay = (dayKey) => {
-    if (dayKey === tomorrowDayShort && isTomorrowLocked) {
-      dialog.toast.info(
-        'Tomorrow is Locked',
-        `Tomorrow's meal orders are locked past cutoff (${endTime}). Your routine update for this day will apply starting next week.`
-      );
-    }
-    feedback('pop');
-    setBreakfast((prev) => ({
-      ...prev,
-      [dayKey]: !prev[dayKey],
-    }));
-  };
-
-  const selectAllBreakfast = (val) => {
-    feedback('tick');
-    const updated = {};
-    daysList.forEach(({ key }) => {
-      updated[key] = val;
-    });
-    setBreakfast(updated);
-  };
-
-  const allLunchSelected = daysList.every(({ key }) => Boolean(lunch[key]));
-  const allBreakfastSelected = daysList.every(({ key }) => Boolean(breakfast[key]));
-
-  // Student data snapshot for the Date Grid Matrix
+  // Student data snapshot for matrix and conflict analysis
   const studentForMatrix = useMemo(
     () => ({
       ...stdata,
@@ -284,8 +246,257 @@ function StudentPort() {
     [stdata, lunch, breakfast, dietary, dateExceptions, templates]
   );
 
+  // Map each weekly dayKey ('su'..'sa') to its immediate upcoming occurrence and lock context
+  const upcomingDateMap = useMemo(() => {
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    const [y, m, d] = todayIST.split('-').map(Number);
+    const todayObj = new Date(Date.UTC(y, m - 1, d));
+    const todayDayIdx = todayObj.getUTCDay(); // 0=su..6=sa
+
+    const map = {};
+    days.forEach((key, targetIdx) => {
+      let daysAhead = (targetIdx - todayDayIdx + 7) % 7;
+      const immediateDate = addDaysToDate(todayIST, daysAhead);
+      const nextWeekDate = addDaysToDate(immediateDate, 7);
+      const isTomorrow = immediateDate === tomorrowIST;
+      const isToday = immediateDate === todayIST;
+      const isLocked = (isTomorrow && isTomorrowLocked) || (isToday && isTodayLocked);
+
+      map[key] = {
+        immediateDate,
+        nextWeekDate,
+        isTomorrow,
+        isToday,
+        isLocked,
+      };
+    });
+    return map;
+  }, [todayIST, tomorrowIST, isTomorrowLocked, isTodayLocked]);
+
+  // Detect active date overrides on the immediate upcoming occurrence for each day of the week
+  const dayOverridesMap = useMemo(() => {
+    const map = {};
+    Object.keys(upcomingDateMap).forEach((dayKey) => {
+      const { immediateDate } = upcomingDateMap[dayKey];
+      const exc = dateExceptions?.[immediateDate];
+      if (exc) {
+        map[dayKey] = {
+          date: immediateDate,
+          exception: exc,
+          hasBfOverride: exc.breakfast !== undefined,
+          hasLunchOverride: exc.lunch !== undefined,
+          isBfOff: exc.breakfast === false,
+          isLunchOff: exc.lunch === false,
+          isAllOff: exc.breakfast === false && exc.lunch === false,
+          isAllOn: exc.breakfast === true && exc.lunch === true,
+          label: exc.label || 'Leave / Override',
+        };
+      }
+    });
+    return map;
+  }, [upcomingDateMap, dateExceptions]);
+
+  // Quick 1-click helper to remove a conflicting date override
+  const handleClearOverrideForDate = (targetDate) => {
+    feedback('tick');
+    setDateExceptions((prev) => {
+      const updated = { ...prev };
+      delete updated[targetDate];
+      return updated;
+    });
+    dialog.toast.success(
+      'Override Cleared',
+      `Date override for ${formatFriendlyDate(targetDate, true)} was removed. Your regular weekly routine will apply.`
+    );
+  };
+
+  // SCENARIO 2 RESOLUTION: Check and prompt user if turning a day ON conflicts with an active override
+  const checkAndResolveOverrideConflict = async (dayKey, mealKey, mealName) => {
+    const overrideInfo = dayOverridesMap[dayKey];
+    if (!overrideInfo) return true;
+
+    const isMealOffInOverride = mealKey === 'lunch' ? overrideInfo.isLunchOff : overrideInfo.isBfOff;
+    if (!isMealOffInOverride) return true;
+
+    const dayLabel = daysList.find((d) => d.key === dayKey)?.label || dayKey;
+    const dateFormatted = formatFriendlyDate(overrideInfo.date, true);
+
+    const shouldClear = await dialog.confirm({
+      title: t('overrideConflictTitle', 'Active Override Conflict Detected'),
+      message: `${t('overrideConflictNotice', `You previously scheduled an override for upcoming ${dayLabel}, ${dateFormatted} (${overrideInfo.label}): meals are set to OFF. Turning ON ${dayLabel} in your weekly routine will NOT provide meals on ${dateFormatted} unless this override is cleared.`)
+        .replace('{day}', dayLabel)
+        .replace('{date}', dateFormatted)
+        .replace('{label}', overrideInfo.label || 'Leave')
+        .replace('{status}', 'OFF')}\n\nWould you like to clear this override and enable food on ${dateFormatted}?`,
+      confirmText: t('removeOverrideAndEnableFood', 'Clear Override & Enable Food (Recommended)'),
+      cancelText: t('keepOverride', 'Keep Override (No Food on this date)'),
+      confirmColor: 'emerald',
+      icon: 'question',
+    });
+
+    if (shouldClear) {
+      setDateExceptions((prev) => {
+        const updated = { ...prev };
+        if (updated[overrideInfo.date]) {
+          const otherMealKey = mealKey === 'lunch' ? 'breakfast' : 'lunch';
+          if (updated[overrideInfo.date][otherMealKey] !== undefined && updated[overrideInfo.date][otherMealKey] === false) {
+            updated[overrideInfo.date] = {
+              ...updated[overrideInfo.date],
+              [mealKey]: true,
+            };
+          } else {
+            delete updated[overrideInfo.date];
+          }
+        }
+        return updated;
+      });
+      dialog.toast.success(
+        'Override Cleared',
+        `${mealName} is now enabled for ${dateFormatted}.`
+      );
+    }
+
+    return true;
+  };
+
+  // SCENARIO 1 RESOLUTION: Intercept locked days (Tomorrow past cutoff or Today past window open)
+  const checkLockedDayWarning = async (dayKey, mealKey, mealName, willTurnOn) => {
+    const dayInfo = upcomingDateMap[dayKey];
+    if (!dayInfo?.isLocked) return true;
+
+    const lockTargetDate = dayInfo.immediateDate;
+    const lockDateLabel = dayInfo.isTomorrow ? 'Tomorrow' : 'Today';
+    const effectiveMeals = calculateEffectiveDateMeals(studentForMatrix, lockTargetDate);
+    const currentStatusStr = (mealKey === 'lunch' ? effectiveMeals.lunch : effectiveMeals.breakfast) ? 'ON' : 'OFF';
+    const dayLabel = daysList.find((d) => d.key === dayKey)?.label || dayKey;
+    const cutoffTime = dayInfo.isTomorrow ? endTime : startTime;
+    const nextDateFormatted = formatFriendlyDate(dayInfo.nextWeekDate, true);
+    const targetDateFormatted = formatFriendlyDate(lockTargetDate, true);
+
+    const dialogTitle = dayInfo.isTomorrow
+      ? (t('tomorrowIsLockedTitle') || 'Tomorrow is Locked')
+      : (t('todayIsLockedTitle') || 'Today is Locked');
+
+    const dialogMessage = dayInfo.isTomorrow
+      ? (t('tomorrowLockedRoutineNotice', `Tomorrow (${dayLabel}, ${targetDateFormatted}) is locked for kitchen prep past cutoff (${cutoffTime}). Routine updates to ${dayLabel} will take effect starting next week (${nextDateFormatted}). Tomorrow's meals will remain: ${currentStatusStr}.`))
+          .replace('{day}', dayLabel)
+          .replace('{date}', targetDateFormatted)
+          .replace('{cutoff}', cutoffTime)
+          .replace('{nextDate}', nextDateFormatted)
+          .replace('{status}', currentStatusStr)
+      : (t('todayLockedRoutineNotice', `Today (${dayLabel}, ${targetDateFormatted}) is locked as the updation window opened at ${cutoffTime}. Routine updates to ${dayLabel} will take effect starting next week (${nextDateFormatted}). Today's meals will remain: ${currentStatusStr}.`))
+          .replace('{day}', dayLabel)
+          .replace('{date}', targetDateFormatted)
+          .replace('{openTime}', cutoffTime)
+          .replace('{nextDate}', nextDateFormatted)
+          .replace('{status}', currentStatusStr);
+
+    const proceed = await dialog.confirm({
+      title: dialogTitle,
+      message: `${dialogMessage}\n\nTurning ${mealName} ${willTurnOn ? 'ON' : 'OFF'} in your weekly routine will apply starting next week (${nextDateFormatted}). Do you want to continue?`,
+      confirmText: t('updateRoutineAnyway', 'Apply from Next Week'),
+      cancelText: t('cancel', 'Cancel'),
+      confirmColor: 'amber',
+      icon: 'warning',
+    });
+
+    return proceed;
+  };
+
+  // Weekly Lunch Toggles
+  const toggleLunchDay = async (dayKey) => {
+    const isCurrentlyOn = Boolean(lunch[dayKey]);
+    const willTurnOn = !isCurrentlyOn;
+
+    // Check Scenario 1: Locked day warning
+    const canProceedLock = await checkLockedDayWarning(dayKey, 'lunch', t('navLunch') || 'Lunch', willTurnOn);
+    if (!canProceedLock) return;
+
+    // Check Scenario 2: Active override conflict
+    if (willTurnOn) {
+      await checkAndResolveOverrideConflict(dayKey, 'lunch', t('navLunch') || 'Lunch');
+    }
+
+    feedback('pop');
+    setLunch((prev) => ({
+      ...prev,
+      [dayKey]: !prev[dayKey],
+    }));
+  };
+
+  const selectAllLunch = async (val) => {
+    if (!val && isTomorrowLocked) {
+      const confirmed = await dialog.confirm({
+        title: t('tomorrowIsLockedTitle') || 'Tomorrow is Locked',
+        message: `Tomorrow (${formatFriendlyDate(tomorrowIST, true)}) is locked past cutoff (${endTime}). Deselecting all will turn off future weeks, but tomorrow's meals will remain preserved as already locked.\n\nDo you want to continue?`,
+        confirmText: t('updateRoutineAnyway', 'Apply from Next Week'),
+        cancelText: t('cancel', 'Cancel'),
+        confirmColor: 'amber',
+        icon: 'warning',
+      });
+      if (!confirmed) return;
+    }
+    feedback('tick');
+    const updated = {};
+    daysList.forEach(({ key }) => {
+      updated[key] = val;
+    });
+    setLunch(updated);
+  };
+
+  // Weekly Breakfast Toggles
+  const toggleBreakfastDay = async (dayKey) => {
+    const isCurrentlyOn = Boolean(breakfast[dayKey]);
+    const willTurnOn = !isCurrentlyOn;
+
+    // Check Scenario 1: Locked day warning
+    const canProceedLock = await checkLockedDayWarning(dayKey, 'breakfast', t('navBreakfast') || 'Breakfast', willTurnOn);
+    if (!canProceedLock) return;
+
+    // Check Scenario 2: Active override conflict
+    if (willTurnOn) {
+      await checkAndResolveOverrideConflict(dayKey, 'breakfast', t('navBreakfast') || 'Breakfast');
+    }
+
+    feedback('pop');
+    setBreakfast((prev) => ({
+      ...prev,
+      [dayKey]: !prev[dayKey],
+    }));
+  };
+
+  const selectAllBreakfast = async (val) => {
+    if (!val && isTomorrowLocked) {
+      const confirmed = await dialog.confirm({
+        title: t('tomorrowIsLockedTitle') || 'Tomorrow is Locked',
+        message: `Tomorrow (${formatFriendlyDate(tomorrowIST, true)}) is locked past cutoff (${endTime}). Deselecting all will turn off future weeks, but tomorrow's meals will remain preserved as already locked.\n\nDo you want to continue?`,
+        confirmText: t('updateRoutineAnyway', 'Apply from Next Week'),
+        cancelText: t('cancel', 'Cancel'),
+        confirmColor: 'amber',
+        icon: 'warning',
+      });
+      if (!confirmed) return;
+    }
+    feedback('tick');
+    const updated = {};
+    daysList.forEach(({ key }) => {
+      updated[key] = val;
+    });
+    setBreakfast(updated);
+  };
+
+  const allLunchSelected = daysList.every(({ key }) => Boolean(lunch[key]));
+  const allBreakfastSelected = daysList.every(({ key }) => Boolean(breakfast[key]));
+
   // Custom Template Persistence
   const handleSaveTemplates = async (updatedTemplates) => {
+    if (isBlocked) {
+      dialog.toast.warning(
+        t('tokenLockedByAdmin') || 'Token Locked',
+        t('tokenLockedPortalNotice') || 'Your dining token is currently locked. Routine changes cannot be saved.'
+      );
+      return;
+    }
     setTemplates(updatedTemplates);
     const targetDocId = stdata.documentId || stdata.id;
     if (targetDocId) {
@@ -315,6 +526,13 @@ function StudentPort() {
 
   // Save full routine and exceptions back to Firestore (with optional logout)
   const handleSave = async (shouldLogout = false) => {
+    if (isBlocked) {
+      dialog.toast.warning(
+        t('tokenLockedByAdmin') || 'Token Locked',
+        t('tokenLockedPortalNotice') || 'Your dining token is currently locked. Routine changes cannot be saved.'
+      );
+      return;
+    }
     feedback('tick');
     setSaving(true);
 
@@ -331,8 +549,9 @@ function StudentPort() {
       
       // Preserve all dateExceptions (both upcoming and past) so history is never erased
       const exceptionsToSave = { ...(dateExceptions || {}) };
+      const preservedDatesList = [];
 
-      // Safeguard: If tomorrow is locked past cutoff, preserve tomorrow's baseline status
+      // Safeguard Scenario 1: If tomorrow is locked past cutoff, preserve tomorrow's baseline status
       if (isTomorrowLocked) {
         const baselineExc = savedBaseline.dateExceptions?.[tomorrowIST];
         const baselineBf = baselineExc?.breakfast !== undefined
@@ -348,6 +567,26 @@ function StudentPort() {
           lunch: baselineLu,
           label: exceptionsToSave[tomorrowIST]?.label || 'Cutoff Locked (Preserved)',
         };
+        preservedDatesList.push(`Tomorrow (${formatFriendlyDate(tomorrowIST, false)})`);
+      }
+
+      // Safeguard Rule 3: Today is always locked (unless admin force unlocked); preserve today's baseline status
+      if (isTodayLocked) {
+        const baselineTodayExc = savedBaseline.dateExceptions?.[todayIST];
+        const baselineTodayBf = baselineTodayExc?.breakfast !== undefined
+          ? baselineTodayExc.breakfast
+          : Boolean(savedBaseline.breakfast?.[todayDayShort]);
+        const baselineTodayLu = baselineTodayExc?.lunch !== undefined
+          ? baselineTodayExc.lunch
+          : Boolean(savedBaseline.lunch?.[todayDayShort]);
+
+        exceptionsToSave[todayIST] = {
+          ...(exceptionsToSave[todayIST] || {}),
+          breakfast: baselineTodayBf,
+          lunch: baselineTodayLu,
+          label: exceptionsToSave[todayIST]?.label || 'Today Locked (Preserved)',
+        };
+        preservedDatesList.push(`Today (${formatFriendlyDate(todayIST, false)})`);
       }
 
       // Synchronize and lock past dining history into immutable ledger
@@ -372,6 +611,13 @@ function StudentPort() {
 
       await firebase.firestore().collection('students').doc(targetDocId).set(payload, { merge: true });
 
+      // Compute granular token schedule deltas
+      const scheduleDeltas = computeTokenScheduleDeltas(savedBaseline, {
+        lunch,
+        breakfast,
+        dateExceptions: exceptionsToSave,
+      });
+
       await logAuditEvent({
         category: AUDIT_CATEGORIES.TOKENS,
         action: 'TOKEN_TOGGLE',
@@ -390,11 +636,20 @@ function StudentPort() {
           tokenNo: Number(stdata.tokenNo),
         },
         changes: {
-          diffSummary: `Student Token #${stdata.tokenNo} updated weekly schedule and exceptions`,
-          fieldsChanged: ['obj', 'dateExceptions'],
+          diffSummary: scheduleDeltas.items.length > 0
+            ? `Token #${stdata.tokenNo}: ${scheduleDeltas.summary}`
+            : `Student Token #${stdata.tokenNo} saved schedule preferences`,
+          fieldsChanged: scheduleDeltas.fieldsChanged.length > 0
+            ? scheduleDeltas.fieldsChanged
+            : ['obj', 'dateExceptions'],
+          before: scheduleDeltas.before,
+          after: scheduleDeltas.after,
+          tokenDeltas: scheduleDeltas.items,
         },
         metadata: {
           portalAction: 'student_save_schedule',
+          tokenNo: Number(stdata.tokenNo),
+          deltaCount: scheduleDeltas.items.length,
         },
       });
 
@@ -416,19 +671,23 @@ function StudentPort() {
         dateExceptions: { ...exceptionsToSave },
       });
 
+      const preservedNote = preservedDatesList.length > 0
+        ? ` Note: ${preservedDatesList.join(' and ')} meals were preserved as dining schedule is locked.`
+        : '';
+
       if (shouldLogout) {
         dialog.toast.success(
           t('scheduleSaved') || 'Schedule Saved!',
-          'Your dining preferences were updated and you have been safely logged out.',
-          3500
+          `Your dining preferences were updated and you have been safely logged out.${preservedNote ? ' ' + preservedNote : ''}`,
+          4000
         );
         if (logoutStudent) logoutStudent();
         navigate('/', { replace: true });
       } else {
         dialog.toast.success(
           t('scheduleSaved') || 'Schedule Saved!',
-          'Your weekly dining schedule and upcoming date exceptions were updated successfully.',
-          3200
+          `Your weekly dining schedule was updated successfully.${preservedNote ? ' ' + preservedNote : ''}`,
+          4000
         );
       }
     } catch (error) {
@@ -519,8 +778,22 @@ function StudentPort() {
       <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl p-4 xs:p-5 sm:p-7 backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 xs:gap-3.5 sm:gap-4 min-w-0">
-            <div className="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white font-mono font-black text-lg xs:text-xl sm:text-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
+            <div
+              className={`w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-2xl ${
+                isBlocked
+                  ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/25'
+                  : 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/25'
+              } text-white font-mono font-black text-lg xs:text-xl sm:text-2xl flex items-center justify-center shadow-lg flex-shrink-0 relative`}
+            >
               #{stdata.tokenNo}
+              {isBlocked && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 border-2 border-white dark:border-[#0f1715] flex items-center justify-center text-[10px] shadow-sm"
+                  title={t('tokenLockedBadge', 'Token Locked (Read-Only)')}
+                >
+                  <Lock className="w-2.5 h-2.5 text-white" />
+                </span>
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -539,21 +812,34 @@ function StudentPort() {
                   <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   <span>{t('officialRecordReadOnly', 'Official Record • Read-Only')}</span>
                 </span>
+                {isBlocked && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/30">
+                    <Lock className="w-3 h-3 text-red-500" />
+                    <span>{t('tokenLockedBadge', 'Token Locked (Read-Only)')}</span>
+                  </span>
+                )}
               </div>
               {stdata.nameMl && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-malayalam">
                   {stdata.nameMl}
                 </p>
               )}
-              <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-gray-500 dark:text-gray-400">
-                <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${!isTomorrowLocked ? 'text-emerald-500' : 'text-amber-500'}`} />
-                <span>
-                  {t('dailyCutoffHeader', 'Daily cutoff:')} {endTime} IST •{' '}
-                  <strong className={!isTomorrowLocked ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
-                    {!isTomorrowLocked ? t('tomorrowIsOpen', 'Tomorrow is Open') : t('tomorrowIsLocked', 'Tomorrow is Locked')}
-                  </strong>
-                </span>
-              </div>
+              {isBlocked ? (
+                <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-red-600 dark:text-red-400 font-semibold">
+                  <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{t('tokenLockedPortalNotice', 'Your dining token is currently locked by the Canteen Committee. You are viewing your details in Read-Only mode.')}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-gray-500 dark:text-gray-400">
+                  <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${!isTomorrowLocked ? 'text-emerald-500' : 'text-amber-500'}`} />
+                  <span>
+                    {t('dailyCutoffHeader', 'Daily cutoff:')} {endTime} IST •{' '}
+                    <strong className={!isTomorrowLocked ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
+                      {!isTomorrowLocked ? t('tomorrowIsOpen', 'Tomorrow is Open') : t('tomorrowIsLocked', 'Tomorrow is Locked')}
+                    </strong>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -580,9 +866,9 @@ function StudentPort() {
               <span>{t('viewCanteenMenu', 'View Food Menu')}</span>
             </button>
 
-            {/* In-Header Save Preferences button when dirty */}
+            {/* In-Header Save Preferences button when dirty and not blocked */}
             <AnimatePresence>
-              {isDirty && (
+              {isDirty && !isBlocked && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -611,6 +897,37 @@ function StudentPort() {
           </div>
         </div>
       </div>
+
+      {/* ================= ADMIN BLOCKED NOTICE BANNER ================= */}
+      {isBlocked && (
+        <div className="rounded-3xl bg-red-50/90 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0 text-xs sm:text-sm text-red-900 dark:text-red-200 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-extrabold text-sm sm:text-base text-red-950 dark:text-red-100">
+                {t('tokenLockedByAdmin', `Token #${stdata.tokenNo} Locked by Admin`).replace('{token}', stdata.tokenNo)}
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-200/60 dark:bg-red-900/60 text-red-900 dark:text-red-200 uppercase tracking-wide">
+                {t('readOnly', 'Read-Only')}
+              </span>
+            </div>
+            <p className="text-red-800 dark:text-red-300 text-xs leading-relaxed">
+              {t('tokenLockedDescription', 'This student token has been temporarily suspended by the ADSA Canteen Committee. Meal dining privileges are paused.')}
+            </p>
+            {stdata.blockReason && (
+              <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
+                <span className="font-bold text-red-950 dark:text-red-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
+                <span className="italic font-medium text-red-900 dark:text-red-200">&ldquo;{stdata.blockReason}&rdquo;</span>
+              </div>
+            )}
+            <p className="text-[11px] text-red-700/90 dark:text-red-400 pt-0.5">
+              {t('consultOffice', 'Please consult the ADSA Office or Canteen Secretary to resolve status.')}
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
@@ -646,38 +963,99 @@ function StudentPort() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => selectAllBreakfast(!allBreakfastSelected)}
-                  className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                >
-                  {allBreakfastSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
-                </button>
+                {isBlocked ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 select-none">
+                    <Lock className="w-3 h-3 text-gray-400" />
+                    <span>{t('locked', 'Locked')}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => selectAllBreakfast(!allBreakfastSelected)}
+                    className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                  >
+                    {allBreakfastSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {daysList.map(({ key, label }) => {
                   const active = Boolean(breakfast[key]);
+                  const dayInfo = upcomingDateMap[key];
+                  const overrideInfo = dayOverridesMap[key];
+                  const isLockedDay = Boolean(dayInfo?.isLocked);
+                  const hasOverride = Boolean(overrideInfo && overrideInfo.isBfOff);
+
                   return (
                     <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
                       <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center flex items-center justify-center gap-0.5">
                         {label}
-                        {key === tomorrowDayShort && isTomorrowLocked && (
-                          <span title={`Tomorrow is locked past ${endTime}. Edits apply starting next week.`} className="text-amber-500 text-[10px]">🔒</span>
+                        {isLockedDay && (
+                          <span
+                            title={dayInfo?.isTomorrow ? `Tomorrow is locked past ${endTime}. Edits apply starting next week.` : `Today is locked. Edits apply starting next week.`}
+                            className="text-amber-500 text-[10px]"
+                          >
+                            🔒
+                          </span>
                         )}
                       </span>
                       <button
                         type="button"
-                        onClick={() => toggleBreakfastDay(key)}
-                        title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
-                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 font-mono shadow-sm ${
-                          active
-                            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
-                            : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
-                        }`}
+                        onClick={() => {
+                          if (isBlocked) {
+                            dialog.toast.info(t('tokenLockedBadge', 'Token Locked'), t('routineLockedNotice', 'Routine updates are disabled while token is locked'));
+                            return;
+                          }
+                          toggleBreakfastDay(key);
+                        }}
+                        disabled={isBlocked}
+                        title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Locked)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
+                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform font-mono shadow-sm ${
+                          isBlocked
+                            ? active
+                              ? 'bg-emerald-600/60 text-white/80 cursor-not-allowed border border-emerald-500/20'
+                              : 'bg-rose-600/60 text-white/80 cursor-not-allowed border border-rose-500/20'
+                            : active
+                              ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald active:scale-90 cursor-pointer'
+                              : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red active:scale-90 cursor-pointer'
+                        } ${isLockedDay ? 'ring-1 ring-amber-400/60 ring-offset-1' : ''}`}
                       >
                         {active ? <Check className="w-4 h-4" /> : <X className="w-3.5 h-3.5" />}
                       </button>
+
+                      {/* Locked status pill */}
+                      {isLockedDay && (
+                        <span
+                          className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 truncate max-w-full text-center"
+                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : `Today locked past ${startTime}`}
+                        >
+                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today')}
+                        </span>
+                      )}
+
+                      {/* Active override warning badge with 1-click clear */}
+                      {!isLockedDay && hasOverride && (
+                        <div className="flex items-center gap-0.5 max-w-full">
+                          <span
+                            className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 truncate"
+                            title={`Active Override for ${formatFriendlyDate(overrideInfo.date, true)}: Breakfast is OFF (${overrideInfo.label})`}
+                          >
+                            OFF
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClearOverrideForDate(overrideInfo.date);
+                            }}
+                            className="text-[8.5px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline px-0.5"
+                            title="Clear date override and enable food"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -701,44 +1079,112 @@ function StudentPort() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => selectAllLunch(!allLunchSelected)}
-                  className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-                >
-                  {allLunchSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
-                </button>
+                {isBlocked ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 select-none">
+                    <Lock className="w-3 h-3 text-gray-400" />
+                    <span>{t('locked', 'Locked')}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => selectAllLunch(!allLunchSelected)}
+                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    {allLunchSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {daysList.map(({ key, label }) => {
                   const active = Boolean(lunch[key]);
+                  const dayInfo = upcomingDateMap[key];
+                  const overrideInfo = dayOverridesMap[key];
+                  const isLockedDay = Boolean(dayInfo?.isLocked);
+                  const hasOverride = Boolean(overrideInfo && overrideInfo.isLunchOff);
+
                   return (
                     <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
                       <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center flex items-center justify-center gap-0.5">
                         {label}
-                        {key === tomorrowDayShort && isTomorrowLocked && (
-                          <span title={`Tomorrow is locked past ${endTime}. Edits apply starting next week.`} className="text-amber-500 text-[10px]">🔒</span>
+                        {isLockedDay && (
+                          <span
+                            title={dayInfo?.isTomorrow ? `Tomorrow is locked past ${endTime}. Edits apply starting next week.` : `Today is locked. Edits apply starting next week.`}
+                            className="text-amber-500 text-[10px]"
+                          >
+                            🔒
+                          </span>
                         )}
                       </span>
                       <button
                         type="button"
-                        onClick={() => toggleLunchDay(key)}
-                        title={`${label}: Lunch is ${active ? 'ON' : 'OFF'} (Click to toggle)`}
-                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform active:scale-90 font-mono shadow-sm ${
-                          active
-                            ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald'
-                            : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red'
-                        }`}
+                        onClick={() => {
+                          if (isBlocked) {
+                            dialog.toast.info(t('tokenLockedBadge', 'Token Locked'), t('routineLockedNotice', 'Routine updates are disabled while token is locked'));
+                            return;
+                          }
+                          toggleLunchDay(key);
+                        }}
+                        disabled={isBlocked}
+                        title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Locked)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
+                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform font-mono shadow-sm ${
+                          isBlocked
+                            ? active
+                              ? 'bg-emerald-600/60 text-white/80 cursor-not-allowed border border-emerald-500/20'
+                              : 'bg-rose-600/60 text-white/80 cursor-not-allowed border border-rose-500/20'
+                            : active
+                              ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald active:scale-90 cursor-pointer'
+                              : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red active:scale-90 cursor-pointer'
+                        } ${isLockedDay ? 'ring-1 ring-amber-400/60 ring-offset-1' : ''}`}
                       >
                         {active ? <Check className="w-4 h-4" /> : <X className="w-3.5 h-3.5" />}
                       </button>
+
+                      {/* Locked status pill */}
+                      {isLockedDay && (
+                        <span
+                          className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 truncate max-w-full text-center"
+                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : `Today locked past ${startTime}`}
+                        >
+                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today')}
+                        </span>
+                      )}
+
+                      {/* Active override warning badge with 1-click clear */}
+                      {!isLockedDay && hasOverride && (
+                        <div className="flex items-center gap-0.5 max-w-full">
+                          <span
+                            className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 truncate"
+                            title={`Active Override for ${formatFriendlyDate(overrideInfo.date, true)}: Lunch is OFF (${overrideInfo.label})`}
+                          >
+                            OFF
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClearOverrideForDate(overrideInfo.date);
+                            }}
+                            className="text-[8.5px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline px-0.5"
+                            title="Clear date override and enable food"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
           </div>
+
+          {isBlocked && (
+            <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/20 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
+              <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>{t('routineLockedDesc', 'Weekly dining schedule cannot be changed while account is suspended.')}</span>
+            </div>
+          )}
         </div>
 
         {/* ================= SECTION 2: TACTILE DATE GRID (DINING OVERRIDES) ================= */}
@@ -755,11 +1201,21 @@ function StudentPort() {
             </div>
           </div>
 
+          {isBlocked && (
+            <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/20 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
+              <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>{t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')}</span>
+            </div>
+          )}
+
           <DateGridMatrix
             student={studentForMatrix}
-            onSaveExceptions={(updated) => setDateExceptions(updated)}
+            onSaveExceptions={(updated) => {
+              if (isBlocked) return;
+              setDateExceptions(updated);
+            }}
             onSaveTemplates={handleSaveTemplates}
-            editable={true}
+            editable={!isBlocked}
           />
         </div>
 
@@ -815,11 +1271,20 @@ function StudentPort() {
             })}
           </div>
 
-          <div className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex items-start gap-2.5 text-[11px] text-gray-500 dark:text-gray-400">
-            <Info className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <span>
-              {t('dietaryCommitteeNote', 'Dietary preferences are managed exclusively by the ADSA Canteen Committee to ensure accurate ingredient purchasing. To request a dietary exemption change, please speak with the mess supervisor.')}
-            </span>
+          <div className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-[11px] text-gray-500 dark:text-gray-400">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span>
+                {t('dietaryCommitteeNote', 'Dietary preferences are managed exclusively by the ADSA Canteen Committee to ensure accurate ingredient purchasing.')}
+              </span>
+            </div>
+            <Link
+              to="/support?tab=feedback"
+              className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex-shrink-0"
+            >
+              <span>Request Dietary Exemption</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
 
@@ -828,25 +1293,43 @@ function StudentPort() {
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <Info className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span>
-              {isDirty
+              {isBlocked
+                ? t('tokenLockedPortalNotice', 'Your dining token is currently locked by the Canteen Committee. You are viewing your details in Read-Only mode.')
+                : isDirty
                 ? t('pendingModifications', 'You have pending modifications. Click "Save Preferences" to apply.')
                 : t('allSavedPrompt', 'All dining preferences are currently saved.')}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <button
-              type="submit"
-              disabled={saving || !isDirty}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl transition-all transform active:scale-95 ${
-                isDirty
-                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-500/25'
-                  : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-600 opacity-60 cursor-not-allowed'
-              }`}
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
-            </button>
+            {isBlocked ? (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-extrabold text-xs border border-red-200 dark:border-red-500/20 select-none">
+                  <Lock className="w-4 h-4 text-red-500" />
+                  <span>{t('tokenLockedReadOnlyDock', 'Token Locked • Read-Only Mode')}</span>
+                </div>
+                <Link
+                  to="/support?tab=feedback"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+                >
+                  <HeartHandshake className="w-3.5 h-3.5" />
+                  <span>Request Emergency Unblock</span>
+                </Link>
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={saving || !isDirty}
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl transition-all transform active:scale-95 ${
+                  isDirty
+                    ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-500/25'
+                    : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-600 opacity-60 cursor-not-allowed'
+                }`}
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
+              </button>
+            )}
           </div>
         </div>
       </form>
@@ -859,7 +1342,19 @@ function StudentPort() {
         >
           {/* Status Badge */}
           <div className="flex items-center gap-1.5 xs:gap-2 pl-1 xs:pl-2 sm:pl-3 min-w-0">
-            {isDirty ? (
+            {isBlocked ? (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-xs sm:text-sm font-extrabold text-red-600 dark:text-red-400 block truncate">
+                    {t('tokenLockedReadOnlyDock', 'Token Locked • Read-Only Mode')}
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate">
+                    {t('routineLockedDesc', 'Weekly dining schedule cannot be changed while account is suspended.')}
+                  </span>
+                </div>
+              </>
+            ) : isDirty ? (
               <>
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
                 <div className="min-w-0">
@@ -890,35 +1385,48 @@ function StudentPort() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* Discard button when dirty */}
-            {isDirty && (
+            {isBlocked ? (
               <button
                 type="button"
-                onClick={handleDiscard}
-                disabled={saving}
-                className="inline-flex items-center gap-1 px-2.5 xs:px-3 py-2 rounded-xl text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 font-bold text-xs transition-colors active:scale-95"
-                title="Discard unsaved changes"
+                onClick={handleSafeBack}
+                className="inline-flex items-center gap-1.5 px-3.5 xs:px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 font-bold text-xs sm:text-sm transition-colors active:scale-95"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('discardChanges') || 'Discard'}</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{t('backToBoard', 'Back to Board')}</span>
               </button>
-            )}
+            ) : (
+              <>
+                {/* Discard button when dirty */}
+                {isDirty && (
+                  <button
+                    type="button"
+                    onClick={handleDiscard}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1 px-2.5 xs:px-3 py-2 rounded-xl text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 font-bold text-xs transition-colors active:scale-95"
+                    title="Discard unsaved changes"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{t('discardChanges') || 'Discard'}</span>
+                  </button>
+                )}
 
-            {/* Save Preferences Primary Button */}
-            <button
-              type="button"
-              onClick={() => handleSave(false)}
-              disabled={saving || !isDirty}
-              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 xs:px-5 sm:px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-white shadow-lg transition-all transform active:scale-95 whitespace-nowrap ${
-                isDirty
-                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-emerald-500/30'
-                  : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed'
-              }`}
-              title="Save dining preferences"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
-            </button>
+                {/* Save Preferences Primary Button */}
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  disabled={saving || !isDirty}
+                  className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 xs:px-5 sm:px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-white shadow-lg transition-all transform active:scale-95 whitespace-nowrap ${
+                    isDirty
+                      ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-emerald-500/30'
+                      : 'bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed'
+                  }`}
+                  title="Save dining preferences"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
+                </button>
+              </>
+            )}
           </div>
         </motion.div>
       </div>

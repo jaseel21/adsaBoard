@@ -97,6 +97,10 @@ export default function Admin() {
     metrics,
   } = controller;
 
+  const existingBatchNames = useMemo(() => {
+    return allBatches.map((b) => b.name);
+  }, [allBatches]);
+
   // Board Cutoff Locking Hook
   const {
     effectiveMode,
@@ -706,7 +710,7 @@ export default function Admin() {
         }}
         student={fullDrawerStudent}
         existingTokens={allTokens}
-        existingBatches={allBatches.map((b) => b.name)}
+        existingBatches={existingBatchNames}
         onSaved={handleStudentSaved}
         onDeleted={handleStudentDeleted}
       />

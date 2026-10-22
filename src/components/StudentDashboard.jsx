@@ -57,7 +57,10 @@ import { useTokenBoardController } from '../utils/useTokenBoardController';
 import {
   exportSinglePageCombinedManifestPDF,
   exportDietaryAvoidersPDF,
+  generateSinglePageCombinedManifestDoc,
+  generateDietaryAvoidersDoc,
 } from '../utils/publicDocumentExporter';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
 
 import MealFlipCard from './MealFlipCard';
 import TokenButton from './ui/TokenButton';
@@ -65,6 +68,8 @@ import TokenCard from './ui/TokenCard';
 import TokenBoardDateRibbon from './ui/TokenBoardDateRibbon';
 import NextMealSpotlight from './NextMealSpotlight';
 import AdvancedExportModal from './export/AdvancedExportModal';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
+import ExportActionMenu from './export/ExportActionMenu';
 import TokenBoardGuideModal from './guide/TokenBoardGuideModal';
 
 export default function StudentDashboard() {
@@ -78,7 +83,7 @@ export default function StudentDashboard() {
   // Unified Token Board Controller
   const controller = useTokenBoardController({
     autoEveningShift: true,
-    initialMeal: 'lunch',
+    initialMeal: 'breakfast',
     initialViewCategory: 'all',
     initialViewDensity: 'matrix',
   });
@@ -135,6 +140,7 @@ export default function StudentDashboard() {
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [lockedPortalAlertOpen, setLockedPortalAlertOpen] = useState(false);
   const [advancedExportModal, setAdvancedExportModal] = useState({ isOpen: false, type: 'supply' });
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
   const [exportingSupply, setExportingSupply] = useState(false);
   const [exportingDietary, setExportingDietary] = useState(false);
 
@@ -164,12 +170,27 @@ export default function StudentDashboard() {
     setDetailsDoc(doc);
   };
 
-  // Quick PDF Export handlers
-  const handleQuickSupplyExport = async () => {
-    feedback('pop');
-    setExportingSupply(true);
+  // Supply Manifest Actions (View, Print, Share, Download)
+  const handleViewSupplyManifest = () => {
+    feedback('tick');
+    const res = generateSinglePageCombinedManifestDoc({
+      targetDateIST,
+      dayKey: effectiveDay,
+      dayFull,
+      documents,
+      category: 'sections',
+      sort: 'ascending',
+      chunkSize: sectionChunkSize,
+      mealFilter: isLunch ? 'lunch' : 'breakfast',
+      statusFilter: 'canceled_only',
+    });
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handlePrintSupplyManifest = async () => {
+    feedback('tick');
     try {
-      exportSinglePageCombinedManifestPDF({
+      const { doc } = generateSinglePageCombinedManifestDoc({
         targetDateIST,
         dayKey: effectiveDay,
         dayFull,
@@ -180,26 +201,108 @@ export default function StudentDashboard() {
         mealFilter: isLunch ? 'lunch' : 'breakfast',
         statusFilter: 'canceled_only',
       });
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
     } catch (err) {
-      console.error('Error generating kitchen manifest PDF:', err);
-    } finally {
-      setTimeout(() => setExportingSupply(false), 600);
+      console.error('Print supply manifest error:', err);
     }
   };
 
-  const handleQuickDietaryExport = async () => {
+  const handleShareSupplyManifest = async () => {
     feedback('pop');
-    setExportingDietary(true);
     try {
-      exportDietaryAvoidersPDF({
+      const { doc, filename, title } = generateSinglePageCombinedManifestDoc({
+        targetDateIST,
+        dayKey: effectiveDay,
+        dayFull,
+        documents,
+        category: 'sections',
+        sort: 'ascending',
+        chunkSize: sectionChunkSize,
+        mealFilter: isLunch ? 'lunch' : 'breakfast',
+        statusFilter: 'canceled_only',
+      });
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `${title} (${targetDateIST}) • Alathurpadi Dars Canteen`,
+      });
+    } catch (err) {
+      console.error('Share supply manifest error:', err);
+    }
+  };
+
+  const handleQuickSupplyExport = () => {
+    feedback('tick');
+    const { doc, filename } = generateSinglePageCombinedManifestDoc({
+      targetDateIST,
+      dayKey: effectiveDay,
+      dayFull,
+      documents,
+      category: 'sections',
+      sort: 'ascending',
+      chunkSize: sectionChunkSize,
+      mealFilter: isLunch ? 'lunch' : 'breakfast',
+      statusFilter: 'canceled_only',
+    });
+    doc.save(filename);
+  };
+
+  // Dietary Avoiders Matrix Actions (View, Print, Share, Download)
+  const handleViewDietaryAvoiders = () => {
+    feedback('tick');
+    const res = generateDietaryAvoidersDoc({
+      preferences: preferencesList,
+      documents,
+      sort: 'ascending',
+    });
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handleQuickDietaryExport = () => {
+    feedback('tick');
+    const { doc, filename } = generateDietaryAvoidersDoc({
+      preferences: preferencesList,
+      documents,
+      sort: 'ascending',
+    });
+    doc.save(filename);
+  };
+
+  const handlePrintDietaryAvoiders = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateDietaryAvoidersDoc({
         preferences: preferencesList,
         documents,
         sort: 'ascending',
       });
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
     } catch (err) {
-      console.error('Error generating dietary matrix PDF:', err);
-    } finally {
-      setTimeout(() => setExportingDietary(false), 600);
+      console.error('Print dietary matrix error:', err);
+    }
+  };
+
+  const handleShareDietaryAvoiders = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateDietaryAvoidersDoc({
+        preferences: preferencesList,
+        documents,
+        sort: 'ascending',
+      });
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `${title} • Alathurpadi Dars Canteen`,
+      });
+    } catch (err) {
+      console.error('Share dietary matrix error:', err);
     }
   };
 
@@ -1166,15 +1269,20 @@ export default function StudentDashboard() {
             </div>
 
             <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={handleQuickSupplyExport}
-                disabled={exportingSupply || loading}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs transition-all shadow-xs disabled:opacity-50 cursor-pointer"
-              >
-                <Download className={`w-3.5 h-3.5 ${exportingSupply ? 'animate-bounce' : ''}`} />
-                <span>{exportingSupply ? t('generating', 'Generating...') : t('quickDownloadManifest', 'Quick Download (Sections • Ascending PDF)')}</span>
-              </button>
+              <ExportActionMenu
+                onView={handleViewSupplyManifest}
+                onDownload={handleQuickSupplyExport}
+                onPrint={handlePrintSupplyManifest}
+                onShare={handleShareSupplyManifest}
+                onCustomize={() => {
+                  feedback('tick');
+                  setAdvancedExportModal({ isOpen: true, type: 'supply' });
+                }}
+                isGenerating={exportingSupply || loading}
+                label={t('quickDownloadManifest', 'Quick Download (Sections • Ascending PDF)')}
+                colorTheme="emerald"
+                defaultAction="view"
+              />
 
               <button
                 type="button"
@@ -1212,15 +1320,20 @@ export default function StudentDashboard() {
             </div>
 
             <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={handleQuickDietaryExport}
-                disabled={exportingDietary || loading}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs transition-all shadow-xs disabled:opacity-50 cursor-pointer"
-              >
-                <Download className={`w-3.5 h-3.5 ${exportingDietary ? 'animate-bounce' : ''}`} />
-                <span>{exportingDietary ? t('generating', 'Generating...') : t('quickDownloadMatrix', 'Quick Download Matrix (Ascending PDF)')}</span>
-              </button>
+              <ExportActionMenu
+                onView={handleViewDietaryAvoiders}
+                onDownload={handleQuickDietaryExport}
+                onPrint={handlePrintDietaryAvoiders}
+                onShare={handleShareDietaryAvoiders}
+                onCustomize={() => {
+                  feedback('tick');
+                  setAdvancedExportModal({ isOpen: true, type: 'dietary' });
+                }}
+                isGenerating={exportingDietary || loading}
+                label={t('quickDownloadMatrix', 'Quick Download Matrix (Ascending PDF)')}
+                colorTheme="amber"
+                defaultAction="view"
+              />
 
               <button
                 type="button"
@@ -1442,15 +1555,28 @@ export default function StudentDashboard() {
                       </div>
                     </div>
 
-                    {/* Simple Close button instead of login */}
-                    <div className="pt-1">
+                    {/* Action buttons: Login to Portal (View Only) and Close */}
+                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          feedback('tick');
+                          const tNo = detailsDoc.tokenNo;
+                          setDetailsDoc(null);
+                          navigate(`/login?token=${tNo}`);
+                        }}
+                        className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>{t('loginToViewPortal', 'Login to Student Portal (View Only)')}</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
                           feedback('tick');
                           setDetailsDoc(null);
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs transition-colors cursor-pointer shadow-sm"
+                        className="py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors cursor-pointer"
                       >
                         {t('closeNotice', 'Close')}
                       </button>
@@ -1780,6 +1906,13 @@ export default function StudentDashboard() {
         documents={documents}
         preferences={preferencesList}
         sectionChunkSize={sectionChunkSize}
+      />
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
       />
 
     </div>

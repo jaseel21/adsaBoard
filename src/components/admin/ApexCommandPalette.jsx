@@ -18,6 +18,8 @@ import {
   Layers,
   Phone,
   Home,
+  Bell,
+  HeartHandshake,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -34,7 +36,7 @@ export default function ApexCommandPalette({
   onOpenStaff,
   onOpenLockModal,
   navigate,
-  isLunch = true,
+  isLunch = false,
   effectiveMode,
   isCentralCommittee = false,
 }) {
@@ -174,6 +176,30 @@ export default function ApexCommandPalette({
       iconColor: 'text-rose-500',
       action: () => {
         navigate('/admin/menu');
+        onClose();
+      },
+    });
+
+    list.push({
+      id: 'notifications_studio',
+      title: t('adminNotificationsTitle', 'Broadcast Notifications & Announcements'),
+      subtitle: t('adminNotificationsSubtitle', 'Dispatch live announcements, cutoff extensions, and alerts (/admin/notifications)'),
+      icon: Bell,
+      iconColor: 'text-amber-500',
+      action: () => {
+        navigate('/admin/notifications');
+        onClose();
+      },
+    });
+
+    list.push({
+      id: 'support_command_center',
+      title: t('adminSupportTitle', 'Support & Feedback Command Center'),
+      subtitle: t('adminSupportSubtitle', 'Live diner telemetry, rapid issue triage, student dossiers & SLA control (/admin/support)'),
+      icon: HeartHandshake,
+      iconColor: 'text-emerald-500',
+      action: () => {
+        navigate('/admin/support');
         onClose();
       },
     });

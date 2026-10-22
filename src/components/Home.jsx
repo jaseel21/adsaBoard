@@ -98,7 +98,7 @@ export default function Home() {
   // Unified Token Board Controller Hook
   const controller = useTokenBoardController({
     autoEveningShift: true, // Public Home auto-advances for tomorrow after 2:00 PM IST
-    initialMeal: 'lunch',
+    initialMeal: 'breakfast',
     initialViewCategory: 'all',
     initialViewDensity: 'matrix',
   });
@@ -829,15 +829,28 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Simple Close button instead of login */}
-                    <div className="pt-1">
+                    {/* Action buttons: Login to Portal (View Only) and Close */}
+                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          feedback('tick');
+                          const tNo = detailsDoc.tokenNo;
+                          setDetailsDoc(null);
+                          navigate(`/login?token=${tNo}`);
+                        }}
+                        className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>{t('loginToViewPortal', 'Login to Student Portal (View Only)')}</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
                           feedback('tick');
                           setDetailsDoc(null);
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-xs transition-colors cursor-pointer shadow-sm"
+                        className="py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors cursor-pointer"
                       >
                         {t('closeNotice', 'Close')}
                       </button>
@@ -1085,10 +1098,23 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
                 <button
+                  type="button"
+                  onClick={() => {
+                    const tokenNo = blockedAlertDoc.tokenNo;
+                    setBlockedAlertDoc(null);
+                    navigate(`/login?token=${tokenNo}`);
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{t('loginToViewPortal', 'Login to Student Portal (View Only)')}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setBlockedAlertDoc(null)}
-                  className="w-full py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-xs"
+                  className="py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 font-bold text-xs"
                 >
                   {t('closeNotice', 'Close Notice')}
                 </button>

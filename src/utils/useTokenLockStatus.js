@@ -240,7 +240,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 2. Today is closed (food preparation already completed / meal service underway)
+      // 2. Today is always locked (meal orders are finalized / food prep underway) unless admin force unlocked
       if (targetDateStr === todayIST) {
         return {
           isLocked: true,
@@ -252,8 +252,9 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 3. Tomorrow (The cutoff target): Open all day before cutoff deadline on the day before (e.g. 11:00 PM IST).
-      // Only locked after the cutoff deadline passes on the day before.
+      // 3. Tomorrow (The cutoff target):
+      // Unlocked during the active board updation window (e.g. 2:00 PM to 11:00 PM IST).
+      // Locked before window open time (e.g. before 2:00 PM) and locked after cutoff deadline (e.g. past 11:00 PM).
       if (targetDateStr === tomorrowIST) {
         // Anti-tamper check: If clock is unverified and device settings were tampered, lock tomorrow to prevent bypass
         if (!isSynced && isDeviceDesynced) {
@@ -281,6 +282,19 @@ export function useTokenLockStatus() {
           };
         }
 
+        const isBeforeWindow = Boolean(timeHms && timeHms < startTimeHms);
+        if (isBeforeWindow) {
+          return {
+            isLocked: true,
+            reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)}.`,
+            code: 'BEFORE_WINDOW',
+            isTomorrow: true,
+            isToday: false,
+            isPast: false,
+            isPastCutoff: false,
+          };
+        }
+
         return {
           isLocked: false,
           reason: `Open for tomorrow until cutoff at ${formatTime12(activeWindow.endTime)}.`,
@@ -292,7 +306,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 4. Future dates (Day after tomorrow onward): ALWAYS UNLOCKED!
+      // 4. Future dates (Day after tomorrow onward): ALWAYS UNLOCKED for advance scheduling!
       return {
         isLocked: false,
         reason: 'Advance booking open. You can freely toggle meals or schedule leaves.',
@@ -302,12 +316,17 @@ export function useTokenLockStatus() {
         isPast: false,
       };
     },
-    [effectiveMode, todayIST, tomorrowIST, timeHms, endTimeHms, activeWindow, isSynced, isDeviceDesynced]
+    [effectiveMode, todayIST, tomorrowIST, timeHms, startTimeHms, endTimeHms, activeWindow, isSynced, isDeviceDesynced]
   );
 
-  // Quick state for tomorrow's cutoff
+  // Quick state for today and tomorrow
+  const todayLockInfo = useMemo(() => getDateLockStatus(todayIST), [getDateLockStatus, todayIST]);
+  const isTodayLocked = todayLockInfo.isLocked;
+
   const tomorrowLockInfo = useMemo(() => getDateLockStatus(tomorrowIST), [getDateLockStatus, tomorrowIST]);
   const isTomorrowLocked = tomorrowLockInfo.isLocked;
+
+  const isUpdationWindowOpen = Boolean(isPostWindowOpen && isTimeInWindow);
 
   // Is student portal accessible for login? (Always accessible unless emergency lockdown!)
   const isPortalAccessible = effectiveMode !== 'force_locked';
@@ -320,11 +339,14 @@ export function useTokenLockStatus() {
     if (effectiveMode === 'force_unlocked') {
       return 'Admin Override (All Dates Unlocked)';
     }
-    if (!isTomorrowLocked) {
-      return `Next Day Open until ${formatTime12(activeWindow.endTime, false)}`;
+    if (isTomorrowLocked) {
+      if (timeHms && timeHms < startTimeHms) {
+        return `Next Day Opens at ${formatTime12(activeWindow.startTime, false)}`;
+      }
+      return `Next Day Locked (${formatTime12(activeWindow.endTime, false)} Cutoff)`;
     }
-    return `Next Day Locked (${formatTime12(activeWindow.endTime, false)} Cutoff)`;
-  }, [effectiveMode, isTomorrowLocked, activeWindow]);
+    return `Next Day Open until ${formatTime12(activeWindow.endTime, false)}`;
+  }, [effectiveMode, isTomorrowLocked, activeWindow, timeHms, startTimeHms]);
 
   // Persistence helper to update configuration in Firestore
   const saveLockConfig = useCallback(async (updates) => {
@@ -351,13 +373,16 @@ export function useTokenLockStatus() {
     getDateLockStatus,
     isDateLocked: (d) => getDateLockStatus(d).isLocked,
 
-    // Tomorrow & Target Context
+    // Today, Tomorrow & Target Context
     todayIST,
     tomorrowIST,
     todayDayShort,
     tomorrowDayShort,
+    isTodayLocked,
+    todayLockInfo,
     isTomorrowLocked,
     tomorrowLockInfo,
+    isUpdationWindowOpen,
 
     // Portal Accessibility
     isPortalAccessible,

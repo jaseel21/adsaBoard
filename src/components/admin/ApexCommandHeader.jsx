@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Clock,
   ShieldCheck,
@@ -13,11 +14,13 @@ import {
   Moon,
   AlertCircle,
   HelpCircle,
+  Bell,
 } from 'lucide-react';
 import { useWorldTime } from '../../utils/time';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { useLanguage } from '../../store/LanguageContext';
+
 
 export default function ApexCommandHeader({
   effectiveMode,
@@ -32,6 +35,7 @@ export default function ApexCommandHeader({
   user,
 }) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { timeHms, timeAmPm, dayLong, longDate } = useWorldTime('Asia/Kolkata');
 
   // Compute atmospheric phase from current IST hour
@@ -198,6 +202,20 @@ export default function ApexCommandHeader({
                 <Sliders className="w-4 h-4" />
               </button>
             )}
+
+            {/* Notifications & Broadcast Studio Shortcut */}
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playPop();
+                hapticEngine.lightTap();
+                navigate('/admin/notifications');
+              }}
+              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
+              title="Broadcast Announcements Studio & Ledger"
+            >
+              <Bell className="w-4 h-4 text-emerald-500" />
+            </button>
 
             {/* Master Lock Switch Pill (Interactive for Central Committee, Informational for Canteen Committee) */}
             <button

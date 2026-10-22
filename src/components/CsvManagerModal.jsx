@@ -11,13 +11,18 @@ import {
   Check,
   Sparkles,
   HelpCircle,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  Printer,
+  Share2,
 } from 'lucide-react';
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
+import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 
@@ -31,6 +36,7 @@ export default function CsvManagerModal({
   const { feedback } = useFeedback();
 
   const [activeTab, setActiveTab] = useState('import'); // 'import' | 'export'
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [parsedRows, setParsedRows] = useState([]);
@@ -260,21 +266,59 @@ export default function CsvManagerModal({
     URL.revokeObjectURL(url);
   };
 
-  // Export current students to PDF
-  const handleExportPdf = () => {
+  const handleViewSampleCsv = () => {
     feedback('tick');
-    const doc = new jsPDF('p', 'mm', 'a4');
+    const sampleRows = [
+      { tokenNo: '1', nameEn: 'Muhammed Rashad', nameMl: 'മുഹമ്മദ് റഷാദ്', uname: 'rashad_1', password: '***', batch: 'Batch 2024', roomNo: 'B-10', phone: '9847000001' },
+      { tokenNo: '2', nameEn: 'Ahmed Faris', nameMl: 'അഹ്മദ് ഫാരിസ്', uname: 'faris_2', password: '***', batch: 'Batch 2024', roomNo: 'A-04', phone: '9847000002' },
+      { tokenNo: '3', nameEn: 'Ali Shaheen', nameMl: 'അലി ഷാഹീൻ', uname: 'shaheen_3', password: '***', batch: 'Senior Dars', roomNo: 'C-02', phone: '9847000003' },
+    ];
+    setUniversalDoc({
+      isOpen: true,
+      data: {
+        type: 'csv',
+        rows: sampleRows,
+        title: 'Student CSV Template',
+        subtitle: 'Bilingual Template with UTF-8 Malayalam Column Support',
+        filename: 'adsa_students_template_bilingual.csv',
+      },
+    });
+  };
 
+  const handleViewStudentsCsv = () => {
+    feedback('tick');
+    const rows = allStudents.map(s => ({
+      tokenNo: s.tokenNo,
+      nameEn: s.nameEn || s.name || '-',
+      nameMl: s.nameMl || '-',
+      username: s.username || s.uname || String(s.tokenNo || ''),
+      batch: s.batch || 'General',
+      roomNo: s.roomNo || '-',
+      phone: s.phone || '-',
+      status: s.block ? 'Blocked' : 'Active',
+    }));
+    setUniversalDoc({
+      isOpen: true,
+      data: {
+        type: 'csv',
+        rows,
+        title: 'Student Directory (CSV)',
+        subtitle: `Total Students: ${allStudents.length}`,
+        filename: `ADSA_Student_Directory_${new Date().toISOString().slice(0, 10)}.csv`,
+      },
+    });
+  };
+
+  const generateStudentsPdfDoc = () => {
+    const doc = new jsPDF('p', 'mm', 'a4');
     doc.setFontSize(16);
     doc.setTextColor(5, 150, 105);
     doc.text('Alathurpadi Dars - Students Directory Roster', 14, 16);
-
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')} • Total Students: ${allStudents.length}`, 14, 23);
 
     const sorted = [...allStudents].sort((a, b) => (Number(a.tokenNo) || 0) - (Number(b.tokenNo) || 0));
-
     const columns = [
       { header: 'Token', dataKey: 'token' },
       { header: 'English Name', dataKey: 'name' },
@@ -282,7 +326,6 @@ export default function CsvManagerModal({
       { header: 'Room', dataKey: 'room' },
       { header: 'Status', dataKey: 'status' },
     ];
-
     const data = sorted.map(s => ({
       token: s.tokenNo,
       name: s.nameEn || s.name || '-',
@@ -301,7 +344,53 @@ export default function CsvManagerModal({
       alternateRowStyles: { fillColor: [248, 250, 248] },
     });
 
-    doc.save(`ADSA_Student_Roster_${new Date().toISOString().slice(0, 10)}.pdf`);
+    const filename = `ADSA_Student_Roster_${new Date().toISOString().slice(0, 10)}.pdf`;
+    return {
+      doc,
+      filename,
+      title: 'Student Directory Roster (PDF)',
+      subtitle: `Total Students: ${allStudents.length}`,
+    };
+  };
+
+  const handleViewStudentsPdf = () => {
+    feedback('tick');
+    const res = generateStudentsPdfDoc();
+    setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
+  };
+
+  const handlePrintStudentsPdf = async () => {
+    feedback('tick');
+    try {
+      const { doc } = generateStudentsPdfDoc();
+      const { blobUrl } = createPdfBlob(doc);
+      await directPrintPdf(blobUrl);
+    } catch (e) {
+      console.error('Print student roster failed:', e);
+    }
+  };
+
+  const handleShareStudentsPdf = async () => {
+    feedback('pop');
+    try {
+      const { doc, filename, title } = generateStudentsPdfDoc();
+      const { blob } = createPdfBlob(doc);
+      await shareDocument({
+        blob,
+        filename,
+        title,
+        text: `Alathurpadi Dars • Student Directory Roster (${allStudents.length} Students)`,
+      });
+    } catch (e) {
+      console.error('Share student roster failed:', e);
+    }
+  };
+
+  // Export current students to PDF
+  const handleExportPdf = () => {
+    feedback('tick');
+    const { doc, filename } = generateStudentsPdfDoc();
+    doc.save(filename);
     feedback('success');
   };
 
@@ -377,14 +466,24 @@ export default function CsvManagerModal({
                     Includes sample Malayalam & English columns encoded in UTF-8.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadSample}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Sample</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleViewSampleCsv}
+                    className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-200 text-xs font-bold border border-emerald-300 dark:border-emerald-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadSample}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Sample</span>
+                  </button>
+                </div>
               </div>
 
               {/* Drag and Drop Zone */}
@@ -498,37 +597,94 @@ export default function CsvManagerModal({
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <button
-                  type="button"
-                  onClick={handleExportCsv}
-                  className="p-5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border border-gray-200/80 dark:border-white/10 hover:border-emerald-400 text-left transition-all space-y-2 group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FileSpreadsheet className="w-5 h-5" />
+                {/* CSV Card */}
+                <div className="p-5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <FileSpreadsheet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">Student Directory (CSV)</h4>
+                      <p className="text-xs text-gray-500">Full dataset with UTF-8 Malayalam text support</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Export to CSV (Excel)</h4>
-                    <p className="text-xs text-gray-500">Full dataset with UTF-8 Malayalam text support</p>
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-white/5">
+                    <button
+                      type="button"
+                      onClick={handleViewStudentsCsv}
+                      className="flex-1 py-2 px-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Preview</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportCsv}
+                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download</span>
+                    </button>
                   </div>
-                </button>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={handleExportPdf}
-                  className="p-5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 border border-gray-200/80 dark:border-white/10 hover:border-emerald-400 text-left transition-all space-y-2 group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FileText className="w-5 h-5" />
+                {/* PDF Card */}
+                <div className="p-5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">Printable Directory Roster (PDF)</h4>
+                      <p className="text-xs text-gray-500">Official notice sheet for canteen notice board</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Export Printable PDF</h4>
-                    <p className="text-xs text-gray-500">Clean A4 document ready for canteen notice board</p>
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-white/5">
+                    <button
+                      type="button"
+                      onClick={handleViewStudentsPdf}
+                      className="flex-1 py-2 px-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Preview</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrintStudentsPdf}
+                      className="py-2 px-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-700 dark:text-gray-200 font-bold text-xs transition-all cursor-pointer"
+                      title="Direct Print"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleShareStudentsPdf}
+                      className="py-2 px-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-700 dark:text-gray-200 font-bold text-xs transition-all cursor-pointer"
+                      title="Share"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportPdf}
+                      className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                      title="Download PDF"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                </button>
+                </div>
               </div>
             </div>
           )}
         </div>
+
+        {/* Universal In-App Document Viewer & Action Modal */}
+        <UniversalDocumentModal
+          isOpen={universalDoc.isOpen}
+          onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+          documentData={universalDoc.data}
+        />
       </motion.div>
     </div>
   );

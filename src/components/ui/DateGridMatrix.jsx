@@ -165,15 +165,25 @@ export default function DateGridMatrix({
 
   // ================= 1. SINGLE CLICK TO TURN ON AND OFF =================
   const handleSingleClickToggle = (dateStr) => {
-    if (!editable) return;
+    if (!editable) {
+      feedback('warning');
+      dialog.toast.info(
+        t('tokenLockedBadge', 'Token Locked'),
+        t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')
+      );
+      return;
+    }
 
     const lockInfo = getDateLockStatus(dateStr);
     if (lockInfo.isLocked) {
       feedback('warning');
-      dialog.toast.warning(
-        dateStr === tomorrowIST ? "Tomorrow's Meals are Locked" : 'Date is Locked',
-        lockInfo.reason || 'Updates for this date are closed.'
-      );
+      const title =
+        dateStr === todayIST
+          ? "Today's Meals are Locked"
+          : dateStr === tomorrowIST
+          ? "Tomorrow's Meals are Locked"
+          : 'Date is Locked';
+      dialog.toast.warning(title, lockInfo.reason || 'Updates for this date are closed.');
       return;
     }
 
@@ -692,10 +702,13 @@ export default function DateGridMatrix({
                   onHistoryClick={handleHistoryClick}
                   onLockedClick={(d, reason) => {
                     feedback('warning');
-                    dialog.toast.warning(
-                      d === tomorrowIST ? "Tomorrow's Meals are Locked" : 'Date is Locked',
-                      reason || 'Updates for this date are closed.'
-                    );
+                    const title =
+                      d === todayIST
+                        ? "Today's Meals are Locked"
+                        : d === tomorrowIST
+                        ? "Tomorrow's Meals are Locked"
+                        : 'Date is Locked';
+                    dialog.toast.warning(title, reason || 'Updates for this date are closed.');
                   }}
                 />
               );

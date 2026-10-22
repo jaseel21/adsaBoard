@@ -15,7 +15,11 @@ import {
   Copy,
   Sparkles,
   RefreshCw,
+  Eye,
+  Printer,
+  Share2,
 } from 'lucide-react';
+import UniversalDocumentModal from './export/UniversalDocumentModal';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
@@ -39,6 +43,7 @@ export default function BulkActionModal({
   const [activeAction, setActiveAction] = useState('meals'); // 'meals' | 'dietary' | 'batch' | 'status' | 'password' | 'delete'
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   // Meals state
   const [targetMeal, setTargetMeal] = useState('breakfast'); // 'breakfast' | 'lunch' | 'both'
@@ -131,7 +136,22 @@ export default function BulkActionModal({
         target: { type: 'student', id: 'bulk', label: `Bulk Meal Update (${count} Students)` },
         changes: {
           diffSummary: `Bulk updated ${targetMeal.toUpperCase()} for ${count} students to ${mealActionVal ? 'ON' : 'OFF'}`,
-          fieldsChanged: [targetMeal],
+          fieldsChanged: [`${targetMeal.toUpperCase()} Status`],
+          before: { [`${targetMeal.toUpperCase()} Status`]: !mealActionVal },
+          after: { [`${targetMeal.toUpperCase()} Status`]: mealActionVal },
+          tokenDeltas: [
+            {
+              type: 'bulk_update',
+              scopeLabel: `${count} Students`,
+              meal: targetMeal,
+              mealLabel: targetMeal === 'breakfast' ? 'Breakfast' : 'Lunch',
+              previous: !mealActionVal,
+              current: mealActionVal,
+              previousLabel: !mealActionVal ? 'ON' : 'OFF',
+              currentLabel: mealActionVal ? 'ON' : 'OFF',
+              label: `Bulk ${targetMeal === 'breakfast' ? 'Breakfast' : 'Lunch'} Update`,
+            },
+          ],
         },
         metadata: {
           batchCount: count,
@@ -363,6 +383,29 @@ export default function BulkActionModal({
     link.download = `ADSA_Password_Reset_Roster_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleViewPasswordRoster = () => {
+    if (!generatedRoster) return;
+    feedback('tick');
+    const rows = generatedRoster.map(r => ({
+      'Token No': r.tokenNo,
+      'English Name': r.nameEn || '',
+      'Malayalam Name': r.nameMl || '',
+      'Username': r.uname || '',
+      'New Password': r.newPassword,
+      'Batch': r.batch || 'General',
+    }));
+    setUniversalDoc({
+      isOpen: true,
+      data: {
+        type: 'csv',
+        rows,
+        title: 'Temporary Password Reset Roster',
+        subtitle: `Generated credentials for ${generatedRoster.length} students`,
+        filename: `ADSA_Password_Reset_Roster_${new Date().toISOString().slice(0, 10)}.csv`,
+      },
+    });
   };
 
   // 6. Bulk Delete
@@ -789,14 +832,24 @@ export default function BulkActionModal({
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleDownloadPasswordRoster}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download New Password Roster (CSV)</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleViewPasswordRoster}
+                      className="flex-1 py-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Preview & Actions</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadPasswordRoster}
+                      className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download CSV</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -828,6 +881,12 @@ export default function BulkActionModal({
           )}
         </div>
       </motion.div>
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
+      />
     </div>
   );
 }
