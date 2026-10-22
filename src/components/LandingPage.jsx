@@ -215,6 +215,7 @@ export default function LandingPage() {
       dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
       documents: studentsList,
       chunkSize: sectionChunkSize,
+      mealFilter: 'both',
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
   };
@@ -228,6 +229,7 @@ export default function LandingPage() {
         dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
         documents: studentsList,
         chunkSize: sectionChunkSize,
+        mealFilter: 'both',
       });
       const { blobUrl } = createPdfBlob(doc);
       await directPrintPdf(blobUrl);
@@ -245,6 +247,7 @@ export default function LandingPage() {
         dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
         documents: studentsList,
         chunkSize: sectionChunkSize,
+        mealFilter: 'both',
       });
       const { blob } = createPdfBlob(doc);
       await shareDocument({
@@ -266,6 +269,7 @@ export default function LandingPage() {
       dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
       documents: studentsList,
       chunkSize: sectionChunkSize,
+      mealFilter: 'both',
     });
     doc.save(filename);
   };

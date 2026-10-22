@@ -241,7 +241,7 @@ export default function SupplySections({ defaultMeal }) {
       category: sectionMode === 'size' ? 'sections' : 'batches',
       sort: 'ascending',
       chunkSize: Number(customChunkSize) || 25,
-      mealFilter: activeMeal,
+      mealFilter: 'both',
       statusFilter: 'canceled_only',
       revision: targetRev,
       printedByName: user?.displayName || user?.email || 'Admin',
@@ -280,7 +280,7 @@ export default function SupplySections({ defaultMeal }) {
         category: sectionMode === 'size' ? 'sections' : 'batches',
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
-        mealFilter: activeMeal,
+        mealFilter: 'both',
         statusFilter: 'canceled_only',
         revision: targetRevision,
         printedByName: user?.displayName || user?.email || 'Admin',
@@ -319,7 +319,7 @@ export default function SupplySections({ defaultMeal }) {
         category: sectionMode === 'size' ? 'sections' : 'batches',
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
-        mealFilter: activeMeal,
+        mealFilter: 'both',
         statusFilter: 'canceled_only',
       });
       const { blob } = createPdfBlob(doc);
@@ -327,7 +327,7 @@ export default function SupplySections({ defaultMeal }) {
         blob,
         filename,
         title,
-        text: `${title} (${activeMeal.toUpperCase()}) • Service Date: ${targetDateIST}`,
+        text: `${title} • Service Date: ${targetDateIST}`,
       });
     } catch (err) {
       console.error('Share supply sections error:', err);
@@ -345,6 +345,7 @@ export default function SupplySections({ defaultMeal }) {
         category: sectionMode === 'size' ? 'sections' : 'batches',
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
+        mealFilter: 'both',
       });
       feedback('success');
     } catch (err) {
@@ -768,6 +769,13 @@ export default function SupplySections({ defaultMeal }) {
         onClose={() => setIsCanteenLogOpen(false)}
         activeMeal={activeMeal}
         targetDateIST={targetDateIST}
+      />
+
+      {/* Universal In-App Document Viewer & Action Modal */}
+      <UniversalDocumentModal
+        isOpen={universalDoc.isOpen}
+        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
+        documentData={universalDoc.data}
       />
     </div>
   );

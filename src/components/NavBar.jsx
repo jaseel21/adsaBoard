@@ -33,6 +33,7 @@ import {
   Printer,
   Bell,
   HeartHandshake,
+  Share2,
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -41,6 +42,7 @@ import LanguageSwitch from './LanguageSwitch';
 import StaffManagementModal from './StaffManagementModal';
 import NotificationBell from './notifications/NotificationBell';
 import NotificationTickerBanner from './notifications/NotificationTickerBanner';
+import ShareActionModal from './ui/ShareActionModal';
 
 const Navbar = ({ isAdmin }) => {
   const {
@@ -98,6 +100,7 @@ const Navbar = ({ isAdmin }) => {
 
   const [email, setEmail] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [supplyDropdownOpen, setSupplyDropdownOpen] = useState(false);
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
@@ -747,6 +750,20 @@ const Navbar = ({ isAdmin }) => {
             {/* Universal Notification Bell */}
             <NotificationBell />
 
+            {/* Universal Social Share Button */}
+            <button
+              type="button"
+              onClick={() => {
+                feedback('pop');
+                setShareModalOpen(true);
+              }}
+              className="p-2 sm:px-2.5 sm:py-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/70 dark:border-white/10 transition-all flex items-center gap-1.5 active:scale-95 text-xs font-bold"
+              title="Share Link (Telegram, WhatsApp, Web)"
+            >
+              <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="hidden xl:inline">{t('share', 'Share')}</span>
+            </button>
+
             <LanguageSwitch />
             <ThemeSwitch />
 
@@ -1063,6 +1080,12 @@ const Navbar = ({ isAdmin }) => {
       <StaffManagementModal
         isOpen={staffModalOpen}
         onClose={() => setStaffModalOpen(false)}
+      />
+
+      {/* Universal Social Share Modal */}
+      <ShareActionModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
       />
     </header>
     {/* Ambient Broadcast Sticky Banner Marquee */}

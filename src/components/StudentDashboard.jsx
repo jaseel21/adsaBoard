@@ -181,7 +181,7 @@ export default function StudentDashboard() {
       category: 'sections',
       sort: 'ascending',
       chunkSize: sectionChunkSize,
-      mealFilter: isLunch ? 'lunch' : 'breakfast',
+      mealFilter: 'both',
       statusFilter: 'canceled_only',
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
@@ -198,7 +198,7 @@ export default function StudentDashboard() {
         category: 'sections',
         sort: 'ascending',
         chunkSize: sectionChunkSize,
-        mealFilter: isLunch ? 'lunch' : 'breakfast',
+        mealFilter: 'both',
         statusFilter: 'canceled_only',
       });
       const { blobUrl } = createPdfBlob(doc);
@@ -219,7 +219,7 @@ export default function StudentDashboard() {
         category: 'sections',
         sort: 'ascending',
         chunkSize: sectionChunkSize,
-        mealFilter: isLunch ? 'lunch' : 'breakfast',
+        mealFilter: 'both',
         statusFilter: 'canceled_only',
       });
       const { blob } = createPdfBlob(doc);
@@ -244,7 +244,7 @@ export default function StudentDashboard() {
       category: 'sections',
       sort: 'ascending',
       chunkSize: sectionChunkSize,
-      mealFilter: isLunch ? 'lunch' : 'breakfast',
+      mealFilter: 'both',
       statusFilter: 'canceled_only',
     });
     doc.save(filename);
