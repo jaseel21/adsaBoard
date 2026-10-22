@@ -27,6 +27,7 @@ import {
   SUPPORT_STATUSES,
   SUPPORT_CATEGORIES,
 } from '../../../utils/supportTicketService';
+import { approveUnblockRequest } from '../../../utils/unblockRequestService';
 import { soundEngine } from '../../../utils/soundEffects';
 import { hapticEngine } from '../../../utils/haptics';
 import { useLanguage } from '../../../store/LanguageContext';
@@ -136,25 +137,12 @@ export default function SupportInspectorDrawer({
       soundEngine.playMechanicalClick();
       hapticEngine.mediumTick();
 
-      const db = firebase.firestore();
-      const tokenStr = String(ticket.student.tokenNumber);
-
-      // Search student by token number or ID
-      const querySnap = await db.collection('students').where('id', '==', ticket.student.tokenNumber).get();
-      if (!querySnap.empty) {
-        const studentDoc = querySnap.docs[0];
-        await studentDoc.ref.update({
-          block: false,
-          blockReason: 'Unblocked via Care Ticket resolution',
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-      }
-
-      await appendTicketMessage(ticket.id, {
-        senderType: 'staff',
-        senderName: staffInfo.name || 'Central Committee',
-        message: `Token #${ticket.student.tokenNumber} has been verified and successfully unblocked in the master registry.`,
-        isInternal: false,
+      await approveUnblockRequest({
+        studentId: ticket.student.studentId,
+        tokenNo: ticket.student.tokenNumber,
+        ticketId: ticket.id,
+        reviewerInfo: staffInfo,
+        resolutionNote: 'Unblocked via Care Ticket resolution',
       });
 
       soundEngine.playSoftChime();
@@ -244,9 +232,9 @@ export default function SupportInspectorDrawer({
                 </span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase block">Batch & Room</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase block">Academic Batch</span>
                 <span className="font-semibold text-gray-800 dark:text-gray-200">
-                  {ticket.student?.batch || '--'} {ticket.student?.room ? `• ${ticket.student.room}` : ''}
+                  {ticket.student?.batch || '--'}
                 </span>
               </div>
             </div>
@@ -279,7 +267,7 @@ export default function SupportInspectorDrawer({
             )}
 
             {/* 1-Click Unblock Token Trigger (Central Committee) */}
-            {ticket.category === 'token_lock' && ticket.student?.tokenNumber && isCentralCommittee && (
+            {ticket.category === 'token_lock' && ticket.student?.tokenNumber && isCentralCommittee && !isResolved && (
               <button
                 type="button"
                 onClick={handleUnblockStudent}

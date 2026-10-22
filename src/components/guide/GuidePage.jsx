@@ -25,6 +25,7 @@ import {
   ShortcutsAndGestures,
 } from './GuideModules';
 import WalkthroughTour from './WalkthroughTour';
+import useSEO from '../../hooks/useSEO';
 
 const GuidePage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,15 @@ const GuidePage = () => {
   const { feedback } = useFeedback();
   const [activeTab, setActiveTab] = useState('color-system');
   const [isTourOpen, setIsTourOpen] = useState(false);
+
+  useSEO({
+    title: 'System Guide & Visual User Manual',
+    description:
+      'Comprehensive documentation and visual manual on meal schedules, cutoff rules, color codes, and gestures for ADSA T-Board.',
+    keywords:
+      'adsa t-board guide, token board manual, canteen cutoff rules, color system legend, student guide',
+    image: '/og-preview.png',
+  });
 
   const TABS = [
     { id: 'color-system', label: 'Color System', icon: Layers },

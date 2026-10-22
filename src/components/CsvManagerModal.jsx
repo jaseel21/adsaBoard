@@ -86,7 +86,6 @@ export default function CsvManagerModal({
           const uname = (row.uname || row.username || (!isNaN(tokenNo) ? String(tokenNo) : '')).trim();
           const password = String(row.password || row.pass || 'pass123').trim();
           const batch = (row.batch || row.class || row.year || 'General').trim();
-          const roomNo = String(row.roomno || row.room || '').trim();
           const phone = String(row.phone || row.mobile || '').trim();
 
           const isTokenMissing = isNaN(tokenNo) || tokenNo <= 0;
@@ -106,7 +105,6 @@ export default function CsvManagerModal({
             uname,
             password,
             batch,
-            roomNo,
             phone,
             isExisting,
             isValid: !isTokenMissing && !isNameMissing
@@ -185,7 +183,6 @@ export default function CsvManagerModal({
             username: finalUname,
             password: row.password || (existing ? existing.password : 'pass123'),
             batch: row.batch || (existing ? existing.batch : 'General'),
-            roomNo: row.roomNo || (existing ? existing.roomNo || '' : ''),
             phone: row.phone || (existing ? existing.phone || '' : ''),
             block: existing ? Boolean(existing.block) : false,
             blockReason: existing ? existing.blockReason || '' : '',
@@ -224,11 +221,11 @@ export default function CsvManagerModal({
   // Sample CSV generator with Malayalam text (UTF-8 BOM)
   const handleDownloadSample = () => {
     feedback('tick');
-    const sampleHeaders = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'password', 'batch', 'roomNo', 'phone'];
+    const sampleHeaders = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'password', 'batch', 'phone'];
     const sampleRows = [
-      ['1', 'Muhammed Rashad', 'മുഹമ്മദ് റഷാദ്', 'rashad_1', 'pass123', 'Batch 2024', 'B-10', '9847000001'],
-      ['2', 'Ahmed Faris', 'അഹ്മദ് ഫാരിസ്', 'faris_2', 'pass456', 'Batch 2024', 'A-04', '9847000002'],
-      ['3', 'Ali Shaheen', 'അലി ഷാഹീൻ', 'shaheen_3', 'pass789', 'Senior Dars', 'C-02', '9847000003'],
+      ['1', 'Muhammed Rashad', 'മുഹമ്മദ് റഷാദ്', 'rashad_1', 'pass123', 'Batch 2024', '9847000001'],
+      ['2', 'Ahmed Faris', 'അഹ്മദ് ഫാരിസ്', 'faris_2', 'pass456', 'Batch 2024', '9847000002'],
+      ['3', 'Ali Shaheen', 'അലി ഷാഹീൻ', 'shaheen_3', 'pass789', 'Senior Dars', '9847000003'],
     ];
 
     const csvText = '\uFEFF' + [sampleHeaders.join(','), ...sampleRows.map(r => r.join(','))].join('\n');
@@ -244,14 +241,13 @@ export default function CsvManagerModal({
   // Export current students to CSV (Hardened: Passwords excluded for data protection)
   const handleExportCsv = () => {
     feedback('tick');
-    const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'batch', 'roomNo', 'phone', 'status'];
+    const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'batch', 'phone', 'status'];
     const rows = allStudents.map(s => [
       s.tokenNo,
       `"${(s.nameEn || s.name || '').replace(/"/g, '""')}"`,
       `"${(s.nameMl || '').replace(/"/g, '""')}"`,
       `"${(s.username || s.uname || String(s.tokenNo || '')).replace(/"/g, '""')}"`,
       `"${(s.batch || 'General').replace(/"/g, '""')}"`,
-      `"${(s.roomNo || '').replace(/"/g, '""')}"`,
       `"${(s.phone || '').replace(/"/g, '""')}"`,
       s.block ? 'Blocked' : 'Active'
     ]);
@@ -269,9 +265,9 @@ export default function CsvManagerModal({
   const handleViewSampleCsv = () => {
     feedback('tick');
     const sampleRows = [
-      { tokenNo: '1', nameEn: 'Muhammed Rashad', nameMl: 'മുഹമ്മദ് റഷാദ്', uname: 'rashad_1', password: '***', batch: 'Batch 2024', roomNo: 'B-10', phone: '9847000001' },
-      { tokenNo: '2', nameEn: 'Ahmed Faris', nameMl: 'അഹ്മദ് ഫാരിസ്', uname: 'faris_2', password: '***', batch: 'Batch 2024', roomNo: 'A-04', phone: '9847000002' },
-      { tokenNo: '3', nameEn: 'Ali Shaheen', nameMl: 'അലി ഷാഹീൻ', uname: 'shaheen_3', password: '***', batch: 'Senior Dars', roomNo: 'C-02', phone: '9847000003' },
+      { tokenNo: '1', nameEn: 'Muhammed Rashad', nameMl: 'മുഹമ്മദ് റഷാദ്', uname: 'rashad_1', password: '***', batch: 'Batch 2024', phone: '9847000001' },
+      { tokenNo: '2', nameEn: 'Ahmed Faris', nameMl: 'അഹ്മദ് ഫാരിസ്', uname: 'faris_2', password: '***', batch: 'Batch 2024', phone: '9847000002' },
+      { tokenNo: '3', nameEn: 'Ali Shaheen', nameMl: 'അലി ഷാഹീൻ', uname: 'shaheen_3', password: '***', batch: 'Senior Dars', phone: '9847000003' },
     ];
     setUniversalDoc({
       isOpen: true,
@@ -293,7 +289,6 @@ export default function CsvManagerModal({
       nameMl: s.nameMl || '-',
       username: s.username || s.uname || String(s.tokenNo || ''),
       batch: s.batch || 'General',
-      roomNo: s.roomNo || '-',
       phone: s.phone || '-',
       status: s.block ? 'Blocked' : 'Active',
     }));
@@ -323,14 +318,12 @@ export default function CsvManagerModal({
       { header: 'Token', dataKey: 'token' },
       { header: 'English Name', dataKey: 'name' },
       { header: 'Batch / Year', dataKey: 'batch' },
-      { header: 'Room', dataKey: 'room' },
       { header: 'Status', dataKey: 'status' },
     ];
     const data = sorted.map(s => ({
       token: s.tokenNo,
       name: s.nameEn || s.name || '-',
       batch: s.batch || 'General',
-      room: s.roomNo || '-',
       status: s.block ? 'BLOCKED' : 'ACTIVE',
     }));
 

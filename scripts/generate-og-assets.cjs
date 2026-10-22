@@ -154,7 +154,7 @@ const masterSvg = `
   <g transform="translate(84, 520)">
     <line x1="0" y1="0" x2="1032" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
     <text x="0" y="32" fill="#34d399" font-family="-apple-system, monospace" font-size="16" font-weight="700">
-      https://adsatboard.web.app/
+      https://canteen.alathurpadidars.in/
     </text>
     <text x="1032" y="32" fill="#9ca3af" font-family="-apple-system, 'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="600" text-anchor="end">
       Alathurpadi Dars Canteen Operations • Verified Portal
@@ -213,7 +213,7 @@ const menuSvg = `
 
   <g transform="translate(84, 520)">
     <line x1="0" y1="0" x2="1032" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-    <text x="0" y="32" fill="#2dd4bf" font-family="-apple-system, monospace" font-size="16" font-weight="700">https://adsatboard.web.app/menu</text>
+    <text x="0" y="32" fill="#2dd4bf" font-family="-apple-system, monospace" font-size="16" font-weight="700">https://canteen.alathurpadidars.in/menu</text>
     <text x="1032" y="32" fill="#9ca3af" font-family="-apple-system, sans-serif" font-size="14" font-weight="600" text-anchor="end">Alathurpadi Dars Canteen Portal</text>
   </g>
 </svg>
@@ -251,7 +251,7 @@ const boardSvg = `
 
   <g transform="translate(84, 520)">
     <line x1="0" y1="0" x2="1032" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-    <text x="0" y="32" fill="#34d399" font-family="-apple-system, monospace" font-size="16" font-weight="700">https://adsatboard.web.app/board</text>
+    <text x="0" y="32" fill="#34d399" font-family="-apple-system, monospace" font-size="16" font-weight="700">https://canteen.alathurpadidars.in/board</text>
     <text x="1032" y="32" fill="#9ca3af" font-family="-apple-system, sans-serif" font-size="14" font-weight="600" text-anchor="end">Live Token Management Board</text>
   </g>
 </svg>
@@ -289,7 +289,7 @@ const supportSvg = `
 
   <g transform="translate(84, 520)">
     <line x1="0" y1="0" x2="1032" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-    <text x="0" y="32" fill="#34d399" font-family="-apple-system, monospace" font-size="16" font-weight="700">https://adsatboard.web.app/support</text>
+    <text x="0" y="32" fill="#34d399" font-family="-apple-system, monospace" font-size="16" font-weight="700">https://canteen.alathurpadidars.in/support</text>
     <text x="1032" y="32" fill="#9ca3af" font-family="-apple-system, sans-serif" font-size="14" font-weight="600" text-anchor="end">Official ADSA Campus Care Hub</text>
   </g>
 </svg>

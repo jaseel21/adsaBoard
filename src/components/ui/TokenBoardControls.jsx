@@ -111,7 +111,7 @@ export default function TokenBoardControls({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('searchTokensPlaceholder', 'Search token #, English name, മലയാളം, room, phone, batch...')}
+            placeholder={t('searchTokensPlaceholder', 'Search token #, English name, മലയാളം, phone, batch...')}
             className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs sm:text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
           />
           {searchQuery && (
@@ -240,7 +240,6 @@ export default function TokenBoardControls({
             <option value="name_ml">{t('sortNameMl', 'Name: Malayalam (അ → ഹ)')}</option>
             <option value="status_active">{t('sortActiveFirst', 'Active Meals First (ON)')}</option>
             <option value="status_off">{t('sortOffFirst', 'Canceled Meals First (OFF)')}</option>
-            <option value="room_asc">{t('sortRoomAsc', 'Room No (Ascending)')}</option>
           </select>
         </div>
 

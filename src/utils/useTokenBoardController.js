@@ -9,6 +9,7 @@ import {
   getEffectiveStudentMealStatus,
   isPastBoardWindowOpenTime,
   getDefaultBoardDayOffset,
+  getRelativeDateMeta,
 } from './studentExceptionService';
 import { subscribeToPreferences } from './preferenceService';
 import { subscribeToCanteenConfig } from './canteenConfigService';
@@ -255,7 +256,6 @@ export function useTokenBoardController(options = {}) {
           const matchEn = (doc.nameEn || doc.name || '').toLowerCase().includes(q);
           const matchMl = (doc.nameMl || '').toLowerCase().includes(q);
           const matchUname = (doc.username || doc.uname || '').toLowerCase().includes(q);
-          const matchRoom = (doc.roomNo || '').toLowerCase().includes(q);
           const matchPhone = (doc.phone || '').toLowerCase().includes(q);
           const matchBatch = (doc.batch || '').toLowerCase().includes(q);
 
@@ -264,7 +264,6 @@ export function useTokenBoardController(options = {}) {
             !matchEn &&
             !matchMl &&
             !matchUname &&
-            !matchRoom &&
             !matchPhone &&
             !matchBatch
           ) {
@@ -311,12 +310,6 @@ export function useTokenBoardController(options = {}) {
           const nameA = a.nameMl || a.nameEn || '';
           const nameB = b.nameMl || b.nameEn || '';
           return nameA.localeCompare(nameB, 'ml');
-        }
-
-        if (sortBy === 'room_asc') {
-          const roomA = a.roomNo || '';
-          const roomB = b.roomNo || '';
-          return roomA.localeCompare(roomB, undefined, { numeric: true, sensitivity: 'base' });
         }
 
         if (sortBy === 'status_active') {
@@ -450,6 +443,30 @@ export function useTokenBoardController(options = {}) {
     }
   }, []);
 
+  const relativeDateMeta = useMemo(() => {
+    return getRelativeDateMeta(targetDateIST, todayIST);
+  }, [targetDateIST, todayIST]);
+
+  const shiftDate = useCallback((days) => {
+    if (!days || isNaN(days)) return;
+    const nextDate = addDaysToDate(targetDateIST, days);
+    setDateMode('custom');
+    setCustomDate(nextDate);
+  }, [targetDateIST]);
+
+  const stepDateBackward = useCallback(() => {
+    shiftDate(-1);
+  }, [shiftDate]);
+
+  const stepDateForward = useCallback(() => {
+    shiftDate(1);
+  }, [shiftDate]);
+
+  const setDateToAuto = useCallback(() => {
+    setDateMode('auto');
+    setCustomDate('');
+  }, []);
+
   return {
     // Data & Loading
     documents,
@@ -469,6 +486,14 @@ export function useTokenBoardController(options = {}) {
     setDateToToday,
     setDateToTomorrow,
     setDateToCustom,
+    setDateToAuto,
+    shiftDate,
+    stepDateBackward,
+    stepDateForward,
+    relativeDateMeta,
+    isYesterday: relativeDateMeta.isYesterday,
+    isPastDate: relativeDateMeta.isPast,
+    isFutureDate: relativeDateMeta.isFuture,
     isPostEveningCutoff,
 
     // Clock & Anti-Tamper IST

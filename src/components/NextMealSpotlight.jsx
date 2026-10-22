@@ -18,6 +18,8 @@ import { useFeedback } from '../utils/useFeedback';
 import { useWorldTime } from '../utils/time';
 import {
   subscribeToWeeklyMenu,
+  subscribeToDateOverrides,
+  getEffectiveMenuForDate,
   determineActiveMealSlot,
   DEFAULT_WEEKLY_MENU,
 } from '../utils/menuService';
@@ -64,14 +66,24 @@ export default function NextMealSpotlight({
   const openTime = activeWindow?.startTime || '14:00';
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
+  const [overrides, setOverrides] = useState({});
   const [activeTab, setActiveTab] = useState('auto'); // 'today' | 'tomorrow' | 'auto'
 
   useEffect(() => {
-    const unsubscribe = subscribeToWeeklyMenu((data) => {
+    const unsubscribeMenu = subscribeToWeeklyMenu((data) => {
       if (data) setWeeklyMenu(data);
     });
-    return () => unsubscribe();
+    const unsubscribeOverrides = subscribeToDateOverrides((data) => {
+      if (data) setOverrides(data);
+    });
+    return () => {
+      unsubscribeMenu();
+      unsubscribeOverrides();
+    };
   }, []);
+
+  const todayDateStr = getTodayISTDate();
+  const tomorrowDateStr = addDaysToDate(todayDateStr, 1);
 
   // Determine current day and tomorrow's day
   // Defaults: 12 AM to board updation open time (eg. 2 PM) -> Today, open time to 12 AM -> Tomorrow
@@ -87,21 +99,31 @@ export default function NextMealSpotlight({
     };
   }, [dayShort, timeHms, openTime]);
 
-  const todayDayData = weeklyMenu[todayKey];
-  const tomorrowDayData = weeklyMenu[tomorrowKey];
-  const activeSlotMeta = useMemo(() => determineActiveMealSlot(timeHms, todayDayData), [timeHms, todayDayData]);
+  // Compute effective menus incorporating special feasts & date overrides
+  const todayEffectiveData = useMemo(() => {
+    return getEffectiveMenuForDate(todayDateStr, weeklyMenu, overrides);
+  }, [todayDateStr, weeklyMenu, overrides]);
+
+  const tomorrowEffectiveData = useMemo(() => {
+    return getEffectiveMenuForDate(tomorrowDateStr, weeklyMenu, overrides);
+  }, [tomorrowDateStr, weeklyMenu, overrides]);
+
+  const activeSlotMeta = useMemo(() => determineActiveMealSlot(timeHms, todayEffectiveData), [timeHms, todayEffectiveData]);
+
+  const isTodayClosed = Boolean(todayEffectiveData?.isArchived || todayEffectiveData?.isClosed);
+  const isTomorrowClosed = Boolean(tomorrowEffectiveData?.isArchived || tomorrowEffectiveData?.isClosed);
 
   // Which day to show based on tab
   const displayedDayKey = useMemo(() => {
     if (activeTab === 'today') return todayKey;
     if (activeTab === 'tomorrow') return tomorrowKey;
     // If today is closed/archived or after 2 PM (14:00) cutoff -> default to tomorrow
-    if (todayDayData?.isArchived || isPostCutoff) return tomorrowKey;
+    if (isTodayClosed || isPostCutoff) return tomorrowKey;
     return todayKey;
-  }, [activeTab, isPostCutoff, todayKey, tomorrowKey, todayDayData]);
+  }, [activeTab, isPostCutoff, todayKey, tomorrowKey, isTodayClosed]);
 
-  const displayedDayData = weeklyMenu[displayedDayKey] || DEFAULT_WEEKLY_MENU[displayedDayKey];
-  const isDayArchived = Boolean(displayedDayData?.isArchived);
+  const displayedDayData = displayedDayKey === tomorrowKey ? tomorrowEffectiveData : todayEffectiveData;
+  const isDayArchived = Boolean(displayedDayData?.isArchived || displayedDayData?.isClosed);
 
   // Compute accurate day-specific token counts for displayed day (Today vs Tomorrow)
   const { displayedBreakfastCount, displayedLunchCount } = useMemo(() => {
@@ -295,6 +317,12 @@ export default function NextMealSpotlight({
               <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
                 {t('nextMealSpotlight') || 'Canteen Meal Radar'}
               </h2>
+              {displayedDayData?.occasion && !displayedDayData?.isClosed && (
+                <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                  <Sparkles className="w-2.5 h-2.5 text-purple-500" />
+                  <span>{displayedDayData.occasion}</span>
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
               {isShowingTomorrow
@@ -318,7 +346,7 @@ export default function NextMealSpotlight({
             }`}
           >
             {t('todaysMeals') || "Today's Menu"}
-            {todayDayData?.isArchived && ` (${t('closed', 'Closed')})`}
+            {isTodayClosed && ` (${t('closed', 'Closed')})`}
           </button>
 
           <button
@@ -333,7 +361,7 @@ export default function NextMealSpotlight({
             }`}
           >
             {t('tomorrowsMeals') || "Tomorrow's Menu"}
-            {tomorrowDayData?.isArchived && ` (${t('closed', 'Closed')})`}
+            {isTomorrowClosed && ` (${t('closed', 'Closed')})`}
           </button>
         </div>
       </div>

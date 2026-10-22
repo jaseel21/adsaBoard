@@ -23,6 +23,7 @@ import {
   Calendar,
   RefreshCw,
   Lock,
+  Clock,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
@@ -77,7 +78,6 @@ export default function StudentDrawer({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [batch, setBatch] = useState('');
-  const [roomNo, setRoomNo] = useState('');
   const [phone, setPhone] = useState('');
   const [block, setBlock] = useState(false);
   const [blockReason, setBlockReason] = useState('');
@@ -124,7 +124,6 @@ export default function StudentDrawer({
       setUname(initialUname);
       setPassword(student.password || '');
       setBatch(student.batch || 'General');
-      setRoomNo(student.roomNo || '');
       setPhone(student.phone || '');
       setBlock(Boolean(student.block));
       setBlockReason(student.blockReason || '');
@@ -142,7 +141,6 @@ export default function StudentDrawer({
       setUname('');
       setPassword('');
       setBatch(existingBatches[0] || 'Batch 2024');
-      setRoomNo('');
       setPhone('');
       setBlock(false);
       setBlockReason('');
@@ -282,11 +280,11 @@ export default function StudentDrawer({
           username: finalUname,
           password: student?.password || password.trim(),
           batch: student?.batch || batch.trim() || 'General',
-          roomNo: student?.roomNo !== undefined ? student.roomNo : roomNo.trim(),
           phone: student?.phone !== undefined ? student.phone : phone.trim(),
           // Operational Canteen updates:
           block: Boolean(block),
           blockReason: block ? blockReason.trim() : '',
+          pendingUnblockRequest: block ? (student?.pendingUnblockRequest || null) : null,
           obj: { lunch, breakfast },
           obj2: dietary,
           dateExceptions: { ...(dateExceptions || {}) },
@@ -310,10 +308,10 @@ export default function StudentDrawer({
           username: finalUname,
           password: password.trim(),
           batch: batch.trim() || 'General',
-          roomNo: roomNo.trim(),
           phone: phone.trim(),
           block: Boolean(block),
           blockReason: block ? blockReason.trim() : '',
+          pendingUnblockRequest: block ? (student?.pendingUnblockRequest || null) : null,
           obj: { lunch, breakfast },
           obj2: dietary,
           dateExceptions: { ...(dateExceptions || {}) },
@@ -820,27 +818,6 @@ export default function StudentDrawer({
                       </datalist>
                     </div>
 
-                    {/* Room No */}
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                        <Home className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{t('roomNoLabel') || 'Room No'}</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
-                      </label>
-                      <input
-                        type="text"
-                        disabled={isCanteenMode}
-                        value={roomNo}
-                        onChange={(e) => setRoomNo(e.target.value)}
-                        placeholder="e.g. B-12"
-                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
-                          isCanteenMode
-                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
-                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
-                        }`}
-                      />
-                    </div>
-
                     {/* Phone */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
@@ -1102,6 +1079,36 @@ export default function StudentDrawer({
               {activeTab === 'status' && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
                   <div className="p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-4">
+                    {/* Pending Unblock Request Notice if any */}
+                    {student?.pendingUnblockRequest?.status === 'pending' && (
+                      <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-extrabold flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                            Unblock Requested (#{student.pendingUnblockRequest.ticketNumber})
+                          </span>
+                          {block && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('tick');
+                                setBlock(false);
+                                setBlockReason('');
+                              }}
+                              className="px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition-colors cursor-pointer"
+                            >
+                              Approve & Unblock
+                            </button>
+                          )}
+                        </div>
+                        {student.pendingUnblockRequest.reasonNote && (
+                          <p className="text-[11px] italic opacity-90 line-clamp-2">
+                            &ldquo;{student.pendingUnblockRequest.reasonNote}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <label className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">

@@ -7,6 +7,7 @@ import {
   Search,
   X,
   Lock,
+  Unlock,
   ShieldAlert,
   CheckCircle2,
   XCircle,
@@ -30,6 +31,8 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
+  ChevronLeft,
+  History,
   Filter,
   Check,
   Printer,
@@ -52,6 +55,7 @@ import {
   getActiveStudentException,
   getEffectiveStudentMealStatus,
   formatFriendlyDate,
+  addDaysToDate,
 } from '../utils/studentExceptionService';
 import { useTokenBoardController } from '../utils/useTokenBoardController';
 import {
@@ -65,12 +69,13 @@ import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentH
 import MealFlipCard from './MealFlipCard';
 import TokenButton from './ui/TokenButton';
 import TokenCard from './ui/TokenCard';
-import TokenBoardDateRibbon from './ui/TokenBoardDateRibbon';
+import TokenBoardCalendarPopover from './ui/TokenBoardCalendarPopover';
 import NextMealSpotlight from './NextMealSpotlight';
 import AdvancedExportModal from './export/AdvancedExportModal';
 import UniversalDocumentModal from './export/UniversalDocumentModal';
 import ExportActionMenu from './export/ExportActionMenu';
 import TokenBoardGuideModal from './guide/TokenBoardGuideModal';
+import useSEO from '../hooks/useSEO';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -79,6 +84,15 @@ export default function StudentDashboard() {
   const portalStatus = usePortalStatus();
   const { user, role } = useContext(AuthContext);
   const { stdata } = useContext(DataOfOne);
+
+  // Synchronize dynamic SEO metadata
+  useSEO({
+    title: 'Student Dining Overview & Live Token Attendance',
+    description:
+      'Official dining logistics and token management platform for Alathurpadi Dars, Malappuram. Real-time token attendance, kitchen display manifest, dietary avoiders, and campus care concierge.',
+    keywords:
+      'canteen alathurpadidars, alathurpadi dars canteen, adsatboard, adsa token board, dars food management, malappuram dars dining, melmuri',
+  });
 
   // Unified Token Board Controller
   const controller = useTokenBoardController({
@@ -103,6 +117,10 @@ export default function StudentDashboard() {
     setDateToToday,
     setDateToTomorrow,
     setDateToCustom,
+    setDateToAuto,
+    stepDateBackward,
+    stepDateForward,
+    relativeDateMeta,
     isPostEveningCutoff,
     searchQuery,
     setSearchQuery,
@@ -136,7 +154,7 @@ export default function StudentDashboard() {
   // UI state: Modals, Ribbons & Collapsible Filter Toolbar (collapsed by default)
   const [detailsDoc, setDetailsDoc] = useState(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [showDateRibbon, setShowDateRibbon] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [lockedPortalAlertOpen, setLockedPortalAlertOpen] = useState(false);
   const [advancedExportModal, setAdvancedExportModal] = useState({ isOpen: false, type: 'supply' });
@@ -335,7 +353,20 @@ export default function StudentDashboard() {
     return targetDateIST;
   }, [targetDateIST, lang]);
 
-  const isShowingTomorrow = targetDateIST !== todayIST;
+  const tomorrowIST = useMemo(() => addDaysToDate(todayIST, 1), [todayIST]);
+  const isToday = targetDateIST === todayIST;
+  const isTomorrow = targetDateIST === tomorrowIST;
+  const isPast = targetDateIST < todayIST;
+  const isFuture = targetDateIST > tomorrowIST;
+  const isShowingTomorrow = isTomorrow;
+
+  const dayLabel = isToday
+    ? t('today', 'Today')
+    : isTomorrow
+    ? t('tomorrow', 'Tomorrow')
+    : isPast
+    ? t('pastRecord', 'Past Record')
+    : t('scheduledDate', 'Scheduled Date');
 
   // Logged in student's current status for target date
   const studentPersonalMealStatus = useMemo(() => {
@@ -488,7 +519,7 @@ export default function StudentDashboard() {
 
           <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
             <Link
-              to="/student-portal"
+              to="/student"
               onClick={() => feedback('tick')}
               className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-500/30 text-xs font-bold transition-colors inline-flex items-center gap-1"
             >
@@ -513,73 +544,164 @@ export default function StudentDashboard() {
           {/* LEFT SIDE: Date Switcher, Title, Subtitle, Supporting Meta */}
           <div className="space-y-4 max-w-xl">
             
-            {/* Date Switcher: Today | Tomorrow | Calendar Picker */}
-            <div className="inline-flex p-1 rounded-2xl bg-black/40 border border-white/15 backdrop-blur-md">
-              <button
-                type="button"
-                onClick={() => {
-                  feedback('tick');
-                  setDateToToday();
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  !isShowingTomorrow
-                    ? 'bg-white/20 text-white shadow-xs'
-                    : 'text-emerald-100/70 hover:text-white'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{t('today', 'Today')}</span>
-              </button>
+            {/* Main Tactical Date Stepper Switch: [ ◀ ] [ Date, Day & Calendar ] [ ▶ ] */}
+            <div className="space-y-2.5">
+              <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/15 backdrop-blur-md shadow-lg max-w-full">
+                {/* Prev Day Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    stepDateBackward();
+                  }}
+                  className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-emerald-100 hover:text-white transition-all cursor-pointer shrink-0"
+                  title={`${t('prevDay', 'Previous Day')} (${addDaysToDate(targetDateIST, -1)})`}
+                  aria-label={t('prevDay', 'Previous Day')}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  feedback('tick');
-                  setDateToTomorrow();
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                  isShowingTomorrow
-                    ? 'bg-white/20 text-white shadow-xs'
-                    : 'text-emerald-100/70 hover:text-white'
-                }`}
-              >
-                <span>{t('tomorrow', 'Tomorrow')}</span>
-              </button>
+                {/* Center Date & Day Interactive Button (Tapping opens Calendar Popover) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setIsCalendarOpen(true);
+                  }}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-98 transition-all cursor-pointer flex items-center gap-2 sm:gap-2.5 border border-white/10 group min-w-0"
+                  title={t('clickToOpenCalendar', 'Click to open calendar')}
+                >
+                  <CalendarIcon className="w-4 h-4 text-emerald-300 group-hover:scale-110 transition-transform shrink-0" />
+                  
+                  {/* Formatted Weekday & Date */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-left min-w-0">
+                    <span className="text-xs sm:text-sm font-black text-white tracking-tight truncate">
+                      {formatFriendlyDate(targetDateIST, true)}
+                    </span>
 
-              <button
-                type="button"
-                onClick={() => {
-                  feedback('tick');
-                  setShowDateRibbon((prev) => !prev);
-                }}
-                title={t('pickSpecificDate', 'Pick a specific calendar date')}
-                className={`px-2.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  showDateRibbon ? 'bg-white/25 text-white' : 'text-emerald-200/80 hover:text-white'
-                }`}
-              >
-                <CalendarIcon className="w-4 h-4" />
-              </button>
+                    {/* Contextual Status Badge */}
+                    {isToday ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-[10px] font-extrabold uppercase tracking-wide shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {t('today', 'Today')}
+                      </span>
+                    ) : isTomorrow ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-500/30 text-teal-200 border border-teal-400/30 text-[10px] font-extrabold uppercase tracking-wide shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                        {t('tomorrow', 'Tomorrow')}
+                      </span>
+                    ) : isPast ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 border border-purple-400/30 text-[10px] font-bold shrink-0">
+                        <History className="w-2.5 h-2.5" />
+                        <span>{relativeDateMeta?.relativeLabel || t('pastRecord', 'Past Record')}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/30 text-blue-200 border border-blue-400/30 text-[10px] font-bold shrink-0">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>{relativeDateMeta?.relativeLabel || t('scheduledDate', 'Scheduled Date')}</span>
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Next Day Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    stepDateForward();
+                  }}
+                  className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-emerald-100 hover:text-white transition-all cursor-pointer shrink-0"
+                  title={`${t('nextDay', 'Next Day')} (${addDaysToDate(targetDateIST, 1)})`}
+                  aria-label={t('nextDay', 'Next Day')}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Template / Preset Buttons Below Switch */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-emerald-200/60 uppercase tracking-wider pl-0.5">
+                  {t('presets', 'Templates')}:
+                </span>
+
+                {/* Today Preset Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setDateToToday();
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                    isToday
+                      ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm font-black'
+                      : 'bg-white/10 text-emerald-100/80 hover:text-white hover:bg-white/15 border-white/10'
+                  }`}
+                >
+                  {isToday && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                  <span>{t('today', 'Today')}</span>
+                </button>
+
+                {/* Tomorrow Preset Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setDateToTomorrow();
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                    isTomorrow
+                      ? 'bg-teal-500 text-white border-teal-400 shadow-sm font-black'
+                      : 'bg-white/10 text-emerald-100/80 hover:text-white hover:bg-white/15 border-white/10'
+                  }`}
+                >
+                  {isTomorrow && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  <span>{t('tomorrow', 'Tomorrow')}</span>
+                </button>
+
+                {/* Auto Mode Restore Button (if on custom date) */}
+                {dateMode !== 'auto' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      setDateToAuto();
+                    }}
+                    className="px-2.5 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 hover:text-white text-xs font-bold border border-emerald-400/30 transition-all cursor-pointer flex items-center gap-1"
+                    title={t('resetToAutoHint', 'Restore automatic cutoff schedule (Today/Tomorrow)')}
+                  >
+                    <RotateCcw className="w-3 h-3 text-emerald-300" />
+                    <span>{t('resetToAuto', 'Auto')}</span>
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Calendar Popover (Portal to body, zero card clipping) */}
+            <TokenBoardCalendarPopover
+              isOpen={isCalendarOpen}
+              onClose={() => setIsCalendarOpen(false)}
+              controller={controller}
+            />
 
             {/* Title & Subtitle */}
             <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
-                {isShowingTomorrow
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
+                {isToday
+                  ? t('todayDiningOverview', "Today's Dining Overview")
+                  : isTomorrow
                   ? t('tomorrowDiningOverview', "Tomorrow's Dining Overview")
-                  : t('todayDiningOverview', "Today's Dining Overview")}
-              </h2>
+                  : `${friendlyTargetDate} • ${t('diningOverview', "Dining Overview")}`}
+                <span className="sr-only"> - Alathurpadi Dars Canteen Food Management &amp; Token Board (ADSA T-Board)</span>
+              </h1>
               <p className="text-xs sm:text-sm md:text-base text-emerald-100/85 mt-2 leading-relaxed">
                 {t('studentDashboardSub', 'Transparent meal counts and token status for students and canteen staff of Alathurpadi Dars.')}
               </p>
             </div>
 
-            {/* Target Date & Cutoff Info Badges */}
+            {/* Cutoff Info Badge */}
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-emerald-200/90 font-medium">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px] font-mono">
-                <CalendarDays className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{friendlyTargetDate}</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 border border-white/15 text-[11px]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-[11px]">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{t('cutoffNotice', 'Daily update window: 02:00 PM - 11:00 PM IST')}</span>
                 <span className="text-white/40">•</span>
@@ -625,7 +747,7 @@ export default function StudentDashboard() {
                   setIsBreakfastFlipped((prev) => !prev);
                 }}
                 targetDateStr={friendlyTargetDate}
-                dayLabel={isShowingTomorrow ? t('tomorrow', 'Tomorrow') : t('today', 'Today')}
+                dayLabel={dayLabel}
                 rejectedTokens={heroMealMetrics.breakfastRejectedTokens}
                 onOpenTokensModal={(m) => {
                   feedback('tick');
@@ -645,7 +767,7 @@ export default function StudentDashboard() {
                   setIsLunchFlipped((prev) => !prev);
                 }}
                 targetDateStr={friendlyTargetDate}
-                dayLabel={isShowingTomorrow ? t('tomorrow', 'Tomorrow') : t('today', 'Today')}
+                dayLabel={dayLabel}
                 rejectedTokens={heroMealMetrics.lunchRejectedTokens}
                 onOpenTokensModal={(m) => {
                   feedback('tick');
@@ -655,23 +777,6 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
-
-        {/* Collapsible Date Ribbon (when calendar icon is clicked) */}
-        <AnimatePresence>
-          {showDateRibbon && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="pt-4 mt-4 border-t border-white/10"
-            >
-              <TokenBoardDateRibbon
-                controller={controller}
-                onSelectDate={() => setShowDateRibbon(false)}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
       </section>
 
@@ -738,7 +843,7 @@ export default function StudentDashboard() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('searchTokensPlaceholder', 'Search token #, name, room, batch...')}
+                placeholder={t('searchTokensPlaceholder', 'Search token #, name, batch...')}
                 className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs sm:text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
               />
               {searchQuery && (
@@ -962,7 +1067,6 @@ export default function StudentDashboard() {
                       <option value="name_ml">{t('sortNameMl', 'Name: Malayalam (അ → ഹ)')}</option>
                       <option value="status_active">{t('sortActiveFirst', 'Serving First (ON)')}</option>
                       <option value="status_off">{t('sortOffFirst', 'Skipped First (OFF)')}</option>
-                      <option value="room_asc">{t('sortRoomAsc', 'Room No (Ascending)')}</option>
                     </select>
                   </div>
 
@@ -1358,7 +1462,7 @@ export default function StudentDashboard() {
         
         {/* Link 1: Student Portal */}
         <Link
-          to={stdata && stdata.tokenNo ? '/student-portal' : '/login'}
+          to={stdata && stdata.tokenNo ? '/student' : '/login'}
           onClick={() => feedback('tick')}
           className="p-4 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 hover:bg-white dark:hover:bg-[#15201d] border border-gray-200/80 dark:border-white/10 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-2 group select-none"
         >
@@ -1496,12 +1600,6 @@ export default function StudentDashboard() {
                       )}
                       <span>•</span>
                       <span>{detailsDoc.batch || t('generalBatch', 'General Batch')}</span>
-                      {detailsDoc.roomNo && (
-                        <>
-                          <span>•</span>
-                          <span>Room {detailsDoc.roomNo}</span>
-                        </>
-                      )}
                       {(detailsDoc.username || detailsDoc.uname) && (
                         <>
                           <span>•</span>
@@ -1555,7 +1653,36 @@ export default function StudentDashboard() {
                       </div>
                     </div>
 
-                    {/* Action buttons: Login to Portal (View Only) and Close */}
+                    {/* Pending Unblock Status Alert if student already submitted */}
+                    {detailsDoc.pendingUnblockRequest?.status === 'pending' && (
+                      <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5 text-amber-900 dark:text-amber-200 min-w-0">
+                          <Clock className="w-4 h-4 text-amber-600 animate-pulse flex-shrink-0" />
+                          <div className="min-w-0">
+                            <span className="font-bold block truncate">
+                              {t('unblockRequestPending', 'Unblock Request Pending')} (#{detailsDoc.pendingUnblockRequest.ticketNumber})
+                            </span>
+                            <span className="text-[10px] text-amber-700/80 dark:text-amber-400 block truncate">
+                              {t('unblockRequestUnderReview', 'Under review by Central Committee')}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            const code = detailsDoc.pendingUnblockRequest.ticketNumber;
+                            setDetailsDoc(null);
+                            navigate(`/support?tab=tracker&code=${code}`);
+                          }}
+                          className="py-1 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[11px] transition-colors flex-shrink-0"
+                        >
+                          {t('trackUnblockRequest', 'Track Status')}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Action buttons: Login to Portal and Close */}
                     <div className="pt-2 flex flex-col sm:flex-row gap-2">
                       <button
                         type="button"
@@ -1567,8 +1694,12 @@ export default function StudentDashboard() {
                         }}
                         className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
                       >
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>{t('loginToViewPortal', 'Login to Student Portal (View Only)')}</span>
+                        <Unlock className="w-3.5 h-3.5" />
+                        <span>
+                          {detailsDoc.pendingUnblockRequest?.status === 'pending'
+                            ? t('loginToViewPortal', 'Login to Student Portal (View Only)')
+                            : t('loginToRequestUnblock', 'Login to Portal to Request Unblock')}
+                        </span>
                       </button>
                       <button
                         type="button"
@@ -1764,7 +1895,7 @@ export default function StudentDashboard() {
                       {t('rejectedTokensTitle', 'Rejected Tokens')}
                     </h3>
                     <p className="text-xs text-rose-100/80 font-medium">
-                      {isShowingTomorrow ? t('tomorrow', 'Tomorrow') : t('today', 'Today')} ({friendlyTargetDate}) • {inspectedTokensList.length} {t('tokensSkipped', 'Tokens Opted Out')}
+                      {dayLabel} ({friendlyTargetDate}) • {inspectedTokensList.length} {t('tokensSkipped', 'Tokens Opted Out')}
                     </p>
                   </div>
                 </div>

@@ -11,20 +11,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ADSA T-Board • Alathurpadi Dars Food Management System</title>
     <meta name="title" content="ADSA T-Board • Alathurpadi Dars Food Management System" />
-    <meta name="keywords" content="adsatboard, adsa token board, alathurpadi dars token board, token board, alathurpadidars canteen, dars food management, malappuram dars dining" />
+    <meta name="keywords" content="canteen alathurpadidars, alathurpadi dars canteen, adsatboard, adsa token board, alathurpadi dars token board, token board, dars food management, malappuram dars dining, melmuri dars, dars canteen kerala, ആലത്തൂർപടി ദർസ് കാന്റീൻ, ടോക്കൺ ബോർഡ്" />
     <meta name="description" content="Official dining logistics and token management platform for Alathurpadi Dars, Malappuram. Real-time token attendance, kitchen display manifest, dietary avoiders, and campus care concierge." />
     <meta name="author" content="Alathurpadi Dars Students Association (ADSA)" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <link rel="canonical" href="https://adsatboard.web.app/" />
+    <link rel="canonical" href="https://canteen.alathurpadidars.in/" />
+
+    <!-- Multilingual & Regional Alternate Links -->
+    <link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/" />
+    <link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/" />
+    <link rel="alternate" hreflang="x-default" href="https://canteen.alathurpadidars.in/" />
 
     <!-- Open Graph meta tags for Telegram, WhatsApp, Facebook & LinkedIn -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ADSA T-Board • Alathurpadi Dars" />
-    <meta property="og:url" content="https://adsatboard.web.app/" />
+    <meta property="og:url" content="https://canteen.alathurpadidars.in/" />
     <meta property="og:title" content="ADSA T-Board • Alathurpadi Dars Food Management System" />
     <meta property="og:description" content="Live meal attendance, 3D token matrix, kitchen preparation manifests, and student dining logistics at the historical Alathurpadi Juma Masjid, Kerala." />
-    <meta property="og:image" content="https://adsatboard.web.app/og-preview.png" />
-    <meta property="og:image:secure_url" content="https://adsatboard.web.app/og-preview.png" />
+    <meta property="og:image" content="https://canteen.alathurpadidars.in/og-preview.png" />
+    <meta property="og:image:secure_url" content="https://canteen.alathurpadidars.in/og-preview.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -34,11 +39,11 @@
 
     <!-- Twitter / X Card meta tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:domain" content="adsatboard.web.app" />
-    <meta name="twitter:url" content="https://adsatboard.web.app/" />
+    <meta name="twitter:domain" content="canteen.alathurpadidars.in" />
+    <meta name="twitter:url" content="https://canteen.alathurpadidars.in/" />
     <meta name="twitter:title" content="ADSA T-Board • Alathurpadi Dars Food Management System" />
     <meta name="twitter:description" content="Live meal attendance, 3D token matrix, kitchen preparation manifests, and student dining logistics at the historical Alathurpadi Juma Masjid, Kerala." />
-    <meta name="twitter:image" content="https://adsatboard.web.app/og-preview.png" />
+    <meta name="twitter:image" content="https://canteen.alathurpadidars.in/og-preview.png" />
     <meta name="twitter:image:alt" content="ADSA T-Board Social Preview Card" />
 
     <!-- Mobile & Messaging App Embed Styling (Telegram, Discord, Slack) -->
@@ -77,10 +82,61 @@
             }
           },
           {
+            "@type": "WebSite",
+            "@id": "https://canteen.alathurpadidars.in/#website",
+            "name": "Alathurpadi Dars Canteen Food Management System",
+            "alternateName": "ADSA T-Board",
+            "url": "https://canteen.alathurpadidars.in/",
+            "inLanguage": ["en-US", "ml-IN"],
+            "publisher": {
+              "@id": "https://alathurpadidars.in/#organization"
+            }
+          },
+          {
+            "@type": "FoodEstablishment",
+            "@id": "https://canteen.alathurpadidars.in/#canteen",
+            "name": "Alathurpadi Dars Canteen (ADSA T-Board)",
+            "alternateName": "ആലത്തൂർപടി ദർസ് കാന്റീൻ",
+            "url": "https://canteen.alathurpadidars.in/",
+            "servesCuisine": "Kerala Traditional, Malabar Muslim Cuisine, Indian Dars Dining",
+            "hasMenu": "https://canteen.alathurpadidars.in/menu",
+            "parentOrganization": {
+              "@id": "https://alathurpadidars.in/#organization"
+            },
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Alathurpadi Juma Masjid Campus, Melmuri",
+              "addressLocality": "Malappuram",
+              "addressRegion": "Kerala",
+              "postalCode": "676517",
+              "addressCountry": "IN"
+            },
+            "openingHoursSpecification": [
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "07:00",
+                "closes": "08:30"
+              },
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "12:30",
+                "closes": "14:00"
+              },
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                "opens": "19:30",
+                "closes": "21:00"
+              }
+            ]
+          },
+          {
             "@type": "WebApplication",
-            "@id": "https://adsatboard.web.app/#webapp",
+            "@id": "https://canteen.alathurpadidars.in/#webapp",
             "name": "ADSA T-Board",
-            "url": "https://adsatboard.web.app/",
+            "url": "https://canteen.alathurpadidars.in/",
             "applicationCategory": "BusinessApplication, FoodEstablishmentManagement",
             "operatingSystem": "All modern browsers, iOS, Android, macOS, Windows",
             "browserRequirements": "Requires JavaScript",
@@ -88,12 +144,80 @@
               "@id": "https://alathurpadidars.in/#organization"
             },
             "description": "Comprehensive food logistics, token attendance board, and culinary management system for Alathurpadi Dars students, chefs, and administrators.",
-            "screenshot": "https://adsatboard.web.app/og-preview.png",
+            "screenshot": "https://canteen.alathurpadidars.in/og-preview.png",
             "offers": {
               "@type": "Offer",
               "price": "0",
               "priceCurrency": "INR"
             }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "@id": "https://canteen.alathurpadidars.in/#breadcrumbs",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Dining Overview",
+                "item": "https://canteen.alathurpadidars.in/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Weekly Campus Menu",
+                "item": "https://canteen.alathurpadidars.in/menu"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Care & Concierge Hub",
+                "item": "https://canteen.alathurpadidars.in/support"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "System Guide",
+                "item": "https://canteen.alathurpadidars.in/guide"
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://canteen.alathurpadidars.in/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is ADSA T-Board?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "ADSA T-Board is the official dining attendance and meal logistics management system developed by the Alathurpadi Dars Students Association for students, kitchen chefs, and committee administrators."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What are the token change cutoff times at Alathurpadi Dars Canteen?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The daily meal change window runs until 11:00 PM IST (cutoffs typically at 02:00 PM IST for advance scheduling), enabling kitchen staff to prepare precise quantities without food waste."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How can a student unblock a locked dining token?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Students can request an unblock directly via the ADSA Care Hub or by submitting an unblock request through the student portal, which notifies the Canteen Committee for instant verification."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does Alathurpadi Dars Canteen support dietary avoiders and special diets?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, ADSA T-Board maintains a real-time avoiders matrix (including egg, chicken, fish, beef, and dairy avoiders) to generate tailored culinary substitute manifests for the kitchen."
+                }
+              }
+            ]
           }
         ]
       }

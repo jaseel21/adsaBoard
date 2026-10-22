@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Clock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 /**
  * Tactile Date Token Button
@@ -109,107 +109,34 @@ export default function DateTokenButton({
       }${hasException ? ` • Override: ${exceptionLabel || 'Custom'}` : ''}`}
       aria-label={`Date ${dateStr} ${isHistorical ? 'History' : isLocked ? 'Locked' : ''}`}
       className={`
-        relative group flex flex-col items-center justify-center flex-shrink-0
-        w-full aspect-square rounded-xl xs:rounded-2xl select-none font-extrabold font-mono
+        relative group flex items-center justify-center flex-shrink-0
+        w-full aspect-square rounded-xl sm:rounded-2xl select-none font-black font-mono
         shadow-sm transition-all duration-150 focus:outline-none
         ${bgClass}
         ${exceptionBorderClass}
-        ${isToday ? 'ring-2 ring-emerald-400 ring-offset-1 xs:ring-offset-2 dark:ring-offset-[#0f1715] z-10' : ''}
+        ${isToday ? 'ring-2 ring-emerald-400 dark:ring-emerald-300 ring-offset-2 dark:ring-offset-[#0f1715] z-10' : ''}
         ${isTomorrow && !isToday ? 'ring-2 ring-blue-400/80 ring-offset-1 dark:ring-offset-[#0f1715]' : ''}
       `}
     >
       {/* Subtle glass reflection on hover */}
       {!isHardDisabled && (
-        <span className="absolute inset-0 rounded-xl xs:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      )}
-
-      {/* History Clock Badge for Past Dates */}
-      {isHistorical && (
-        <span
-          title="Archived Dining Record (Click to view details)"
-          className="absolute top-0.5 xs:top-1 left-0.5 xs:left-1 w-3.5 h-3.5 xs:w-4 xs:h-4 rounded-full bg-black/10 dark:bg-white/10 text-gray-500 dark:text-gray-300 flex items-center justify-center text-[8px] z-20 pointer-events-none"
-        >
-          <Clock className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
-        </span>
+        <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       )}
 
       {/* Lock Icon for Cutoff Deadlines on Upcoming Dates */}
       {isLocked && !isPast && (
         <span
           title={lockReason || 'Locked (Cutoff deadline passed)'}
-          className="absolute top-0.5 xs:top-1 left-0.5 xs:left-1 w-3.5 h-3.5 xs:w-4 xs:h-4 rounded-full bg-black/40 text-amber-300 backdrop-blur-xs flex items-center justify-center shadow-xs z-20"
+          className="absolute top-1 right-1 text-amber-200/90 z-10 pointer-events-none"
         >
-          <Lock className="w-2 h-2 xs:w-2.5 xs:h-2.5" />
+          <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
         </span>
       )}
 
-      {/* Exception override indicator (top right pulsing pip or solid amber badge) */}
-      {hasException && !isHardDisabled && (
-        <span
-          title={`Override: ${exceptionLabel || 'Modified'}`}
-          className={`absolute top-0.5 xs:top-1 right-0.5 xs:right-1 w-2 h-2 xs:w-2.5 xs:h-2.5 rounded-full bg-yellow-300 border border-amber-600 shadow-sm z-10 ${
-            !isHistorical ? 'animate-pulse' : ''
-          }`}
-        />
-      )}
-
-      {/* Today Mini Badge Tag */}
-      {isToday && (
-        <span className="absolute -top-1 xs:-top-1.5 px-1 xs:px-1.5 py-0.2 rounded-full bg-emerald-700 text-white text-[7px] xs:text-[8px] font-black uppercase tracking-wider shadow-sm z-20">
-          Today
-        </span>
-      )}
-
-      {/* Tomorrow Mini Badge Tag */}
-      {isTomorrow && !isToday && (
-        <span className={`absolute -top-1 xs:-top-1.5 px-1 xs:px-1.5 py-0.2 rounded-full text-white text-[7px] xs:text-[8px] font-black uppercase tracking-wider shadow-sm z-20 ${
-          isLocked ? 'bg-amber-600' : 'bg-blue-600'
-        }`}>
-          {isLocked ? 'Tmrw 🔒' : 'Tmrw'}
-        </span>
-      )}
-
-      {/* Day Number */}
-      <span className="relative z-10 text-[11px] xs:text-xs min-[380px]:text-sm sm:text-base leading-none tracking-tight">
+      {/* Centered Crisp Day Number */}
+      <span className="relative z-10 text-xs sm:text-sm md:text-base font-black font-mono leading-none tracking-tight">
         {dayNumber}
       </span>
-
-      {/* Mini Day of Week indicator */}
-      <span className="text-[8px] xs:text-[9px] uppercase tracking-wider font-sans font-bold opacity-75 leading-none mt-0.5">
-        {dayOfWeek}
-      </span>
-
-      {/* Dual Meal Mini Pip Indicators (Bottom: Left = Breakfast, Right = Lunch) */}
-      {!isHardDisabled && (
-        <div className="absolute bottom-0.5 xs:bottom-1 flex items-center gap-0.5 xs:gap-1 z-10">
-          {/* Breakfast Pip */}
-          <span
-            title={`Breakfast: ${breakfast ? 'ON' : 'OFF'}`}
-            className={`w-1 h-1 xs:w-1.5 xs:h-1.5 rounded-full transition-colors ${
-              breakfast
-                ? isHistorical
-                  ? 'bg-emerald-600 dark:bg-emerald-400 shadow-xs'
-                  : 'bg-white/90 shadow-xs'
-                : isHistorical
-                ? 'bg-rose-400/50 dark:bg-rose-500/40'
-                : 'bg-white/30 dark:bg-black/40'
-            }`}
-          />
-          {/* Lunch Pip */}
-          <span
-            title={`Lunch: ${lunch ? 'ON' : 'OFF'}`}
-            className={`w-1 h-1 xs:w-1.5 xs:h-1.5 rounded-full transition-colors ${
-              lunch
-                ? isHistorical
-                  ? 'bg-emerald-600 dark:bg-emerald-400 shadow-xs'
-                  : 'bg-white/90 shadow-xs'
-                : isHistorical
-                ? 'bg-rose-400/50 dark:bg-rose-500/40'
-                : 'bg-white/30 dark:bg-black/40'
-            }`}
-          />
-        </div>
-      )}
     </motion.button>
   );
 }

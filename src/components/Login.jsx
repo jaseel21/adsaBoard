@@ -7,6 +7,7 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { dialog } from '../utils/dialog';
+import useSEO from '../hooks/useSEO';
 
 function Login() {
   const [token, setToken] = useState('');
@@ -14,6 +15,12 @@ function Login() {
   const [err, setErr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useSEO({
+    title: 'Student Sign-In Portal',
+    description: 'Secure student sign-in to view and update meal preferences, request single-day leaves, and manage canteen tokens.',
+    keywords: 'student login, dars canteen login, token login, student portal signin',
+  });
 
   const { t } = useLanguage();
   const { feedback } = useFeedback();
@@ -72,7 +79,7 @@ function Login() {
           );
         }
         const returnUrl = location.state?.from;
-        navigate(returnUrl || '/student-portal');
+        navigate(returnUrl || '/student');
       } else {
         feedback('warning');
         setErr('Invalid token number or password');

@@ -217,7 +217,6 @@ export async function createSupportTicket(ticketData) {
       tokenNumber: ticketData.tokenNumber ? Number(ticketData.tokenNumber) : null,
       name: ticketData.isAnonymous ? 'Anonymous Diner' : (ticketData.name || 'Campus Student'),
       batch: ticketData.batch || '',
-      room: ticketData.room || '',
       phone: ticketData.phone || '',
       email: ticketData.email || '',
     },

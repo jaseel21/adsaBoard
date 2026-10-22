@@ -31,7 +31,6 @@ export default function TokenCard({
   const nameEn = doc.nameEn || doc.name || `Token #${tokenNumber}`;
   const nameMl = doc.nameMl;
   const batch = doc.batch || 'General';
-  const room = doc.roomNo;
 
   // Determine dietary exclusion tags
   const dietaryAvoided = [];
@@ -116,16 +115,10 @@ export default function TokenCard({
         </div>
       </div>
 
-      {/* Middle & Footer: Room, Batch & Dietary Badges */}
+      {/* Middle & Footer: Batch & Dietary Badges */}
       <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-gray-500 dark:text-gray-400">
         <div className="flex items-center gap-2">
-          {room && (
-            <span className="inline-flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 px-1.5 py-0.2 rounded-md">
-              <Home className="w-2.5 h-2.5 text-emerald-500" />
-              <span>{room}</span>
-            </span>
-          )}
-          <span className="font-medium truncate max-w-[110px]">{batch}</span>
+          <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md truncate max-w-[140px]">{batch}</span>
         </div>
 
         {/* Dietary avoidance tags if any */}

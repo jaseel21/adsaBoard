@@ -32,6 +32,7 @@ import CsvManagerModal from './CsvManagerModal';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { AuthContext } from '../store/AuthContext';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { approveUnblockRequest } from '../utils/unblockRequestService';
 
 export default function StudentManagement() {
   const { user, role, isCentralCommittee, isCanteenCommittee } = useContext(AuthContext);
@@ -263,10 +264,22 @@ export default function StudentManagement() {
     const nextStatus = !student.block;
 
     try {
-      await firebase.firestore().collection('students').doc(student.id).update({
-        block: nextStatus,
-        updatedAt: new Date().toISOString()
-      });
+      if (!nextStatus && student.pendingUnblockRequest?.ticketId) {
+        await approveUnblockRequest({
+          studentId: student.id,
+          tokenNo: student.tokenNo,
+          ticketId: student.pendingUnblockRequest.ticketId,
+          reviewerInfo: { uid: user?.uid, name: user?.displayName || user?.email, email: user?.email, role },
+          resolutionNote: 'Unblocked from Student Directory',
+        });
+      } else {
+        await firebase.firestore().collection('students').doc(student.id).update({
+          block: nextStatus,
+          blockReason: nextStatus ? (student.blockReason || 'Locked from Student Management') : '',
+          pendingUnblockRequest: nextStatus ? (student.pendingUnblockRequest || null) : null,
+          updatedAt: new Date().toISOString()
+        });
+      }
 
       const stName = student.nameEn || student.name || `Token #${student.tokenNo}`;
       await logAuditEvent({
@@ -823,17 +836,27 @@ export default function StudentManagement() {
 
                         {/* Status Toggle Switch */}
                         <td className="py-3 px-4 text-center">
-                          <button
-                            onClick={() => handleQuickStatusToggle(st)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 transition-all ${
-                              isBlocked
-                                ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'
-                                : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
-                            }`}
-                          >
-                            {isBlocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                            <span>{isBlocked ? 'Locked' : 'Active'}</span>
-                          </button>
+                          <div className="flex flex-col items-center gap-1">
+                            <button
+                              onClick={() => handleQuickStatusToggle(st)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
+                                isBlocked
+                                  ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'
+                                  : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
+                              }`}
+                            >
+                              {isBlocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                              <span>{isBlocked ? 'Locked' : 'Active'}</span>
+                            </button>
+                            {isBlocked && st.pendingUnblockRequest?.status === 'pending' && (
+                              <span
+                                title={st.pendingUnblockRequest.reasonNote || 'Unblock appeal submitted'}
+                                className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 animate-pulse whitespace-nowrap"
+                              >
+                                {t('unblockRequestedBadge', 'Unblock Requested')}
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Actions */}
@@ -915,16 +938,23 @@ export default function StudentManagement() {
                       {st.batch || 'General'}
                     </span>
 
-                    <button
-                      onClick={() => handleQuickStatusToggle(st)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
-                        isBlocked
-                          ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'
-                          : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
-                      }`}
-                    >
-                      {isBlocked ? 'Locked' : 'Active'}
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => handleQuickStatusToggle(st)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer ${
+                          isBlocked
+                            ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400'
+                            : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
+                        }`}
+                      >
+                        {isBlocked ? 'Locked' : 'Active'}
+                      </button>
+                      {isBlocked && st.pendingUnblockRequest?.status === 'pending' && (
+                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 animate-pulse">
+                          {t('unblockRequestedBadge', 'Unblock Requested')}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Meals row */}

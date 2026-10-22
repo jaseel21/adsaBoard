@@ -4,10 +4,11 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LanguageSwitch = () => {
+const LanguageSwitch = ({ iconOnly = false }) => {
   const { langPref, setLangPref, lang, t } = useLanguage();
   const { feedback } = useFeedback();
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -26,11 +27,51 @@ const LanguageSwitch = () => {
     setOpen(false);
   };
 
+  const toggleLanguage = () => {
+    feedback('pop');
+    const nextLang = lang === 'ml' ? 'en' : 'ml';
+    setLangPref(nextLang);
+  };
+
   const getLabel = () => {
     if (langPref === 'ml') return 'മലയാളം';
     if (langPref === 'en') return 'EN';
     return `Auto (${lang.toUpperCase()})`;
   };
+
+  if (iconOnly) {
+    return (
+      <div className="relative flex items-center justify-center">
+        <button
+          type="button"
+          onClick={toggleLanguage}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          aria-label={lang === 'ml' ? 'Switch to English' : 'മലയാളത്തിലേക്ക് മാറ്റുക'}
+          className="relative p-2.5 rounded-full text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10 transition-all select-none flex items-center justify-center group"
+        >
+          <Languages className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+          <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-black uppercase tracking-tight px-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+            {lang === 'ml' ? 'മല' : 'EN'}
+          </span>
+        </button>
+
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.95 }}
+              transition={{ duration: 0.12 }}
+              className="absolute top-full mt-2 px-2.5 py-1 rounded-xl bg-gray-900/95 dark:bg-[#15221e]/95 text-white border border-white/10 shadow-xl backdrop-blur-xl text-[11px] font-bold whitespace-nowrap pointer-events-none z-50 flex items-center gap-1.5"
+            >
+              <span>{lang === 'ml' ? 'Switch to English' : 'മലയാളത്തിലേക്ക് മാറ്റുക'}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>

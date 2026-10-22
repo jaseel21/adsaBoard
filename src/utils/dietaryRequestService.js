@@ -103,7 +103,6 @@ export async function submitDietaryChangeRequest({
     studentId,
     studentName: student.name || `Student #${tokenNo}`,
     batch: student.batch || '',
-    room: student.room || '',
     phone: student.phone || '',
     currentDietary: currentDietary || {},
     requestedDietary: requestedDietary || {},

@@ -178,7 +178,7 @@ export default function DietaryBreakdownModal({
                         <span
                           key={doc.id || doc.tokenNo}
                           className="px-2 py-0.5 rounded-lg bg-rose-100/80 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-500/30 text-[11px] font-bold text-rose-800 dark:text-rose-300 font-mono"
-                          title={`${doc.nameEn || doc.name || ''} (Room ${doc.roomNo || '-'})`}
+                          title={`${doc.nameEn || doc.name || ''} (${doc.batch || 'General'})`}
                         >
                           #{doc.tokenNo}
                         </span>

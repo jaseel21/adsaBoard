@@ -1,0 +1,41 @@
+# ==============================================================================
+# Robots.txt for Alathurpadi Dars Canteen Portal
+# Official Domain: https://canteen.alathurpadidars.in
+# ==============================================================================
+
+User-agent: *
+
+# Allow Public Indexable Pages
+Allow: /
+Allow: /menu
+Allow: /breakfast
+Allow: /lunch
+Allow: /guide
+Allow: /support
+Allow: /feedback
+Allow: /contact
+Allow: /list
+Allow: /login
+
+# Disallow Internal Admin, Staff Consoles, and Authenticated Student Portals
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /student-portal
+Disallow: /kitchen
+Disallow: /kds
+Disallow: /cook-portal
+Disallow: /student-management
+Disallow: /notifications
+Disallow: /admin/notifications
+Disallow: /admin/audit-logs
+Disallow: /admin/support
+Disallow: /admin/menu
+Disallow: /admin/dietary
+Disallow: /alogin
+Disallow: /m-tokens
+Disallow: /astudent-port
+Disallow: /pdfg
+
+# Host & Sitemap Directives
+Host: canteen.alathurpadidars.in
+Sitemap: https://canteen.alathurpadidars.in/sitemap.xml

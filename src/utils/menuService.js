@@ -1,4 +1,5 @@
 import firebase from '../firebase/config';
+import { addDaysToDate, getDayOfWeekShort } from './studentExceptionService';
 
 // Verified canonical Alathurpadi Dars canteen schedule (System Baseline)
 export const DEFAULT_WEEKLY_MENU = {
@@ -683,6 +684,111 @@ export async function deleteDateOverride(dateKey) {
 }
 
 /**
+ * Save or update multiple date overrides in a single atomic batch
+ */
+export async function saveMultipleDatesOverride(datesArray, overrideData, userEmail = 'admin') {
+  if (!Array.isArray(datesArray) || datesArray.length === 0) return;
+  const batch = firebase.firestore().batch();
+  const colRef = OVERRIDES_COL_REF();
+
+  datesArray.forEach((dateKey) => {
+    const docRef = colRef.doc(dateKey);
+    batch.set(
+      docRef,
+      {
+        ...overrideData,
+        date: dateKey,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: userEmail,
+      },
+      { merge: true }
+    );
+  });
+
+  await batch.commit();
+}
+
+/**
+ * Save a date-range override (e.g. 2026-11-01 to 2026-11-15), with optional day-of-week filtering (e.g. only Fridays)
+ */
+export async function saveDateRangeOverride(startDateStr, endDateStr, overrideData, dayFilter = [], userEmail = 'admin') {
+  if (!startDateStr || !endDateStr) return [];
+  const dates = [];
+  let curr = startDateStr;
+  while (curr <= endDateStr) {
+    const dow = getDayOfWeekShort(curr);
+    if (!dayFilter || dayFilter.length === 0 || dayFilter.includes(dow)) {
+      dates.push(curr);
+    }
+    curr = addDaysToDate(curr, 1);
+  }
+  await saveMultipleDatesOverride(dates, overrideData, userEmail);
+  return dates;
+}
+
+/**
+ * Delete multiple date overrides in a batch
+ */
+export async function deleteDateOverrides(datesArray) {
+  if (!Array.isArray(datesArray) || datesArray.length === 0) return;
+  const batch = firebase.firestore().batch();
+  const colRef = OVERRIDES_COL_REF();
+
+  datesArray.forEach((dateKey) => {
+    const docRef = colRef.doc(dateKey);
+    batch.delete(docRef);
+  });
+
+  await batch.commit();
+}
+
+/**
+ * Resolves the effective menu for any specific calendar date, merging overrides on top of weekly routine.
+ */
+export function getEffectiveMenuForDate(dateStr, weeklyMenu = DEFAULT_WEEKLY_MENU, overrides = {}) {
+  const dow = getDayOfWeekShort(dateStr);
+  const defDay = DEFAULT_WEEKLY_MENU[dow] || {};
+  const rawRoutine = (weeklyMenu && weeklyMenu[dow]) ? weeklyMenu[dow] : defDay;
+
+  const hasSlotContent = (s) => Boolean(s?.title?.trim()) || (Array.isArray(s?.items) && s.items.length > 0);
+
+  const routineDay = {
+    ...defDay,
+    ...rawRoutine,
+    breakfast: hasSlotContent(rawRoutine.breakfast) ? rawRoutine.breakfast : (defDay.breakfast || rawRoutine.breakfast),
+    lunch: hasSlotContent(rawRoutine.lunch) ? rawRoutine.lunch : (defDay.lunch || rawRoutine.lunch),
+    evening: hasSlotContent(rawRoutine.evening) ? rawRoutine.evening : (defDay.evening || rawRoutine.evening),
+    dinner: hasSlotContent(rawRoutine.dinner) ? rawRoutine.dinner : (defDay.dinner || rawRoutine.dinner),
+  };
+  const override = overrides ? overrides[dateStr] : null;
+
+  if (!override) {
+    return {
+      ...routineDay,
+      date: dateStr,
+      isOverride: false,
+    };
+  }
+
+  // Merge override on top of routine
+  return {
+    ...routineDay,
+    date: dateStr,
+    isOverride: true,
+    occasion: override.occasion || routineDay.note || '',
+    note: override.note || override.occasion || routineDay.note || '',
+    isHoliday: Boolean(override.isHoliday),
+    holidayReason: override.holidayReason || '',
+    isArchived: Boolean(override.isHoliday) || Boolean(routineDay.isArchived),
+    archiveReason: override.holidayReason || routineDay.archiveReason || '',
+    breakfast: override.breakfast ? { ...routineDay.breakfast, ...override.breakfast } : routineDay.breakfast,
+    lunch: override.lunch ? { ...routineDay.lunch, ...override.lunch } : routineDay.lunch,
+    evening: override.evening ? { ...routineDay.evening, ...override.evening } : routineDay.evening,
+    dinner: override.dinner ? { ...routineDay.dinner, ...override.dinner } : routineDay.dinner,
+  };
+}
+
+/**
  * Intelligently determine which meal slot is active / upcoming right now in IST,
  * taking into account archived days and archived meal slots.
  */
@@ -825,6 +931,32 @@ export async function addDishPreset(slotKey, preset) {
 
   current[slotKey] = slotPresets;
   await saveDishPresets(current);
+}
+
+/**
+ * Update an existing preset in a specific meal slot (Breakfast, Lunch, Evening, Dinner)
+ */
+export async function updateDishPreset(slotKey, oldTitle, updatedPreset) {
+  const docRef = PRESETS_DOC_REF();
+  const snap = await docRef.get();
+  const current = snap.exists && snap.data()?.presets ? snap.data().presets : { ...DISH_PRESETS };
+
+  if (Array.isArray(current[slotKey])) {
+    const idx = current[slotKey].findIndex((p) => p.title === oldTitle);
+    const newObj = {
+      title: updatedPreset.title.trim(),
+      items: Array.isArray(updatedPreset.items) ? updatedPreset.items : [updatedPreset.title.trim()],
+      category: updatedPreset.category || 'Veg',
+      ...(updatedPreset.timing ? { timing: updatedPreset.timing } : {}),
+      ...(updatedPreset.specialTag ? { specialTag: updatedPreset.specialTag } : {}),
+    };
+    if (idx !== -1) {
+      current[slotKey][idx] = newObj;
+    } else {
+      current[slotKey].push(newObj);
+    }
+    await saveDishPresets(current);
+  }
 }
 
 /**

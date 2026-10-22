@@ -252,10 +252,9 @@ export default function ApexCommandPalette({
         const tokenMatch = String(s.tokenNo || '').includes(q);
         const nameMatch = (s.name || '').toLowerCase().includes(q);
         const mlNameMatch = (s.name_ml || '').toLowerCase().includes(q);
-        const roomMatch = (s.roomNo || '').toLowerCase().includes(q);
         const batchMatch = (s.batch || '').toLowerCase().includes(q);
         const phoneMatch = (s.phone || '').includes(q);
-        return tokenMatch || nameMatch || mlNameMatch || roomMatch || batchMatch || phoneMatch;
+        return tokenMatch || nameMatch || mlNameMatch || batchMatch || phoneMatch;
       })
       .slice(0, 15);
 
@@ -440,7 +439,6 @@ export default function ApexCommandPalette({
                           </div>
                           <div className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-2 truncate">
                             {student.batch && <span>{student.batch}</span>}
-                            {student.roomNo && <span>• Room {student.roomNo}</span>}
                             {student.phone && <span>• {student.phone}</span>}
                           </div>
                         </div>

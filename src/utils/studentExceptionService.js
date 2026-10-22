@@ -308,8 +308,17 @@ export function getEffectiveStudentMealStatus(student, targetDate, dayShort, mea
 
   const effectiveDay = dayShort || getDayOfWeekShort(targetDate);
   const checkDate = targetDate || getTodayISTDate();
+  const todayIST = getTodayISTDate();
 
-  // 1. Check Date Exception override
+  // 1. If it's a past date, check immutable historical ledger (diningHistory) first
+  if (checkDate < todayIST && student.diningHistory && student.diningHistory[checkDate]) {
+    const hist = student.diningHistory[checkDate];
+    if (hist[mealType] !== undefined) {
+      return Boolean(hist[mealType]);
+    }
+  }
+
+  // 2. Check Date Exception override
   if (student.dateExceptions && student.dateExceptions[checkDate]) {
     const exc = student.dateExceptions[checkDate];
     if (exc[mealType] !== undefined) {
@@ -331,12 +340,80 @@ export function getEffectiveStudentMealStatus(student, targetDate, dayShort, mea
     }
   }
 
-  // 2. Fallback to weekly standard schedule
+  // 3. Fallback to weekly standard schedule
   if (student.obj && student.obj[mealType]) {
     return Boolean(student.obj[mealType][effectiveDay]);
   }
 
   return true; // default true if not specified
+}
+
+/**
+ * Calculate metadata and relative day distance for a target date
+ * @param {string} targetDate - 'YYYY-MM-DD'
+ * @param {string} baseToday - Optional 'YYYY-MM-DD', defaults to getTodayISTDate()
+ * @returns {Object} { isToday, isTomorrow, isYesterday, isPast, isFuture, diffDays, badgeType, relativeLabel }
+ */
+export function getRelativeDateMeta(targetDate, baseToday = null) {
+  const today = baseToday || getTodayISTDate();
+  if (!targetDate) {
+    return {
+      isToday: true,
+      isTomorrow: false,
+      isYesterday: false,
+      isPast: false,
+      isFuture: false,
+      diffDays: 0,
+      badgeType: 'today',
+      relativeLabel: '',
+    };
+  }
+
+  const tomorrow = addDaysToDate(today, 1);
+  const yesterday = addDaysToDate(today, -1);
+
+  const isToday = targetDate === today;
+  const isTomorrow = targetDate === tomorrow;
+  const isYesterday = targetDate === yesterday;
+  const isPast = targetDate < today;
+  const isFuture = targetDate > today;
+
+  // Calculate day difference (UTC)
+  const [ty, tm, td] = today.split('-').map(Number);
+  const [dy, dm, dd] = targetDate.split('-').map(Number);
+  const msDiff = Date.UTC(dy, dm - 1, dd) - Date.UTC(ty, tm - 1, td);
+  const diffDays = Math.round(msDiff / (1000 * 60 * 60 * 24));
+
+  let badgeType = 'scheduled';
+  let relativeLabel = '';
+
+  if (isToday) {
+    badgeType = 'today';
+    relativeLabel = '';
+  } else if (isTomorrow) {
+    badgeType = 'tomorrow';
+    relativeLabel = '';
+  } else if (isYesterday) {
+    badgeType = 'yesterday';
+    relativeLabel = '1 day ago';
+  } else if (isPast) {
+    badgeType = 'past';
+    relativeLabel = `${Math.abs(diffDays)} days ago`;
+  } else if (isFuture) {
+    badgeType = 'future';
+    relativeLabel = `In ${diffDays} days`;
+  }
+
+  return {
+    isToday,
+    isTomorrow,
+    isYesterday,
+    isPast,
+    isFuture,
+    diffDays,
+    badgeType,
+    relativeLabel,
+  };
 }
 
 /**

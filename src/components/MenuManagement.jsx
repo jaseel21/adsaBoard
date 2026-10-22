@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -29,6 +29,9 @@ import {
   Sliders,
   Users,
   Home,
+  CalendarDays,
+  Search,
+  Filter,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -54,6 +57,7 @@ import {
   subscribeToDateOverrides,
   saveDateOverride,
   deleteDateOverride,
+  deleteDateOverrides,
   DEFAULT_WEEKLY_MENU,
   DISH_PRESETS,
 } from '../utils/menuService';
@@ -61,6 +65,9 @@ import MealEditModal from './MealEditModal';
 import BulkMenuEditModal from './BulkMenuEditModal';
 import PresetManagerModal from './PresetManagerModal';
 import DateGridPickerModal from './ui/DateGridPickerModal';
+import DateOverrideEditModal from './menu/DateOverrideEditModal';
+import RangedMenuModal from './menu/RangedMenuModal';
+import MenuCalendarMatrix from './menu/MenuCalendarMatrix';
 import { formatFriendlyDate } from '../utils/studentExceptionService';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 
@@ -83,6 +90,9 @@ export default function MenuManagement() {
   // Mode: 'live' (active weekly menu) vs 'defaults' (custom editable default template)
   const [editorMode, setEditorMode] = useState('live');
 
+  // Primary Navigation View: 'routine' | 'calendar' | 'overrides'
+  const [activeMainTab, setActiveMainTab] = useState('routine');
+
   // Schedules state
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
   const [defaultTemplate, setDefaultTemplate] = useState(DEFAULT_WEEKLY_MENU);
@@ -90,21 +100,21 @@ export default function MenuManagement() {
   const [selectedDayKey, setSelectedDayKey] = useState('fr');
   const [saving, setSaving] = useState(false);
 
-  // Active edit modal state
+  // Active edit modal state (Routine slot editor)
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState('breakfast');
 
-  // Overrides modal state
+  // Real-time overrides state
   const [overrides, setOverrides] = useState({});
-  const [showOverridesModal, setShowOverridesModal] = useState(false);
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [showPresetManagerModal, setShowPresetManagerModal] = useState(false);
   const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
-  const [newOverrideDate, setNewOverrideDate] = useState('');
-  const [showFeastDatePicker, setShowFeastDatePicker] = useState(false);
-  const [newOverrideTitle, setNewOverrideTitle] = useState('');
-  const [newOverrideBreakfast, setNewOverrideBreakfast] = useState('');
-  const [newOverrideLunch, setNewOverrideLunch] = useState('');
+
+  // Full CRUD Date Override & Ranged Overrides State
+  const [dateOverrideModal, setDateOverrideModal] = useState({ isOpen: false, date: '', override: null });
+  const [rangedModalOpen, setRangedModalOpen] = useState(false);
+  const [overridesSearch, setOverridesSearch] = useState('');
+  const [selectedOverrideKeys, setSelectedOverrideKeys] = useState([]);
 
   // Initial day synchronization
   useEffect(() => {
@@ -652,58 +662,80 @@ export default function MenuManagement() {
     }
   };
 
-  // Add date override
-  const handleAddOverride = async (e) => {
-    e.preventDefault();
-    if (!checkAuth()) return;
-    if (!newOverrideDate || !newOverrideTitle) {
-      dialog.alert({
-        type: 'warning',
-        title: 'Required',
-        message: 'Please choose a date and occasion title.',
-      });
-      return;
-    }
+  // Open Single-Date Override / Feast Editor
+  const handleOpenNewOverride = (targetDateStr) => {
+    feedback('tick');
+    const target = targetDateStr || new Date().toISOString().split('T')[0];
+    setDateOverrideModal({
+      isOpen: true,
+      date: target,
+      override: overrides[target] || null,
+    });
+  };
 
-    try {
-      await saveDateOverride(
-        newOverrideDate,
-        {
-          date: newOverrideDate,
-          occasion: newOverrideTitle,
-          breakfast: newOverrideBreakfast ? { title: newOverrideBreakfast, category: 'Special' } : null,
-          lunch: newOverrideLunch ? { title: newOverrideLunch, category: 'Special' } : null,
-        },
-        user?.email || 'admin'
-      );
-      setNewOverrideDate('');
-      setNewOverrideTitle('');
-      setNewOverrideBreakfast('');
-      setNewOverrideLunch('');
-      dialog.toast.success('Saved!', 'Date override registered.');
-    } catch (err) {
-      console.error('Error adding override:', err);
-      dialog.alert({
-        type: 'error',
-        title: 'Save Error',
-        message: 'Could not save date override.',
-      });
-    }
+  const handleEditOverride = (dateKey) => {
+    feedback('tick');
+    setDateOverrideModal({
+      isOpen: true,
+      date: dateKey,
+      override: overrides[dateKey] || null,
+    });
   };
 
   const handleDeleteOverride = async (dateKey) => {
     if (!checkAuth()) return;
     const confirmed = await dialog.confirm({
       title: 'Remove Override?',
-      message: `Remove special schedule for ${dateKey}?`,
+      message: `Remove special schedule for ${dateKey} and revert to routine?`,
       confirmColor: 'rose',
       confirmText: 'Remove',
     });
     if (confirmed) {
       await deleteDateOverride(dateKey);
+      setSelectedOverrideKeys((prev) => prev.filter((k) => k !== dateKey));
       dialog.toast.success('Removed', `Special schedule for ${dateKey} removed.`);
     }
   };
+
+  const handleBatchDeleteOverrides = async () => {
+    if (!checkAuth()) return;
+    if (selectedOverrideKeys.length === 0) return;
+    const confirmed = await dialog.confirm({
+      title: `Delete ${selectedOverrideKeys.length} Overrides?`,
+      message: `This will remove special schedules for ${selectedOverrideKeys.length} dates and revert them to standard weekly routine.`,
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: `Delete ${selectedOverrideKeys.length} Overrides`,
+    });
+    if (confirmed) {
+      await deleteDateOverrides(selectedOverrideKeys);
+      setSelectedOverrideKeys([]);
+      dialog.toast.success('Deleted', `Reverted ${selectedOverrideKeys.length} dates to routine.`);
+    }
+  };
+
+  // Filtered overrides list for the Hub table
+  const sortedOverridesList = useMemo(() => {
+    const list = Object.entries(overrides).map(([dateKey, ovr]) => ({
+      dateKey,
+      ...ovr,
+    }));
+    list.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+    if (!overridesSearch.trim()) return list;
+
+    const query = overridesSearch.toLowerCase();
+    return list.filter(
+      (item) =>
+        item.dateKey.includes(query) ||
+        (item.occasion && item.occasion.toLowerCase().includes(query)) ||
+        (item.note && item.note.toLowerCase().includes(query)) ||
+        (item.lunch?.title && item.lunch.title.toLowerCase().includes(query)) ||
+        (item.breakfast?.title && item.breakfast.title.toLowerCase().includes(query)) ||
+        (item.evening?.title && item.evening.title.toLowerCase().includes(query)) ||
+        (item.dinner?.title && item.dinner.title.toLowerCase().includes(query))
+    );
+  }, [overrides, overridesSearch]);
 
   if (loading) {
     return (
@@ -849,8 +881,70 @@ export default function MenuManagement() {
         </div>
       )}
 
-      {/* Action Deck: Defaults, Clear to Empty, Feasts, Print */}
-      <div className="p-3 sm:p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+      {/* Primary Navigation View Tabs */}
+      <div className="flex p-1.5 bg-white/80 dark:bg-[#0f1715]/90 rounded-2xl border border-gray-200/80 dark:border-white/10 shadow-sm gap-1 sm:gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setActiveMainTab('routine');
+          }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+            activeMainTab === 'routine'
+              ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md shadow-emerald-500/20'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>Weekly Routine Schedule</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setActiveMainTab('calendar');
+          }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+            activeMainTab === 'calendar'
+              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+          }`}
+        >
+          <CalendarDays className="w-4 h-4" />
+          <span>Full Dining Calendar</span>
+          {Object.keys(overrides).length > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-black">
+              {Object.keys(overrides).length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setActiveMainTab('overrides');
+          }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+            activeMainTab === 'overrides'
+              ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Special Feasts & Overrides</span>
+          <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-[10px] font-black">
+            {Object.keys(overrides).length}
+          </span>
+        </button>
+      </div>
+
+      {/* VIEW 1: WEEKLY ROUTINE SCHEDULE */}
+      {activeMainTab === 'routine' && (
+        <div className="space-y-4 sm:space-y-6">
+          {/* Action Deck: Defaults, Clear to Empty, Feasts, Print */}
+          <div className="p-3 sm:p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {/* Save Live as Default Template */}
           {editorMode === 'live' && (
@@ -912,16 +1006,28 @@ export default function MenuManagement() {
             <span>Dish Presets</span>
           </button>
 
-          {/* Single Day / Special Feasts Overrides */}
+          {/* Ranged / Bulk Overrides */}
           <button
             onClick={() => {
               feedback('tick');
-              setShowOverridesModal(true);
+              setRangedModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 text-xs font-bold transition-colors"
           >
-            <Calendar className="w-3.5 h-3.5 text-purple-500" />
-            <span>Single-Day Feasts ({Object.keys(overrides).length})</span>
+            <CalendarDays className="w-3.5 h-3.5 text-purple-500" />
+            <span>Ranged Overrides</span>
+          </button>
+
+          {/* Add Single Feast / Date Override */}
+          <button
+            onClick={() => {
+              feedback('tick');
+              handleOpenNewOverride();
+            }}
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-500/40 bg-purple-100/60 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 hover:bg-purple-200/70 text-xs font-bold transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span>+ Single Feast</span>
           </button>
 
           {/* Export / Print PDF */}
@@ -1241,6 +1347,226 @@ export default function MenuManagement() {
           );
         })}
       </div>
+        </div>
+      )}
+
+      {/* VIEW 2: FULL DINING CALENDAR MATRIX */}
+      {activeMainTab === 'calendar' && (
+        <MenuCalendarMatrix
+          weeklyMenu={activeDataset}
+          overrides={overrides}
+          onSelectDate={(date) => handleOpenNewOverride(date)}
+          onOpenRangedModal={() => setRangedModalOpen(true)}
+          onOpenPresetsModal={() => setShowPresetManagerModal(true)}
+        />
+      )}
+
+      {/* VIEW 3: SPECIAL FEASTS & OVERRIDES HUB */}
+      {activeMainTab === 'overrides' && (
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-white/10 space-y-5">
+          {/* Top Hub Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                <span>Special Feasts & Date Overrides Hub</span>
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Manage all one-off feasts, exam week schedules, holidays, and ranged dining modifications.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setRangedModalOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 font-bold text-xs hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-1.5"
+              >
+                <CalendarDays className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span>Ranged / Bulk Overrides</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('pop');
+                  handleOpenNewOverride();
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black text-xs shadow-lg shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Add Single Feast</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Bulk Selection Bar */}
+          <div className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={overridesSearch}
+                onChange={(e) => setOverridesSearch(e.target.value)}
+                placeholder="Search overrides by date, occasion, dish name, or note..."
+                className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            {selectedOverrideKeys.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
+                  {selectedOverrideKeys.length} selected
+                </span>
+                <button
+                  type="button"
+                  onClick={handleBatchDeleteOverrides}
+                  className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 font-bold text-xs hover:bg-rose-100 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Selected</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Overrides Table / Cards */}
+          {sortedOverridesList.length === 0 ? (
+            <div className="py-14 text-center text-gray-400 text-xs">
+              <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+              <p>No date overrides or special feasts currently registered.</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenNewOverride()}
+                  className="px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700"
+                >
+                  + Add Single Feast
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRangedModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 font-bold text-xs hover:bg-gray-200"
+                >
+                  Apply Ranged Schedule
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sortedOverridesList.map((ovr) => {
+                const isSelected = selectedOverrideKeys.includes(ovr.dateKey);
+                return (
+                  <div
+                    key={ovr.dateKey}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                      isSelected
+                        ? 'border-purple-400 bg-purple-50/30 dark:bg-purple-950/20'
+                        : 'border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3.5 min-w-0 flex-1">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          feedback('tick');
+                          setSelectedOverrideKeys((prev) =>
+                            prev.includes(ovr.dateKey)
+                              ? prev.filter((k) => k !== ovr.dateKey)
+                              : [...prev, ovr.dateKey]
+                          );
+                        }}
+                        className="w-4 h-4 mt-1 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-extrabold text-sm text-purple-600 dark:text-purple-400">
+                            {formatFriendlyDate(ovr.dateKey, true)}
+                          </span>
+                          <span className="text-xs text-gray-400 font-mono">
+                            ({ovr.dateKey})
+                          </span>
+                          {ovr.isClosed && (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black uppercase">
+                              Canteen Closed
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="text-base font-black text-gray-900 dark:text-white mt-0.5">
+                          {ovr.occasion || 'Special Dining Schedule'}
+                        </h4>
+
+                        {/* Meal slots breakdown chips */}
+                        {ovr.isClosed ? (
+                          <p className="text-xs text-rose-600 dark:text-rose-400 font-medium mt-1">
+                            Reason: {ovr.closureReason || 'Routine Off'}
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {ovr.breakfast?.title && (
+                              <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 text-xs font-semibold">
+                                🍳 BF: {ovr.breakfast.title}
+                              </span>
+                            )}
+                            {ovr.lunch?.title && (
+                              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 text-xs font-semibold">
+                                🍱 Lunch: {ovr.lunch.title}
+                              </span>
+                            )}
+                            {ovr.evening?.title && (
+                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 text-xs font-semibold">
+                                ☕ Evening: {ovr.evening.title}
+                              </span>
+                            )}
+                            {ovr.dinner?.title && (
+                              <span className="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 text-xs font-semibold">
+                                🌙 Dinner: {ovr.dinner.title}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {ovr.note && (
+                          <p className="text-[11px] text-gray-500 mt-1 italic">
+                            Notice: {ovr.note}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center space-x-2 self-end md:self-center">
+                      <button
+                        type="button"
+                        onClick={() => handleEditOverride(ovr.dateKey)}
+                        className="px-3 py-1.5 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 font-bold text-xs transition-colors flex items-center gap-1.5"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOverride(ovr.dateKey)}
+                        className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="Delete override and restore routine"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Edit Meal Drawer/Modal */}
       <MealEditModal
@@ -1253,158 +1579,22 @@ export default function MenuManagement() {
         onSave={handleSaveMealSlot}
       />
 
-      {/* Special Date Overrides Modal */}
-      <AnimatePresence>
-        {showOverridesModal && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-safe">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl bg-white dark:bg-[#0f1715] rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-2xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto pb-safe"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
-                <div className="flex items-center gap-2">
-                  <BookmarkPlus className="w-5 h-5 text-purple-500" />
-                  <h3 className="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white">
-                    Special Feasts & Date Overrides
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowOverridesModal(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
+      {/* Comprehensive Single-Date Override / Feast CRUD Modal */}
+      <DateOverrideEditModal
+        isOpen={dateOverrideModal.isOpen}
+        onClose={() => setDateOverrideModal({ isOpen: false, date: '', override: null })}
+        targetDate={dateOverrideModal.date}
+        existingOverride={dateOverrideModal.override}
+        weeklyMenu={activeDataset}
+        userEmail={user?.email || 'admin'}
+      />
 
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Schedule one-off menus for Ramadan, Eid al-Fitr, Khatm-ul-Quran feasts, or special occasions that automatically override regular schedules on that specific calendar date.
-              </p>
-
-              {/* Add Override Form */}
-              <form onSubmit={handleAddOverride} className="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-500/20 space-y-3 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Calendar Date *
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        feedback('tick');
-                        setShowFeastDatePicker(true);
-                      }}
-                      className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-purple-200 dark:border-purple-500/30 text-left text-xs font-bold text-gray-900 dark:text-white flex items-center justify-between hover:bg-purple-50/50 dark:hover:bg-purple-950/30 transition-colors"
-                    >
-                      <span>
-                        {newOverrideDate
-                          ? formatFriendlyDate(newOverrideDate, true)
-                          : '📅 Pick Feast Date from Grid...'}
-                      </span>
-                      <Calendar className="w-4 h-4 text-purple-500 flex-shrink-0" />
-                    </button>
-
-                    <DateGridPickerModal
-                      isOpen={showFeastDatePicker}
-                      onClose={() => setShowFeastDatePicker(false)}
-                      selectedDate={newOverrideDate}
-                      onSelectDate={(pickedDate) => setNewOverrideDate(pickedDate)}
-                      title="Pick Special Feast Date"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Occasion / Feast Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={newOverrideTitle}
-                      onChange={(e) => setNewOverrideTitle(e.target.value)}
-                      placeholder="e.g. Annual Dars Grand Feast"
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-purple-200 dark:border-purple-500/30 text-gray-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Special Breakfast (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newOverrideBreakfast}
-                      onChange={(e) => setNewOverrideBreakfast(e.target.value)}
-                      placeholder="e.g. Ghee Rice & Mutton Dalcha"
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-purple-200 dark:border-purple-500/30 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Special Lunch (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newOverrideLunch}
-                      onChange={(e) => setNewOverrideLunch(e.target.value)}
-                      placeholder="e.g. Thalassery Mutton Biriyani"
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-white/5 border border-purple-200 dark:border-purple-500/30 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-colors"
-                >
-                  Save Date Override
-                </button>
-              </form>
-
-              {/* Active Overrides List */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                  Configured Overrides:
-                </span>
-                {Object.keys(overrides).length === 0 ? (
-                  <p className="text-xs text-gray-400 italic">No upcoming date overrides registered.</p>
-                ) : (
-                  Object.entries(overrides).map(([dateKey, ovr]) => (
-                    <div
-                      key={dateKey}
-                      className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs"
-                    >
-                      <div>
-                        <span className="font-extrabold text-purple-600 dark:text-purple-400 mr-2">
-                          {dateKey}
-                        </span>
-                        <span className="font-bold text-gray-900 dark:text-white">
-                          {ovr.occasion}
-                        </span>
-                        {(ovr.breakfast?.title || ovr.lunch?.title) && (
-                          <p className="text-[11px] text-gray-500 mt-0.5">
-                            {ovr.breakfast?.title ? `BF: ${ovr.breakfast.title}` : ''}
-                            {ovr.breakfast?.title && ovr.lunch?.title ? ' • ' : ''}
-                            {ovr.lunch?.title ? `Lunch: ${ovr.lunch.title}` : ''}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleDeleteOverride(dateKey)}
-                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Bulk, Multiple & Ranged Dates Override Modal */}
+      <RangedMenuModal
+        isOpen={rangedModalOpen}
+        onClose={() => setRangedModalOpen(false)}
+        userEmail={user?.email || 'admin'}
+      />
 
       {/* Bulk Menu Edit Modal (Item #10) */}
       <BulkMenuEditModal

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- 1. Home / Student Dining Overview Dashboard -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/" />
+    <image:image>
+      <image:loc>https://canteen.alathurpadidars.in/og-preview.png</image:loc>
+      <image:title>ADSA T-Board Dining Logistics Interface</image:title>
+      <image:caption>Alathurpadi Dars Food Management System and Live Token Board</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 2. Campus Dining Menu & Specials -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/menu</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/menu" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/menu" />
+    <image:image>
+      <image:loc>https://canteen.alathurpadidars.in/og-menu.png</image:loc>
+      <image:title>Alathurpadi Dars Campus Dining Menu</image:title>
+      <image:caption>Weekly meal schedule, culinary specials, and dietary avoiders manifest</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 4. Breakfast Supply Manifest & Summary -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/breakfast</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/breakfast" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/breakfast" />
+  </url>
+
+  <!-- 5. Lunch Supply Manifest & Summary -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/lunch</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/lunch" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/lunch" />
+  </url>
+
+  <!-- 6. ADSA Care & Concierge Helpdesk -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/support</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/support" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/support" />
+    <image:image>
+      <image:loc>https://canteen.alathurpadidars.in/og-support.png</image:loc>
+      <image:title>ADSA Care Concierge Hub</image:title>
+      <image:caption>Student inquiry tracking, token unblocking, and committee hotlines</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 7. System User Guide & Visual Manual -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/guide</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/guide" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/guide" />
+    <image:image>
+      <image:loc>https://canteen.alathurpadidars.in/og-preview.png</image:loc>
+      <image:title>ADSA T-Board User Guide &amp; Visual Manual</image:title>
+      <image:caption>Meal schedules, cutoff rules, color indicators, and token gestures</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 8. Document & Manifest Downloads -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/list</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/list" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/list" />
+  </url>
+
+  <!-- 9. Student Sign-In Portal -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/login</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/login" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/login" />
+  </url>
+
+</urlset>

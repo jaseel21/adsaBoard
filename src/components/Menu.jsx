@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+/**
+ * Menu.jsx
+ * Campus Canteen Food Menu & Schedule Component
+ * 
+ * Displays the live weekly breakfast & lunch schedule, daily special dish highlights,
+ * date overrides, dietary matrix, and print/share studio for students, faculty, and visitors.
+ * Served canonically at /menu (with /fmenu redirected to /menu).
+ */
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,8 +28,20 @@ import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useWorldTime } from '../utils/time';
-import { subscribeToWeeklyMenu, DEFAULT_WEEKLY_MENU } from '../utils/menuService';
+import {
+  subscribeToWeeklyMenu,
+  subscribeToDateOverrides,
+  getEffectiveMenuForDate,
+  DEFAULT_WEEKLY_MENU,
+} from '../utils/menuService';
+import {
+  getTodayISTDate,
+  addDaysToDate,
+  formatFriendlyDate,
+} from '../utils/studentExceptionService';
 import { ROLES, hasRole } from '../utils/rbac';
+import useSEO from '../hooks/useSEO';
+import SocialCardStudioModal from './preview/SocialCardStudioModal';
 
 const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -47,18 +67,98 @@ const MenuTable = () => {
   ]);
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
+  const [overrides, setOverrides] = useState({});
   const [dayFilter, setDayFilter] = useState('all'); // 'all' | 'today' | 'tomorrow'
+  const [isCardStudioOpen, setIsCardStudioOpen] = useState(false);
+
+  useSEO({
+    title: 'Campus Dining Menu & Specials',
+    description:
+      'Weekly meal schedules, special campus culinary rosters, and dietary avoiders manifest for Alathurpadi Dars canteen.',
+    keywords:
+      'canteen menu, alathurpadi dars food menu, dars weekly menu, dining schedule, breakfast menu, lunch menu',
+    image: '/og-menu.png',
+  });
 
   useEffect(() => {
-    const unsubscribe = subscribeToWeeklyMenu((data) => {
+    const unsubMenu = subscribeToWeeklyMenu((data) => {
       if (data) setWeeklyMenu(data);
     });
-    return () => unsubscribe();
+    const unsubOverrides = subscribeToDateOverrides((data) => {
+      if (data) setOverrides(data);
+    });
+    return () => {
+      unsubMenu();
+      unsubOverrides();
+    };
   }, []);
 
   const todayKey = (dayShort || 'su').toLowerCase();
   const todayIdx = DAY_KEYS.indexOf(todayKey) !== -1 ? DAY_KEYS.indexOf(todayKey) : 0;
   const tomorrowKey = DAY_KEYS[(todayIdx + 1) % 7];
+
+  const todayDateStr = getTodayISTDate();
+  const tomorrowDateStr = addDaysToDate(todayDateStr, 1);
+
+  const todayEffective = useMemo(
+    () => getEffectiveMenuForDate(todayDateStr, weeklyMenu, overrides),
+    [todayDateStr, weeklyMenu, overrides]
+  );
+  const tomorrowEffective = useMemo(
+    () => getEffectiveMenuForDate(tomorrowDateStr, weeklyMenu, overrides),
+    [tomorrowDateStr, weeklyMenu, overrides]
+  );
+
+  const resolveSlot = useCallback((slotData, fallbackSlot) => {
+    if (!slotData) return fallbackSlot;
+    const hasContent = Boolean(slotData.title?.trim()) || (Array.isArray(slotData.items) && slotData.items.length > 0);
+    if (!hasContent) return fallbackSlot;
+    return {
+      ...fallbackSlot,
+      ...slotData,
+      title: slotData.title?.trim() || fallbackSlot?.title || '',
+      items: (slotData.items && slotData.items.length > 0) ? slotData.items : (fallbackSlot?.items || []),
+    };
+  }, []);
+
+  const mergeWithDefault = useCallback((dayData, defDay) => {
+    if (!dayData) return defDay;
+    if (!defDay) return dayData;
+    return {
+      ...defDay,
+      ...dayData,
+      breakfast: resolveSlot(dayData.breakfast, defDay.breakfast),
+      lunch: resolveSlot(dayData.lunch, defDay.lunch),
+      evening: resolveSlot(dayData.evening, defDay.evening),
+      dinner: resolveSlot(dayData.dinner, defDay.dinner),
+    };
+  }, [resolveSlot]);
+
+  const getDayItem = useCallback(
+    (k) => {
+      const defDay = DEFAULT_WEEKLY_MENU[k] || {};
+      if (dayFilter === 'today' || (k === todayKey && dayFilter === 'all')) {
+        if (overrides[todayDateStr]) return { ...mergeWithDefault(todayEffective, defDay), hasFeastOverride: true };
+      }
+      if (dayFilter === 'tomorrow' || (k === tomorrowKey && dayFilter === 'all')) {
+        if (overrides[tomorrowDateStr]) return { ...mergeWithDefault(tomorrowEffective, defDay), hasFeastOverride: true };
+      }
+      const raw = weeklyMenu[k] || defDay;
+      return mergeWithDefault(raw, defDay);
+    },
+    [dayFilter, todayKey, overrides, todayDateStr, todayEffective, tomorrowKey, tomorrowDateStr, tomorrowEffective, weeklyMenu, mergeWithDefault]
+  );
+
+  const upcomingFeasts = useMemo(() => {
+    const list = [];
+    Object.entries(overrides).forEach(([dStr, ovr]) => {
+      if (dStr >= todayDateStr) {
+        list.push({ dateStr: dStr, ...ovr });
+      }
+    });
+    list.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+    return list.slice(0, 3);
+  }, [overrides, todayDateStr]);
 
   const displayedKeys = DAY_KEYS.filter((k) => {
     if (dayFilter === 'today') return k === todayKey;
@@ -67,30 +167,33 @@ const MenuTable = () => {
   });
 
   // Dynamically determine which meal columns are visible.
-  // If a meal slot is archived/hidden across all displayed days, hide that column completely!
   const hasVisibleBreakfast = useMemo(() => {
-    return displayedKeys.some(
-      (k) => !weeklyMenu[k]?.isArchived && !weeklyMenu[k]?.breakfast?.isArchived && weeklyMenu[k]?.breakfast?.isAvailable !== false
-    );
-  }, [displayedKeys, weeklyMenu]);
+    return displayedKeys.some((k) => {
+      const it = getDayItem(k);
+      return !it?.isArchived && !it?.isClosed && !it?.breakfast?.isArchived && it?.breakfast?.isAvailable !== false && it?.breakfast?.title;
+    });
+  }, [displayedKeys, getDayItem]);
 
   const hasVisibleLunch = useMemo(() => {
-    return displayedKeys.some(
-      (k) => !weeklyMenu[k]?.isArchived && !weeklyMenu[k]?.lunch?.isArchived && weeklyMenu[k]?.lunch?.isAvailable !== false
-    );
-  }, [displayedKeys, weeklyMenu]);
+    return displayedKeys.some((k) => {
+      const it = getDayItem(k);
+      return !it?.isArchived && !it?.isClosed && !it?.lunch?.isArchived && it?.lunch?.isAvailable !== false && it?.lunch?.title;
+    });
+  }, [displayedKeys, getDayItem]);
 
   const hasVisibleEvening = useMemo(() => {
-    return displayedKeys.some(
-      (k) => !weeklyMenu[k]?.isArchived && !weeklyMenu[k]?.evening?.isArchived && weeklyMenu[k]?.evening?.isAvailable !== false
-    );
-  }, [displayedKeys, weeklyMenu]);
+    return displayedKeys.some((k) => {
+      const it = getDayItem(k);
+      return !it?.isArchived && !it?.isClosed && !it?.evening?.isArchived && it?.evening?.isAvailable !== false && it?.evening?.title;
+    });
+  }, [displayedKeys, getDayItem]);
 
   const hasVisibleDinner = useMemo(() => {
-    return displayedKeys.some(
-      (k) => !weeklyMenu[k]?.isArchived && !weeklyMenu[k]?.dinner?.isArchived && weeklyMenu[k]?.dinner?.isAvailable !== false
-    );
-  }, [displayedKeys, weeklyMenu]);
+    return displayedKeys.some((k) => {
+      const it = getDayItem(k);
+      return !it?.isArchived && !it?.isClosed && !it?.dinner?.isArchived && it?.dinner?.isAvailable !== false && it?.dinner?.title;
+    });
+  }, [displayedKeys, getDayItem]);
 
   const totalCols = 1 + (hasVisibleBreakfast ? 1 : 0) + (hasVisibleLunch ? 1 : 0) + (hasVisibleEvening ? 1 : 0) + (hasVisibleDinner ? 1 : 0);
 
@@ -133,7 +236,7 @@ const MenuTable = () => {
             <button
               onClick={() => {
                 feedback('tick');
-                navigate('/student-portal');
+                navigate('/student');
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-500/30 font-bold text-xs shadow-xs transition-all active:scale-95"
               title="Return to Student Portal"
@@ -142,6 +245,19 @@ const MenuTable = () => {
               <span>{t('tokenPortal', 'Portal')} (#{stdata.tokenNo})</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => {
+              feedback('tick');
+              setIsCardStudioOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+            title="Generate & share dynamic visual menu card"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{t('shareMenuCard', 'Share Menu Card')}</span>
+          </button>
 
           <button
             onClick={() => window.print()}
@@ -155,9 +271,7 @@ const MenuTable = () => {
             onClick={() => {
               feedback('tick');
               if (stdata?.tokenNo) {
-                navigate('/student-portal');
-              } else if (user) {
-                navigate('/board');
+                navigate('/student');
               } else {
                 navigate('/');
               }
@@ -165,10 +279,46 @@ const MenuTable = () => {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{stdata?.tokenNo ? (t('backToPortal', 'Back to Portal')) : (t('backToBoard', 'Back to Board'))}</span>
+            <span>{stdata?.tokenNo ? (t('backToPortal', 'Back to Portal')) : (t('backToHome', 'Back to Home'))}</span>
           </button>
         </div>
       </div>
+
+      {/* Upcoming Special Feasts Alert Banner */}
+      {upcomingFeasts.length > 0 && (
+        <div className="p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-200/80 dark:border-purple-800/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-2xl bg-purple-600 text-white shadow-sm shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                  Upcoming Special Feasts & Custom Dining Days
+                </h4>
+                <span className="px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-black uppercase">
+                  {upcomingFeasts.length} Scheduled
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-purple-700 dark:text-purple-300 font-medium mt-0.5">
+                {upcomingFeasts.map((f) => (
+                  <span key={f.dateStr} className="inline-flex items-center gap-1">
+                    • <strong>{formatFriendlyDate(f.dateStr, true)}:</strong> {f.occasion}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          {canManageMenu && (
+            <button
+              onClick={() => navigate('/admin/menu')}
+              className="px-3 py-1.5 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 font-bold text-xs hover:bg-purple-200 transition-colors self-start sm:self-auto shrink-0"
+            >
+              View in Calendar
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex items-center justify-between gap-3 p-2 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
@@ -224,10 +374,10 @@ const MenuTable = () => {
       {/* Mobile Card Grid (sm:hidden) */}
       <div className="block sm:hidden space-y-3">
         {displayedKeys.map((key) => {
-          const item = weeklyMenu[key] || DEFAULT_WEEKLY_MENU[key];
+          const item = getDayItem(key);
           const isToday = todayKey === key;
           const isTomorrow = tomorrowKey === key;
-          const isArchived = Boolean(item.isArchived);
+          const isArchived = Boolean(item.isArchived || item.isClosed);
 
           return (
             <div
@@ -235,6 +385,8 @@ const MenuTable = () => {
               className={`p-4 rounded-3xl border transition-all ${
                 isArchived
                   ? 'bg-amber-50/50 dark:bg-amber-950/20 border-dashed border-amber-300 dark:border-amber-700/50'
+                  : item.hasFeastOverride
+                  ? 'bg-gradient-to-br from-purple-50 to-indigo-50/70 dark:from-purple-950/30 dark:to-indigo-950/20 border-purple-300 dark:border-purple-600/40 shadow-sm'
                   : isToday
                   ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-500/40 shadow-sm'
                   : 'bg-white/90 dark:bg-[#0f1715]/90 border-gray-200/80 dark:border-white/10 shadow-sm'
@@ -246,7 +398,13 @@ const MenuTable = () => {
                   {t(`daysFull.${key}`) || item.dayName}
                 </span>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap justify-end">
+                  {item.hasFeastOverride && item.occasion && !isArchived && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 text-purple-500" />
+                      <span>{item.occasion}</span>
+                    </span>
+                  )}
                   {isArchived ? (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white">
                       {t('canteenClosed', 'Canteen Closed')}
@@ -270,7 +428,7 @@ const MenuTable = () => {
 
               {isArchived ? (
                 <div className="p-3 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs">
-                  ℹ️ <strong>{t('canteenClosed', 'Canteen Closed')}:</strong> {item.archiveReason || t('routineOffDay', 'Routine Off Day')}
+                  ℹ️ <strong>{t('canteenClosed', 'Canteen Closed')}:</strong> {item.closureReason || item.archiveReason || t('routineOffDay', 'Routine Off Day')}
                 </div>
               ) : (
                 <>
@@ -409,9 +567,9 @@ const MenuTable = () => {
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-medium text-gray-800 dark:text-gray-200">
               {displayedKeys.map((key) => {
-                const item = weeklyMenu[key] || DEFAULT_WEEKLY_MENU[key];
+                const item = getDayItem(key);
                 const isToday = todayKey === key;
-                const isArchived = Boolean(item.isArchived);
+                const isArchived = Boolean(item.isArchived || item.isClosed);
 
                 if (isArchived) {
                   return (
@@ -421,7 +579,7 @@ const MenuTable = () => {
                         <span className="block text-[10px] text-amber-600 font-normal">{t('offDay', 'Off-Day')}</span>
                       </td>
                       <td colSpan={totalCols - 1} className="py-4 px-5 text-amber-800 dark:text-amber-300 italic text-xs">
-                        🔒 {t('canteenClosed', 'Canteen Closed')} — {item.archiveReason || t('canteenClosedRoutineNotice', 'Routine Off Day. No dining hall supply.')}
+                        🔒 {t('canteenClosed', 'Canteen Closed')} — {item.closureReason || item.archiveReason || t('canteenClosedRoutineNotice', 'Routine Off Day. No dining hall supply.')}
                       </td>
                     </tr>
                   );
@@ -431,14 +589,22 @@ const MenuTable = () => {
                   <tr
                     key={key}
                     className={`transition-colors ${
-                      isToday
+                      item.hasFeastOverride
+                        ? 'bg-purple-50/40 dark:bg-purple-950/20'
+                        : isToday
                         ? 'bg-emerald-50/60 dark:bg-emerald-950/20 font-semibold'
                         : 'hover:bg-gray-50/50 dark:hover:bg-white/5'
                     }`}
                   >
                     <td className="py-4 px-5 align-top">
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                      <div className="flex items-center gap-1.5 flex-wrap font-bold text-emerald-600 dark:text-emerald-400">
                         <span>{t(`daysFull.${key}`) || item.dayName}</span>
+                        {item.hasFeastOverride && item.occasion && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 text-purple-500" />
+                            <span>{item.occasion}</span>
+                          </span>
+                        )}
                         {isToday && (
                           <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-white">
                             {t('today', 'Today')}
@@ -569,6 +735,22 @@ const MenuTable = () => {
           </table>
         </div>
       </div>
+
+      {/* Dynamic Menu Social Card Studio */}
+      <SocialCardStudioModal
+        isOpen={isCardStudioOpen}
+        onClose={() => setIsCardStudioOpen(false)}
+        initialTemplate="menu"
+        initialData={{
+          breakfastDish: todayEffective?.breakfast?.title || 'Weekly Breakfast Schedule',
+          breakfastCategory: todayEffective?.breakfast?.category || 'Veg / Egg',
+          lunchDish: todayEffective?.lunch?.title || 'Weekly Lunch Schedule',
+          lunchCategory: todayEffective?.lunch?.category || 'Non-Veg / Veg',
+          dateStr: formatFriendlyDate(todayDateStr),
+          customUrl: 'https://canteen.alathurpadidars.in/menu',
+          description: `Today's Menu: ${todayEffective?.breakfast?.title || 'Breakfast'} • ${todayEffective?.lunch?.title || 'Lunch'}`,
+        }}
+      />
     </div>
   );
 };

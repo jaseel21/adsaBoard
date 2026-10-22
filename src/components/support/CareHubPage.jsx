@@ -16,6 +16,7 @@ import CareDispatcherForm from './CareDispatcherForm';
 import CareTracker from './CareTracker';
 import CareKnowledgeBase from './CareKnowledgeBase';
 import CareDirectory from './CareDirectory';
+import useSEO from '../../hooks/useSEO';
 
 const TABS = [
   { id: 'feedback', key: 'expressFeedback', label: 'Express Feedback', icon: Sparkles },
@@ -35,6 +36,15 @@ export default function CareHubPage() {
     tabParam && TABS.some((t) => t.id === tabParam) ? tabParam : 'feedback'
   );
   const [trackingCode, setTrackingCode] = useState(codeParam);
+
+  useSEO({
+    title: 'ADSA Care & Concierge Hub • Campus Helpdesk',
+    description:
+      'Direct student inquiry tracking, 1-click token unblocking, committee hotlines, and campus dining assistance for Alathurpadi Dars.',
+    keywords:
+      'adsa care, alathurpadi dars helpdesk, token unblock, canteen feedback, dars student support',
+    image: '/og-support.png',
+  });
 
   useEffect(() => {
     if (tabParam && TABS.some((t) => t.id === tabParam)) {

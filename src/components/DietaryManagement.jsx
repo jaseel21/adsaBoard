@@ -235,13 +235,11 @@ export default function DietaryManagement() {
         const nameEn = (s.nameEn || s.name || '').toLowerCase();
         const nameMl = (s.nameMl || '').toLowerCase();
         const batch = (s.batch || '').toLowerCase();
-        const room = String(s.roomNo || '');
         const matches =
           tokenStr.includes(q) ||
           nameEn.includes(q) ||
           nameMl.includes(q) ||
-          batch.includes(q) ||
-          room.includes(q);
+          batch.includes(q);
         if (!matches) return false;
       }
 
@@ -537,7 +535,6 @@ export default function DietaryManagement() {
           String(r.tokenNo).includes(q) ||
           (r.studentName || '').toLowerCase().includes(q) ||
           (r.batch || '').toLowerCase().includes(q) ||
-          (r.room || '').toLowerCase().includes(q) ||
           (r.reasonText || '').toLowerCase().includes(q)
         );
       });
@@ -1343,19 +1340,12 @@ export default function DietaryManagement() {
                             </p>
                           )}
 
-                          {/* Room & Contact */}
-                          <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
-                            {student.roomNo && (
-                              <span className="flex items-center gap-1">
-                                <DoorClosed className="w-3 h-3" /> Room {student.roomNo}
-                              </span>
-                            )}
-                            {student.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3" /> {student.phone}
-                              </span>
-                            )}
-                          </div>
+                          {/* Contact */}
+                          {student.phone && (
+                            <div className="flex items-center gap-1 mt-2 text-[10px] text-gray-400">
+                              <Phone className="w-3 h-3" /> {student.phone}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1908,7 +1898,6 @@ export default function DietaryManagement() {
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                           <span>{req.batch || 'General Batch'}</span>
-                          {req.room && <span>• Room {req.room}</span>}
                           {req.phone && <span>• {req.phone}</span>}
                         </div>
                       </div>

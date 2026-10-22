@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
-import Home from './components/Home';
 import StudentDashboard from './components/StudentDashboard';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
@@ -9,7 +8,7 @@ import Navbar from './components/NavBar';
 import Footer from './components/Footer';
 import List from './components/List';
 import SupplySections from './components/SupplySections';
-import Fmenu from './components/Fmenu';
+import Menu from './components/Menu';
 import PersonInfo from './store/StudentData';
 import Admin from './components/Admin';
 import AdminLogin from './components/AdminLogin';
@@ -35,6 +34,8 @@ import SupportCommandCenter from './components/admin/support/SupportCommandCente
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
 import { LanguageProvider } from './store/LanguageContext';
+import { SidebarProvider, useSidebar } from './components/nav/SidebarContext';
+import BrowserLeftSidebar from './components/nav/BrowserLeftSidebar';
 import { ROLES } from './utils/rbac';
 import './App.css';
 
@@ -42,41 +43,55 @@ function AppContent() {
   const { user, homeRoute } = useContext(AuthContext);
   const isAdmin = Boolean(user);
   const location = useLocation();
+  const { sidebarOpen } = useSidebar();
 
   return (
     <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
       <Navbar isAdmin={isAdmin} />
-      <main className="flex-1 w-full max-w-full min-w-0 flex flex-col overflow-x-hidden">
+      <div className="flex flex-1 w-full relative min-w-0">
+        <BrowserLeftSidebar />
+        {/* Desktop Sidebar Spacer to reserve space for fixed sidebar */}
+        <div
+          className={`hidden lg:block flex-shrink-0 transition-all duration-300 ease-in-out ${
+            sidebarOpen ? 'w-72' : 'w-0'
+          }`}
+          aria-hidden="true"
+        />
+        <main className="flex-1 w-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-8 transition-all duration-300">
         <ErrorBoundary>
           <Routes>
             {/* Unified Public Student Dashboard / Home */}
             <Route path="/" element={<StudentDashboard />} />
 
-            {/* Public Interactive Token Board */}
-            <Route path="/board" element={<Home />} />
+            {/* Legacy Token Board Redirect to Unified Dashboard */}
+            <Route path="/board" element={<Navigate to="/" replace />} />
 
             {/* Public Canteen Food Menu */}
-            <Route path="/menu" element={<Fmenu />} />
+            <Route path="/menu" element={<Menu />} />
+            <Route path="/fmenu" element={<Navigate to="/menu" replace />} />
 
             {/* Public Document Downloads & Information */}
             <Route path="/login" element={<Login />} />
             <Route path="/list" element={<List />} />
             <Route path="/lunch" element={<SupplySections defaultMeal="lunch" />} />
             <Route path="/breakfast" element={<SupplySections defaultMeal="breakfast" />} />
+            <Route path="/supply" element={<Navigate to="/breakfast" replace />} />
+            <Route path="/manifest" element={<Navigate to="/breakfast" replace />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/support" element={<CareHubPage />} />
             <Route path="/feedback" element={<CareHubPage />} />
             <Route path="/contact" element={<CareHubPage />} />
 
-            {/* Student Portal (Protected by Student Session) */}
+            {/* Student Dining Portal (Clean canonical route + backward-compatible alias) */}
             <Route
-              path="/student-portal"
+              path="/student"
               element={
                 <StudentRoute>
                   <StudentPort />
                 </StudentRoute>
               }
             />
+            <Route path="/student-portal" element={<Navigate to="/student" replace />} />
 
             {/* Dedicated Kitchen Display System (Cooks, Canteen Committee, Central, Devs) */}
             <Route
@@ -220,7 +235,8 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>
-      </main>
+        </main>
+      </div>
       {!location.pathname.startsWith('/kitchen') && <ApexCareFloatingButton />}
       <Footer />
     </div>
@@ -234,9 +250,11 @@ function App() {
         <PersonInfo>
           <NotificationProvider>
             <DialogProvider>
-              <AppContent />
-              <NotificationDrawer />
-              <EmergencyNotificationDialog />
+              <SidebarProvider>
+                <AppContent />
+                <NotificationDrawer />
+                <EmergencyNotificationDialog />
+              </SidebarProvider>
             </DialogProvider>
           </NotificationProvider>
         </PersonInfo>

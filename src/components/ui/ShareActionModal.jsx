@@ -11,26 +11,31 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
+  Sliders,
+  Download,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { useLanguage } from '../../store/LanguageContext';
 import LinkQrModal from '../preview/LinkQrModal';
+import SocialCardStudioModal from '../preview/SocialCardStudioModal';
 
 export default function ShareActionModal({
   isOpen,
   onClose,
   title = 'ADSA T-Board • Alathurpadi Dars Food Management System',
-  url = typeof window !== 'undefined' ? window.location.href : 'https://adsatboard.web.app/',
+  url = typeof window !== 'undefined' ? window.location.href : 'https://canteen.alathurpadidars.in/',
   text = 'Live dining logistics, 3D token matrix, and meal management for Alathurpadi Dars.',
 }) {
   const { lang } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
 
   if (!isOpen) return null;
 
-  const targetUrl = url || 'https://adsatboard.web.app/';
+  const targetUrl = url || 'https://canteen.alathurpadidars.in/';
 
   const handleCopy = async () => {
     try {
@@ -120,19 +125,45 @@ export default function ShareActionModal({
             </button>
           </div>
 
-          {/* Social Card Preview Mini Mockup */}
+          {/* Social Card Preview Mini Mockup with Studio Trigger */}
           <div className="mt-4 p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 flex flex-col gap-2">
-            <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              <span>Social Preview Card (Telegram &amp; WhatsApp)</span>
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                <span>Social Preview Card</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  hapticEngine.lightTap();
+                  setIsStudioOpen(true);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-extrabold uppercase transition-all active:scale-95 cursor-pointer"
+                title="Open Studio to customize, generate & download HD cards"
+              >
+                <Sliders className="w-3 h-3 text-emerald-500" />
+                <span>Card Studio</span>
+              </button>
+            </div>
 
-            <div className="relative rounded-xl overflow-hidden aspect-[1.91/1] bg-black/40 border border-white/10 shadow-sm">
+            <div
+              onClick={() => {
+                soundEngine.playPop();
+                setIsStudioOpen(true);
+              }}
+              className="group relative rounded-xl overflow-hidden aspect-[1.91/1] bg-black/40 border border-white/10 shadow-sm cursor-pointer"
+              title="Click to open Card Studio"
+            >
               <img
                 src="/og-preview.png"
                 alt="Social Card Preview"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
               />
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-bold backdrop-blur-xs">
+                <Sliders className="w-4 h-4 text-emerald-400" />
+                <span>Customize in Studio</span>
+              </div>
             </div>
 
             <div className="mt-0.5">
@@ -181,14 +212,28 @@ export default function ShareActionModal({
 
           {/* Bottom Secondary Actions */}
           <div className="mt-3 pt-3 border-t border-gray-200/60 dark:border-white/10 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setIsQrOpen(true)}
-              className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            >
-              <QrCode className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Scan Phone QR</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsQrOpen(true)}
+                className="inline-flex items-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+              >
+                <QrCode className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Phone QR</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  setIsStudioOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-300/40 dark:border-emerald-500/20 transition-colors"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Card Studio</span>
+              </button>
+            </div>
 
             <button
               type="button"
@@ -196,7 +241,7 @@ export default function ShareActionModal({
               className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-xs font-bold text-gray-800 dark:text-gray-100 transition-all active:scale-95"
             >
               <Share2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>More Options...</span>
+              <span>More...</span>
             </button>
           </div>
         </motion.div>
@@ -208,7 +253,19 @@ export default function ShareActionModal({
         onClose={() => setIsQrOpen(false)}
         url={targetUrl}
         title={title}
-        domain="adsatboard.web.app"
+        domain="canteen.alathurpadidars.in"
+      />
+
+      {/* Dynamic Social Card Studio Modal */}
+      <SocialCardStudioModal
+        isOpen={isStudioOpen}
+        onClose={() => setIsStudioOpen(false)}
+        initialTemplate="portal"
+        initialData={{
+          customUrl: targetUrl,
+          title,
+          description: text,
+        }}
       />
     </AnimatePresence>
   );

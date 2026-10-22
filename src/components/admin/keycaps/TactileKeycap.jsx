@@ -36,12 +36,10 @@ export default function TactileKeycap({
         relative group flex items-center justify-center flex-shrink-0
         w-10 h-10 xs:w-11 xs:h-11 min-[380px]:w-12 min-[380px]:h-12 sm:w-14 sm:h-14 aspect-square rounded-xl xs:rounded-2xl select-none font-extrabold
         text-[11px] xs:text-xs min-[380px]:text-sm sm:text-base tracking-tight font-mono
-        shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400/50
+        shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 cursor-pointer
         ${
           isBlocked
             ? 'bg-gradient-to-b from-gray-700 to-gray-900 text-gray-300 border border-gray-600/40 shadow-inner'
-            : onLeave
-            ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-amber-500/25 border-2 border-amber-300'
             : isOn
             ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 hover:shadow-glow-emerald border border-emerald-400/40'
             : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 hover:shadow-glow-red border border-rose-400/40'
@@ -49,25 +47,28 @@ export default function TactileKeycap({
       `}
     >
       {!isBlocked && (
-        <span className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <span className="absolute inset-0 rounded-xl xs:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       )}
 
-      {isBlocked ? (
-        <Lock className="w-4 h-4 text-gray-300" />
-      ) : (
-        <span className="relative z-10 leading-none">{number}</span>
-      )}
+      {/* Always show token number, even for blocked tokens */}
+      <span className="relative z-10 leading-none">{number}</span>
 
-      {/* Mini indicator dot / leave badge */}
-      {onLeave ? (
-        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-yellow-300 animate-pulse" />
-      ) : (
+      {/* Lock badge overlay for blocked tokens */}
+      {isBlocked && (
         <span
-          className={`absolute bottom-1 w-1 h-1 rounded-full ${
-            isBlocked ? 'bg-gray-400' : isOn ? 'bg-white/80' : 'bg-white/60'
-          }`}
-        />
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center shadow-sm z-20"
+          title="Account Locked by Admin"
+        >
+          <Lock className="w-2.5 h-2.5 text-gray-300" />
+        </span>
       )}
+
+      {/* Subtle indicator dot at bottom */}
+      <span
+        className={`absolute bottom-1 w-1 h-1 rounded-full ${
+          isBlocked ? 'bg-gray-400' : isOn ? 'bg-white/80' : 'bg-white/60'
+        }`}
+      />
     </motion.button>
   );
 }

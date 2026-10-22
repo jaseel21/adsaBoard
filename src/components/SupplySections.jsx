@@ -27,6 +27,7 @@ import {
   exportSinglePageCombinedManifestPDF,
   generateSinglePageCombinedManifestDoc,
 } from '../utils/publicDocumentExporter';
+import useSEO from '../hooks/useSEO';
 import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
 import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
 import {
@@ -67,6 +68,13 @@ export default function SupplySections({ defaultMeal }) {
   const [documents, setDocuments] = useState([]);
   const [activeSection, setActiveSection] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useSEO({
+    title: `${activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'} Supply Manifest`,
+    description: `Official ${activeMeal} dining manifest, preparation counts, section groupings, and student attendance roster for Alathurpadi Dars canteen.`,
+    keywords: `canteen manifest, ${activeMeal} manifest, dars kitchen supply, alathurpadi dars supply`,
+    image: '/og-preview.png',
+  });
 
   // Section Display Options: 'batch' (Academic Batches 1-7) | 'size' (Numeric chunks)
   const [sectionMode, setSectionMode] = useState('batch');

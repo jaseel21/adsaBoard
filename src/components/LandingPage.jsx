@@ -400,12 +400,12 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   feedback('pop');
-                  navigate('/board');
+                  navigate('/menu');
                 }}
                 className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 dark:bg-white/10 text-gray-800 dark:text-white font-bold text-xs flex items-center gap-1.5 transition-all"
               >
-                <Layers className="w-3.5 h-3.5 text-emerald-500" />
-                <span>{t('viewTokenBoardBtn', 'View Token Board')}</span>
+                <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{t('viewFoodMenuBtn', 'View Food Menu')}</span>
               </button>
             </div>
           </motion.div>
@@ -965,7 +965,7 @@ export default function LandingPage() {
                 {t('privacyShieldTitle', 'Institutional Privacy Shield & Data Protection')}
               </h3>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">
-                {t('privacyShieldDesc', 'Personal student names, confidential dietary restrictions, room numbers, and attendance records are strictly quarantined from public web crawlers and unauthorized visitors. Access to the interactive Token Board is restricted exclusively to authenticated students and committee personnel.')}
+                {t('privacyShieldDesc', 'Personal student names, confidential dietary restrictions, and attendance records are strictly quarantined from public web crawlers and unauthorized visitors. Access to the interactive Token Board is restricted exclusively to authenticated students and committee personnel.')}
               </p>
             </div>
           </div>

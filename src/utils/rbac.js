@@ -156,7 +156,7 @@ export function getRoleHomeRoute(role) {
     case ROLES.DEVELOPER:
       return '/admin';
     case ROLES.STUDENT:
-      return '/student-portal';
+      return '/student';
     default:
       return '/';
   }

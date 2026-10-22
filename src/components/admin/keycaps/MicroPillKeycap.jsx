@@ -37,16 +37,19 @@ export default function MicroPillKeycap({
         ${dimmed ? 'opacity-20' : 'opacity-100'}
         ${
           isBlocked
-            ? 'bg-gray-800 text-gray-400 border border-gray-700'
-            : onLeave
-            ? 'bg-amber-500 text-white border border-amber-400'
+            ? 'bg-gray-800 text-gray-300 border border-gray-700'
             : isOn
             ? 'bg-emerald-600 text-white border border-emerald-500'
             : 'bg-rose-600 text-white border border-rose-500'
         }
       `}
     >
-      {isBlocked ? <Lock className="w-3 h-3 text-gray-300" /> : number}
+      <span className="leading-none">{number}</span>
+      {isBlocked && (
+        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-900 border border-gray-600 flex items-center justify-center shadow-xs">
+          <Lock className="w-1.5 h-1.5 text-gray-300" />
+        </span>
+      )}
     </motion.button>
   );
 }

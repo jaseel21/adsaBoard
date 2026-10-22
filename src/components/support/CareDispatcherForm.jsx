@@ -58,7 +58,6 @@ export default function CareDispatcherForm({ onTicketCreated, onNavigateTrack })
   const [tokenNumber, setTokenNumber] = useState('');
   const [name, setName] = useState('');
   const [batch, setBatch] = useState('');
-  const [room, setRoom] = useState('');
   const [phone, setPhone] = useState('');
   const [attachment, setAttachment] = useState(null);
 
@@ -74,7 +73,6 @@ export default function CareDispatcherForm({ onTicketCreated, onNavigateTrack })
       setTokenNumber(String(stdata.id || stdata.tokenNo || ''));
       setName(stdata.name || '');
       setBatch(stdata.batch || '');
-      setRoom(stdata.room || '');
       setPhone(stdata.phone || '');
     } else if (staffProfile) {
       setName(staffProfile.name || staffProfile.email || '');
@@ -140,7 +138,6 @@ export default function CareDispatcherForm({ onTicketCreated, onNavigateTrack })
         tokenNumber: tokenNumber ? parseInt(tokenNumber, 10) : null,
         name: isAnonymous ? 'Anonymous Diner' : name.trim(),
         batch: isAnonymous ? '' : batch.trim(),
-        room: isAnonymous ? '' : room.trim(),
         phone: isAnonymous ? '' : phone.trim(),
         attachments: attachment ? [attachment] : [],
       });
@@ -396,12 +393,12 @@ export default function CareDispatcherForm({ onTicketCreated, onNavigateTrack })
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Batch / Room</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Academic Batch</label>
               <input
                 type="text"
-                value={room ? `${batch} • ${room}` : batch}
+                value={batch}
                 onChange={(e) => setBatch(e.target.value)}
-                placeholder="e.g. Sanaviya 2"
+                placeholder="e.g. Batch 2024 / Sanaviya 2"
                 className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 text-xs"
               />
             </div>

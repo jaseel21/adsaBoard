@@ -25,9 +25,12 @@ import {
   UtensilsCrossed,
   ShieldAlert,
   Send,
+  Unlock,
+  CreditCard,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
+import SocialCardStudioModal from './preview/SocialCardStudioModal';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
@@ -42,6 +45,11 @@ import {
   subscribeStudentPendingDietaryRequest,
   cancelDietaryChangeRequest,
 } from '../utils/dietaryRequestService';
+import UnblockRequestModal from './unblock/UnblockRequestModal';
+import {
+  subscribeStudentPendingUnblockRequest,
+  cancelUnblockRequest,
+} from '../utils/unblockRequestService';
 import {
   addDaysToDate,
   formatFriendlyDate,
@@ -58,7 +66,13 @@ function StudentPort() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
-  const isBlocked = Boolean(stdata?.block);
+
+  // Live real-time unblock and lock status subscription
+  const [unblockDocStatus, setUnblockDocStatus] = useState(null);
+  const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
+
+  const isBlocked = unblockDocStatus ? Boolean(unblockDocStatus.block) : Boolean(stdata?.block);
+  const pendingUnblock = unblockDocStatus ? unblockDocStatus.pendingUnblockRequest : stdata?.pendingUnblockRequest;
   const {
     todayIST,
     todayDayShort,
@@ -94,6 +108,7 @@ function StudentPort() {
   // Dynamic Dietary Preferences & Self-Service Change Requests
   const [preferencesList, setPreferencesList] = useState([]);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [isPassStudioOpen, setIsPassStudioOpen] = useState(false);
   const [pendingDietaryRequest, setPendingDietaryRequest] = useState(() => stdata?.pendingDietaryRequest || null);
 
   // Meal Routine Selections
@@ -153,6 +168,59 @@ function StudentPort() {
     });
     return () => unsub();
   }, [stdata?.tokenNo]);
+
+  // Subscribe to student's live block & unblock request status
+  useEffect(() => {
+    if (!stdata?.tokenNo) return;
+    const unsub = subscribeStudentPendingUnblockRequest(stdata.tokenNo, (data) => {
+      if (data) {
+        setUnblockDocStatus(data);
+        if (
+          Boolean(data.block) !== Boolean(stdata.block) ||
+          data.blockReason !== stdata.blockReason ||
+          JSON.stringify(data.pendingUnblockRequest) !== JSON.stringify(stdata.pendingUnblockRequest)
+        ) {
+          setStdata((prev) => ({
+            ...prev,
+            block: data.block,
+            blockReason: data.blockReason,
+            pendingUnblockRequest: data.pendingUnblockRequest,
+          }));
+        }
+      }
+    });
+    return () => unsub();
+  }, [stdata?.tokenNo, stdata?.block, stdata?.blockReason, stdata?.pendingUnblockRequest, setStdata]);
+
+  const handleCancelUnblock = async () => {
+    if (!pendingUnblock) return;
+    const confirmed = await dialog.confirm({
+      title: t('cancelUnblockPrompt', 'Cancel Unblock Request?'),
+      message: t(
+        'cancelUnblockConfirm',
+        `Are you sure you want to withdraw your appeal to unblock token #${stdata.tokenNo}?`
+      ),
+      confirmText: t('withdrawConfirm', 'Yes, Withdraw'),
+      cancelText: t('cancel', 'Keep Request'),
+      isDestructive: true,
+    });
+    if (confirmed) {
+      feedback('tick');
+      try {
+        await cancelUnblockRequest({
+          studentId: stdata.documentId || stdata.id,
+          tokenNo: stdata.tokenNo,
+          ticketId: pendingUnblock.ticketId,
+        });
+        dialog.toast.info(
+          t('requestCancelled', 'Request Withdrawn'),
+          t('requestCancelledDesc', 'Your pending request has been cancelled.')
+        );
+      } catch (err) {
+        console.error('Failed to cancel unblock request:', err);
+      }
+    }
+  };
 
   useEffect(() => {
     if (stdata) {
@@ -883,6 +951,19 @@ function StudentPort() {
               <span>{t('viewCanteenMenu', 'View Food Menu')}</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setIsPassStudioOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold text-xs border border-indigo-300/50 dark:border-indigo-500/30 transition-colors"
+              title="Generate Digital Dining Pass Card"
+            >
+              <CreditCard className="w-4 h-4 text-indigo-500" />
+              <span>{t('digitalPassCard', 'Pass Card')}</span>
+            </button>
+
             {/* In-Header Save Preferences button when dirty and not blocked */}
             <AnimatePresence>
               {isDirty && !isBlocked && (
@@ -917,46 +998,121 @@ function StudentPort() {
 
       {/* ================= ADMIN BLOCKED NOTICE BANNER ================= */}
       {isBlocked && (
-        <div className="rounded-3xl bg-red-50/90 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div className="flex-1 min-w-0 text-xs sm:text-sm text-red-900 dark:text-red-200 space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold text-sm sm:text-base text-red-950 dark:text-red-100">
-                {t('tokenLockedByAdmin', `Token #${stdata.tokenNo} Locked by Admin`).replace('{token}', stdata.tokenNo)}
-              </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-200/60 dark:bg-red-900/60 text-red-900 dark:text-red-200 uppercase tracking-wide">
-                {t('readOnly', 'Read-Only')}
-              </span>
-            </div>
-            <p className="text-red-800 dark:text-red-300 text-xs leading-relaxed">
-              {t('tokenLockedDescription', 'This student token has been temporarily suspended by the ADSA Canteen Committee. Meal dining privileges are paused.')}
-            </p>
-            {stdata.blockReason && (
-              <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
-                <span className="font-bold text-red-950 dark:text-red-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
-                <span className="italic font-medium text-red-900 dark:text-red-200">&ldquo;{stdata.blockReason}&rdquo;</span>
+        <div className="space-y-3">
+          {pendingUnblock?.status === 'pending' ? (
+            /* Pending Unblock Status Alert */
+            <div className="rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-300 dark:border-amber-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Clock className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="text-xs sm:text-sm text-amber-950 dark:text-amber-200 space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-sm sm:text-base text-amber-950 dark:text-amber-100">
+                      {t('unblockRequestPending', 'Unblock Request Pending')} (#{pendingUnblock.ticketNumber})
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                      Under Review
+                    </span>
+                  </div>
+                  <p className="text-amber-900/80 dark:text-amber-300/80 text-xs leading-relaxed">
+                    {t(
+                      'unblockRequestUnderReview',
+                      'Your unblock request is currently under review by the Central Committee.'
+                    )}
+                  </p>
+                  {pendingUnblock.reasonNote && (
+                    <p className="text-xs italic text-amber-950/90 dark:text-amber-200/90 font-medium line-clamp-1">
+                      Note: &ldquo;{pendingUnblock.reasonNote}&rdquo;
+                    </p>
+                  )}
+                </div>
               </div>
-            )}
-            <p className="text-[11px] text-red-700/90 dark:text-red-400 pt-0.5">
-              {t('consultOffice', 'Please consult the ADSA Office or Canteen Secretary to resolve status.')}
-            </p>
-          </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    navigate(`/support?tab=tracker&code=${pendingUnblock.ticketNumber}`);
+                  }}
+                  className="flex-1 sm:flex-initial py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{t('trackUnblockRequest', 'Track Status')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelUnblock}
+                  className="py-2.5 px-3 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 text-gray-700 dark:text-gray-200 font-bold text-xs border border-amber-200/60 dark:border-white/10 transition-colors cursor-pointer"
+                >
+                  {t('cancelUnblockRequest', 'Cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Standard Blocked Banner with Immediate Action Button */
+            <div className="rounded-3xl bg-red-50/90 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-4 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0 text-xs sm:text-sm text-red-900 dark:text-red-200 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-sm sm:text-base text-red-950 dark:text-red-100">
+                      {t('tokenLockedByAdmin', `Token #${stdata.tokenNo} Locked by Admin`).replace('{token}', stdata.tokenNo)}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-200/60 dark:bg-red-900/60 text-red-900 dark:text-red-200 uppercase tracking-wide">
+                      {t('readOnly', 'Read-Only')}
+                    </span>
+                  </div>
+                  <p className="text-red-800 dark:text-red-300 text-xs leading-relaxed">
+                    {t(
+                      'tokenLockedDescription',
+                      'This student token has been temporarily suspended by the ADSA Canteen Committee. Meal dining privileges are paused.'
+                    )}
+                  </p>
+                  {stdata.blockReason && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
+                      <span className="font-bold text-red-950 dark:text-red-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
+                      <span className="italic font-medium text-red-900 dark:text-red-200">&ldquo;{stdata.blockReason}&rdquo;</span>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-red-700/90 dark:text-red-400 pt-0.5">
+                    {t('consultOffice', 'Please consult the ADSA Office or submit an unblock appeal.')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-full sm:w-auto flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setIsUnblockModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all cursor-pointer"
+                >
+                  <Unlock className="w-4 h-4" />
+                  <span>{t('requestUnblockBtn', 'Request to Unblock')}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
-        {/* ================= SECTION 1: WEEKLY ROUTINE ================= */}
+        {/* ================= SECTION 1: WEEKLY DINING ROUTINE ================= */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
                 {t('weeklyDiningRoutine', 'Weekly Dining Routine')}
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {t('weeklyRoutineSubtitle', 'Your standard 7-day schedule for breakfast and lunch.')}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {t('weeklyRoutineSubtitle', 'Your standard 7-day schedule for breakfast and lunch. Changes here apply as your recurring weekly pattern.')}
               </p>
             </div>
           </div>
@@ -1204,20 +1360,8 @@ function StudentPort() {
           )}
         </div>
 
-        {/* ================= SECTION 2: TACTILE DATE GRID (DINING OVERRIDES) ================= */}
+        {/* ================= SECTION 2: MONTHLY DINING CALENDAR & DATE OVERRIDES ================= */}
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-emerald-500" />
-                <span>{t('upcomingDiningCalendar', 'Upcoming Dining Calendar & Date Overrides')}</span>
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {t('calendarHelpText', 'Planning to miss meals or attend extra meals on specific dates? Click any date cell in the tactile grid below to turn meals ON (Green) or OFF (Red). Your regular weekly routine automatically resumes once the date passes.')}
-              </p>
-            </div>
-          </div>
-
           {isBlocked && (
             <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/20 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
               <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
@@ -1235,6 +1379,7 @@ function StudentPort() {
             editable={!isBlocked}
           />
         </div>
+
 
         {/* ================= SECTION 3: DIETARY PREFERENCES (INTERACTIVE CHANGE REQUEST) ================= */}
         <div className="p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md space-y-4">
@@ -1442,13 +1587,31 @@ function StudentPort() {
                   <Lock className="w-4 h-4 text-red-500" />
                   <span>{t('tokenLockedReadOnlyDock', 'Token Locked • Read-Only Mode')}</span>
                 </div>
-                <Link
-                  to="/support?tab=feedback"
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
-                >
-                  <HeartHandshake className="w-3.5 h-3.5" />
-                  <span>Request Emergency Unblock</span>
-                </Link>
+                {pendingUnblock?.status === 'pending' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      navigate(`/support?tab=tracker&code=${pendingUnblock.ticketNumber}`);
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-extrabold text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{t('trackUnblockRequest', 'Track Status')} (#{pendingUnblock.ticketNumber})</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      setIsUnblockModalOpen(true);
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>{t('requestUnblockBtn', 'Request to Unblock')}</span>
+                  </button>
+                )}
               </div>
             ) : (
               <button
@@ -1620,6 +1783,31 @@ function StudentPort() {
         pendingRequest={pendingDietaryRequest}
         onSuccess={() => {
           // Success callback
+        }}
+      />
+
+      {/* Modal: Request Dining Token Unblock */}
+      <UnblockRequestModal
+        isOpen={isUnblockModalOpen}
+        onClose={() => setIsUnblockModalOpen(false)}
+        student={stdata}
+        onSuccess={() => {
+          // Success callback
+        }}
+      />
+
+      {/* Dynamic Student Pass Card Studio */}
+      <SocialCardStudioModal
+        isOpen={isPassStudioOpen}
+        onClose={() => setIsPassStudioOpen(false)}
+        initialTemplate="student_pass"
+        initialData={{
+          tokenNumber: String(stdata.tokenNo || '0'),
+          studentName: stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`,
+          batch: stdata.batch || 'General Batch',
+          isBlocked: Boolean(stdata.block),
+          customUrl: 'https://canteen.alathurpadidars.in/',
+          description: `Official Dining Pass for Student #${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'}).`,
         }}
       />
     </div>

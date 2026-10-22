@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
-import { DISH_PRESETS } from '../utils/menuService';
+import { subscribeToDishPresets, DISH_PRESETS } from '../utils/menuService';
 
 const SLOT_CONFIGS = {
   breakfast: {
@@ -73,6 +73,15 @@ export default function MealEditModal({
   const [isArchived, setIsArchived] = useState(false);
   const [archiveReason, setArchiveReason] = useState('');
 
+  const [presetsMap, setPresetsMap] = useState({});
+
+  useEffect(() => {
+    const unsub = subscribeToDishPresets((presets) => {
+      if (presets) setPresetsMap(presets);
+    });
+    return () => unsub();
+  }, []);
+
   const slotInfo = SLOT_CONFIGS[slotKey] || SLOT_CONFIGS.breakfast;
   const Icon = slotInfo.icon;
 
@@ -129,6 +138,8 @@ export default function MealEditModal({
     setTitle(preset.title);
     if (preset.items) setItems([...preset.items]);
     if (preset.category) setCategory(preset.category);
+    if (preset.timing) setTiming(preset.timing);
+    if (preset.specialTag) setSpecialTag(preset.specialTag);
     setIsArchived(false);
     setIsAvailable(true);
   };
@@ -148,7 +159,9 @@ export default function MealEditModal({
     onClose();
   };
 
-  const presets = DISH_PRESETS[slotKey] || [];
+  const presets = (Array.isArray(presetsMap[slotKey]) && presetsMap[slotKey].length > 0)
+    ? presetsMap[slotKey]
+    : (DISH_PRESETS[slotKey] || []);
 
   return (
     <AnimatePresence>
@@ -208,9 +221,18 @@ export default function MealEditModal({
                       key={idx}
                       type="button"
                       onClick={() => handleApplyPreset(preset)}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 hover:bg-emerald-50 dark:bg-white/5 dark:hover:bg-emerald-950/40 hover:border-emerald-400 text-xs font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap transition-colors flex-shrink-0"
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 hover:bg-emerald-50 dark:bg-white/5 dark:hover:bg-emerald-950/40 hover:border-emerald-400 text-xs font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap transition-colors flex items-center gap-1.5 flex-shrink-0"
                     >
-                      {preset.title}
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        preset.category === 'Non-Veg'
+                          ? 'bg-rose-500'
+                          : preset.category === 'Egg'
+                          ? 'bg-amber-500'
+                          : preset.category === 'Special'
+                          ? 'bg-purple-500'
+                          : 'bg-emerald-500'
+                      }`} />
+                      <span>{preset.title}</span>
                     </button>
                   ))}
                 </div>

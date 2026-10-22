@@ -207,7 +207,7 @@ export default function KitchenDisplay() {
         !searchQuery ||
         String(s.tokenNo).includes(searchQuery) ||
         (s.nameEn && s.nameEn.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (s.roomNo && s.roomNo.toLowerCase().includes(searchQuery.toLowerCase()));
+        (s.batch && s.batch.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesBatch = selectedBatch === 'ALL' || s.batch === selectedBatch;
       return matchesSearch && matchesBatch;
@@ -247,7 +247,7 @@ export default function KitchenDisplay() {
     if (mealMetrics.specialCareList.length > 0) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.text('SPECIAL CARE & ALLERGY ROSTER (BY ROOM)', 14, doc.lastAutoTable.finalY + 10);
+      doc.text('SPECIAL CARE & ALLERGY ROSTER (BY TOKEN)', 14, doc.lastAutoTable.finalY + 10);
 
       const careRows = mealMetrics.specialCareList.map((item) => {
         const s = item.student;
@@ -261,7 +261,6 @@ export default function KitchenDisplay() {
         return [
           `#${s.tokenNo}`,
           s.nameEn || s.name || 'Student',
-          s.roomNo || 'N/A',
           s.batch || 'General',
           restrictions.join(' • ') || 'Custom Diet',
         ];
@@ -270,7 +269,7 @@ export default function KitchenDisplay() {
       doc.autoTable({
         startY: doc.lastAutoTable.finalY + 14,
         theme: 'striped',
-        head: [['Token', 'Student Name', 'Room No', 'Batch', 'Dietary Exemption']],
+        head: [['Token', 'Student Name', 'Batch', 'Dietary Exemption']],
         body: careRows,
         headStyles: { fillColor: [245, 158, 11] },
       });
@@ -561,13 +560,13 @@ export default function KitchenDisplay() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span>{t('specialCareDiningRoster', 'Special Care Dining Roster (Room Distribution)')}</span>
+              <span>{t('specialCareDiningRoster', 'Special Care Dining Roster (Dining Hall Assembly)')}</span>
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
                 {filteredSpecialCare.length} {t('orders', 'Orders')}
               </span>
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('exactRoomTokensSpecial', 'Exact room numbers and tokens requiring special food assembly')}
+              {t('exactRoomTokensSpecial', 'Token-wise students requiring special dietary food assembly')}
             </p>
           </div>
 
@@ -577,7 +576,7 @@ export default function KitchenDisplay() {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder={t('tokenOrRoomPlaceholder', 'Token or Room...')}
+                placeholder={t('searchSpecialCare', 'Search token #, name, batch...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 pr-3 py-1.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -621,11 +620,6 @@ export default function KitchenDisplay() {
                         <span className="font-mono text-sm font-black text-gray-900 dark:text-white">
                           Token #{s.tokenNo}
                         </span>
-                        {s.roomNo && (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-gray-900 dark:bg-white text-white dark:text-gray-900">
-                            {t('room', 'Room')} {s.roomNo}
-                          </span>
-                        )}
                       </div>
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5 truncate">
                         {s.nameEn || s.name || 'Student'}
