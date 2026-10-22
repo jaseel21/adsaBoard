@@ -11,6 +11,7 @@ export const AUDIT_CATEGORIES = {
   STUDENTS: 'students',
   MENU: 'menu',
   DIETARY: 'dietary',
+  CANTEEN: 'canteen',
   SECURITY: 'security',
   SYSTEM: 'system',
   NOTIFICATIONS: 'notifications',

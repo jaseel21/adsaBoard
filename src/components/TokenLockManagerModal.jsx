@@ -81,7 +81,7 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
   // Sync state whenever modal opens or config updates from Firestore
   useEffect(() => {
     if (isOpen) {
-      setMode(config.overrideMode || (config.status ? 'force_unlocked' : 'auto'));
+      setMode(config.overrideMode || 'auto');
       setStartInput(config.window?.startTime || '14:00');
       setEndInput(config.window?.endTime || '23:00');
       setScheduleEnabled(Boolean(config.schedule?.enabled));

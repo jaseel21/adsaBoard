@@ -1279,7 +1279,7 @@ export default function StudentDashboard() {
                   setAdvancedExportModal({ isOpen: true, type: 'supply' });
                 }}
                 isGenerating={exportingSupply || loading}
-                label={t('quickDownloadManifest', 'Quick Download (Sections • Ascending PDF)')}
+                label={t('quickDownloadManifest', 'Open')}
                 colorTheme="emerald"
                 defaultAction="view"
               />
@@ -1330,7 +1330,7 @@ export default function StudentDashboard() {
                   setAdvancedExportModal({ isOpen: true, type: 'dietary' });
                 }}
                 isGenerating={exportingDietary || loading}
-                label={t('quickDownloadMatrix', 'Quick Download Matrix (Ascending PDF)')}
+                label={t('quickDownloadMatrix', 'Open')}
                 colorTheme="amber"
                 defaultAction="view"
               />

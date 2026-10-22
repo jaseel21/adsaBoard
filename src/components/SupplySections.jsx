@@ -1,10 +1,25 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Utensils, Coffee, ArrowLeft, Layers, Printer, FileDown, Sliders } from 'lucide-react';
+import {
+  Utensils,
+  Coffee,
+  ArrowLeft,
+  Layers,
+  Printer,
+  FileDown,
+  Sliders,
+  CheckCircle2,
+  AlertTriangle,
+  History,
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import firebase from '../firebase/config';
+import { AuthContext } from '../store/AuthContext';
 import { useWorldTime } from '../utils/time';
 import { useFeedback } from '../utils/useFeedback';
 import { useLanguage } from '../store/LanguageContext';
@@ -14,9 +29,19 @@ import {
 } from '../utils/publicDocumentExporter';
 import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
 import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
+import {
+  subscribeToManifestPrint,
+  computeManifestFingerprint,
+  evaluateManifestFreshness,
+  recordManifestPrint,
+  MANIFEST_STATUS,
+} from '../utils/manifestPrintService';
+import { formatAuditTime } from '../utils/auditLogger';
 import AdvancedExportModal from './export/AdvancedExportModal';
 import UniversalDocumentModal from './export/UniversalDocumentModal';
 import ExportActionMenu from './export/ExportActionMenu';
+import DuplicatePrintGuardModal from './ui/DuplicatePrintGuardModal';
+import CanteenOpsActivityDrawer from './admin/CanteenOpsActivityDrawer';
 import {
   addDaysToDate,
   getEffectiveStudentMealStatus,
@@ -27,6 +52,7 @@ import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 export default function SupplySections({ defaultMeal }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, userRole } = useContext(AuthContext);
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
@@ -47,6 +73,11 @@ export default function SupplySections({ defaultMeal }) {
   const [customChunkSize, setCustomChunkSize] = useState(25);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
+
+  // Print Tracking & Duplicate Guard State
+  const [printRecord, setPrintRecord] = useState(null);
+  const [isDuplicateGuardOpen, setIsDuplicateGuardOpen] = useState(false);
+  const [isCanteenLogOpen, setIsCanteenLogOpen] = useState(false);
 
   const { timeHms, dayShort, longDate, todayIST } = useWorldTime('Asia/Kolkata');
   const { activeWindow } = useTokenLockStatus();
@@ -72,6 +103,30 @@ export default function SupplySections({ defaultMeal }) {
       setDay(days[currentIndex >= 0 ? currentIndex : 0]);
     }
   }, [dayShort, isShowingTomorrow]);
+
+  // Real-time listener for physical print status of this meal and target date
+  useEffect(() => {
+    if (!activeMeal || !targetDateIST) return;
+    const unsubPrint = subscribeToManifestPrint(activeMeal, targetDateIST, (rec) => {
+      setPrintRecord(rec);
+    });
+    return () => unsubPrint();
+  }, [activeMeal, targetDateIST]);
+
+  // Compute live canonical fingerprint of active tokens & dietary avoiders
+  const currentComputed = useMemo(() => {
+    return computeManifestFingerprint({
+      documents,
+      targetDateIST,
+      effectiveDay: day,
+      meal: activeMeal,
+    });
+  }, [documents, targetDateIST, day, activeMeal]);
+
+  // Real-time freshness status against the physical kitchen print
+  const freshness = useMemo(() => {
+    return evaluateManifestFreshness(currentComputed, printRecord);
+  }, [currentComputed, printRecord]);
 
   // Reactive real-time student subscription
   useEffect(() => {
@@ -177,6 +232,7 @@ export default function SupplySections({ defaultMeal }) {
 
   const handleViewSupplyPdf = () => {
     feedback('tick');
+    const targetRev = freshness.revision || 1;
     const res = generateSinglePageCombinedManifestDoc({
       targetDateIST,
       dayKey: day,
@@ -187,13 +243,35 @@ export default function SupplySections({ defaultMeal }) {
       chunkSize: Number(customChunkSize) || 25,
       mealFilter: activeMeal,
       statusFilter: 'canceled_only',
+      revision: targetRev,
+      printedByName: user?.displayName || user?.email || 'Admin',
+      printedAt: freshness.printedAt ? formatAuditTime(freshness.printedAt) : null,
+      deltaNotes: freshness.status === MANIFEST_STATUS.STALE_OUTDATED ? freshness.delta?.summaryText : null,
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
   };
 
-  const handlePrintSupplyPdf = async () => {
+  const handlePrintSupplyPdf = async (isDuplicateReprint = false) => {
     feedback('tick');
+
+    // Scenario 1 Cost Guard: Intercept identical prints to save money and paper
+    if (freshness.status === MANIFEST_STATUS.FRESH_IDENTICAL && !isDuplicateReprint) {
+      setIsDuplicateGuardOpen(true);
+      return;
+    }
+
     try {
+      const targetRevision = isDuplicateReprint
+        ? (freshness.revision || 1)
+        : freshness.status === MANIFEST_STATUS.STALE_OUTDATED
+        ? freshness.nextRevision
+        : (freshness.revision || 1);
+
+      const deltaNotes =
+        freshness.status === MANIFEST_STATUS.STALE_OUTDATED
+          ? freshness.delta?.summaryText
+          : null;
+
       const { doc } = generateSinglePageCombinedManifestDoc({
         targetDateIST,
         dayKey: day,
@@ -204,9 +282,27 @@ export default function SupplySections({ defaultMeal }) {
         chunkSize: Number(customChunkSize) || 25,
         mealFilter: activeMeal,
         statusFilter: 'canceled_only',
+        revision: targetRevision,
+        printedByName: user?.displayName || user?.email || 'Admin',
+        printedAt: new Date().toLocaleTimeString('en-IN'),
+        deltaNotes,
+        isReprint: isDuplicateReprint,
       });
+
       const { blobUrl } = createPdfBlob(doc);
       await directPrintPdf(blobUrl);
+
+      // Record in centralized Firestore print registry
+      await recordManifestPrint({
+        meal: activeMeal,
+        targetDateIST,
+        documents,
+        effectiveDay: day,
+        user,
+        role: userRole,
+        printType: 'supply_manifest',
+        isDuplicateReprint,
+      });
     } catch (err) {
       console.error('Print supply sections error:', err);
     }
@@ -392,10 +488,23 @@ export default function SupplySections({ defaultMeal }) {
           </div>
 
           <div className="flex items-center gap-1.5 min-w-[200px]">
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setIsCanteenLogOpen(true);
+              }}
+              className="p-2 sm:px-3 sm:py-2 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200/80 dark:border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+              title="View Canteen & Supply Ops Log"
+            >
+              <History className="w-4 h-4 text-emerald-500" />
+              <span className="hidden sm:inline">Ops Log</span>
+            </button>
+
             <ExportActionMenu
               onView={handleViewSupplyPdf}
               onDownload={exportSupplyPdf}
-              onPrint={handlePrintSupplyPdf}
+              onPrint={() => handlePrintSupplyPdf(false)}
               onShare={handleShareSupplyPdf}
               onCustomize={() => {
                 feedback('tick');
@@ -408,6 +517,120 @@ export default function SupplySections({ defaultMeal }) {
           </div>
         </div>
       </div>
+
+      {/* Manifest Freshness & Synchronization Banner */}
+      {freshness.status === MANIFEST_STATUS.FRESH_IDENTICAL && (
+        <div className="p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 backdrop-blur-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/30">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-extrabold text-xs sm:text-sm text-emerald-950 dark:text-emerald-100">
+                  Kitchen Manifest Up to Date (Rev {freshness.revision})
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                  0 Changes • Synced
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
+                Printed {formatAuditTime(freshness.printedAt)} by <strong>{freshness.printedBy?.displayName || freshness.printedBy?.email || 'Admin'}</strong>. Physical sheet in kitchen is accurate.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+            <button
+              onClick={() => {
+                feedback('tick');
+                setIsCanteenLogOpen(true);
+              }}
+              className="px-3 py-1.5 rounded-xl border border-emerald-400/50 dark:border-emerald-600/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-500/10 transition-all flex items-center gap-1.5"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Ops Log</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {freshness.status === MANIFEST_STATUS.STALE_OUTDATED && (
+        <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 border-2 border-amber-500/60 shadow-lg shadow-amber-500/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 backdrop-blur-xl">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/30 mt-0.5 sm:mt-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                  <span>Kitchen Sheet Outdated!</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500 text-white shadow-xs">
+                    {freshness.delta?.totalChangesCount} Change(s) After Rev {freshness.revision} Print
+                  </span>
+                </span>
+              </div>
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                <strong className="text-amber-800 dark:text-amber-300">{freshness.delta?.summaryText}</strong>
+                <span className="text-gray-500 dark:text-gray-400"> — Kitchen staff holds obsolete sheet printed at {formatAuditTime(freshness.printedAt)}.</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end shrink-0">
+            <button
+              onClick={() => {
+                feedback('tick');
+                setIsCanteenLogOpen(true);
+              }}
+              className="px-3 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>View Changes</span>
+            </button>
+            <button
+              onClick={() => handlePrintSupplyPdf(false)}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white text-xs font-black shadow-md shadow-rose-600/25 flex items-center gap-1.5 transition-all transform active:scale-95"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print Rev {freshness.nextRevision} (Resync)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {freshness.status === MANIFEST_STATUS.NEVER_PRINTED && (
+        <div className="p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-white/70 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 backdrop-blur-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center shrink-0">
+              <Printer className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white">
+                  Not Yet Printed for {isShowingTomorrow ? "Tomorrow's" : "Today's"} {isLunchMeal ? 'Lunch' : 'Breakfast'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400">
+                  Initial Rev 1
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                No physical manifest has been recorded in the kitchen for this service date.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+            <button
+              onClick={() => {
+                feedback('tick');
+                setIsCanteenLogOpen(true);
+              }}
+              className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Ops Log</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Overview Stat Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -529,11 +752,22 @@ export default function SupplySections({ defaultMeal }) {
         documents={documents}
         sectionChunkSize={customChunkSize}
       />
-      {/* Universal In-App Document Viewer & Action Modal */}
-      <UniversalDocumentModal
-        isOpen={universalDoc.isOpen}
-        onClose={() => setUniversalDoc({ isOpen: false, data: null })}
-        documentData={universalDoc.data}
+      {/* Duplicate Print Cost Guard Modal */}
+      <DuplicatePrintGuardModal
+        isOpen={isDuplicateGuardOpen}
+        onClose={() => setIsDuplicateGuardOpen(false)}
+        onConfirmReprint={() => handlePrintSupplyPdf(true)}
+        printRecord={printRecord}
+        meal={activeMeal}
+        targetDateIST={targetDateIST}
+      />
+
+      {/* Canteen & Supply Ops Activity Log Drawer */}
+      <CanteenOpsActivityDrawer
+        isOpen={isCanteenLogOpen}
+        onClose={() => setIsCanteenLogOpen(false)}
+        activeMeal={activeMeal}
+        targetDateIST={targetDateIST}
       />
     </div>
   );

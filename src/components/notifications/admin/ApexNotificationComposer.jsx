@@ -24,6 +24,7 @@ import {
 } from '../../../utils/notificationService';
 import { NOTIFICATION_PRESETS } from './NotificationPresetTemplates';
 import AudienceTargetSelector from './AudienceTargetSelector';
+import SenderAttributionSelector from './SenderAttributionSelector';
 import NotificationDevicePreview from './NotificationDevicePreview';
 import { soundEngine } from '../../../utils/soundEffects';
 import { hapticEngine } from '../../../utils/haptics';
@@ -40,6 +41,14 @@ export default function ApexNotificationComposer({
   const [body, setBody] = useState('');
   const [category, setCategory] = useState('general');
   const [severity, setSeverity] = useState('info');
+  const [displayStyle, setDisplayStyle] = useState('drawer'); // 'drawer' | 'banner' | 'dialog' | 'all'
+  const [requireExplicitAck, setRequireExplicitAck] = useState(false);
+  const [senderAttribution, setSenderAttribution] = useState({
+    showSender: true,
+    authorityType: 'canteen_wing',
+    customTitle: '',
+    signOffName: '',
+  });
   const [targetAudience, setTargetAudience] = useState({ type: 'all' });
   const [bannerPinned, setBannerPinned] = useState(false);
   const [allowDismiss, setAllowDismiss] = useState(true);
@@ -63,6 +72,16 @@ export default function ApexNotificationComposer({
       setBody(editingNotification.body || '');
       setCategory(editingNotification.category || 'general');
       setSeverity(editingNotification.severity || 'info');
+      setDisplayStyle(editingNotification.displayStyle || (editingNotification.bannerPinned ? 'banner' : 'drawer'));
+      setRequireExplicitAck(Boolean(editingNotification.requireExplicitAck));
+      setSenderAttribution(
+        editingNotification.senderAttribution || {
+          showSender: true,
+          authorityType: 'canteen_wing',
+          customTitle: '',
+          signOffName: '',
+        }
+      );
       setTargetAudience(editingNotification.targetAudience || { type: 'all' });
       setBannerPinned(Boolean(editingNotification.bannerPinned));
       setAllowDismiss(editingNotification.allowDismiss !== false);
@@ -83,6 +102,14 @@ export default function ApexNotificationComposer({
       setBody('');
       setCategory('general');
       setSeverity('info');
+      setDisplayStyle('drawer');
+      setRequireExplicitAck(false);
+      setSenderAttribution({
+        showSender: true,
+        authorityType: 'canteen_wing',
+        customTitle: '',
+        signOffName: '',
+      });
       setTargetAudience({ type: 'all' });
       setBannerPinned(false);
       setAllowDismiss(true);
@@ -117,8 +144,11 @@ export default function ApexNotificationComposer({
     body,
     category,
     severity,
+    displayStyle,
+    requireExplicitAck,
+    senderAttribution,
     targetAudience,
-    bannerPinned,
+    bannerPinned: bannerPinned || displayStyle === 'banner' || displayStyle === 'all',
     allowDismiss,
     cta: hasCta && ctaLabel && ctaTarget ? { label: ctaLabel, actionType: ctaType, target: ctaTarget } : null,
   };
@@ -303,8 +333,75 @@ export default function ApexNotificationComposer({
               </div>
             </div>
 
+            {/* Delivery Channel / Format Mode */}
+            <div className="p-3.5 rounded-2xl bg-gray-50/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 space-y-3">
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">
+                Display Format & Urgency Delivery Channel
+              </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: 'drawer', label: 'Drawer Notice', desc: 'Standard panel' },
+                  { id: 'banner', label: 'Top Banner', desc: 'Sticky marquee' },
+                  { id: 'dialog', label: 'Urgent Popup', desc: 'Launch & Live modal' },
+                  { id: 'all', label: 'All Channels', desc: 'Dialog + Banner + Drawer' },
+                ].map((channel) => {
+                  const isSelected = displayStyle === channel.id;
+                  return (
+                    <button
+                      key={channel.id}
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playPop();
+                        hapticEngine.lightTap();
+                        setDisplayStyle(channel.id);
+                        if (channel.id === 'banner' || channel.id === 'all') {
+                          setBannerPinned(true);
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? channel.id === 'dialog' || channel.id === 'all'
+                            ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-500 text-rose-800 dark:text-rose-300 shadow-sm'
+                            : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-800 dark:text-emerald-300 shadow-sm'
+                          : 'bg-white dark:bg-black/30 border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-xs font-black">{channel.label}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{channel.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* If Dialog or All: Mandatory Explicit Acknowledgment Checkbox */}
+              {(displayStyle === 'dialog' || displayStyle === 'all') && (
+                <div className="pt-2 border-t border-gray-200/60 dark:border-white/5">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={requireExplicitAck}
+                      onChange={(e) => setRequireExplicitAck(e.target.checked)}
+                      className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                        Require Explicit Acknowledgment
+                      </span>
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400 block">
+                        Users must tap &quot;I Have Read &amp; Understood&quot; to dismiss the popup modal.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+
             {/* Target Audience Segment Selector */}
             <AudienceTargetSelector value={targetAudience} onChange={setTargetAudience} />
+
+            {/* Sender Attribution Governance */}
+            <SenderAttributionSelector value={senderAttribution} onChange={setSenderAttribution} />
 
             {/* Body Content Textarea */}
             <div>

@@ -27,6 +27,7 @@ import {
   getActiveStudentException,
   getEffectiveStudentMealStatus,
 } from '../../utils/studentExceptionService';
+import { getManifestPrintRecord } from '../../utils/manifestPrintService';
 
 /**
  * Tactical Admin Quick Popover
@@ -162,6 +163,16 @@ export default function AdminTokenPopover({
           .replace('{name}', nameEn)
           .replace('{date}', formatFriendlyDate(targetDateIST))
       );
+
+      // Check if physical print was already taken for this meal service
+      getManifestPrintRecord(mealKey, targetDateIST).then((printRecord) => {
+        if (printRecord && printRecord.printedAt) {
+          dialog.toast.warning(
+            '⚠️ Kitchen Sheet Stale',
+            `A manifest [Rev ${printRecord.revision}] was already printed for this meal. Please reprint from Supply Sections to sync with the kitchen.`
+          );
+        }
+      }).catch(() => {});
 
       if (onStudentUpdated) {
         onStudentUpdated({

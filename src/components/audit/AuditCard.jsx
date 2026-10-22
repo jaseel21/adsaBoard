@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Info,
   Flame,
+  Printer,
 } from 'lucide-react';
 import { formatAuditTime } from '../../utils/auditLogger';
 import { isTokenAudit } from '../../utils/tokenAuditHelper';
@@ -27,6 +28,8 @@ import AuditDiffViewer from './AuditDiffViewer';
  */
 function getCategoryIcon(category) {
   switch (category) {
+    case 'canteen':
+      return <Printer className="w-4 h-4" />;
     case 'tokens':
       return <Sliders className="w-4 h-4" />;
     case 'students':
@@ -48,6 +51,8 @@ function getCategoryIcon(category) {
  */
 function getCategoryStyles(category) {
   switch (category) {
+    case 'canteen':
+      return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30';
     case 'tokens':
       return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
     case 'students':

@@ -18,13 +18,83 @@ export const NOTIFICATION_SEVERITIES = {
   FESTIVE: 'festive',
 };
 
+export const DISPLAY_STYLES = {
+  DRAWER: 'drawer',   // Slide-out drawer notification
+  BANNER: 'banner',   // Ambient sticky top banner
+  DIALOG: 'dialog',   // High-urgency popup / modal dialog box
+  ALL: 'all',         // Multi-channel: Modal + Banner + Drawer
+};
+
+export const SENDER_AUTHORITIES = {
+  CENTRAL_COMMITTEE: 'central_committee',
+  CANTEEN_WING: 'canteen_wing',
+  KITCHEN_CHEFS: 'kitchen_chefs',
+  DEVELOPERS: 'developers',
+  EXEC_LEADERSHIP: 'exec_leadership',
+  WARDEN: 'warden',
+  CUSTOM: 'custom',
+};
+
+export const AUTHORITY_METADATA = {
+  [SENDER_AUTHORITIES.CENTRAL_COMMITTEE]: {
+    key: 'central_committee',
+    labelEn: 'ADSA Central Committee',
+    labelMl: 'അഡ്സ സെൻട്രൽ കമ്മിറ്റി',
+    color: 'emerald',
+    badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+  },
+  [SENDER_AUTHORITIES.CANTEEN_WING]: {
+    key: 'canteen_wing',
+    labelEn: 'Canteen Sub-Committee',
+    labelMl: 'കാന്റീൻ സബ് കമ്മിറ്റി',
+    color: 'blue',
+    badgeClass: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30',
+  },
+  [SENDER_AUTHORITIES.KITCHEN_CHEFS]: {
+    key: 'kitchen_chefs',
+    labelEn: 'Kitchen & Catering Wing',
+    labelMl: 'കിച്ചൺ & കാറ്ററിംഗ് വിഭാഗം',
+    color: 'amber',
+    badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+  },
+  [SENDER_AUTHORITIES.DEVELOPERS]: {
+    key: 'developers',
+    labelEn: 'System Architect & Developers',
+    labelMl: 'സിസ്റ്റം ഡെവലപ്പർ ടീം',
+    color: 'purple',
+    badgeClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30',
+  },
+  [SENDER_AUTHORITIES.EXEC_LEADERSHIP]: {
+    key: 'exec_leadership',
+    labelEn: 'President / General Secretary',
+    labelMl: 'പ്രസിഡന്റ് / ജനറൽ സെക്രട്ടറി',
+    color: 'teal',
+    badgeClass: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30',
+  },
+  [SENDER_AUTHORITIES.WARDEN]: {
+    key: 'warden',
+    labelEn: 'Campus & Hostel Warden',
+    labelMl: 'ഹോസ്റ്റൽ വാർഡൻ',
+    color: 'rose',
+    badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+  },
+  [SENDER_AUTHORITIES.CUSTOM]: {
+    key: 'custom',
+    labelEn: 'Official Campus Authority',
+    labelMl: 'ഔദ്യോഗിക അതോറിറ്റി',
+    color: 'gray',
+    badgeClass: 'bg-gray-500/15 text-gray-700 dark:text-gray-300 border-gray-500/30',
+  },
+};
+
 export const TARGET_AUDIENCE_TYPES = {
-  ALL: 'all',              // Everyone (public visitors + all students + staff)
+  ALL: 'all',              // Everyone (public visitors + all students + staff + screens)
   STUDENTS: 'students',    // All registered students
   BATCHES: 'batches',      // Specific batch list (e.g. ['2024-26'])
   TOKENS: 'tokens',        // Specific token IDs or range
   STAFF: 'staff',          // Kitchen cooks & committee officers
   COMMITTEE: 'committee',  // Committee officers only
+  TV_SCREEN: 'tv_screen',  // Dedicated TV Notice Board screens
 };
 
 /**
@@ -35,6 +105,11 @@ export function isNotificationApplicable(notification, userContext = {}) {
 
   const target = notification.targetAudience || { type: TARGET_AUDIENCE_TYPES.ALL };
   const targetType = target.type || TARGET_AUDIENCE_TYPES.ALL;
+
+  // TV Screen Context
+  if (userContext.isTvScreen) {
+    return targetType === TARGET_AUDIENCE_TYPES.ALL || targetType === 'public' || targetType === TARGET_AUDIENCE_TYPES.TV_SCREEN;
+  }
 
   // 1. Broadest: Target 'all' or 'public'
   if (targetType === TARGET_AUDIENCE_TYPES.ALL || targetType === 'public') {
@@ -152,6 +227,15 @@ export async function createNotification(notificationData, actor = null) {
     cta: notificationData.cta || null,
     bannerPinned: Boolean(notificationData.bannerPinned),
     allowDismiss: notificationData.allowDismiss !== false,
+    displayStyle: notificationData.displayStyle || (notificationData.bannerPinned ? DISPLAY_STYLES.BANNER : DISPLAY_STYLES.DRAWER),
+    requireExplicitAck: Boolean(notificationData.requireExplicitAck),
+    senderAttribution: notificationData.senderAttribution || {
+      showSender: true,
+      authorityType: SENDER_AUTHORITIES.CANTEEN_WING,
+      customTitle: '',
+      signOffName: '',
+      showPersonalName: false,
+    },
     status: notificationData.status || 'active',
     publishAt: notificationData.publishAt || now,
     expiresAt: notificationData.expiresAt || null,

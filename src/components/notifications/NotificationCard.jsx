@@ -21,6 +21,9 @@ import { useNotifications } from '../../store/NotificationContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
+import { AUTHORITY_METADATA } from '../../utils/notificationService';
+import ApexLinkPreview from '../preview/ApexLinkPreview';
+import ApexBookmarkCard from '../preview/ApexBookmarkCard';
 
 // Friendly Relative Time Formatter
 function formatRelativeTime(timestamp) {
@@ -47,7 +50,7 @@ function formatRelativeTime(timestamp) {
 
 export default function NotificationCard({ notification, index = 0 }) {
   const { markAsRead, readIds, setSelectedNotification } = useNotifications();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
 
@@ -239,8 +242,17 @@ export default function NotificationCard({ notification, index = 0 }) {
           {/* Footer Bar: Author Signature & Action CTA */}
           <div className="mt-3 pt-2.5 border-t border-gray-200/50 dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-              <ShieldCheck className="w-3 h-3 text-emerald-500" />
-              <span>{notification.createdBy?.name || 'ADSA Canteen Committee'}</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>
+                {notification.senderAttribution && notification.senderAttribution.showSender === false
+                  ? t('officialCampusNotice', 'Official Bulletin')
+                  : notification.senderAttribution?.authorityType
+                  ? (notification.senderAttribution.authorityType === 'custom' && notification.senderAttribution.customTitle
+                      ? notification.senderAttribution.customTitle
+                      : (AUTHORITY_METADATA[notification.senderAttribution.authorityType]?.[lang === 'ml' ? 'labelMl' : 'labelEn'] || 'ADSA Committee'))
+                  : (notification.createdBy?.name || 'ADSA Canteen Committee')}
+                {notification.senderAttribution?.showSender !== false && notification.senderAttribution?.signOffName ? ` • ${notification.senderAttribution.signOffName}` : ''}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
@@ -261,22 +273,31 @@ export default function NotificationCard({ notification, index = 0 }) {
               )}
 
               {/* Action CTA Button */}
-              {notification.cta?.label && (
-                <button
-                  type="button"
-                  onClick={handleCta}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-sm shadow-emerald-600/20 active:scale-95 transition-all"
-                >
-                  <span>{notification.cta.label}</span>
-                  {notification.cta.actionType === 'url' ? (
-                    <ExternalLink className="w-3 h-3" />
-                  ) : (
-                    <ArrowRight className="w-3 h-3" />
-                  )}
-                </button>
+              {notification.cta?.label && notification.cta?.target && (
+                <ApexLinkPreview url={notification.cta.target}>
+                  <button
+                    type="button"
+                    onClick={handleCta}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-sm shadow-emerald-600/20 active:scale-95 transition-all"
+                  >
+                    <span>{notification.cta.label}</span>
+                    {notification.cta.actionType === 'url' ? (
+                      <ExternalLink className="w-3 h-3" />
+                    ) : (
+                      <ArrowRight className="w-3 h-3" />
+                    )}
+                  </button>
+                </ApexLinkPreview>
               )}
             </div>
           </div>
+
+          {/* Embedded Bookmark Card on Expansion */}
+          {expanded && notification.cta?.actionType === 'url' && notification.cta?.target && (
+            <div className="mt-2.5 pt-2 border-t border-gray-200/40 dark:border-white/5">
+              <ApexBookmarkCard url={notification.cta.target} compact />
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

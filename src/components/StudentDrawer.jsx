@@ -29,9 +29,10 @@ import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { AuthContext } from '../store/AuthContext';
-import { subscribeToPreferences } from '../utils/preferenceService';
-import { cleanPastDateExceptions, syncStudentDiningHistory } from '../utils/studentExceptionService';
+import { cleanPastDateExceptions, syncStudentDiningHistory, getTodayISTDate, addDaysToDate } from '../utils/studentExceptionService';
 import { logAuditEvent, calculateObjectDiff, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { checkActivePrintsForDates } from '../utils/manifestPrintService';
+import { subscribeToPreferences } from '../utils/preferenceService';
 import DateGridMatrix from './ui/DateGridMatrix';
 
 const defaultMealDays = {
@@ -353,6 +354,29 @@ export default function StudentDrawer({
           t('studentSavedSuccess') || 'Saved Successfully',
           `Token #${tokenNum} (${nameEn}) updated.`
         );
+
+        // Scenario 2: Proactive Kitchen Desynchronization Check
+        const diningOrDietaryChanged = (diff.fieldsChanged || []).some(
+          (f) => f.startsWith('obj2') || f.startsWith('dateExceptions') || f.startsWith('obj.')
+        );
+        if (diningOrDietaryChanged) {
+          const today = getTodayISTDate();
+          const tomorrow = addDaysToDate(today, 1);
+          checkActivePrintsForDates([today, tomorrow]).then((activePrints) => {
+            if (activePrints.length > 0) {
+              const printLabels = activePrints
+                .map((p) => `${p.meal.toUpperCase()} (${p.targetDateIST}) [Rev ${p.revision}]`)
+                .join(', ');
+
+              dialog.alert({
+                type: 'warning',
+                title: '⚠️ Kitchen Manifest Desynchronization',
+                message: `You updated dining/dietary preferences for Token #${tokenNum}, but kitchen manifest(s) have ALREADY been printed for: ${printLabels}.\n\nThe kitchen is currently holding an outdated sheet! Please reprint the manifest from Supply Sections or immediately notify kitchen staff.`,
+              });
+            }
+          }).catch(() => {});
+        }
+
         if (onSaved) onSaved({ id: student.id, ...payload });
       } else {
         payload.createdAt = new Date().toISOString();

@@ -16,6 +16,7 @@ import { COMMITTEE_HOTLINES } from '../../utils/supportFaqData';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { useLanguage } from '../../store/LanguageContext';
+import ApexLinkPreview from '../preview/ApexLinkPreview';
 
 export default function CareDirectory() {
   const { lang } = useLanguage();
@@ -81,25 +82,29 @@ export default function CareDirectory() {
 
               {/* Action Buttons: Phone & WhatsApp */}
               <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-                <a
-                  href={`tel:${contact.phone.replace(/\s+/g, '')}`}
-                  onClick={handleAction}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all"
-                >
-                  <Phone className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                  <span>Call Desk</span>
-                </a>
+                <ApexLinkPreview url={`tel:${contact.phone.replace(/\s+/g, '')}`} className="flex-1">
+                  <a
+                    href={`tel:${contact.phone.replace(/\s+/g, '')}`}
+                    onClick={handleAction}
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <span>Call Desk</span>
+                  </a>
+                </ApexLinkPreview>
 
-                <a
-                  href={`https://wa.me/${contact.whatsapp}?text=Assalamu%20Alaikum,%20I%20am%20contacting%20regarding%20ADSA%20Dars%20canteen%20inquiry.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleAction}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>WhatsApp</span>
-                </a>
+                <ApexLinkPreview url={`https://wa.me/${contact.whatsapp}`} className="flex-1">
+                  <a
+                    href={`https://wa.me/${contact.whatsapp}?text=Assalamu%20Alaikum,%20I%20am%20contacting%20regarding%20ADSA%20Dars%20canteen%20inquiry.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleAction}
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
+                </ApexLinkPreview>
               </div>
             </motion.div>
           );

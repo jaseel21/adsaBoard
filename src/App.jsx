@@ -27,6 +27,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { DialogProvider } from './components/ui/AppDialog';
 import { NotificationProvider } from './store/NotificationContext';
 import NotificationDrawer from './components/notifications/NotificationDrawer';
+import EmergencyNotificationDialog from './components/notifications/EmergencyNotificationDialog';
 import ApexNotificationManager from './components/notifications/admin/ApexNotificationManager';
 import CareHubPage from './components/support/CareHubPage';
 import ApexCareFloatingButton from './components/support/ApexCareFloatingButton';
@@ -39,13 +40,8 @@ import './App.css';
 
 function AppContent() {
   const { user, homeRoute } = useContext(AuthContext);
+  const isAdmin = Boolean(user);
   const location = useLocation();
-
-  const isAdmin =
-    location.pathname.startsWith('/admin') ||
-    location.pathname === '/alogin' ||
-    location.pathname === '/kitchen' ||
-    location.pathname.startsWith('/student-management');
 
   return (
     <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
@@ -240,6 +236,7 @@ function App() {
             <DialogProvider>
               <AppContent />
               <NotificationDrawer />
+              <EmergencyNotificationDialog />
             </DialogProvider>
           </NotificationProvider>
         </PersonInfo>

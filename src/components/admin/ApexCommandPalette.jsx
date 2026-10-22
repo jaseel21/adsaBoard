@@ -20,6 +20,8 @@ import {
   Home,
   Bell,
   HeartHandshake,
+  Printer,
+  History,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -200,6 +202,30 @@ export default function ApexCommandPalette({
       iconColor: 'text-emerald-500',
       action: () => {
         navigate('/admin/support');
+        onClose();
+      },
+    });
+
+    list.push({
+      id: 'supply_sections',
+      title: 'Kitchen Supply Distribution & Manifest',
+      subtitle: 'View section breakdowns, print manifests, and check sync status (/lunch, /breakfast)',
+      icon: Printer,
+      iconColor: 'text-emerald-500',
+      action: () => {
+        navigate(isLunch ? '/lunch' : '/breakfast');
+        onClose();
+      },
+    });
+
+    list.push({
+      id: 'canteen_ops_log',
+      title: 'Canteen & Supply Ops Log',
+      subtitle: 'Inspect kitchen print history, duplicate prints, and dietary desync events',
+      icon: History,
+      iconColor: 'text-teal-500',
+      action: () => {
+        navigate('/admin/audit-logs');
         onClose();
       },
     });

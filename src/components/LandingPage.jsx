@@ -808,7 +808,7 @@ export default function LandingPage() {
                     setAdvancedExportModal({ isOpen: true, type: 'supply' });
                   }}
                   isGenerating={exportingSupply || loadingData}
-                  label={t('quickDownloadManifest', 'Quick Download (Sections • Ascending PDF)')}
+                  label={t('quickDownloadManifest', 'Open)')}
                   colorTheme="emerald"
                   defaultAction="view"
                 />
@@ -875,7 +875,7 @@ export default function LandingPage() {
                     setAdvancedExportModal({ isOpen: true, type: 'dietary' });
                   }}
                   isGenerating={exportingDietary || loadingData}
-                  label={t('quickDownloadMatrix', 'Quick Download Matrix (Ascending PDF)')}
+                  label={t('quickDownloadMatrix', 'Open')}
                   colorTheme="rose"
                   defaultAction="view"
                 />

@@ -24,6 +24,7 @@ import {
   RotateCcw,
   UtensilsCrossed,
   ShieldAlert,
+  Send,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
@@ -36,6 +37,11 @@ import { subscribeToPreferences } from '../utils/preferenceService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import { computeTokenScheduleDeltas } from '../utils/tokenAuditHelper';
+import DietaryChangeRequestModal from './dietary/DietaryChangeRequestModal';
+import {
+  subscribeStudentPendingDietaryRequest,
+  cancelDietaryChangeRequest,
+} from '../utils/dietaryRequestService';
 import {
   addDaysToDate,
   formatFriendlyDate,
@@ -85,8 +91,10 @@ function StudentPort() {
     enabled: Boolean(stdata?.tokenNo),
   });
 
-  // Dynamic Dietary Preferences (Read-Only for Students)
+  // Dynamic Dietary Preferences & Self-Service Change Requests
   const [preferencesList, setPreferencesList] = useState([]);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [pendingDietaryRequest, setPendingDietaryRequest] = useState(() => stdata?.pendingDietaryRequest || null);
 
   // Meal Routine Selections
   const [lunch, setLunch] = useState(() => stdata?.obj?.lunch || {});
@@ -129,13 +137,22 @@ function StudentPort() {
     [t]
   );
 
-  // Subscribe to dynamic dietary preferences (for display only)
+  // Subscribe to dynamic dietary preferences (for display & request options)
   useEffect(() => {
     const unsub = subscribeToPreferences((list) => {
       setPreferencesList(list.filter((p) => p.isActive));
     });
     return () => unsub();
   }, []);
+
+  // Subscribe to student's live pending dietary request
+  useEffect(() => {
+    if (!stdata?.tokenNo) return;
+    const unsub = subscribeStudentPendingDietaryRequest(stdata.tokenNo, (req) => {
+      setPendingDietaryRequest(req);
+    });
+    return () => unsub();
+  }, [stdata?.tokenNo]);
 
   useEffect(() => {
     if (stdata) {
@@ -147,6 +164,9 @@ function StudentPort() {
       setBreakfast(initBreakfast);
       if (stdata.obj2) {
         setDietary(stdata.obj2 || {});
+      }
+      if (stdata.pendingDietaryRequest !== undefined) {
+        setPendingDietaryRequest(stdata.pendingDietaryRequest);
       }
       setDateExceptions(initExceptions);
       if (stdata.templates) {
@@ -384,10 +404,9 @@ function StudentPort() {
           .replace('{cutoff}', cutoffTime)
           .replace('{nextDate}', nextDateFormatted)
           .replace('{status}', currentStatusStr)
-      : (t('todayLockedRoutineNotice', `Today (${dayLabel}, ${targetDateFormatted}) is locked as the updation window opened at ${cutoffTime}. Routine updates to ${dayLabel} will take effect starting next week (${nextDateFormatted}). Today's meals will remain: ${currentStatusStr}.`))
+      : (t('todayLockedRoutineNotice', `Today (${dayLabel}, ${targetDateFormatted}) is locked for food service. Routine updates to ${dayLabel} will take effect starting next week (${nextDateFormatted}). Today's meals will remain: ${currentStatusStr}.`))
           .replace('{day}', dayLabel)
           .replace('{date}', targetDateFormatted)
-          .replace('{openTime}', cutoffTime)
           .replace('{nextDate}', nextDateFormatted)
           .replace('{status}', currentStatusStr);
 
@@ -570,24 +589,22 @@ function StudentPort() {
         preservedDatesList.push(`Tomorrow (${formatFriendlyDate(tomorrowIST, false)})`);
       }
 
-      // Safeguard Rule 3: Today is always locked (unless admin force unlocked); preserve today's baseline status
-      if (isTodayLocked) {
-        const baselineTodayExc = savedBaseline.dateExceptions?.[todayIST];
-        const baselineTodayBf = baselineTodayExc?.breakfast !== undefined
-          ? baselineTodayExc.breakfast
-          : Boolean(savedBaseline.breakfast?.[todayDayShort]);
-        const baselineTodayLu = baselineTodayExc?.lunch !== undefined
-          ? baselineTodayExc.lunch
-          : Boolean(savedBaseline.lunch?.[todayDayShort]);
+      // Safeguard Rule 3: Today is always locked for student portal saves; preserve today's baseline status
+      const baselineTodayExc = savedBaseline.dateExceptions?.[todayIST];
+      const baselineTodayBf = baselineTodayExc?.breakfast !== undefined
+        ? baselineTodayExc.breakfast
+        : Boolean(savedBaseline.breakfast?.[todayDayShort]);
+      const baselineTodayLu = baselineTodayExc?.lunch !== undefined
+        ? baselineTodayExc.lunch
+        : Boolean(savedBaseline.lunch?.[todayDayShort]);
 
-        exceptionsToSave[todayIST] = {
-          ...(exceptionsToSave[todayIST] || {}),
-          breakfast: baselineTodayBf,
-          lunch: baselineTodayLu,
-          label: exceptionsToSave[todayIST]?.label || 'Today Locked (Preserved)',
-        };
-        preservedDatesList.push(`Today (${formatFriendlyDate(todayIST, false)})`);
-      }
+      exceptionsToSave[todayIST] = {
+        ...(exceptionsToSave[todayIST] || {}),
+        breakfast: baselineTodayBf,
+        lunch: baselineTodayLu,
+        label: exceptionsToSave[todayIST]?.label || 'Today Locked (Preserved)',
+      };
+      preservedDatesList.push(`Today (${formatFriendlyDate(todayIST, false)})`);
 
       // Synchronize and lock past dining history into immutable ledger
       const syncedHistory = syncStudentDiningHistory({
@@ -1028,9 +1045,9 @@ function StudentPort() {
                       {isLockedDay && (
                         <span
                           className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 truncate max-w-full text-center"
-                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : `Today locked past ${startTime}`}
+                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : 'Today is locked for food service'}
                         >
-                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today')}
+                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today Locked')}
                         </span>
                       )}
 
@@ -1144,9 +1161,9 @@ function StudentPort() {
                       {isLockedDay && (
                         <span
                           className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 truncate max-w-full text-center"
-                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : `Today locked past ${startTime}`}
+                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : 'Today is locked for food service'}
                         >
-                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today')}
+                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today Locked')}
                         </span>
                       )}
 
@@ -1219,9 +1236,9 @@ function StudentPort() {
           />
         </div>
 
-        {/* ================= SECTION 3: DIETARY PREFERENCES (ADMIN MANAGED - READ ONLY) ================= */}
+        {/* ================= SECTION 3: DIETARY PREFERENCES (INTERACTIVE CHANGE REQUEST) ================= */}
         <div className="p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-emerald-500" />
               <div>
@@ -1234,57 +1251,174 @@ function StudentPort() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 dark:text-gray-400 self-start sm:self-center">
-              <Lock className="w-3.5 h-3.5 text-gray-400" />
-              <span>{t('adminManaged', 'Admin Managed')}</span>
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              {pendingDietaryRequest ? (
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold animate-pulse">
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{t('requestPendingApproval', 'Change Request Pending Approval')}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      setRequestModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 text-xs font-bold transition-all border border-amber-300 dark:border-amber-600/30 cursor-pointer"
+                  >
+                    <span>{t('viewOrCancelRequest', 'View / Cancel')}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{t('adminApproved', 'Admin Controlled')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      setRequestModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black shadow-sm active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{t('requestDietaryChange', 'Request Change')}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Pending Request Alert Banner */}
+          {pendingDietaryRequest && (
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5 animate-pulse" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-amber-900 dark:text-amber-200">
+                      {t('dietaryRequestSubmitted', 'Dietary Change Request Submitted')}
+                    </span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                      {t('awaitingCommittee', 'Awaiting Canteen Committee Review')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-0.5">
+                    {pendingDietaryRequest.reasonText
+                      ? `${t('reason', 'Reason')}: ${pendingDietaryRequest.reasonText}`
+                      : t('canteenCommitteeWillReview', 'The committee will review and update your dining manifest.')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const confirmed = await dialog.confirm({
+                      title: t('withdrawRequestTitle', 'Withdraw Dietary Request?'),
+                      message: t('withdrawRequestConfirm', 'Are you sure you want to cancel this pending request? The Canteen Committee will not process it.'),
+                      confirmText: t('withdrawConfirm', 'Yes, Withdraw'),
+                      cancelText: t('cancel', 'Keep Request'),
+                      isDestructive: true,
+                    });
+                    if (confirmed) {
+                      feedback('tick');
+                      await cancelDietaryChangeRequest(
+                        pendingDietaryRequest.id || pendingDietaryRequest.requestId,
+                        stdata.documentId || stdata.id,
+                        stdata.tokenNo
+                      );
+                      setPendingDietaryRequest(null);
+                      dialog.toast.info(t('requestCancelled', 'Request Withdrawn'), t('requestCancelledDesc', 'Your pending request has been cancelled.'));
+                    }
+                  }}
+                  className="px-3 py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-300 text-[11px] font-bold border border-gray-200 dark:border-white/10 transition-colors cursor-pointer"
+                >
+                  {t('withdrawRequest', 'Withdraw Request')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setRequestModalOpen(true);
+                  }}
+                  className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold transition-colors cursor-pointer"
+                >
+                  {t('modifyRequest', 'Modify')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {preferencesList.map((pref) => {
               // Student obj2: true or undefined = included, false = excluded
               const isIncluded = dietary[pref.id] !== false && dietary[pref.id.toLowerCase()] !== false;
+              const pendingChange = pendingDietaryRequest?.changes?.find((c) => c.prefId === pref.id);
+
               return (
                 <div
                   key={pref.id}
-                  className={`p-3.5 rounded-2xl border text-center select-none transition-all ${
+                  onClick={() => {
+                    feedback('tick');
+                    setRequestModalOpen(true);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-center select-none transition-all cursor-pointer hover:shadow-md ${
                     isIncluded
                       ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300/60 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
                       : 'bg-rose-50/60 dark:bg-rose-950/20 border-rose-300/60 dark:border-rose-500/30 text-rose-900 dark:text-rose-200 opacity-80'
-                  }`}
+                  } ${pendingChange ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''}`}
                 >
                   <span className="text-sm font-bold block">{pref.labelEn}</span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400 block mt-0.5">
                     {pref.labelMl}
                   </span>
-                  <span
-                    className={`text-[10px] font-black mt-2 inline-block px-2.5 py-0.5 rounded-full ${
-                      isIncluded
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-rose-500 text-white'
-                    }`}
-                  >
-                    {isIncluded ? t('included', 'Included') : t('excluded', 'Excluded')}
-                  </span>
+                  
+                  <div className="mt-2 flex flex-col items-center gap-1">
+                    <span
+                      className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                        isIncluded
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-rose-500 text-white'
+                      }`}
+                    >
+                      {isIncluded ? t('included', 'Included') : t('excluded', 'Excluded')}
+                    </span>
+
+                    {pendingChange && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 flex items-center gap-1 animate-pulse">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>{t('requestedPending', 'Requested')}: {pendingChange.to ? t('included', 'Include') : t('excluded', 'Avoid')}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-[11px] text-gray-500 dark:text-gray-400">
+          <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-[11px] text-gray-500 dark:text-gray-400">
             <div className="flex items-start gap-2">
               <Info className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
               <span>
-                {t('dietaryCommitteeNote', 'Dietary preferences are managed exclusively by the ADSA Canteen Committee to ensure accurate ingredient purchasing.')}
+                {t('dietaryCommitteeNoteUpgraded', 'Dietary preferences are managed by the ADSA Canteen Committee to plan accurate grocery supplies. Click "Request Change" to submit adjustments.')}
               </span>
             </div>
-            <Link
-              to="/support?tab=feedback"
-              className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex-shrink-0"
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setRequestModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex-shrink-0 cursor-pointer"
             >
-              <span>Request Dietary Exemption</span>
+              <span>{t('requestDietaryChange', 'Request Dietary Change')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -1475,6 +1609,19 @@ function StudentPort() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Modal: Request Dietary Preference Change */}
+      <DietaryChangeRequestModal
+        isOpen={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        student={stdata}
+        currentDietary={dietary}
+        preferencesList={preferencesList}
+        pendingRequest={pendingDietaryRequest}
+        onSuccess={() => {
+          // Success callback
+        }}
+      />
     </div>
   );
 }

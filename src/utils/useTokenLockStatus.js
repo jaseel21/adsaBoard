@@ -87,7 +87,7 @@ export function useTokenLockStatus() {
             const data = doc.data() || {};
             setConfig({
               status: Boolean(data.status),
-              overrideMode: data.overrideMode || (data.status ? 'force_unlocked' : 'auto'),
+              overrideMode: data.overrideMode || 'auto',
               window: {
                 startTime: data.window?.startTime || DEFAULT_LOCK_CONFIG.window.startTime,
                 endTime: data.window?.endTime || DEFAULT_LOCK_CONFIG.window.endTime,
@@ -161,14 +161,13 @@ export function useTokenLockStatus() {
   // Effective Mode calculation
   const effectiveMode = useMemo(() => {
     if (temporaryOverrideActive) {
-      return config.temporaryOverride.mode || 'force_unlocked';
+      return config.temporaryOverride.mode || 'auto';
     }
-    if (config.overrideMode) {
+    if (config.overrideMode === 'force_unlocked' || config.overrideMode === 'force_locked') {
       return config.overrideMode;
     }
-    // Backward compatibility with boolean doc.data().status
-    return config.status ? 'force_unlocked' : 'auto';
-  }, [temporaryOverrideActive, config.temporaryOverride, config.overrideMode, config.status]);
+    return 'auto';
+  }, [temporaryOverrideActive, config.temporaryOverride, config.overrideMode]);
 
   const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '14:00:00'), [activeWindow.startTime]);
   const endTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.endTime, '23:00:00'), [activeWindow.endTime]);

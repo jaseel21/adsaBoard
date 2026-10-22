@@ -11,6 +11,7 @@ import {
   X,
   Shield,
   GraduationCap,
+  Printer,
 } from 'lucide-react';
 import { AUDIT_CATEGORIES } from '../../utils/auditLogger';
 
@@ -30,10 +31,11 @@ export default function AuditFilterBar({
 }) {
   const categories = [
     { id: 'all', label: 'All Activity', icon: Filter },
+    { id: AUDIT_CATEGORIES.CANTEEN, label: 'Canteen & Supply', icon: Printer },
     { id: AUDIT_CATEGORIES.TOKENS, label: 'Tokens', icon: Sliders },
+    { id: AUDIT_CATEGORIES.DIETARY, label: 'Dietary', icon: UtensilsCrossed },
     { id: AUDIT_CATEGORIES.STUDENTS, label: 'Students', icon: Users },
     { id: AUDIT_CATEGORIES.MENU, label: 'Menu', icon: UtensilsCrossed },
-    { id: AUDIT_CATEGORIES.DIETARY, label: 'Dietary', icon: UtensilsCrossed },
     { id: AUDIT_CATEGORIES.SECURITY, label: 'Security', icon: ShieldAlert },
   ];
 

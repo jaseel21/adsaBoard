@@ -30,6 +30,7 @@ import {
 import { soundEngine } from '../../../utils/soundEffects';
 import { hapticEngine } from '../../../utils/haptics';
 import { useLanguage } from '../../../store/LanguageContext';
+import ApexLinkPreview from '../../preview/ApexLinkPreview';
 import firebase from '../../../firebase/config';
 
 export default function SupportInspectorDrawer({
@@ -253,23 +254,27 @@ export default function SupportInspectorDrawer({
             {/* Direct Connect Buttons */}
             {ticket.student?.phone && (
               <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60 dark:border-white/5">
-                <a
-                  href={`tel:${ticket.student.phone.replace(/\s+/g, '')}`}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 text-xs font-bold text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-colors"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>{t('callStudentBtn', 'Call Student')}</span>
-                </a>
+                <ApexLinkPreview url={`tel:${ticket.student.phone.replace(/\s+/g, '')}`} className="flex-1">
+                  <a
+                    href={`tel:${ticket.student.phone.replace(/\s+/g, '')}`}
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 text-xs font-bold text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 transition-colors"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>{t('callStudentBtn', 'Call Student')}</span>
+                  </a>
+                </ApexLinkPreview>
 
-                <a
-                  href={`https://wa.me/${ticket.student.phone.replace(/[^0-9]/g, '')}?text=Assalamu%20Alaikum,%20regarding%20your%20ADSA%20Care%20ticket%20${ticket.ticketNumber}:`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-sm transition-colors"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>{t('whatsappStudentBtn', 'WhatsApp Student')}</span>
-                </a>
+                <ApexLinkPreview url={`https://wa.me/${ticket.student.phone.replace(/[^0-9]/g, '')}`} className="flex-1">
+                  <a
+                    href={`https://wa.me/${ticket.student.phone.replace(/[^0-9]/g, '')}?text=Assalamu%20Alaikum,%20regarding%20your%20ADSA%20Care%20ticket%20${ticket.ticketNumber}:`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-sm transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>{t('whatsappStudentBtn', 'WhatsApp Student')}</span>
+                  </a>
+                </ApexLinkPreview>
               </div>
             )}
 
@@ -294,16 +299,21 @@ export default function SupportInspectorDrawer({
               </span>
               <div className="flex flex-wrap gap-2">
                 {ticket.attachments.map((att, idx) => (
-                  <a
+                  <ApexLinkPreview
                     key={idx}
-                    href={att.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-semibold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-white/10"
+                    url={att.url}
+                    overrides={{ title: att.name || 'Attachment Evidence', mediaType: 'document' }}
                   >
-                    <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="truncate max-w-[150px]">{att.name || 'Attachment'}</span>
-                  </a>
+                    <a
+                      href={att.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-semibold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-white/10"
+                    >
+                      <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="truncate max-w-[150px]">{att.name || 'Attachment'}</span>
+                    </a>
+                  </ApexLinkPreview>
                 ))}
               </div>
             </div>

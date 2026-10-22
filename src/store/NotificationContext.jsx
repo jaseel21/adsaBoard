@@ -32,6 +32,7 @@ export const NotificationContext = createContext({
 
 const READ_STORAGE_KEY = 'adsa_notifications_read_v1';
 const DISMISSED_BANNERS_KEY = 'adsa_notifications_dismissed_banners_v1';
+const ACK_DIALOGS_STORAGE_KEY = 'adsa_ack_dialog_notifications_v1';
 
 export const NotificationProvider = ({ children }) => {
   const { user, role, isStaff } = useContext(AuthContext);
@@ -44,7 +45,7 @@ export const NotificationProvider = ({ children }) => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Persistent Read IDs & Dismissed Banners
+  // Persistent Read IDs, Dismissed Banners, and Acknowledged Dialogs
   const [readIds, setReadIds] = useState(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -59,6 +60,16 @@ export const NotificationProvider = ({ children }) => {
     if (typeof window === 'undefined') return [];
     try {
       const stored = localStorage.getItem(DISMISSED_BANNERS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (_) {
+      return [];
+    }
+  });
+
+  const [acknowledgedDialogIds, setAcknowledgedDialogIds] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(ACK_DIALOGS_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch (_) {
       return [];
@@ -149,6 +160,14 @@ export const NotificationProvider = ({ children }) => {
     );
   }, [applicableNotifications, dismissedBannerIds]);
 
+  // Active High-Urgency Dialog Notification (Unacknowledged)
+  const activeDialogNotification = useMemo(() => {
+    return applicableNotifications.find((n) => {
+      const isDialog = n.displayStyle === 'dialog' || n.displayStyle === 'all';
+      return isDialog && !acknowledgedDialogIds.includes(n.id);
+    }) || null;
+  }, [applicableNotifications, acknowledgedDialogIds]);
+
   // Mark single notification as read
   const markAsRead = (id) => {
     if (!id || readIds.includes(id)) return;
@@ -160,6 +179,19 @@ export const NotificationProvider = ({ children }) => {
     soundEngine.playPop();
     hapticEngine.lightTap();
     incrementNotificationAck(id);
+  };
+
+  // Explicitly acknowledge an urgent dialog notification
+  const acknowledgeDialog = (id) => {
+    if (!id) return;
+    const updated = [...acknowledgedDialogIds, id];
+    setAcknowledgedDialogIds(updated);
+    try {
+      localStorage.setItem(ACK_DIALOGS_STORAGE_KEY, JSON.stringify(updated));
+    } catch (_) {}
+    markAsRead(id);
+    soundEngine.playDismissWhoosh();
+    hapticEngine.lightTap();
   };
 
   // Mark all currently applicable notifications as read
@@ -241,6 +273,9 @@ export const NotificationProvider = ({ children }) => {
         unreadCount,
         unreadNotifications,
         pinnedNotifications,
+        activeDialogNotification,
+        acknowledgedDialogIds,
+        acknowledgeDialog,
         readIds,
         loading,
         isDrawerOpen,

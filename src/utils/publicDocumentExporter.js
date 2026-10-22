@@ -205,6 +205,11 @@ export function generateSinglePageCombinedManifestDoc({
   mealFilter = 'both',
   statusFilter = 'canceled_only',
   selectedBatches = null,
+  revision = 1,
+  printedByName = null,
+  printedAt = null,
+  deltaNotes = null,
+  isReprint = false,
 }) {
   const doc = new jsPDF('p', 'mm', 'a4'); // 210mm x 297mm
   const breakfastColor = [217, 119, 6]; // Warm Amber
@@ -246,42 +251,76 @@ export function generateSinglePageCombinedManifestDoc({
   const fontSizeByCols = numCols > 8 ? 6.5 : numCols > 6 ? 7 : 7.5;
   const paddingByCols = numCols > 8 ? 0.9 : 1.2;
 
-  // 1. TOP HEADER BANNER (y: 0 to 21mm)
+  // 1. TOP HEADER BANNER (y: 0 to 22mm)
   doc.setFillColor(6, 78, 59); // Deep Emerald
-  doc.rect(0, 0, 210, 21, 'F');
+  doc.rect(0, 0, 210, 22, 'F');
 
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('ALATHURPADI DARS — DAILY KITCHEN SUPPLY MANIFEST', 14, 9.5);
+  doc.text('ALATHURPADI DARS — DAILY KITCHEN SUPPLY MANIFEST', 14, 8.5);
 
-  doc.setFontSize(8);
+  // Revision Pill Badge in top right corner
+  const revPillText = `REV ${revision}${isReprint ? ' (REPRINT)' : ''}`;
+  if (revision > 1) {
+    doc.setFillColor(225, 29, 72); // Rose-600
+  } else {
+    doc.setFillColor(16, 185, 129); // Emerald-500
+  }
+  doc.roundedRect(154, 4.5, 42, 6.5, 1.5, 1.5, 'F');
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text(revPillText, 175, 9, { align: 'center' });
+
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   const sortLabel = sort === 'descending' ? 'DESC (200 → 1)' : 'ASC (1 → 200)';
   const catLabel = category === 'batches' ? 'Batches 1–7' : `Sections (${activeChunkSize} tokens/sec)`;
+  const adminLabel = printedByName ? `  |  Admin: ${printedByName}` : '';
   doc.text(
-    `Service Date: ${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()})  |  Grouping: ${catLabel}  |  Sort: ${sortLabel}  |  Generated: ${new Date().toLocaleTimeString('en-IN')}`,
+    `Service Date: ${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()})  |  Grouping: ${catLabel}  |  Sort: ${sortLabel}${adminLabel}`,
     14,
-    15.5
+    14.5
   );
 
-  // 2. OPERATIONAL SUMMARY STRIP (y: 23 to 32mm)
+  doc.setFontSize(6.5);
+  doc.setTextColor(200, 230, 220);
+  doc.text(
+    `Timestamp: ${printedAt || new Date().toLocaleString('en-IN')}  |  Kitchen Master Sheet`,
+    14,
+    19
+  );
+
+  // 2. OPERATIONAL SUMMARY STRIP (y: 24 to 33mm)
   doc.setFillColor(243, 246, 244);
-  doc.roundedRect(14, 23, 182, 9, 2, 2, 'F');
+  doc.roundedRect(14, 24, 182, 8.5, 2, 2, 'F');
 
   doc.setFontSize(7.5);
   doc.setTextColor(70, 70, 70);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Enrolled Diners: ${documents.length}`, 18, 28.5);
+  doc.text(`Enrolled Diners: ${documents.length}`, 18, 29.5);
 
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...breakfastColor);
-  doc.text(`Breakfast Prep: ${totalBreakfastActive} Meals`, 68, 28.5);
+  doc.text(`Breakfast Prep: ${totalBreakfastActive} Meals`, 68, 29.5);
 
   doc.setTextColor(...lunchColor);
-  doc.text(`Lunch Prep: ${totalLunchActive} Meals`, 128, 28.5);
+  doc.text(`Lunch Prep: ${totalLunchActive} Meals`, 128, 29.5);
 
   let currentY = 35;
+
+  // Optional: Highlighted Delta Alert Strip when Revision > 1 or delta notes exist
+  if (deltaNotes) {
+    doc.setFillColor(254, 242, 242);
+    doc.setDrawColor(248, 113, 113);
+    doc.roundedRect(14, 34, 182, 6, 1.5, 1.5, 'FD');
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(185, 28, 28);
+    doc.text(`⚠️ REV ${revision} UPDATE NOTE: ${String(deltaNotes).slice(0, 110)}`, 18, 38.2);
+    currentY = 42;
+  }
 
   // -------------------------------------------------------------
   // SMART VERTICAL SPACE BUDGETING & PAIRING DECISION ENGINE
@@ -454,7 +493,7 @@ export function generateSinglePageCombinedManifestDoc({
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'italic');
   doc.text(
-    'Alathurpadi Dars Food Management System • Official Single-Page Kitchen Master Sheet • Anonymized token records.',
+    `Alathurpadi Dars Food Management System • Official Single-Page Kitchen Master Sheet • Rev ${revision} • Printed ${printedAt || new Date().toLocaleString('en-IN')}`,
     14,
     290
   );
@@ -464,12 +503,12 @@ export function generateSinglePageCombinedManifestDoc({
     doc.deletePage(doc.getNumberOfPages());
   }
 
-  const fileSlug = `ADSA_Kitchen_Supply_Manifest_${targetDateIST}_${category}_${sort}.pdf`;
+  const fileSlug = `ADSA_Kitchen_Supply_Manifest_${targetDateIST}_${category}_${sort}_Rev${revision}.pdf`;
   return {
     doc,
     filename: fileSlug,
-    title: 'Kitchen Supply Manifest',
-    subtitle: `${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()}) • ${category} • ${sort}`,
+    title: `Kitchen Supply Manifest (Rev ${revision})`,
+    subtitle: `${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()}) • Rev ${revision} • ${category} • ${sort}`,
   };
 }
 

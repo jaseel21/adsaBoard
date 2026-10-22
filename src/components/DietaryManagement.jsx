@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -31,6 +31,12 @@ import {
   Phone,
   DoorClosed,
   Home,
+  Clock,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  History,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import jsPDF from 'jspdf';
@@ -42,12 +48,22 @@ import { dialog } from '../utils/dialog';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { AuthContext } from '../store/AuthContext';
+import {
+  subscribeAllDietaryRequests,
+  approveDietaryChangeRequest,
+  rejectDietaryChangeRequest,
+  REASON_CATEGORIES,
+} from '../utils/dietaryRequestService';
 import {
   subscribeToPreferences,
   addPreference,
   updatePreference,
   deletePreference,
 } from '../utils/preferenceService';
+import { checkActivePrintsForDates } from '../utils/manifestPrintService';
+import { getTodayISTDate, addDaysToDate } from '../utils/studentExceptionService';
+import CanteenOpsActivityDrawer from './admin/CanteenOpsActivityDrawer';
 
 // Icon mapping helper for dietary categories
 const ICON_MAP = {
@@ -70,6 +86,7 @@ export default function DietaryManagement() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { feedback } = useFeedback();
+  const { user, staffProfile, role } = useContext(AuthContext);
 
   // Primary State
   const [students, setStudents] = useState([]);
@@ -78,7 +95,7 @@ export default function DietaryManagement() {
   const [refreshing, setRefreshing] = useState(false);
   const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
-  // Active Main View Tab: 'category' | 'matrix' | 'categories_setup'
+  // Active Main View Tab: 'category' | 'matrix' | 'categories_setup' | 'requests'
   const [activeView, setActiveView] = useState('category');
 
   // Selected Category ID for category-specific view
@@ -88,8 +105,15 @@ export default function DietaryManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('ALL');
 
+  // Dietary Change Requests State
+  const [requestsList, setRequestsList] = useState([]);
+  const [requestsStatusFilter, setRequestsStatusFilter] = useState('pending');
+  const [requestsSearchQuery, setRequestsSearchQuery] = useState('');
+  const [processingRequestId, setProcessingRequestId] = useState(null);
+
   // Selected Avoider IDs for bulk actions
   const [selectedAvoiderIds, setSelectedAvoiderIds] = useState(new Set());
+  const [isCanteenLogOpen, setIsCanteenLogOpen] = useState(false);
 
   // Add Avoider Modal State
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -144,9 +168,19 @@ export default function DietaryManagement() {
         }
       );
 
+    const unsubRequests = subscribeAllDietaryRequests(
+      (list) => {
+        setRequestsList(list || []);
+      },
+      (err) => {
+        console.error('Error in DietaryManagement requests subscription:', err);
+      }
+    );
+
     return () => {
       unsubPrefs();
       unsubStudents();
+      unsubRequests();
     };
   }, []);
 
@@ -262,6 +296,28 @@ export default function DietaryManagement() {
     }, 400);
   };
 
+  // Proactive Kitchen Desynchronization Warning (Scenario 2)
+  const checkAndWarnIfPrintsInvalidated = async (affectedCount, actionDesc) => {
+    try {
+      const today = getTodayISTDate();
+      const tomorrow = addDaysToDate(today, 1);
+      const activePrints = await checkActivePrintsForDates([today, tomorrow]);
+      if (activePrints.length > 0) {
+        const printLabels = activePrints
+          .map((p) => `${p.meal.toUpperCase()} (${p.targetDateIST}) [Rev ${p.revision}]`)
+          .join(', ');
+
+        dialog.alert({
+          type: 'warning',
+          title: '⚠️ Kitchen Manifest Desynchronization',
+          message: `Dietary changes were saved (${actionDesc}), but physical kitchen sheet(s) have ALREADY been printed for: ${printLabels}.\n\nThe kitchen is currently holding an outdated sheet! Please reprint the manifest from Supply Sections or immediately inform the kitchen staff so special diets are not missed.`,
+        });
+      }
+    } catch (e) {
+      console.warn('Error checking print invalidation:', e);
+    }
+  };
+
   // ================= CRUD ACTION: REMOVE SINGLE AVOIDER =================
   const handleRemoveAvoider = async (student, categoryId = selectedCatId) => {
     const cat = preferences.find((p) => p.id === categoryId);
@@ -292,6 +348,8 @@ export default function DietaryManagement() {
           'Avoider Removed',
           `Token #${student.tokenNo} (${student.nameEn || student.name || ''}) will now be served ${catName}.`
         );
+        // Warn if kitchen printout already taken
+        await checkAndWarnIfPrintsInvalidated(1, `Token #${student.tokenNo} included in ${catName}`);
       } catch (err) {
         console.error('Error removing avoider:', err);
         feedback('warning');
@@ -356,6 +414,8 @@ export default function DietaryManagement() {
           'Bulk Update Complete',
           `Successfully removed ${count} students from ${catName} avoiders.`
         );
+        // Warn if kitchen printout already taken
+        await checkAndWarnIfPrintsInvalidated(count, `Removed ${count} students from ${catName} avoiders`);
       } catch (err) {
         console.error('Error in bulk remove avoiders:', err);
         feedback('warning');
@@ -414,6 +474,8 @@ export default function DietaryManagement() {
         'Avoiders Added',
         `Successfully added ${count} student(s) to ${catName} avoiders list.`
       );
+      // Warn if kitchen printout already taken
+      await checkAndWarnIfPrintsInvalidated(count, `Added ${count} students to ${catName} avoiders`);
     } catch (err) {
       console.error('Error adding avoiders:', err);
       feedback('warning');
@@ -447,6 +509,118 @@ export default function DietaryManagement() {
     } catch (err) {
       console.error('Error toggling matrix dietary preference:', err);
       dialog.toast.error('Update Failed', err.message);
+    }
+  };
+
+  // ================= CHANGE REQUESTS COMPUTED =================
+  const pendingRequestsCount = useMemo(() => {
+    return requestsList.filter((r) => r.status === 'pending').length;
+  }, [requestsList]);
+
+  const approvedRequestsCount = useMemo(() => {
+    return requestsList.filter((r) => r.status === 'approved').length;
+  }, [requestsList]);
+
+  const rejectedRequestsCount = useMemo(() => {
+    return requestsList.filter((r) => r.status === 'rejected').length;
+  }, [requestsList]);
+
+  const filteredRequests = useMemo(() => {
+    let list = [...requestsList];
+    if (requestsStatusFilter !== 'all') {
+      list = list.filter((r) => r.status === requestsStatusFilter);
+    }
+    if (requestsSearchQuery.trim()) {
+      const q = requestsSearchQuery.toLowerCase().trim();
+      list = list.filter((r) => {
+        return (
+          String(r.tokenNo).includes(q) ||
+          (r.studentName || '').toLowerCase().includes(q) ||
+          (r.batch || '').toLowerCase().includes(q) ||
+          (r.room || '').toLowerCase().includes(q) ||
+          (r.reasonText || '').toLowerCase().includes(q)
+        );
+      });
+    }
+    return list;
+  }, [requestsList, requestsStatusFilter, requestsSearchQuery]);
+
+  // ================= CHANGE REQUEST ACTION HANDLERS =================
+  const handleApproveRequest = async (req) => {
+    const confirmed = await dialog.confirm({
+      title: t('approveDietaryRequestTitle', 'Approve Dietary Modification?'),
+      message: t(
+        'approveDietaryRequestConfirm',
+        `Apply requested dietary changes for Student #${req.tokenNo} (${req.studentName})? This will immediately update their dining profile in Firestore.`
+      ),
+      confirmText: t('approveAndApply', 'Approve & Apply'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+
+    if (!confirmed) return;
+
+    setProcessingRequestId(req.id);
+    feedback('tick');
+
+    try {
+      await approveDietaryChangeRequest(req.id, {
+        uid: user?.uid,
+        name: staffProfile?.displayName || user?.displayName || 'Canteen Committee Admin',
+        role: role || 'canteen_admin',
+      });
+      dialog.toast.success(
+        t('requestApproved', 'Request Approved'),
+        t('requestApprovedDesc', `Dietary preferences updated for Student #${req.tokenNo}.`)
+      );
+      // Warn if kitchen printout already taken
+      await checkAndWarnIfPrintsInvalidated(1, `Request approved for Student #${req.tokenNo}`);
+    } catch (err) {
+      console.error('Error approving dietary request:', err);
+      dialog.toast.error('Approval Failed', err.message);
+      feedback('error');
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  const handleRejectRequest = async (req) => {
+    const promptRes = await dialog.prompt({
+      title: t('rejectDietaryRequestTitle', 'Reject Dietary Request?'),
+      message: t(
+        'rejectDietaryRequestPrompt',
+        `Provide an explanation for declining Token #${req.tokenNo}'s request (optional):`
+      ),
+      placeholder: t('rejectionReasonPlaceholder', 'E.g., Special ingredients unavailable, please consult committee...'),
+      confirmText: t('rejectRequest', 'Reject Request'),
+      cancelText: t('cancel', 'Cancel'),
+      isDestructive: true,
+    });
+
+    if (promptRes === null || promptRes === false) return;
+
+    setProcessingRequestId(req.id);
+    feedback('tick');
+
+    try {
+      await rejectDietaryChangeRequest(
+        req.id,
+        {
+          uid: user?.uid,
+          name: staffProfile?.displayName || user?.displayName || 'Canteen Committee Admin',
+          role: role || 'canteen_admin',
+        },
+        typeof promptRes === 'string' ? promptRes : ''
+      );
+      dialog.toast.info(
+        t('requestRejected', 'Request Declined'),
+        t('requestRejectedDesc', `Dietary change request for Token #${req.tokenNo} was marked as rejected.`)
+      );
+    } catch (err) {
+      console.error('Error rejecting dietary request:', err);
+      dialog.toast.error('Rejection Failed', err.message);
+      feedback('error');
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
@@ -736,6 +910,18 @@ export default function DietaryManagement() {
           <button
             onClick={() => {
               feedback('tick');
+              setIsCanteenLogOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
+            title="View Canteen & Supply Ops Log"
+          >
+            <History className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Ops Log</span>
+          </button>
+
+          <button
+            onClick={() => {
+              feedback('tick');
               navigate('/');
             }}
             className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
@@ -911,6 +1097,26 @@ export default function DietaryManagement() {
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{t('viewCategoriesSetup') || 'Category Settings'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              feedback('pop');
+              setActiveView('requests');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 relative ${
+              activeView === 'requests'
+                ? 'bg-white dark:bg-[#131b18] text-emerald-600 dark:text-emerald-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>{t('tabChangeRequests', 'Change Requests')}</span>
+            {pendingRequestsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
+                {pendingRequestsCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -1250,9 +1456,25 @@ export default function DietaryManagement() {
                       className="hover:bg-gray-50/50 dark:hover:bg-white/2 transition-colors"
                     >
                       <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                          #{student.tokenNo}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            #{student.tokenNo}
+                          </span>
+                          {student.pendingDietaryRequest && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('pop');
+                                setActiveView('requests');
+                                setRequestsSearchQuery(String(student.tokenNo));
+                              }}
+                              className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[9px] font-black animate-pulse hover:bg-amber-500/25"
+                              title="Pending dietary change request"
+                            >
+                              Request
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="font-bold text-gray-900 dark:text-white">
@@ -1527,6 +1749,290 @@ export default function DietaryManagement() {
         </div>
       )}
 
+      {/* ================= VIEW 4: DIETARY CHANGE REQUESTS ================= */}
+      {activeView === 'requests' && (
+        <div className="space-y-4">
+          {/* Top Summary & Search Filter Ribbon */}
+          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            {/* Status Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5 sm:pb-0">
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('pop');
+                  setRequestsStatusFilter('pending');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                  requestsStatusFilter === 'pending'
+                    ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/25'
+                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>{t('pendingRequests', 'Pending')}</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">
+                  {pendingRequestsCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('pop');
+                  setRequestsStatusFilter('approved');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                  requestsStatusFilter === 'approved'
+                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/25'
+                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{t('approvedRequests', 'Approved')}</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">
+                  {approvedRequestsCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('pop');
+                  setRequestsStatusFilter('rejected');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                  requestsStatusFilter === 'rejected'
+                    ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/25'
+                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                }`}
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                <span>{t('rejectedRequests', 'Rejected')}</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">
+                  {rejectedRequestsCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('pop');
+                  setRequestsStatusFilter('all');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                  requestsStatusFilter === 'all'
+                    ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900 shadow-sm'
+                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                }`}
+              >
+                <span>{t('allRequests', 'All Requests')}</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-black/15 dark:bg-black/15 text-white dark:text-gray-900">
+                  {requestsList.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={requestsSearchQuery}
+                onChange={(e) => setRequestsSearchQuery(e.target.value)}
+                placeholder={t('searchRequestsPlaceholder', 'Search requests by token, name, batch, reason...')}
+                className="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              />
+              {requestsSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setRequestsSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Requests Grid / Cards */}
+          {filteredRequests.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl bg-white/60 dark:bg-[#0f1715]/60 border border-gray-200/80 dark:border-white/10">
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                <Clock className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                {t('noDietaryRequestsFound', 'No Dietary Requests Found')}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                {requestsStatusFilter === 'pending'
+                  ? t('noPendingDietaryRequests', 'There are no pending dietary change requests requiring committee approval.')
+                  : t('noRequestsForFilter', 'No dietary requests match the selected status and search criteria.')}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {filteredRequests.map((req) => {
+                const isPending = req.status === 'pending';
+                const isApproved = req.status === 'approved';
+                const isRejected = req.status === 'rejected';
+                const isProcessing = processingRequestId === req.id;
+                const reasonMeta = REASON_CATEGORIES[req.reasonCategory] || {
+                  labelEn: req.reasonCategory || 'Personal',
+                  labelMl: req.reasonCategory || 'വ്യക്തിപരം',
+                };
+
+                return (
+                  <motion.div
+                    key={req.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-4 sm:p-5 rounded-3xl border transition-all ${
+                      isPending
+                        ? 'bg-white dark:bg-[#0f1715] border-amber-300/80 dark:border-amber-500/30 shadow-md shadow-amber-500/5'
+                        : isApproved
+                        ? 'bg-white/80 dark:bg-[#0f1715]/80 border-emerald-200 dark:border-emerald-500/20'
+                        : 'bg-white/80 dark:bg-[#0f1715]/80 border-gray-200 dark:border-white/10 opacity-80'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-xs text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/40">
+                            #{req.tokenNo}
+                          </span>
+                          <span className="font-bold text-sm text-gray-900 dark:text-white">
+                            {req.studentName}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                          <span>{req.batch || 'General Batch'}</span>
+                          {req.room && <span>• Room {req.room}</span>}
+                          {req.phone && <span>• {req.phone}</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            isPending
+                              ? 'bg-amber-400 text-amber-950 animate-pulse'
+                              : isApproved
+                              ? 'bg-emerald-500 text-white'
+                              : isRejected
+                              ? 'bg-rose-500 text-white'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {isPending && <Clock className="w-2.5 h-2.5" />}
+                          {isApproved && <Check className="w-2.5 h-2.5" />}
+                          {isRejected && <X className="w-2.5 h-2.5" />}
+                          <span>{req.status}</span>
+                        </span>
+
+                        {req.urgency === 'urgent' && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                            Urgent
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Change Diff Summary */}
+                    <div className="p-3 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 space-y-2 mb-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">
+                        {t('requestedChanges', 'Requested Preference Changes')}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Array.isArray(req.changes) && req.changes.length > 0 ? (
+                          req.changes.map((c) => (
+                            <span
+                              key={c.prefId}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-bold"
+                            >
+                              <span>{language === 'ml' ? c.labelMl : c.labelEn}:</span>
+                              <span className={c.from ? 'text-emerald-600 line-through text-[11px]' : 'text-rose-600 line-through text-[11px]'}>
+                                {c.from ? 'Included' : 'Avoided'}
+                              </span>
+                              <ArrowRight className="w-3 h-3 text-gray-400" />
+                              <span className={c.to ? 'text-emerald-600 font-extrabold' : 'text-rose-600 font-extrabold'}>
+                                {c.to ? 'Included' : 'Avoided'}
+                              </span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">No diff recorded</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Reason Context */}
+                    <div className="text-xs space-y-1 mb-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-700 dark:text-gray-300 text-[11px]">
+                          {t('reason', 'Reason')}:
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                          {language === 'ml' ? reasonMeta.labelMl : reasonMeta.labelEn}
+                        </span>
+                      </div>
+                      {req.reasonText && (
+                        <p className="text-gray-600 dark:text-gray-400 text-[11px] italic bg-white/40 dark:bg-white/5 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                          &ldquo;{req.reasonText}&rdquo;
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Footer Info or Actions */}
+                    <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="text-[10px] text-gray-400">
+                        {req.createdAt?.toDate
+                          ? req.createdAt.toDate().toLocaleString()
+                          : 'Recent'}
+                        {req.reviewedBy && (
+                          <span className="block mt-0.5 text-gray-500">
+                            Reviewed by {req.reviewedBy.name}
+                          </span>
+                        )}
+                        {req.rejectionReason && (
+                          <span className="block mt-0.5 text-rose-500 font-bold">
+                            Reason: {req.rejectionReason}
+                          </span>
+                        )}
+                      </div>
+
+                      {isPending && (
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          <button
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => handleRejectRequest(req)}
+                            className="px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all border border-gray-200 dark:border-white/10 cursor-pointer"
+                          >
+                            {t('reject', 'Reject')}
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => handleApproveRequest(req)}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{t('approveAndApply', 'Approve & Apply')}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ================= MODAL: ADD AVOIDER(S) ================= */}
       <AnimatePresence>
         {addModalOpen && (
@@ -1686,6 +2192,12 @@ export default function DietaryManagement() {
         isOpen={universalDoc.isOpen}
         onClose={() => setUniversalDoc({ isOpen: false, data: null })}
         documentData={universalDoc.data}
+      />
+
+      {/* Canteen & Supply Ops Activity Log Drawer */}
+      <CanteenOpsActivityDrawer
+        isOpen={isCanteenLogOpen}
+        onClose={() => setIsCanteenLogOpen(false)}
       />
     </div>
   );

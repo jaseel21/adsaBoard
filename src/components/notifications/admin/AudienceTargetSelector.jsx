@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, User, Shield, ChefHat, Check, Globe, Tag } from 'lucide-react';
+import { Users, User, Shield, ChefHat, Check, Globe, Tag, Tv } from 'lucide-react';
 import firebase from '../../../firebase/config';
 
 export default function AudienceTargetSelector({ value, onChange }) {
@@ -76,6 +76,7 @@ export default function AudienceTargetSelector({ value, onChange }) {
     { id: 'batches', label: 'Academic Batches', icon: Tag, desc: 'Specific class cohorts' },
     { id: 'tokens', label: 'Individual Tokens', icon: User, desc: 'Specific token numbers' },
     { id: 'staff', label: 'Kitchen & Cooks', icon: ChefHat, desc: 'Dispatched to Kitchen KDS' },
+    { id: 'tv_screen', label: 'TV Notice Board', icon: Tv, desc: 'Dining hall & campus TV screens' },
     { id: 'committee', label: 'Committee Officers', icon: Shield, desc: 'Internal committee memo' },
   ];
 

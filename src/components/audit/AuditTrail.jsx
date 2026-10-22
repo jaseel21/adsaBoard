@@ -68,6 +68,7 @@ export default function AuditTrail() {
   const countsByCategory = useMemo(() => {
     const counts = {
       total: logs.length,
+      [AUDIT_CATEGORIES.CANTEEN]: 0,
       [AUDIT_CATEGORIES.TOKENS]: 0,
       [AUDIT_CATEGORIES.STUDENTS]: 0,
       [AUDIT_CATEGORIES.MENU]: 0,
