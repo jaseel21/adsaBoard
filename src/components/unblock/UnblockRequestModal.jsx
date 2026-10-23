@@ -19,6 +19,7 @@ import {
   FileText,
   Clock,
   ExternalLink,
+  Ban,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -27,9 +28,11 @@ import {
   UNBLOCK_REASONS,
   submitUnblockRequest,
 } from '../../utils/unblockRequestService';
+import { getStudentFineAmount } from '../../utils/mealScheduleService';
 import { useNavigate } from 'react-router-dom';
 
 const REASON_ICONS = {
+  fine_cleared: Receipt,
   fee_cleared: Receipt,
   leave_rectified: CalendarCheck,
   mistake_dispute: AlertCircle,
@@ -58,7 +61,8 @@ export default function UnblockRequestModal({
   // Initialize/reset form state when modal opens
   useEffect(() => {
     if (isOpen && student) {
-      setReasonCategory('fee_cleared');
+      const isFineOrWaste = student.blockCategory === 'food_waste' || Boolean(student.fineAmount);
+      setReasonCategory(isFineOrWaste ? 'fine_cleared' : 'fee_cleared');
       setReasonNote('');
       setPhone(student.phone || '');
       setAttachment(null);
@@ -73,6 +77,7 @@ export default function UnblockRequestModal({
   const tokenNo = student.tokenNo;
   const studentName = student.name || `Student #${tokenNo}`;
   const blockReason = student.blockReason || '';
+  const fineDue = getStudentFineAmount(student);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -297,16 +302,33 @@ export default function UnblockRequestModal({
             ) : (
               /* Request Input Form */
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Current Lock Reason Context Alert */}
+                {/* Current Block Reason Context Alert */}
                 <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/20 text-xs">
                   <div className="flex items-center gap-2 text-red-900 dark:text-red-200 font-bold">
-                    <Lock className="w-3.5 h-3.5 text-red-500" />
-                    <span>{t('currentLockReason', 'Reason recorded by Canteen Administration')}:</span>
+                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    <span>{t('currentBlockReason', 'Reason recorded by Canteen Administration')}:</span>
                   </div>
                   <p className="mt-1 text-red-800 dark:text-red-300 italic font-medium">
-                    &ldquo;{blockReason || t('adminSuspendedGeneral', 'Administrative suspension / fee review')}&rdquo;
+                    &ldquo;{blockReason || t('adminSuspendedGeneral', 'Administrative suspension / food waste review')}&rdquo;
                   </p>
                 </div>
+
+                {/* Fine Amount Due Alert */}
+                {fineDue > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-500/30 text-xs flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="font-extrabold text-amber-950 dark:text-amber-100 block">
+                        Food Waste / Late Arrival Fine
+                      </span>
+                      <span className="text-[11px] text-amber-800 dark:text-amber-300">
+                        Please settle at the ADSA Office or upload payment receipt below.
+                      </span>
+                    </div>
+                    <span className="font-mono text-base font-black text-amber-900 dark:text-amber-100 bg-amber-200/60 dark:bg-amber-900/40 px-2.5 py-1 rounded-xl flex-shrink-0">
+                      ₹{fineDue}
+                    </span>
+                  </div>
+                )}
 
                 {/* Error Banner if any */}
                 {errorMsg && (

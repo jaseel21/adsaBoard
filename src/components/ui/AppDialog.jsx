@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useRef,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2,
@@ -474,7 +475,10 @@ export function DialogProvider({ children }) {
     >
       {children}
 
-      {/* Floating Toast Notification Container (Top Right on desktop, Top Center on mobile) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            {/* Floating Toast Notification Container (Top Right on desktop, Top Center on mobile) */}
       <div className="fixed top-4 sm:top-5 right-0 sm:right-5 left-0 sm:left-auto z-[100] flex flex-col items-center sm:items-end gap-2.5 pointer-events-none px-4 sm:px-0">
         <AnimatePresence>
           {toasts.map((t) => (
@@ -600,6 +604,9 @@ export function DialogProvider({ children }) {
           </div>
         )}
       </AnimatePresence>
+          </>,
+          document.body
+        )}
     </DialogContext.Provider>
   );
 }

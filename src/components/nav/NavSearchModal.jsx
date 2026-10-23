@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowRight, CornerDownLeft, Sparkles } from 'lucide-react';
 import { searchNavItems, NAV_CATEGORIES } from './navigationConfig';
@@ -58,9 +59,9 @@ export default function NavSearchModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, results, selectedIndex, onNavigate, onClose, feedback]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-3 sm:px-4">
         {/* Backdrop Scrim */}
@@ -227,6 +228,7 @@ export default function NavSearchModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

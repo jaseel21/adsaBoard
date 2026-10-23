@@ -27,6 +27,7 @@ import { dialog } from '../../utils/dialog';
 import firebase from '../../firebase/config';
 import StaffManagementModal from '../StaffManagementModal';
 import ShareActionModal from '../ui/ShareActionModal';
+import CanteenOpsActivityDrawer from '../admin/CanteenOpsActivityDrawer';
 
 export default function BrowserLeftSidebar() {
   const location = useLocation();
@@ -51,6 +52,7 @@ export default function BrowserLeftSidebar() {
   // Modals inside sidebar
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [opsLogOpen, setOpsLogOpen] = useState(false);
 
   const toggleCategory = (categoryId) => {
     feedback('tick');
@@ -98,6 +100,7 @@ export default function BrowserLeftSidebar() {
     if (item.isModalAction) {
       if (item.action === 'open_staff_modal') setStaffModalOpen(true);
       if (item.action === 'open_share_modal') setShareModalOpen(true);
+      if (item.action === 'open_ops_log_modal') setOpsLogOpen(true);
       if (!isDesktop) closeSidebar();
       return;
     }
@@ -400,17 +403,6 @@ export default function BrowserLeftSidebar() {
           })
         )}
       </div>
-
-      {/* Modals triggered from sidebar */}
-      <StaffManagementModal
-        isOpen={staffModalOpen}
-        onClose={() => setStaffModalOpen(false)}
-      />
-
-      <ShareActionModal
-        isOpen={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-      />
     </div>
   );
 
@@ -471,6 +463,23 @@ export default function BrowserLeftSidebar() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Universal Popups / Modals Triggered from Sidebar (Mounted at root level outside sidebar layout) */}
+      <StaffManagementModal
+        isOpen={staffModalOpen}
+        onClose={() => setStaffModalOpen(false)}
+      />
+
+      <ShareActionModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+      />
+
+      {/* Canteen & Supply Ops Activity Log Drawer (Admin Only) */}
+      <CanteenOpsActivityDrawer
+        isOpen={opsLogOpen}
+        onClose={() => setOpsLogOpen(false)}
+      />
     </>
   );
 }

@@ -30,7 +30,7 @@ import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { AuthContext } from '../store/AuthContext';
-import { cleanPastDateExceptions, syncStudentDiningHistory, getTodayISTDate, addDaysToDate } from '../utils/studentExceptionService';
+import { cleanPastDateExceptions, syncStudentDiningHistory, getTodayISTDate, addDaysToDate, cleanRedundantDateExceptions } from '../utils/studentExceptionService';
 import { logAuditEvent, calculateObjectDiff, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import { checkActivePrintsForDates } from '../utils/manifestPrintService';
 import { subscribeToPreferences } from '../utils/preferenceService';
@@ -269,15 +269,16 @@ export default function StudentDrawer({
       ? (student?.uname || student?.username || String(student?.tokenNo || tokenNum))
       : (uname.trim() || String(tokenNum));
 
+    const cleanedExceptions = cleanRedundantDateExceptions(dateExceptions || {}, { lunch, breakfast });
+
     const payload = isCanteenMode
       ? {
-          // Strictly retain student personal details unchanged
-          tokenNo: Number(student?.tokenNo !== undefined ? student.tokenNo : tokenNum),
+          // Locked administrative / identity fields:
           nameEn: student?.nameEn || nameEn.trim(),
           nameMl: student?.nameMl || nameMl.trim(),
           name: student?.name || nameEn.trim(),
-          uname: finalUname,
-          username: finalUname,
+          uname: student?.uname || finalUname,
+          username: student?.username || finalUname,
           password: student?.password || password.trim(),
           batch: student?.batch || batch.trim() || 'General',
           phone: student?.phone !== undefined ? student.phone : phone.trim(),
@@ -287,12 +288,12 @@ export default function StudentDrawer({
           pendingUnblockRequest: block ? (student?.pendingUnblockRequest || null) : null,
           obj: { lunch, breakfast },
           obj2: dietary,
-          dateExceptions: { ...(dateExceptions || {}) },
+          dateExceptions: cleanedExceptions,
           diningHistory: syncStudentDiningHistory({
             ...student,
             obj: { lunch, breakfast },
             obj2: dietary,
-            dateExceptions,
+            dateExceptions: cleanedExceptions,
             diningHistory: student?.diningHistory || {},
           }),
           templates: studentTemplates,
@@ -314,12 +315,12 @@ export default function StudentDrawer({
           pendingUnblockRequest: block ? (student?.pendingUnblockRequest || null) : null,
           obj: { lunch, breakfast },
           obj2: dietary,
-          dateExceptions: { ...(dateExceptions || {}) },
+          dateExceptions: cleanedExceptions,
           diningHistory: syncStudentDiningHistory({
             ...student,
             obj: { lunch, breakfast },
             obj2: dietary,
-            dateExceptions,
+            dateExceptions: cleanedExceptions,
             diningHistory: student?.diningHistory || {},
           }),
           templates: studentTemplates,
@@ -330,7 +331,27 @@ export default function StudentDrawer({
     try {
       const db = firebase.firestore();
       if (isEdit) {
-        await db.collection('students').doc(student.id).set(payload, { merge: true });
+        // Detect removed date exception keys so Firestore does not retain them via merge
+        const prevExceptions = student?.dateExceptions || {};
+        const deletedKeys = {};
+        Object.keys(prevExceptions).forEach((d) => {
+          if (!cleanedExceptions[d]) {
+            deletedKeys[`dateExceptions.${d}`] = firebase.firestore.FieldValue.delete();
+          }
+        });
+
+        const docRef = db.collection('students').doc(student.id);
+        try {
+          await docRef.update({
+            ...payload,
+            ...deletedKeys,
+          });
+        } catch (_) {
+          await docRef.set(payload, { merge: true });
+          if (Object.keys(deletedKeys).length > 0) {
+            await docRef.update(deletedKeys);
+          }
+        }
         
         // Audit log delta
         const diff = calculateObjectDiff(student, payload);
@@ -1026,6 +1047,7 @@ export default function StudentDrawer({
                             onSaveExceptions={(updated) => setDateExceptions(updated)}
                             onSaveTemplates={(updatedTemplates) => setStudentTemplates(updatedTemplates)}
                             editable={true}
+                            isAdmin={true}
                           />
 
                           <div className="flex justify-end pt-3 border-t border-gray-100 dark:border-white/5">

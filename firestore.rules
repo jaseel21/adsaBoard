@@ -120,6 +120,8 @@ service cloud.firestore {
             'dietaryNotes',
             'block',
             'blockReason',
+            'blockDetails',
+            'fineStatus',
             'dateExceptions',
             'templates',
             'diningHistory',
@@ -224,6 +226,7 @@ service cloud.firestore {
       allow update: if isCanteenCommittee() || 
         // Allow clients to increment telemetry stats (viewCount, ackCount)
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']));
+    }
 
     // ==========================================
     // 8. SUPPORT TICKETS & CARE CONCIERGE
@@ -246,6 +249,38 @@ service cloud.firestore {
         );
 
       // Deletions strictly restricted to Central Committee & Developers
+      allow delete: if isCentralCommittee();
+    }
+
+    // ==========================================
+    // 9. CAMPUS SETTINGS & MEAL CONFIGURATION
+    // ==========================================
+    match /settings/{settingId} {
+      // Public read for meal timings, radar countdowns, and fine schedules
+      allow read: if true;
+      
+      // Canteen Sub-Committee, Central Committee, and Developers can update settings
+      allow write: if isCanteenCommittee();
+    }
+
+    // ==========================================
+    // 10. UNBLOCK APPEALS & STATUS REQUESTS
+    // ==========================================
+    match /unblock_requests/{requestId} {
+      // Public read for student checking their ticket and staff triage
+      allow read: if true;
+
+      // Students can file an unblock appeal
+      allow create: if request.resource.data.studentId is string &&
+        request.resource.data.tokenNumber is string &&
+        request.resource.data.status in ['pending', 'under_review'];
+
+      // Staff can update resolution status, notes, and approval
+      allow update: if isCanteenCommittee() ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['thread', 'updatedAt'])
+        );
+
       allow delete: if isCentralCommittee();
     }
   }

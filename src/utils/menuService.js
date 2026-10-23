@@ -1,5 +1,6 @@
 import firebase from '../firebase/config';
 import { addDaysToDate, getDayOfWeekShort } from './studentExceptionService';
+import { getCachedMealSchedule } from './mealScheduleService';
 
 // Verified canonical Alathurpadi Dars canteen schedule (System Baseline)
 export const DEFAULT_WEEKLY_MENU = {
@@ -744,6 +745,7 @@ export async function deleteDateOverrides(datesArray) {
 
 /**
  * Resolves the effective menu for any specific calendar date, merging overrides on top of weekly routine.
+ * Defaults meal timings to the universal dynamic meal schedule unless manually customized.
  */
 export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = {}) {
   const dow = getDayOfWeekShort(dateStr);
@@ -751,15 +753,35 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
   const routineDay = (weeklyMenu && weeklyMenu[dow]) ? weeklyMenu[dow] : defDay;
   const override = overrides ? overrides[dateStr] : null;
 
+  // Retrieve dynamic universal schedule
+  const dynamicSchedule = getCachedMealSchedule();
+  const daySched = dynamicSchedule?.[dow] || dynamicSchedule?.fr;
+  const dynamicBfTiming = daySched?.breakfast?.label || '07:30 AM - 08:45 AM';
+  const dynamicLunchTiming = daySched?.lunch?.label || (dow === 'fr' ? '01:15 PM - 02:15 PM' : '12:45 PM - 02:00 PM');
+
+  // Helper to ensure dynamic timing fallback
+  const resolveMealTiming = (mealObj, dynamicTiming) => {
+    if (!mealObj) return mealObj;
+    return {
+      ...mealObj,
+      timing: mealObj.timing || dynamicTiming,
+    };
+  };
+
+  const baseBf = resolveMealTiming(routineDay.breakfast, dynamicBfTiming);
+  const baseLunch = resolveMealTiming(routineDay.lunch, dynamicLunchTiming);
+
   if (!override) {
     return {
       ...routineDay,
       date: dateStr,
       isOverride: false,
+      breakfast: baseBf,
+      lunch: baseLunch,
     };
   }
 
-  // Merge override on top of routine
+  // Merge override on top of routine (override.timing takes precedence if set)
   return {
     ...routineDay,
     date: dateStr,
@@ -770,8 +792,12 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
     holidayReason: override.holidayReason || '',
     isArchived: Boolean(override.isHoliday) || Boolean(routineDay.isArchived),
     archiveReason: override.holidayReason || routineDay.archiveReason || '',
-    breakfast: override.breakfast ? { ...routineDay.breakfast, ...override.breakfast } : routineDay.breakfast,
-    lunch: override.lunch ? { ...routineDay.lunch, ...override.lunch } : routineDay.lunch,
+    breakfast: override.breakfast
+      ? { ...baseBf, ...override.breakfast, timing: override.breakfast.timing || baseBf.timing }
+      : baseBf,
+    lunch: override.lunch
+      ? { ...baseLunch, ...override.lunch, timing: override.lunch.timing || baseLunch.timing }
+      : baseLunch,
     evening: override.evening ? { ...routineDay.evening, ...override.evening } : routineDay.evening,
     dinner: override.dinner ? { ...routineDay.dinner, ...override.dinner } : routineDay.dinner,
   };

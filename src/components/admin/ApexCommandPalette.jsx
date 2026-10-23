@@ -22,6 +22,7 @@ import {
   HeartHandshake,
   Printer,
   History,
+  Ban,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -37,6 +38,7 @@ export default function ApexCommandPalette({
   onOpenDietary,
   onOpenStaff,
   onOpenLockModal,
+  onOpenBlockModal,
   navigate,
   isLunch = false,
   effectiveMode,
@@ -129,6 +131,17 @@ export default function ApexCommandPalette({
           if (onOpenDietary) onOpenDietary();
           onClose();
         },
+      },
+      {
+        id: 'block_management',
+        title: 'Block & Fine Management Console',
+        subtitle: 'Food waste penalties, fine ledger & dual-grid suspension',
+        icon: Ban,
+        iconColor: 'text-rose-500',
+        action: () => {
+          if (onOpenBlockModal) onOpenBlockModal();
+          onClose();
+        },
       }
     );
 
@@ -209,11 +222,11 @@ export default function ApexCommandPalette({
     list.push({
       id: 'supply_sections',
       title: 'Kitchen Supply Distribution & Manifest',
-      subtitle: 'View section breakdowns, print manifests, and check sync status (/lunch, /breakfast)',
+      subtitle: 'View dynamic section breakdowns, print manifests, and check sync status (/supply)',
       icon: Printer,
       iconColor: 'text-emerald-500',
       action: () => {
-        navigate(isLunch ? '/lunch' : '/breakfast');
+        navigate(isLunch ? '/supply?meal=lunch' : '/supply?meal=breakfast');
         onClose();
       },
     });
@@ -225,13 +238,13 @@ export default function ApexCommandPalette({
       icon: History,
       iconColor: 'text-teal-500',
       action: () => {
-        navigate('/admin/audit-logs');
+        navigate('/supply?opsLog=true');
         onClose();
       },
     });
 
     return list;
-  }, [isLunch, effectiveMode, isCentralCommittee, onToggleMeal, onToggleLock, onOpenDietary, onOpenStaff, onOpenLockModal, navigate, onClose, t]);
+  }, [isLunch, effectiveMode, isCentralCommittee, onToggleMeal, onToggleLock, onOpenDietary, onOpenStaff, onOpenLockModal, onOpenBlockModal, navigate, onClose, t]);
 
   // Filtered Results
   const { filteredActions, filteredStudents } = useMemo(() => {

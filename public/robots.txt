@@ -8,6 +8,8 @@ User-agent: *
 # Allow Public Indexable Pages
 Allow: /
 Allow: /menu
+Allow: /supply
+Allow: /manifest
 Allow: /breakfast
 Allow: /lunch
 Allow: /guide

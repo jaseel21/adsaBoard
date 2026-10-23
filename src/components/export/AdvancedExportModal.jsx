@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -280,9 +281,9 @@ export default function AdvancedExportModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
         {/* Backdrop */}
@@ -712,6 +713,7 @@ export default function AdvancedExportModal({
         onClose={() => setUniversalDoc({ isOpen: false, data: null })}
         documentData={universalDoc.data}
       />
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

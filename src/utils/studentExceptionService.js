@@ -258,7 +258,32 @@ export function syncStudentDiningHistory(student, daysBack = 90) {
 }
 
 /**
- * Check if a student has an active date exception for a specific target date
+ * Strips date exceptions that match the student's weekly routine
+ */
+export function cleanRedundantDateExceptions(dateExceptionsMap, routineObj) {
+  if (!dateExceptionsMap || typeof dateExceptionsMap !== 'object') return {};
+  const cleaned = {};
+  Object.entries(dateExceptionsMap).forEach(([dateStr, exc]) => {
+    if (!exc) return;
+    const dayKey = getDayOfWeekShort(dateStr);
+    const routineBf = routineObj?.breakfast?.[dayKey] !== undefined ? Boolean(routineObj.breakfast[dayKey]) : true;
+    const routineLunch = routineObj?.lunch?.[dayKey] !== undefined ? Boolean(routineObj.lunch[dayKey]) : true;
+
+    const excBf = exc.breakfast !== undefined ? Boolean(exc.breakfast) : routineBf;
+    const excLunch = exc.lunch !== undefined ? Boolean(exc.lunch) : routineLunch;
+
+    // Only keep if at least one meal differs from standard weekly routine
+    if (excBf !== routineBf || excLunch !== routineLunch) {
+      cleaned[dateStr] = exc;
+    }
+  });
+  return cleaned;
+}
+
+/**
+ * Check if a student has an active date exception for a specific target date.
+ * Strictly verifies that the exception actually diverges from the student's standard weekly routine.
+ *
  * @param {Object} student - Student document
  * @param {string} targetDate - 'YYYY-MM-DD'
  * @param {string} mealType - 'lunch' | 'breakfast'
@@ -267,12 +292,33 @@ export function syncStudentDiningHistory(student, daysBack = 90) {
 export function getActiveStudentException(student, targetDate, mealType) {
   if (!student) return null;
   const checkDate = targetDate || getTodayISTDate();
+  const dayKey = getDayOfWeekShort(checkDate);
+
+  const routineBf = student.obj?.breakfast?.[dayKey] !== undefined ? Boolean(student.obj.breakfast[dayKey]) : true;
+  const routineLunch = student.obj?.lunch?.[dayKey] !== undefined ? Boolean(student.obj.lunch[dayKey]) : true;
 
   // Check dateExceptions map
   if (student.dateExceptions && student.dateExceptions[checkDate]) {
     const exc = student.dateExceptions[checkDate];
-    if (!mealType) return exc;
-    if (exc[mealType] !== undefined) return exc;
+    const excBf = exc.breakfast !== undefined ? Boolean(exc.breakfast) : routineBf;
+    const excLunch = exc.lunch !== undefined ? Boolean(exc.lunch) : routineLunch;
+
+    const divergesBf = excBf !== routineBf;
+    const divergesLunch = excLunch !== routineLunch;
+
+    if (mealType === 'breakfast') {
+      if (divergesBf) return exc;
+      return null;
+    }
+    if (mealType === 'lunch') {
+      if (divergesLunch) return exc;
+      return null;
+    }
+    // If no mealType specified, return exc only if at least one meal differs from routine
+    if (divergesBf || divergesLunch) {
+      return exc;
+    }
+    return null;
   }
 
   // Backwards compatibility with legacy exceptions array if any
@@ -506,10 +552,11 @@ export function calculateEffectiveDateMeals(student, dateStr) {
 
   // 2. Check active or preserved dateExceptions
   const exception = student?.dateExceptions?.[dateStr];
-  const hasException = Boolean(exception);
+  const effectiveBf = exception && exception.breakfast !== undefined ? Boolean(exception.breakfast) : routineBf;
+  const effectiveLunch = exception && exception.lunch !== undefined ? Boolean(exception.lunch) : routineLunch;
 
-  const effectiveBf = hasException && exception.breakfast !== undefined ? Boolean(exception.breakfast) : routineBf;
-  const effectiveLunch = hasException && exception.lunch !== undefined ? Boolean(exception.lunch) : routineLunch;
+  // An exception is only truly active if it diverges from standard weekly routine
+  const hasException = Boolean(exception && (effectiveBf !== routineBf || effectiveLunch !== routineLunch));
 
   const isAllOn = effectiveBf && effectiveLunch;
   const isAllOff = !effectiveBf && !effectiveLunch;

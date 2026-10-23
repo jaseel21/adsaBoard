@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -18,7 +19,7 @@ export default function LinkQrModal({ isOpen, onClose, url, title, domain }) {
   const { t, lang } = useLanguage();
   const [copied, setCopied] = useState(false);
 
-  if (!isOpen || !url) return null;
+  if (!isOpen || !url || typeof document === 'undefined') return null;
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
     url
@@ -40,7 +41,7 @@ export default function LinkQrModal({ isOpen, onClose, url, title, domain }) {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
@@ -134,6 +135,7 @@ export default function LinkQrModal({ isOpen, onClose, url, title, domain }) {
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

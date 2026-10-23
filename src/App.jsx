@@ -44,7 +44,7 @@ import ScrollRestorationWatcher from './components/scroll/ScrollRestorationWatch
 import './App.css';
 
 function AppContent() {
-  const { user, homeRoute } = useContext(AuthContext);
+  const { user, role, loadingAuth, homeRoute } = useContext(AuthContext);
   const isAdmin = Boolean(user);
   const location = useLocation();
   const { sidebarOpen } = useSidebar();
@@ -78,11 +78,13 @@ function AppContent() {
 
             {/* Public Document Downloads & Information */}
             <Route path="/login" element={<Login />} />
-            <Route path="/list" element={<List />} />
-            <Route path="/lunch" element={<SupplySections defaultMeal="lunch" />} />
-            <Route path="/breakfast" element={<SupplySections defaultMeal="breakfast" />} />
-            <Route path="/supply" element={<Navigate to="/breakfast" replace />} />
-            <Route path="/manifest" element={<Navigate to="/breakfast" replace />} />
+            {/* Consolidated Public Supply Manifest (/supply) */}
+            <Route path="/supply" element={<SupplySections />} />
+            <Route path="/manifest" element={<Navigate to="/supply" replace />} />
+            <Route path="/breakfast" element={<Navigate to="/supply?meal=breakfast" replace />} />
+            <Route path="/lunch" element={<Navigate to="/supply?meal=lunch" replace />} />
+            <Route path="/admin/ops-log" element={<Navigate to="/supply?opsLog=true" replace />} />
+            <Route path="/ops-log" element={<Navigate to="/supply?opsLog=true" replace />} />
             <Route path="/guide" element={<GuidePage />} />
             {/* Sacred Islamic Dining Ethics & Dars Adab Sanctuary */}
             <Route path="/adab" element={<DiningEthicsPage />} />
@@ -236,10 +238,25 @@ function AppContent() {
             <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
             <Route path="/astudent-port" element={<Navigate to="/student-management" replace />} />
             <Route path="/m-tokens" element={<Navigate to="/student-management" replace />} />
-            <Route path="/pdfg" element={<Navigate to="/breakfast" replace />} />
+            <Route path="/pdfg" element={<Navigate to="/supply" replace />} />
             <Route
               path="/alogin"
-              element={user ? <Navigate to={homeRoute || '/admin'} replace /> : <AdminLogin />}
+              element={
+                loadingAuth ? (
+                  <div className="flex-1 flex items-center justify-center p-6 min-h-[calc(100dvh-8rem)]">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-600 rounded-full animate-spin" />
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Verifying staff session...
+                      </span>
+                    </div>
+                  </div>
+                ) : user && role ? (
+                  <Navigate to={homeRoute || '/admin'} replace />
+                ) : (
+                  <AdminLogin />
+                )
+              }
             />
 
             {/* 404 Catch-All Fallback Route */}

@@ -26,7 +26,9 @@ import {
   ShieldAlert,
   Send,
   Unlock,
+  Ban,
 } from 'lucide-react';
+import { getStudentFineAmount } from '../utils/mealScheduleService';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
 import firebase from '../firebase/config';
@@ -57,6 +59,7 @@ import {
   syncStudentDiningHistory,
   getDayOfWeekShort,
   calculateEffectiveDateMeals,
+  cleanRedundantDateExceptions,
 } from '../utils/studentExceptionService';
 
 function StudentPort() {
@@ -631,8 +634,8 @@ function StudentPort() {
         throw new Error('System time verification required: Device clock mismatch detected. Please verify your internet connection to sync time.');
       }
       
-      // Preserve all dateExceptions (both upcoming and past) so history is never erased
-      const exceptionsToSave = { ...(dateExceptions || {}) };
+      // Clean redundant entries that match the routine being saved
+      let exceptionsToSave = cleanRedundantDateExceptions(dateExceptions || {}, { lunch, breakfast });
       const preservedDatesList = [];
 
       // Safeguard Scenario 1: If tomorrow is locked past cutoff, preserve tomorrow's baseline status
@@ -645,16 +648,22 @@ function StudentPort() {
           ? baselineExc.lunch
           : Boolean(savedBaseline.lunch?.[tomorrowDayShort]);
 
-        exceptionsToSave[tomorrowIST] = {
-          ...(exceptionsToSave[tomorrowIST] || {}),
-          breakfast: baselineBf,
-          lunch: baselineLu,
-          label: exceptionsToSave[tomorrowIST]?.label || 'Cutoff Locked (Preserved)',
-        };
-        preservedDatesList.push(`Tomorrow (${formatFriendlyDate(tomorrowIST, false)})`);
+        const newRoutineBf = breakfast?.[tomorrowDayShort] !== undefined ? Boolean(breakfast[tomorrowDayShort]) : true;
+        const newRoutineLu = lunch?.[tomorrowDayShort] !== undefined ? Boolean(lunch[tomorrowDayShort]) : true;
+
+        if (baselineBf !== newRoutineBf || baselineLu !== newRoutineLu) {
+          exceptionsToSave[tomorrowIST] = {
+            breakfast: baselineBf,
+            lunch: baselineLu,
+            label: baselineExc?.label || 'Cutoff Locked (Preserved)',
+          };
+          preservedDatesList.push(`Tomorrow (${formatFriendlyDate(tomorrowIST, false)})`);
+        } else {
+          delete exceptionsToSave[tomorrowIST];
+        }
       }
 
-      // Safeguard Rule 3: Today is always locked for student portal saves; preserve today's baseline status
+      // Safeguard Rule 2: Today is always locked for student portal saves; preserve today's baseline status if it diverges
       const baselineTodayExc = savedBaseline.dateExceptions?.[todayIST];
       const baselineTodayBf = baselineTodayExc?.breakfast !== undefined
         ? baselineTodayExc.breakfast
@@ -663,13 +672,20 @@ function StudentPort() {
         ? baselineTodayExc.lunch
         : Boolean(savedBaseline.lunch?.[todayDayShort]);
 
-      exceptionsToSave[todayIST] = {
-        ...(exceptionsToSave[todayIST] || {}),
-        breakfast: baselineTodayBf,
-        lunch: baselineTodayLu,
-        label: exceptionsToSave[todayIST]?.label || 'Today Locked (Preserved)',
-      };
-      preservedDatesList.push(`Today (${formatFriendlyDate(todayIST, false)})`);
+      const newTodayRoutineBf = breakfast?.[todayDayShort] !== undefined ? Boolean(breakfast[todayDayShort]) : true;
+      const newTodayRoutineLu = lunch?.[todayDayShort] !== undefined ? Boolean(lunch[todayDayShort]) : true;
+
+      // Only create/preserve an exception for today IF today's locked meal actually differs from the new routine
+      if (baselineTodayBf !== newTodayRoutineBf || baselineTodayLu !== newTodayRoutineLu) {
+        exceptionsToSave[todayIST] = {
+          breakfast: baselineTodayBf,
+          lunch: baselineTodayLu,
+          label: baselineTodayExc?.label || 'Today Locked (Preserved)',
+        };
+        preservedDatesList.push(`Today (${formatFriendlyDate(todayIST, false)})`);
+      } else {
+        delete exceptionsToSave[todayIST];
+      }
 
       // Synchronize and lock past dining history into immutable ledger
       const syncedHistory = syncStudentDiningHistory({
@@ -691,7 +707,30 @@ function StudentPort() {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
 
-      await firebase.firestore().collection('students').doc(targetDocId).set(payload, { merge: true });
+      // Detect any deleted date exception keys compared to baseline & stdata so Firestore does not retain them via merge
+      const prevExceptions = {
+        ...(stdata?.dateExceptions || {}),
+        ...(savedBaseline?.dateExceptions || {}),
+      };
+      const deletedFieldUpdates = {};
+      Object.keys(prevExceptions).forEach((d) => {
+        if (!exceptionsToSave[d]) {
+          deletedFieldUpdates[`dateExceptions.${d}`] = firebase.firestore.FieldValue.delete();
+        }
+      });
+
+      const docRef = firebase.firestore().collection('students').doc(targetDocId);
+      try {
+        await docRef.update({
+          ...payload,
+          ...deletedFieldUpdates,
+        });
+      } catch (updateErr) {
+        await docRef.set(payload, { merge: true });
+        if (Object.keys(deletedFieldUpdates).length > 0) {
+          await docRef.update(deletedFieldUpdates);
+        }
+      }
 
       // Compute granular token schedule deltas
       const scheduleDeltas = computeTokenScheduleDeltas(savedBaseline, {
@@ -1036,35 +1075,42 @@ function StudentPort() {
             </div>
           ) : (
             /* Standard Blocked Banner with Immediate Action Button */
-            <div className="rounded-3xl bg-red-50/90 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="rounded-3xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <ShieldAlert className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs border border-rose-300/60 dark:border-rose-500/30">
+                  <Ban className="w-6 h-6" />
                 </div>
-                <div className="flex-1 min-w-0 text-xs sm:text-sm text-red-900 dark:text-red-200 space-y-1">
+                <div className="flex-1 min-w-0 text-xs sm:text-sm text-rose-900 dark:text-rose-200 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-extrabold text-sm sm:text-base text-red-950 dark:text-red-100">
-                      {t('tokenLockedByAdmin', `Token #${stdata.tokenNo} Locked by Admin`).replace('{token}', stdata.tokenNo)}
+                    <h3 className="font-extrabold text-sm sm:text-base text-rose-950 dark:text-rose-100">
+                      Token #{stdata.tokenNo} Blocked by Admin
                     </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-200/60 dark:bg-red-900/60 text-red-900 dark:text-red-200 uppercase tracking-wide">
-                      {t('readOnly', 'Read-Only')}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-200/60 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 uppercase tracking-wide">
+                      Dual-Grid Suspension
                     </span>
                   </div>
-                  <p className="text-red-800 dark:text-red-300 text-xs leading-relaxed">
-                    {t(
-                      'tokenLockedDescription',
-                      'This student token has been temporarily suspended by the ADSA Canteen Committee. Meal dining privileges are paused.'
-                    )}
+                  <p className="text-rose-800 dark:text-rose-300 text-xs leading-relaxed">
+                    This dining token is temporarily blocked due to a food waste or attendance infraction. Breakfast and Lunch privileges are paused.
                   </p>
                   {stdata.blockReason && (
-                    <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
-                      <span className="font-bold text-red-950 dark:text-red-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
-                      <span className="italic font-medium text-red-900 dark:text-red-200">&ldquo;{stdata.blockReason}&rdquo;</span>
+                    <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-rose-200 dark:border-rose-500/20 text-xs">
+                      <span className="font-bold text-rose-950 dark:text-rose-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
+                      <span className="italic font-medium text-rose-900 dark:text-rose-200">&ldquo;{stdata.blockReason}&rdquo;</span>
                     </div>
                   )}
-                  <p className="text-[11px] text-red-700/90 dark:text-red-400 pt-0.5">
-                    {t('consultOffice', 'Please consult the ADSA Office or submit an unblock appeal.')}
-                  </p>
+
+                  {/* Calculated Fine Due Banner */}
+                  {getStudentFineAmount(stdata) > 0 && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-2 text-xs text-amber-900 dark:text-amber-200">
+                      <div>
+                        <span className="font-extrabold block">Fine Payable:</span>
+                        <span className="text-[11px] opacity-80">Settle at ADSA office or upload payment receipt with your appeal.</span>
+                      </div>
+                      <span className="font-mono text-base font-black px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-950 dark:text-amber-100 flex-shrink-0">
+                        ₹{getStudentFineAmount(stdata)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1077,8 +1123,8 @@ function StudentPort() {
                   }}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all cursor-pointer"
                 >
-                  <Unlock className="w-4 h-4" />
-                  <span>{t('requestUnblockBtn', 'Request to Unblock')}</span>
+                  <Send className="w-4 h-4" />
+                  <span>{t('requestUnblockBtn', 'Submit Unblock Appeal')}</span>
                 </button>
               </div>
             </div>

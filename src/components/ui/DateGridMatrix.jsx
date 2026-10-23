@@ -52,6 +52,7 @@ export default function DateGridMatrix({
   onSaveExceptions,
   onSaveTemplates,
   editable = true,
+  isAdmin = false,
   className = '',
 }) {
   const { t } = useLanguage();
@@ -348,11 +349,18 @@ export default function DateGridMatrix({
   // Reset exceptions while preserving locked dates
   const handleClearAllExceptions = () => {
     feedback('warning');
+    if (isAdmin) {
+      if (onSaveExceptions) onSaveExceptions({});
+      return;
+    }
     const existing = student?.dateExceptions || {};
     const preserved = {};
     Object.keys(existing).forEach((d) => {
       if (getDateLockStatus(d).isLocked) {
-        preserved[d] = existing[d];
+        const meals = calculateEffectiveDateMeals(student, d);
+        if (meals.breakfast !== meals.routineBreakfast || meals.lunch !== meals.routineLunch) {
+          preserved[d] = existing[d];
+        }
       }
     });
     if (onSaveExceptions) onSaveExceptions(preserved);
@@ -994,6 +1002,7 @@ export default function DateGridMatrix({
             onSaveException={handleSaveSingleException}
             onRemoveException={handleRemoveSingleException}
             onApplyRange={handleApplyDateRange}
+            isAdmin={isAdmin}
           />
         )}
       </AnimatePresence>

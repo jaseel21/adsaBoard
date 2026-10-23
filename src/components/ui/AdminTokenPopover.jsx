@@ -7,6 +7,8 @@ import {
   Edit,
   Lock,
   Unlock,
+  Ban,
+  ShieldCheck,
   CheckCircle2,
   XCircle,
   CalendarDays,
@@ -72,6 +74,9 @@ export default function AdminTokenPopover({
     feedback('tick');
     setToggling(true);
 
+    const routineBf = student.obj?.breakfast?.[effectiveDay] !== undefined ? Boolean(student.obj.breakfast[effectiveDay]) : true;
+    const routineLunch = student.obj?.lunch?.[effectiveDay] !== undefined ? Boolean(student.obj.lunch[effectiveDay]) : true;
+
     const nextState = !isOn;
     const existingExceptions = student.dateExceptions || {};
     const dateRecord = existingExceptions[targetDateIST] || {};
@@ -82,17 +87,33 @@ export default function AdminTokenPopover({
       updatedAt: new Date().toISOString(),
     };
 
-    const updatedExceptions = {
-      ...existingExceptions,
-      [targetDateIST]: updatedDateRecord,
-    };
+    const finalBf = mealKey === 'breakfast' ? nextState : (dateRecord.breakfast !== undefined ? Boolean(dateRecord.breakfast) : routineBf);
+    const finalLu = mealKey === 'lunch' ? nextState : (dateRecord.lunch !== undefined ? Boolean(dateRecord.lunch) : routineLunch);
+
+    const updatedExceptions = { ...existingExceptions };
+    const isRevertedToRoutine = finalBf === routineBf && finalLu === routineLunch;
+
+    let deletedKeyUpdate = {};
+    if (isRevertedToRoutine) {
+      delete updatedExceptions[targetDateIST];
+      deletedKeyUpdate = {
+        [`dateExceptions.${targetDateIST}`]: firebase.firestore.FieldValue.delete(),
+      };
+    } else {
+      updatedExceptions[targetDateIST] = updatedDateRecord;
+    }
 
     try {
-      await firebase
-        .firestore()
-        .collection('students')
-        .doc(student.id)
-        .set(
+      const docRef = firebase.firestore().collection('students').doc(student.id);
+      try {
+        await docRef.update({
+          dateExceptions: updatedExceptions,
+          ...deletedKeyUpdate,
+          lastUpdatedBy: user?.email || 'admin',
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (_) {
+        await docRef.set(
           {
             dateExceptions: updatedExceptions,
             lastUpdatedBy: user?.email || 'admin',
@@ -100,6 +121,10 @@ export default function AdminTokenPopover({
           },
           { merge: true }
         );
+        if (Object.keys(deletedKeyUpdate).length > 0) {
+          await docRef.update(deletedKeyUpdate);
+        }
+      }
 
       const friendlyDate = formatFriendlyDate(targetDateIST, true);
       const dayName = DAY_FULL_NAMES[effectiveDay] || effectiveDay;
@@ -205,13 +230,13 @@ export default function AdminTokenPopover({
     const nextBlock = !isBlocked;
 
     const confirmed = await dialog.confirm({
-      title: nextBlock ? `Lock Token #${student.tokenNo}?` : `Unlock Token #${student.tokenNo}?`,
+      title: nextBlock ? `Block Token #${student.tokenNo}?` : `Unblock Token #${student.tokenNo}?`,
       message: nextBlock
-        ? `Locking will freeze Token #${student.tokenNo} (${nameEn}) and suspend dining participation.`
+        ? `Blocking will suspend Token #${student.tokenNo} (${nameEn}) from both Breakfast and Lunch grids.`
         : `Re-activate Token #${student.tokenNo} (${nameEn}) into active canteen rotation?`,
-      confirmText: nextBlock ? 'Lock Token' : 'Unlock Token',
+      confirmText: nextBlock ? 'Block Student' : 'Unblock Student',
       confirmColor: nextBlock ? 'rose' : 'emerald',
-      icon: nextBlock ? 'lock' : 'unlock',
+      icon: nextBlock ? 'shield-alert' : 'shield-check',
     });
 
     if (!confirmed) return;
@@ -223,7 +248,7 @@ export default function AdminTokenPopover({
           tokenNo: student.tokenNo,
           ticketId: student.pendingUnblockRequest.ticketId,
           reviewerInfo: { uid: user?.uid, name: user?.displayName || user?.email, email: user?.email, role },
-          resolutionNote: 'Unlocked from Master Board Popover',
+          resolutionNote: 'Unblocked from Master Board Popover',
         });
       } else {
         await firebase
@@ -232,7 +257,7 @@ export default function AdminTokenPopover({
           .doc(student.id)
           .update({
             block: nextBlock,
-            blockReason: nextBlock ? 'Locked by admin from Master Board' : '',
+            blockReason: nextBlock ? 'Blocked by admin from Master Board' : '',
             pendingUnblockRequest: nextBlock ? (student.pendingUnblockRequest || null) : null,
             lastUpdatedBy: user?.email || 'admin',
             updatedAt: new Date().toISOString(),
@@ -402,9 +427,9 @@ export default function AdminTokenPopover({
             </span>
 
             {isBlocked ? (
-              <span className="inline-flex items-center gap-1 font-bold text-gray-500 dark:text-gray-400">
-                <Lock className="w-3.5 h-3.5" />
-                <span>{t('accountLocked', 'Account Locked')}</span>
+              <span className="inline-flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400">
+                <Ban className="w-3.5 h-3.5" />
+                <span>{t('accountBlocked', 'Account Blocked')}</span>
               </span>
             ) : activeExc ? (
               <span className="inline-flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400">
@@ -499,8 +524,8 @@ export default function AdminTokenPopover({
                   : 'text-gray-500 hover:text-rose-500 dark:hover:text-rose-400'
               }`}
             >
-              {isBlocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-              <span>{isBlocked ? t('unlockStudent', 'Unlock Student') : t('lockStudent', 'Lock Student')}</span>
+              {isBlocked ? <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> : <Ban className="w-3.5 h-3.5 text-rose-500" />}
+              <span>{isBlocked ? (t('unblockStudent') || 'Unblock Student') : (t('blockStudent') || 'Block Student')}</span>
             </button>
           </div>
         </motion.div>

@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -18,6 +19,7 @@ import {
   Eye,
   Printer,
   Share2,
+  Ban,
 } from 'lucide-react';
 import UniversalDocumentModal from './export/UniversalDocumentModal';
 import { dialog } from '../utils/dialog';
@@ -73,7 +75,7 @@ export default function BulkActionModal({
   // Password reset roster state
   const [generatedRoster, setGeneratedRoster] = useState(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const count = selectedStudents.length;
 
@@ -255,7 +257,7 @@ export default function BulkActionModal({
     }
   };
 
-  // 4. Bulk Status (Lock/Unlock)
+  // 4. Bulk Status (Block/Unblock)
   const handleBulkStatus = async () => {
     feedback('tick');
     setLoading(true);
@@ -458,7 +460,7 @@ export default function BulkActionModal({
     { key: 'sa', label: t('days')?.sa || 'Sat' },
   ];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -496,7 +498,7 @@ export default function BulkActionModal({
           {[
             { id: 'meals', label: 'Meals', icon: Utensils },
             { id: 'dietary', label: 'Dietary', icon: Coffee },
-            { id: 'status', label: 'Lock/Unlock', icon: ShieldCheck },
+            { id: 'status', label: 'Block/Unblock', icon: Ban },
             ...(isCentralCommittee
               ? [
                   { id: 'batch', label: 'Batch', icon: Layers },
@@ -734,7 +736,7 @@ export default function BulkActionModal({
             </div>
           )}
 
-          {/* TAB 4: LOCK / UNLOCK */}
+          {/* TAB 4: BLOCK / UNBLOCK */}
           {activeAction === 'status' && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -761,20 +763,20 @@ export default function BulkActionModal({
                   }`}
                 >
                   <ShieldAlert className="w-6 h-6 text-rose-500" />
-                  <span>Block (Lock Tokens)</span>
+                  <span>Block (Suspend Meals)</span>
                 </button>
               </div>
 
               {newBlockStatus && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                    Reason for Locking
+                    Reason for Blocking
                   </label>
                   <input
                     type="text"
                     value={bulkBlockReason}
                     onChange={(e) => setBulkBlockReason(e.target.value)}
-                    placeholder="e.g. Vacation period, semester break"
+                    placeholder="e.g. Food waste after token ON, late arrival, unpaid fine"
                     className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-[#15221e] border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/40"
                   />
                 </div>
@@ -888,6 +890,7 @@ export default function BulkActionModal({
         onClose={() => setUniversalDoc({ isOpen: false, data: null })}
         documentData={universalDoc.data}
       />
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -164,7 +165,7 @@ export default function StaffManagementModal({ isOpen, onClose }) {
     });
   }, [enrichedAuthUsers, authSearchQuery, authFilter]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const handleSelectAuthUser = (au) => {
     feedback('tick');
@@ -390,7 +391,7 @@ export default function StaffManagementModal({ isOpen, onClose }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -826,6 +827,7 @@ export default function StaffManagementModal({ isOpen, onClose }) {
           )}
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

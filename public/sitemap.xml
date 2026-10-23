@@ -33,7 +33,17 @@
     </image:image>
   </url>
 
-  <!-- 4. Breakfast Supply Manifest & Summary -->
+  <!-- 4. Consolidated Daily Supply Manifest -->
+  <url>
+    <loc>https://canteen.alathurpadidars.in/supply</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/supply" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/supply" />
+  </url>
+
+  <!-- 4b. Breakfast Supply Manifest & Summary -->
   <url>
     <loc>https://canteen.alathurpadidars.in/breakfast</loc>
     <lastmod>2026-10-22</lastmod>

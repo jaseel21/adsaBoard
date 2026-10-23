@@ -29,6 +29,7 @@ function AdminLogin() {
   const location = useLocation();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
+  const { setUser, setRole, setStaffProfile, setLoadingAuth } = useContext(AuthContext);
 
   const redirectTarget = location.state?.from;
   const noticeMessage = location.state?.notice;
@@ -53,19 +54,20 @@ function AdminLogin() {
         await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
       }
 
+      // Signal in AuthContext that authentication is in-flight
+      if (setLoadingAuth) setLoadingAuth(true);
+
       // Authenticate with Firebase Authentication
       const userCredential = await firebase.auth().signInWithEmailAndPassword(email.trim(), password);
-
-      // Dynamically seed Super Admin if this is navarmp@gmail.com or initial seed
-      await seedSuperAdmin(userCredential.user);
 
       // Determine authenticated user's role dynamically from Firestore staff_users
       let staffRole = null;
       let staffName = userCredential.user?.displayName;
       let isActiveStaff = false;
+      let resolvedProfile = null;
 
       try {
-        // 1. Direct UID lookup
+        // 1. Direct UID lookup (single fast document read)
         const staffDoc = await firebase
           .firestore()
           .collection('staff_users')
@@ -78,22 +80,44 @@ function AdminLogin() {
             staffRole = sData.role;
             staffName = sData.displayName || staffName;
             isActiveStaff = true;
+            resolvedProfile = sData;
           }
         } else {
-          // 2. Fallback email lookup in staff_users
-          const emailQuery = await firebase
-            .firestore()
-            .collection('staff_users')
-            .where('email', '==', email.trim().toLowerCase())
-            .limit(1)
-            .get();
+          // 2. Check dynamic Super Admin seeding if not yet created
+          const seeded = await seedSuperAdmin(userCredential.user);
+          if (seeded && seeded.role && seeded.status === 'active') {
+            staffRole = seeded.role;
+            staffName = seeded.displayName || staffName;
+            isActiveStaff = true;
+            resolvedProfile = seeded;
+          } else {
+            // 3. Fallback email lookup in staff_users
+            const emailQuery = await firebase
+              .firestore()
+              .collection('staff_users')
+              .where('email', '==', email.trim().toLowerCase())
+              .limit(1)
+              .get();
 
-          if (!emailQuery.empty) {
-            const matchedData = emailQuery.docs[0].data();
-            if (matchedData.status === 'active' && matchedData.role) {
-              staffRole = matchedData.role;
-              staffName = matchedData.displayName || staffName;
-              isActiveStaff = true;
+            if (!emailQuery.empty) {
+              const matchedDoc = emailQuery.docs[0];
+              const matchedData = matchedDoc.data();
+              if (matchedData.status === 'active' && matchedData.role) {
+                staffRole = matchedData.role;
+                staffName = matchedData.displayName || staffName;
+                isActiveStaff = true;
+                resolvedProfile = {
+                  ...matchedData,
+                  uid: userCredential.user.uid,
+                };
+                // Link UID asynchronously in background
+                firebase
+                  .firestore()
+                  .collection('staff_users')
+                  .doc(userCredential.user.uid)
+                  .set(resolvedProfile, { merge: true })
+                  .catch(console.warn);
+              }
             }
           }
         }
@@ -103,9 +127,10 @@ function AdminLogin() {
 
       // FAIL-SECURE GATE: Reject unprovisioned accounts
       if (!isActiveStaff || !staffRole) {
+        if (setLoadingAuth) setLoadingAuth(false);
         await firebase.auth().signOut();
 
-        await logAuditEvent({
+        logAuditEvent({
           category: AUDIT_CATEGORIES.SECURITY,
           action: 'UNAUTHORIZED_ACCESS_ATTEMPT',
           severity: AUDIT_SEVERITIES.WARNING,
@@ -122,7 +147,7 @@ function AdminLogin() {
           metadata: {
             reason: 'Account authenticated in Firebase but lacks active staff_users assignment',
           },
-        });
+        }).catch(console.warn);
 
         dialog.alert({
           type: 'error',
@@ -133,8 +158,14 @@ function AdminLogin() {
         return;
       }
 
-      // Log successful security audit event
-      await logAuditEvent({
+      // Optimistically synchronize AuthContext so downstream route guards have active role immediately
+      if (setUser) setUser(userCredential.user);
+      if (setStaffProfile && resolvedProfile) setStaffProfile(resolvedProfile);
+      if (setRole) setRole(staffRole);
+      if (setLoadingAuth) setLoadingAuth(false);
+
+      // Log successful security audit event in the background (non-blocking)
+      logAuditEvent({
         category: AUDIT_CATEGORIES.SECURITY,
         action: 'ADMIN_LOGIN',
         severity: AUDIT_SEVERITIES.NOTICE,
@@ -148,15 +179,16 @@ function AdminLogin() {
         changes: {
           diffSummary: `Staff authenticated dynamically as ${staffRole} (${email})`,
         },
-      });
+      }).catch(console.warn);
 
       feedback('success');
 
-      // Smart routing: if coming from a specific guarded route, return there; otherwise go to role home
-      const destination = redirectTarget || getRoleHomeRoute(staffRole);
+      // Smart routing: if coming from a specific guarded route, return there; otherwise go to role home (e.g. /admin)
+      const destination = redirectTarget || getRoleHomeRoute(staffRole) || '/admin';
       navigate(destination, { replace: true });
     } catch (error) {
-      await logAuditEvent({
+      if (setLoadingAuth) setLoadingAuth(false);
+      logAuditEvent({
         category: AUDIT_CATEGORIES.SECURITY,
         action: 'UNAUTHORIZED_ACCESS_ATTEMPT',
         severity: AUDIT_SEVERITIES.WARNING,
@@ -173,7 +205,7 @@ function AdminLogin() {
         metadata: {
           errorMessage: error.message,
         },
-      });
+      }).catch(console.warn);
 
       dialog.alert({
         type: 'error',

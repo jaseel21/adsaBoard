@@ -43,6 +43,7 @@ import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { useTokenBoardController } from '../utils/useTokenBoardController';
 
 import TokenLockManagerModal from './TokenLockManagerModal';
+import BlockManagementModal from './admin/BlockManagementModal';
 import StudentDrawer from './StudentDrawer';
 import AuditLiveTicker from './audit/AuditLiveTicker';
 import StaffManagementModal from './StaffManagementModal';
@@ -136,6 +137,7 @@ export default function Admin() {
 
   // Modals & Popover State
   const [showLockManagerModal, setShowLockManagerModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [showDietaryModal, setShowDietaryModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [popoverStudent, setPopoverStudent] = useState(null);
@@ -340,6 +342,7 @@ export default function Admin() {
         lockStartTime={lockStartTime}
         lockEndTime={lockEndTime}
         onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
+        onOpenBlockModal={() => setShowBlockModal(true)}
         onToggleLock={isCentralCommittee ? toggleBoardLock : null}
         onOpenStaffModal={isCentralCommittee ? () => setShowStaffModal(true) : null}
         isCentralCommittee={isCentralCommittee}
@@ -1024,10 +1027,17 @@ export default function Admin() {
         onDeleted={handleStudentDeleted}
       />
 
-      {/* 3. Token Lock & Cutoff Schedule Manager Modal */}
+      {/* 3. Token Board Cutoff Lock Manager Modal */}
       <TokenLockManagerModal
         isOpen={showLockManagerModal}
         onClose={() => setShowLockManagerModal(false)}
+      />
+
+      {/* 3.5 Dedicated Canteen Block & Fine Registry Modal */}
+      <BlockManagementModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        allStudents={documents}
       />
 
       {/* 4. Kitchen Dietary Distribution Modal */}
@@ -1058,6 +1068,7 @@ export default function Admin() {
         onOpenDietary={() => setShowDietaryModal(true)}
         onOpenStaff={isCentralCommittee ? () => setShowStaffModal(true) : null}
         onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
+        onOpenBlockModal={() => setShowBlockModal(true)}
         navigate={navigate}
         isLunch={isLunch}
         effectiveMode={effectiveMode}

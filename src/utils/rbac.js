@@ -151,14 +151,13 @@ export function getRoleHomeRoute(role) {
     case ROLES.COOK:
       return '/kitchen';
     case ROLES.CANTEEN_COMMITTEE:
-      return '/admin/menu';
     case ROLES.CENTRAL_COMMITTEE:
     case ROLES.DEVELOPER:
       return '/admin';
     case ROLES.STUDENT:
       return '/student';
     default:
-      return '/';
+      return null;
   }
 }
 

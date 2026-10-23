@@ -9,6 +9,15 @@ import { generateTicketNumber, saveLocalRecentTicket, appendTicketMessage } from
  */
 
 export const UNBLOCK_REASONS = {
+  fine_cleared: {
+    id: 'fine_cleared',
+    key: 'reasonFineCleared',
+    labelEn: 'Food Waste Fine Settled',
+    labelMl: 'ഭക്ഷണം പാഴാക്കൽ പിഴ അടച്ചുതീർത്തു',
+    icon: 'Receipt',
+    descriptionEn: 'The required meal waste / late attendance fine was paid at the office.',
+    descriptionMl: 'ഭക്ഷണം പാഴാക്കൽ / വൈകിവരൽ പിഴ ഓഫീസിൽ അടച്ചുതീർത്തു.',
+  },
   fee_cleared: {
     id: 'fee_cleared',
     key: 'reasonFeeCleared',
@@ -219,6 +228,8 @@ export async function approveUnblockRequest({
     batch.update(targetStudentDoc.ref, {
       block: false,
       blockReason: '',
+      blockCategory: null,
+      fineStatus: 'paid',
       pendingUnblockRequest: null,
       lastUnblockedAt: isoNow,
       lastUnblockedBy: reviewerName,

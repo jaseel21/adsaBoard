@@ -21,6 +21,8 @@ import {
   X,
   UtensilsCrossed,
   Home,
+  Ban,
+  Check,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
@@ -29,6 +31,7 @@ import { useFeedback } from '../utils/useFeedback';
 import StudentDrawer from './StudentDrawer';
 import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
+import BlockManagementModal from './admin/BlockManagementModal';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { AuthContext } from '../store/AuthContext';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
@@ -73,6 +76,7 @@ export default function StudentManagement() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [preferences, setPreferences] = useState([]);
 
   useEffect(() => {
@@ -275,7 +279,7 @@ export default function StudentManagement() {
       } else {
         await firebase.firestore().collection('students').doc(student.id).update({
           block: nextStatus,
-          blockReason: nextStatus ? (student.blockReason || 'Locked from Student Management') : '',
+          blockReason: nextStatus ? (student.blockReason || 'Blocked from Student Directory') : '',
           pendingUnblockRequest: nextStatus ? (student.pendingUnblockRequest || null) : null,
           updatedAt: new Date().toISOString()
         });
@@ -438,6 +442,18 @@ export default function StudentManagement() {
           <button
             onClick={() => {
               feedback('tick');
+              setBlockModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-400 border border-rose-300/60 dark:border-rose-500/30 font-bold text-xs transition-colors cursor-pointer"
+            title="Open Block & Fine Management Console"
+          >
+            <Ban className="w-3.5 h-3.5 text-rose-500" />
+            <span>Block Registry</span>
+          </button>
+
+          <button
+            onClick={() => {
+              feedback('tick');
               navigate('/admin/dietary');
             }}
             className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors"
@@ -497,7 +513,7 @@ export default function StudentManagement() {
               {stats.active} Active
             </span>
             <span className="px-1.5 sm:px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400">
-              {stats.blocked} Locked
+              {stats.blocked} Blocked
             </span>
           </div>
         </div>
@@ -845,8 +861,8 @@ export default function StudentManagement() {
                                   : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
                               }`}
                             >
-                              {isBlocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                              <span>{isBlocked ? 'Locked' : 'Active'}</span>
+                              {isBlocked ? <Ban className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                              <span>{isBlocked ? 'Blocked' : 'Active'}</span>
                             </button>
                             {isBlocked && st.pendingUnblockRequest?.status === 'pending' && (
                               <span
@@ -947,7 +963,7 @@ export default function StudentManagement() {
                             : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
                         }`}
                       >
-                        {isBlocked ? 'Locked' : 'Active'}
+                        {isBlocked ? 'Blocked' : 'Active'}
                       </button>
                       {isBlocked && st.pendingUnblockRequest?.status === 'pending' && (
                         <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 animate-pulse">
@@ -1063,6 +1079,13 @@ export default function StudentManagement() {
         onImportComplete={() => {
           setSelectedIds(new Set());
         }}
+      />
+
+      {/* Dedicated Block & Fine Management Console */}
+      <BlockManagementModal
+        isOpen={blockModalOpen}
+        onClose={() => setBlockModalOpen(false)}
+        allStudents={students}
       />
     </div>
   );

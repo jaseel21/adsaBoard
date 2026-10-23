@@ -42,6 +42,13 @@ const ROUTES = [
     url: `${BASE_DOMAIN}/guide`,
   },
   {
+    path: 'supply',
+    title: 'Consolidated Kitchen Supply Manifest • ADSA T-Board',
+    description: 'Real-time kitchen dining manifest, preparation headcounts, dynamic section groupings, and dietary avoiders for Alathurpadi Dars.',
+    image: `${BASE_DOMAIN}/og-preview.png`,
+    url: `${BASE_DOMAIN}/supply`,
+  },
+  {
     path: 'breakfast',
     title: 'Breakfast Supply Manifest & Section Logistics • ADSA T-Board',
     description: 'Real-time morning meal attendance counts, section division manifests, and dietary avoiders for Alathurpadi Dars.',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   X,
@@ -46,7 +47,7 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
     return () => unsub();
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const currentPresets = Array.isArray(presetsMap[selectedSlot]) ? presetsMap[selectedSlot] : [];
 
@@ -117,7 +118,7 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-md"
       onClick={onClose}
@@ -333,6 +334,7 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
           </div>
         </form>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

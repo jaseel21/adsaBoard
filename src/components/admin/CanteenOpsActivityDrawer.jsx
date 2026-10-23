@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -17,6 +17,8 @@ import {
   Filter,
 } from 'lucide-react';
 import firebase from '../../firebase/config';
+import { AuthContext } from '../../store/AuthContext';
+import { ROLES } from '../../utils/rbac';
 import { useFeedback } from '../../utils/useFeedback';
 import { formatAuditTime, AUDIT_CATEGORIES } from '../../utils/auditLogger';
 
@@ -24,6 +26,7 @@ import { formatAuditTime, AUDIT_CATEGORIES } from '../../utils/auditLogger';
  * Canteen & Supply Operations Activity Drawer
  * Provides committee administrators with a centralized real-time audit log
  * of all kitchen manifest prints, token status toggles, and dietary avoidance updates.
+ * STRICTLY ADMIN-ONLY: Developer, Central Committee, and Canteen Committee.
  */
 export default function CanteenOpsActivityDrawer({
   isOpen,
@@ -31,6 +34,17 @@ export default function CanteenOpsActivityDrawer({
   activeMeal = 'all',
   targetDateIST = null,
 }) {
+  const { user, role, isAdmin: contextIsAdmin } = useContext(AuthContext);
+  const isAdmin = Boolean(
+    contextIsAdmin ?? (
+      user && (
+        role === ROLES.DEVELOPER ||
+        role === ROLES.CENTRAL_COMMITTEE ||
+        role === ROLES.CANTEEN_COMMITTEE
+      )
+    )
+  );
+
   const { feedback } = useFeedback();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +52,10 @@ export default function CanteenOpsActivityDrawer({
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isAdmin) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     // Subscribe to audit logs for canteen, dietary, and tokens
@@ -86,7 +103,7 @@ export default function CanteenOpsActivityDrawer({
       );
 
     return () => unsub();
-  }, [isOpen]);
+  }, [isOpen, isAdmin]);
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
@@ -156,6 +173,8 @@ export default function CanteenOpsActivityDrawer({
       label: 'Token Toggle',
     };
   };
+
+  if (!isOpen || !isAdmin) return null;
 
   return (
     <AnimatePresence>

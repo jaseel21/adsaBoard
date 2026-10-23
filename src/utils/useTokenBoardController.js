@@ -351,8 +351,70 @@ export function useTokenBoardController(options = {}) {
       groups[b].push(doc);
     });
 
+    const mealKey = isLunch ? 'lunch' : 'breakfast';
+    const list = Object.entries(groups).map(([name, students]) => {
+      const activeCount = students.filter(
+        (doc) => !doc.block && getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, mealKey)
+      ).length;
+      return {
+        name,
+        students,
+        activeCount,
+        totalCount: students.length,
+      };
+    });
+
+    // Provide non-enumerable array methods so groupedByBatch can be mapped or iterated directly as an array
+    // while Object.entries(groupedByBatch) continues to yield [batchName, students] for Admin and Radar
+    Object.defineProperty(groups, 'map', {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: function (callback) {
+        return list.map(callback);
+      },
+    });
+
+    Object.defineProperty(groups, 'forEach', {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: function (callback) {
+        return list.forEach(callback);
+      },
+    });
+
+    Object.defineProperty(groups, 'filter', {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: function (callback) {
+        return list.filter(callback);
+      },
+    });
+
+    Object.defineProperty(groups, 'list', {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: list,
+    });
+
+    Object.defineProperty(groups, Symbol.iterator, {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: function* () {
+        yield* list;
+      },
+    });
+
     return groups;
-  }, [allBatches, filteredDocuments]);
+  }, [allBatches, filteredDocuments, isLunch, targetDateIST, effectiveDay]);
+
+  const groupedByBatchList = useMemo(() => {
+    return groupedByBatch.list || [];
+  }, [groupedByBatch]);
 
   // Grouping Mode 3: By Mess Distribution Sections (Chunks dynamically configured in DB)
   const groupedBySection = useMemo(() => {
@@ -527,6 +589,7 @@ export function useTokenBoardController(options = {}) {
     viewDensity,
     setViewDensity,
     groupedByBatch,
+    groupedByBatchList,
     groupedBySection,
     sectionChunkSize,
     collapsedBatches,

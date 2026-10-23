@@ -25,46 +25,45 @@ export default function Context({ children }) {
     let unsubStaff = null;
 
     const unsubAuth = firebase.auth().onAuthStateChanged(async (currentUser) => {
-      setUser(currentUser);
-
       if (unsubStaff) {
         unsubStaff();
         unsubStaff = null;
       }
 
       if (!currentUser) {
+        setUser(null);
         setStaffProfile(null);
         setRole(null);
         setLoadingAuth(false);
         return;
       }
 
+      // Mark auth as loading while staff role is resolving
+      setLoadingAuth(true);
+      setUser(currentUser);
+
       try {
         const normalizedEmail = (currentUser.email || '').toLowerCase().trim();
 
-        // 1. Maintain registry of authenticated accounts for Staff Management selection
-        try {
-          await firebase
-            .firestore()
-            .collection('auth_users')
-            .doc(currentUser.uid)
-            .set(
-              {
-                uid: currentUser.uid,
-                email: normalizedEmail,
-                displayName: currentUser.displayName || normalizedEmail.split('@')[0] || 'Auth User',
-                lastSeenAt: new Date().toISOString(),
-              },
-              { merge: true }
-            );
-        } catch (authRegistryErr) {
-          console.warn('Could not update auth_users registry:', authRegistryErr);
-        }
+        // 1. Maintain registry of authenticated accounts in the background (non-blocking)
+        firebase
+          .firestore()
+          .collection('auth_users')
+          .doc(currentUser.uid)
+          .set(
+            {
+              uid: currentUser.uid,
+              email: normalizedEmail,
+              displayName: currentUser.displayName || normalizedEmail.split('@')[0] || 'Auth User',
+              lastSeenAt: new Date().toISOString(),
+            },
+            { merge: true }
+          )
+          .catch((authRegistryErr) => {
+            console.warn('Could not update auth_users registry:', authRegistryErr);
+          });
 
-        // 2. Dynamically seed Super Admin if this is navarmp@gmail.com or designated seed
-        await seedSuperAdmin(currentUser);
-
-        // 3. Setup real-time listener for live role updates on staff_users
+        // 2. Setup real-time listener for live role updates on staff_users immediately
         const staffRef = firebase.firestore().collection('staff_users').doc(currentUser.uid);
 
         unsubStaff = staffRef.onSnapshot(
@@ -81,9 +80,18 @@ export default function Context({ children }) {
               }
               setLoadingAuth(false);
             } else {
-              // 4. Check if account was pre-provisioned by email in staff_users before sign in
-              let preProvisionedDoc = null;
+              // 3. Document does not exist directly under UID: Check seed or pre-provisioned email
               try {
+                // Check dynamic super admin seeding
+                const seeded = await seedSuperAdmin(currentUser);
+                if (seeded && seeded.role) {
+                  setStaffProfile(seeded);
+                  setRole(seeded.role);
+                  setLoadingAuth(false);
+                  return;
+                }
+
+                // 4. Check if account was pre-provisioned by email in staff_users before sign in
                 const emailQuery = await firebase
                   .firestore()
                   .collection('staff_users')
@@ -92,43 +100,41 @@ export default function Context({ children }) {
                   .get();
 
                 if (!emailQuery.empty) {
-                  preProvisionedDoc = emailQuery.docs[0];
-                }
-              } catch (qErr) {
-                console.warn('Could not query staff_users by email:', qErr);
-              }
+                  const preProvisionedDoc = emailQuery.docs[0];
+                  const preData = preProvisionedDoc.data();
+                  const updatedProfile = {
+                    ...preData,
+                    uid: currentUser.uid,
+                    lastLoginAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  };
 
-              if (preProvisionedDoc && preProvisionedDoc.exists) {
-                const preData = preProvisionedDoc.data();
-                const updatedProfile = {
-                  ...preData,
-                  uid: currentUser.uid,
-                  lastLoginAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                };
+                  // Link UID to canonical staff document
+                  try {
+                    await staffRef.set(updatedProfile, { merge: true });
+                  } catch (linkErr) {
+                    console.warn('Could not bind UID to staff profile:', linkErr);
+                  }
 
-                // Link UID to canonical staff document
-                try {
-                  await staffRef.set(updatedProfile, { merge: true });
-                  // If the pre-provisioned doc had a dummy ID, cleanup is optional or handled
-                } catch (linkErr) {
-                  console.warn('Could not bind UID to staff profile:', linkErr);
-                }
-
-                if (updatedProfile.status === 'active') {
-                  setStaffProfile(updatedProfile);
-                  setRole(updatedProfile.role || null);
+                  if (updatedProfile.status === 'active') {
+                    setStaffProfile(updatedProfile);
+                    setRole(updatedProfile.role || null);
+                  } else {
+                    setStaffProfile(updatedProfile);
+                    setRole(null);
+                  }
                 } else {
-                  setStaffProfile(updatedProfile);
+                  // FAIL-SECURE: Unprovisioned users have null role.
+                  setStaffProfile(null);
                   setRole(null);
                 }
-              } else {
-                // FAIL-SECURE: Do NOT auto-grant Central Committee. Unprovisioned users have null role.
+              } catch (resErr) {
+                console.warn('Error during fallback staff lookup:', resErr);
                 setStaffProfile(null);
                 setRole(null);
+              } finally {
+                setLoadingAuth(false);
               }
-
-              setLoadingAuth(false);
             }
           },
           (err) => {
@@ -172,6 +178,13 @@ export default function Context({ children }) {
   const isCanteenCommittee = role === ROLES.CANTEEN_COMMITTEE || isCentralCommittee;
   const isCook = role === ROLES.COOK;
   const isAuthorizedStaff = Boolean(role && staffProfile?.status === 'active');
+  const isAdmin = Boolean(
+    user && (
+      role === ROLES.DEVELOPER ||
+      role === ROLES.CENTRAL_COMMITTEE ||
+      role === ROLES.CANTEEN_COMMITTEE
+    )
+  );
 
   const roleBadge = useMemo(() => getRoleBadgeInfo(role), [role]);
   const homeRoute = useMemo(() => getRoleHomeRoute(role), [role]);
@@ -192,8 +205,13 @@ export default function Context({ children }) {
       user,
       setUser,
       staffProfile,
+      setStaffProfile,
       role,
+      setRole,
+      userRole: role,
+      isAdmin,
       loadingAuth,
+      setLoadingAuth,
       hasRole,
       hasPermission,
       isDeveloper,
@@ -210,6 +228,7 @@ export default function Context({ children }) {
       user,
       staffProfile,
       role,
+      isAdmin,
       loadingAuth,
       hasRole,
       hasPermission,

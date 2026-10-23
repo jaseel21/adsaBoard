@@ -139,9 +139,12 @@ export default function StudentDashboard() {
     allBatches,
     preferencesList,
     groupedByBatch,
+    groupedByBatchList,
     groupedBySection,
     collapsedBatches,
     toggleBatchCollapse,
+    collapseAllBatches,
+    expandAllBatches,
     resetAllFilters,
     hasActiveFilters,
     activeFilterCount,
@@ -150,6 +153,32 @@ export default function StudentDashboard() {
     timeHms,
     sectionChunkSize,
   } = controller;
+
+  // Resilient batch list resolution: supports both array and object representations
+  const batchList = useMemo(() => {
+    if (Array.isArray(groupedByBatchList) && groupedByBatchList.length > 0) {
+      return groupedByBatchList;
+    }
+    if (Array.isArray(groupedByBatch)) {
+      return groupedByBatch;
+    }
+    if (Array.isArray(groupedByBatch?.list)) {
+      return groupedByBatch.list;
+    }
+    const mealKey = isLunch ? 'lunch' : 'breakfast';
+    return Object.entries(groupedByBatch || {}).map(([name, students]) => {
+      const studentArr = Array.isArray(students) ? students : [];
+      const activeCount = studentArr.filter(
+        (doc) => !doc.block && getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, mealKey)
+      ).length;
+      return {
+        name,
+        students: studentArr,
+        activeCount,
+        totalCount: studentArr.length,
+      };
+    });
+  }, [groupedByBatch, groupedByBatchList, isLunch, targetDateIST, effectiveDay]);
 
   // UI state: Modals, Ribbons & Collapsible Filter Toolbar (collapsed by default)
   const [detailsDoc, setDetailsDoc] = useState(null);
@@ -1153,38 +1182,45 @@ export default function StudentDashboard() {
                 {t('resetAllFilters', 'Reset All Filters')}
               </button>
             </div>
-          ) : viewDensity === 'cards' ? (
-            /* Detailed Student Cards View */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {filteredDocuments.map((doc) => {
-                const isOn = getEffectiveStudentMealStatus(
-                  doc,
-                  targetDateIST,
-                  effectiveDay,
-                  isLunch ? 'lunch' : 'breakfast'
-                );
-                const isBlocked = Boolean(doc.block);
-                const hasDateExc = Boolean(
-                  getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
-                );
-
-                return (
-                  <TokenCard
-                    key={doc.id || doc.tokenNo}
-                    doc={doc}
-                    isOn={isOn}
-                    onLeave={hasDateExc}
-                    isBlocked={isBlocked}
-                    isLunch={isLunch}
-                    onClick={handleOpenDetails}
-                  />
-                );
-              })}
-            </div>
           ) : viewCategory === 'batch' ? (
             /* By Academic Batch Accordions View */
             <div className="space-y-4">
-              {groupedByBatch.map((batch) => {
+              {batchList.filter((b) => b.students && b.students.length > 0).length > 0 && (
+                <div className="flex items-center justify-between gap-2 mb-2 px-1 text-xs">
+                  <span className="text-gray-500 dark:text-gray-400 font-semibold">
+                    {t('batchesSummary', '{count} batches active').replace(
+                      '{count}',
+                      batchList.filter((b) => b.students && b.students.length > 0).length
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        expandAllBatches();
+                      }}
+                      className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                    >
+                      {t('expandAll', 'Expand All')}
+                    </button>
+                    <span className="text-gray-300 dark:text-gray-600">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        collapseAllBatches();
+                      }}
+                      className="text-gray-500 dark:text-gray-400 font-medium hover:underline cursor-pointer"
+                    >
+                      {t('collapseAll', 'Collapse All')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {batchList.map((batch) => {
+                if (!batch.students || batch.students.length === 0) return null;
                 const isCollapsed = Boolean(collapsedBatches[batch.name]);
                 return (
                   <div
@@ -1226,27 +1262,57 @@ export default function StudentDashboard() {
                     </button>
 
                     {!isCollapsed && (
-                      <div className="p-4 sm:p-5 flex flex-wrap gap-2 min-[380px]:gap-2.5 sm:gap-3">
-                        {batch.students.map((doc) => {
-                          const isOn = getEffectiveStudentMealStatus(
-                            doc,
-                            targetDateIST,
-                            effectiveDay,
-                            isLunch ? 'lunch' : 'breakfast'
-                          );
-                          const hasDateExc = Boolean(
-                            getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
-                          );
-                          return (
-                            <TokenButton
-                              key={doc.id || doc.tokenNo}
-                              doc={doc}
-                              isOn={isOn}
-                              onLeave={hasDateExc}
-                              onClick={handleOpenDetails}
-                            />
-                          );
-                        })}
+                      <div className="p-4 sm:p-5">
+                        {viewDensity === 'cards' ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                            {batch.students.map((doc) => {
+                              const isOn = getEffectiveStudentMealStatus(
+                                doc,
+                                targetDateIST,
+                                effectiveDay,
+                                isLunch ? 'lunch' : 'breakfast'
+                              );
+                              const isBlocked = Boolean(doc.block);
+                              const hasDateExc = Boolean(
+                                getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                              );
+                              return (
+                                <TokenCard
+                                  key={doc.id || doc.tokenNo}
+                                  doc={doc}
+                                  isOn={isOn}
+                                  onLeave={hasDateExc}
+                                  isBlocked={isBlocked}
+                                  isLunch={isLunch}
+                                  onClick={handleOpenDetails}
+                                />
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 min-[380px]:gap-2.5 sm:gap-3">
+                            {batch.students.map((doc) => {
+                              const isOn = getEffectiveStudentMealStatus(
+                                doc,
+                                targetDateIST,
+                                effectiveDay,
+                                isLunch ? 'lunch' : 'breakfast'
+                              );
+                              const hasDateExc = Boolean(
+                                getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                              );
+                              return (
+                                <TokenButton
+                                  key={doc.id || doc.tokenNo}
+                                  doc={doc}
+                                  isOn={isOn}
+                                  onLeave={hasDateExc}
+                                  onClick={handleOpenDetails}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1281,30 +1347,88 @@ export default function StudentDashboard() {
                     </span>
                   </div>
 
-                  <div className="p-4 sm:p-5 flex flex-wrap gap-2 min-[380px]:gap-2.5 sm:gap-3">
-                    {sec.students.map((doc) => {
-                      const isOn = getEffectiveStudentMealStatus(
-                        doc,
-                        targetDateIST,
-                        effectiveDay,
-                        isLunch ? 'lunch' : 'breakfast'
-                      );
-                      const hasDateExc = Boolean(
-                        getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
-                      );
-                      return (
-                        <TokenButton
-                          key={doc.id || doc.tokenNo}
-                          doc={doc}
-                          isOn={isOn}
-                          onLeave={hasDateExc}
-                          onClick={handleOpenDetails}
-                        />
-                      );
-                    })}
+                  <div className="p-4 sm:p-5">
+                    {viewDensity === 'cards' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                        {sec.students.map((doc) => {
+                          const isOn = getEffectiveStudentMealStatus(
+                            doc,
+                            targetDateIST,
+                            effectiveDay,
+                            isLunch ? 'lunch' : 'breakfast'
+                          );
+                          const isBlocked = Boolean(doc.block);
+                          const hasDateExc = Boolean(
+                            getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                          );
+                          return (
+                            <TokenCard
+                              key={doc.id || doc.tokenNo}
+                              doc={doc}
+                              isOn={isOn}
+                              onLeave={hasDateExc}
+                              isBlocked={isBlocked}
+                              isLunch={isLunch}
+                              onClick={handleOpenDetails}
+                            />
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 min-[380px]:gap-2.5 sm:gap-3">
+                        {sec.students.map((doc) => {
+                          const isOn = getEffectiveStudentMealStatus(
+                            doc,
+                            targetDateIST,
+                            effectiveDay,
+                            isLunch ? 'lunch' : 'breakfast'
+                          );
+                          const hasDateExc = Boolean(
+                            getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                          );
+                          return (
+                            <TokenButton
+                              key={doc.id || doc.tokenNo}
+                              doc={doc}
+                              isOn={isOn}
+                              onLeave={hasDateExc}
+                              onClick={handleOpenDetails}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
+            </div>
+          ) : viewDensity === 'cards' ? (
+            /* Detailed Student Cards View (All Tokens Mode) */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {filteredDocuments.map((doc) => {
+                const isOn = getEffectiveStudentMealStatus(
+                  doc,
+                  targetDateIST,
+                  effectiveDay,
+                  isLunch ? 'lunch' : 'breakfast'
+                );
+                const isBlocked = Boolean(doc.block);
+                const hasDateExc = Boolean(
+                  getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                );
+
+                return (
+                  <TokenCard
+                    key={doc.id || doc.tokenNo}
+                    doc={doc}
+                    isOn={isOn}
+                    onLeave={hasDateExc}
+                    isBlocked={isBlocked}
+                    isLunch={isLunch}
+                    onClick={handleOpenDetails}
+                  />
+                );
+              })}
             </div>
           ) : (
             /* Default: Tactile Square Matrix View (Consistent with Master Board) */

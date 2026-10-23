@@ -33,6 +33,7 @@ export default function DateTurnModal({
   onSaveException,
   onRemoveException,
   onApplyRange,
+  isAdmin = false,
 }) {
   const { feedback } = useFeedback();
   const { t } = useLanguage();
@@ -47,7 +48,7 @@ export default function DateTurnModal({
 
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
   const lockInfo = useMemo(() => (dateStr ? getDateLockStatus(dateStr) : { isLocked: false }), [getDateLockStatus, dateStr]);
-  const isDateLocked = Boolean(lockInfo.isLocked);
+  const isDateLocked = isAdmin ? false : Boolean(lockInfo.isLocked);
 
   // Determine current meal status from student routine + existing exception
   const statusInfo = useMemo(() => {

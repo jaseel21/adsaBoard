@@ -19,6 +19,7 @@ import {
   Layers,
   Clock,
   Sparkles,
+  History,
 } from 'lucide-react';
 import { ROLES, hasRole } from '../../utils/rbac';
 
@@ -164,8 +165,8 @@ export const NAV_ITEMS = [
   },
   {
     id: 'supply_manifest',
-    path: '/breakfast',
-    aliases: ['/lunch', '/supply', '/manifest'],
+    path: '/supply',
+    aliases: ['/manifest', '/breakfast', '/lunch'],
     labelEn: 'Supply Manifest',
     labelMl: 'സപ്ലൈ ഷീറ്റ്',
     shortLabelEn: 'Supply',
@@ -275,6 +276,26 @@ export const NAV_ITEMS = [
     ],
     showInDesktopBar: false,
     keywords: ['dietary console', 'avoidance approval', 'categories', 'ഡയറ്ററി'],
+  },
+  {
+    id: 'canteen_ops_log',
+    action: 'open_ops_log_modal',
+    path: '/admin/ops-log',
+    labelEn: 'Ops Log',
+    labelMl: 'ഓപ്‌സ് ലോഗ്',
+    shortLabelEn: 'Ops Log',
+    shortLabelMl: 'ലോഗ്',
+    category: NAV_CATEGORIES.ADMIN.id,
+    icon: History,
+    descriptionEn: 'Kitchen manifest prints, token status changes & dietary update history',
+    descriptionMl: 'പ്രിന്റ് ഹിസ്റ്ററിയും കിച്ചൻ പ്രവർത്തന ലോഗുകളും',
+    allowedRoles: [
+      ROLES.CANTEEN_COMMITTEE,
+      ROLES.CENTRAL_COMMITTEE,
+      ROLES.DEVELOPER,
+    ],
+    isModalAction: true,
+    keywords: ['ops log', 'operations', 'print history', 'audit', 'kitchen ops', 'ഓപ്സ് ലോഗ്'],
   },
   {
     id: 'notification_manager',

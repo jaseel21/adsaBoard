@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Utensils,
@@ -20,7 +20,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
-import { useWorldTime } from '../utils/time';
+import { useDateController } from '../utils/useDateController';
+import TokenBoardDateRibbon from './ui/TokenBoardDateRibbon';
 import { useFeedback } from '../utils/useFeedback';
 import { useLanguage } from '../store/LanguageContext';
 import {
@@ -29,7 +30,8 @@ import {
 } from '../utils/publicDocumentExporter';
 import useSEO from '../hooks/useSEO';
 import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
-import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
+import { subscribeToCanteenConfig, getCachedCanteenConfig } from '../utils/canteenConfigService';
+import { ROLES } from '../utils/rbac';
 import {
   subscribeToManifestPrint,
   computeManifestFingerprint,
@@ -46,23 +48,36 @@ import CanteenOpsActivityDrawer from './admin/CanteenOpsActivityDrawer';
 import {
   addDaysToDate,
   getEffectiveStudentMealStatus,
-  isPastBoardWindowOpenTime,
+  formatFriendlyDate,
 } from '../utils/studentExceptionService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 
 export default function SupplySections({ defaultMeal }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userRole } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, role, userRole, isAdmin: contextIsAdmin } = useContext(AuthContext);
+  const currentRole = role || userRole;
+  const isAdmin = Boolean(
+    contextIsAdmin ?? (
+      user && (
+        currentRole === ROLES.DEVELOPER ||
+        currentRole === ROLES.CENTRAL_COMMITTEE ||
+        currentRole === ROLES.CANTEEN_COMMITTEE
+      )
+    )
+  );
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  // Determine initial meal from prop or pathname
+  // Determine initial meal from URL query param (?meal=lunch), prop, or pathname
   const initialMeal = useMemo(() => {
+    const queryMeal = searchParams.get('meal');
+    if (queryMeal === 'lunch' || queryMeal === 'breakfast') return queryMeal;
     if (defaultMeal) return defaultMeal;
     if (location.pathname.includes('lunch')) return 'lunch';
     return 'breakfast';
-  }, [defaultMeal, location.pathname]);
+  }, [searchParams, defaultMeal, location.pathname]);
 
   const [activeMeal, setActiveMeal] = useState(initialMeal);
   const [documents, setDocuments] = useState([]);
@@ -71,46 +86,88 @@ export default function SupplySections({ defaultMeal }) {
 
   useSEO({
     title: `${activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'} Supply Manifest`,
-    description: `Official ${activeMeal} dining manifest, preparation counts, section groupings, and student attendance roster for Alathurpadi Dars canteen.`,
-    keywords: `canteen manifest, ${activeMeal} manifest, dars kitchen supply, alathurpadi dars supply`,
+    description: `Official consolidated ${activeMeal} dining manifest, kitchen preparation counts, dynamic section groupings, and student attendance roster for Alathurpadi Dars canteen.`,
+    keywords: `canteen manifest, supply manifest, ${activeMeal} manifest, dars kitchen supply, alathurpadi dars supply`,
     image: '/og-preview.png',
   });
 
-  // Section Display Options: 'batch' (Academic Batches 1-7) | 'size' (Numeric chunks)
-  const [sectionMode, setSectionMode] = useState('batch');
-  const [customChunkSize, setCustomChunkSize] = useState(25);
+  // Section Display Options: 'section' (Dynamic Sections) | 'batch' (Academic Batches 1-7)
+  const [sectionMode, setSectionMode] = useState('section');
+  const [customChunkSize, setCustomChunkSize] = useState(
+    () => getCachedCanteenConfig()?.sectionChunkSize || 25
+  );
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   // Print Tracking & Duplicate Guard State
   const [printRecord, setPrintRecord] = useState(null);
   const [isDuplicateGuardOpen, setIsDuplicateGuardOpen] = useState(false);
-  const [isCanteenLogOpen, setIsCanteenLogOpen] = useState(false);
-
-  const { timeHms, dayShort, longDate, todayIST } = useWorldTime('Asia/Kolkata');
-  const { activeWindow } = useTokenLockStatus();
-  const openTime = activeWindow?.startTime || '14:00';
-
-  // Day selection mode: defaults to Today before open time (eg. 2 PM), Tomorrow after open time
-  const [dayMode, setDayMode] = useState('auto'); // 'auto' | 'today' | 'tomorrow'
-  const isPostCutoff = isPastBoardWindowOpenTime(timeHms, openTime);
-  const isShowingTomorrow = dayMode === 'tomorrow' || (dayMode === 'auto' && isPostCutoff);
-  const [day, setDay] = useState('');
-
-  const targetDateIST = useMemo(() => {
-    return isShowingTomorrow ? addDaysToDate(todayIST, 1) : todayIST;
-  }, [isShowingTomorrow, todayIST]);
+  const [isCanteenLogOpen, setIsCanteenLogOpen] = useState(
+    () => isAdmin && searchParams.get('opsLog') === 'true'
+  );
 
   useEffect(() => {
-    if (!dayShort) return;
-    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-    const currentIndex = days.indexOf(dayShort.toLowerCase());
-    if (isShowingTomorrow) {
-      setDay(days[(currentIndex + 1) % 7]);
-    } else {
-      setDay(days[currentIndex >= 0 ? currentIndex : 0]);
+    if (isAdmin && searchParams.get('opsLog') === 'true') {
+      setIsCanteenLogOpen(true);
     }
-  }, [dayShort, isShowingTomorrow]);
+  }, [isAdmin, searchParams]);
+
+  const handleCloseCanteenLog = () => {
+    setIsCanteenLogOpen(false);
+    if (searchParams.get('opsLog')) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('opsLog');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  };
+
+  const { activeWindow } = useTokenLockStatus();
+  const dateController = useDateController({
+    initialCustomDate: searchParams.get('date') || '',
+    initialDateMode: searchParams.get('date') ? 'custom' : 'auto',
+    autoEveningShift: true,
+    windowOpenTime: activeWindow?.startTime || '14:00',
+  });
+
+  const {
+    targetDateIST,
+    todayIST,
+    effectiveDay,
+    relativeDateMeta,
+    isToday,
+    isTomorrow,
+    isYesterday,
+    isPastDate,
+    dateMode,
+    dayShort,
+    dayFull,
+  } = dateController;
+
+  const handleSelectDate = (dateStr) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (dateStr && dateStr !== todayIST) {
+          next.set('date', dateStr);
+        } else {
+          next.delete('date');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const displayDayFull = useMemo(() => {
+    if (isTomorrow) return 'Tomorrow';
+    if (isToday) return 'Today';
+    return relativeDateMeta?.relativeLabel || formatFriendlyDate(targetDateIST, true);
+  }, [isTomorrow, isToday, relativeDateMeta, targetDateIST]);
 
   // Real-time listener for physical print status of this meal and target date
   useEffect(() => {
@@ -126,10 +183,10 @@ export default function SupplySections({ defaultMeal }) {
     return computeManifestFingerprint({
       documents,
       targetDateIST,
-      effectiveDay: day,
+      effectiveDay,
       meal: activeMeal,
     });
-  }, [documents, targetDateIST, day, activeMeal]);
+  }, [documents, targetDateIST, effectiveDay, activeMeal]);
 
   // Real-time freshness status against the physical kitchen print
   const freshness = useMemo(() => {
@@ -172,14 +229,14 @@ export default function SupplySections({ defaultMeal }) {
 
   // Compute dynamic sections based on selected mode
   const dynamicSections = useMemo(() => {
-    if (documents.length === 0 || !day) return [];
+    if (documents.length === 0 || !effectiveDay) return [];
 
     if (sectionMode === 'batch') {
       const batches = ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5', 'Batch 6', 'Batch 7'];
       return batches.map((bName, idx) => {
         const slice = documents.filter((d) => d.batch === bName);
         const canceledTokens = slice
-          .filter((doc) => !getEffectiveStudentMealStatus(doc, targetDateIST, day, activeMeal))
+          .filter((doc) => !getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, activeMeal))
           .map((doc) => doc.tokenNo);
 
         const rangeStr =
@@ -206,7 +263,7 @@ export default function SupplySections({ defaultMeal }) {
       const slice = documents.slice(start, end);
 
       const canceledTokens = slice
-        .filter((doc) => !getEffectiveStudentMealStatus(doc, targetDateIST, day, activeMeal))
+        .filter((doc) => !getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, activeMeal))
         .map((doc) => doc.tokenNo);
 
       const rangeStr =
@@ -225,7 +282,7 @@ export default function SupplySections({ defaultMeal }) {
     }
 
     return result;
-  }, [documents, day, sectionMode, customChunkSize, activeMeal, targetDateIST]);
+  }, [documents, effectiveDay, sectionMode, customChunkSize, activeMeal, targetDateIST]);
 
   const toggleSection = (id) => {
     feedback('pop');
@@ -235,7 +292,14 @@ export default function SupplySections({ defaultMeal }) {
   const handleMealSwitch = (newMeal) => {
     feedback('pop');
     setActiveMeal(newMeal);
-    navigate(newMeal === 'breakfast' ? '/breakfast' : '/lunch', { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('meal', newMeal);
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   const handleViewSupplyPdf = () => {
@@ -243,10 +307,10 @@ export default function SupplySections({ defaultMeal }) {
     const targetRev = freshness.revision || 1;
     const res = generateSinglePageCombinedManifestDoc({
       targetDateIST,
-      dayKey: day,
-      dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+      dayKey: effectiveDay,
+      dayFull: displayDayFull,
       documents,
-      category: sectionMode === 'size' ? 'sections' : 'batches',
+      category: sectionMode === 'batch' ? 'batches' : 'sections',
       sort: 'ascending',
       chunkSize: Number(customChunkSize) || 25,
       mealFilter: 'both',
@@ -282,10 +346,10 @@ export default function SupplySections({ defaultMeal }) {
 
       const { doc } = generateSinglePageCombinedManifestDoc({
         targetDateIST,
-        dayKey: day,
-        dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+        dayKey: effectiveDay,
+        dayFull: displayDayFull,
         documents,
-        category: sectionMode === 'size' ? 'sections' : 'batches',
+        category: sectionMode === 'batch' ? 'batches' : 'sections',
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
         mealFilter: 'both',
@@ -305,9 +369,9 @@ export default function SupplySections({ defaultMeal }) {
         meal: activeMeal,
         targetDateIST,
         documents,
-        effectiveDay: day,
+        effectiveDay,
         user,
-        role: userRole,
+        role: currentRole,
         printType: 'supply_manifest',
         isDuplicateReprint,
       });
@@ -321,10 +385,10 @@ export default function SupplySections({ defaultMeal }) {
     try {
       const { doc, filename, title } = generateSinglePageCombinedManifestDoc({
         targetDateIST,
-        dayKey: day,
-        dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+        dayKey: effectiveDay,
+        dayFull: displayDayFull,
         documents,
-        category: sectionMode === 'size' ? 'sections' : 'batches',
+        category: sectionMode === 'batch' ? 'batches' : 'sections',
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
         mealFilter: 'both',
@@ -347,10 +411,10 @@ export default function SupplySections({ defaultMeal }) {
     try {
       exportSinglePageCombinedManifestPDF({
         targetDateIST,
-        dayKey: day,
-        dayFull: isShowingTomorrow ? 'Tomorrow' : dayShort,
+        dayKey: effectiveDay,
+        dayFull: displayDayFull,
         documents,
-        category: sectionMode === 'size' ? 'sections' : 'batches',
+        category: sectionMode === 'batch' ? 'batches' : 'sections',
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
         mealFilter: 'both',
@@ -402,42 +466,14 @@ export default function SupplySections({ defaultMeal }) {
             </h1>
           </div>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-            Canceled and active token breakdown for kitchen tables and dining hall sections
-            {isShowingTomorrow ? " (Showing Tomorrow's Manifest)" : " (Showing Today's Manifest)"}
+            Canceled and active token breakdown for kitchen tables and dining hall sections •{' '}
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
+              {relativeDateMeta?.relativeLabel || formatFriendlyDate(targetDateIST)}
+            </span>
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start sm:justify-end">
-          {/* Day Toggle Switch */}
-          <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-bold">
-            <button
-              onClick={() => {
-                feedback('tick');
-                setDayMode('today');
-              }}
-              className={`px-3 py-1.5 rounded-xl transition-all ${
-                !isShowingTomorrow
-                  ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-sm font-black'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => {
-                feedback('tick');
-                setDayMode('tomorrow');
-              }}
-              className={`px-3 py-1.5 rounded-xl transition-all ${
-                isShowingTomorrow
-                  ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-sm font-black'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
-              }`}
-            >
-              Tomorrow
-            </button>
-          </div>
-
           {/* Meal Toggle Switch */}
           <div className="flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
             <button
@@ -470,6 +506,20 @@ export default function SupplySections({ defaultMeal }) {
             <button
               onClick={() => {
                 feedback('tick');
+                setSectionMode('section');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                sectionMode === 'section'
+                  ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-xs'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              By Section (Dynamic)
+            </button>
+
+            <button
+              onClick={() => {
+                feedback('tick');
                 setSectionMode('batch');
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
@@ -480,35 +530,23 @@ export default function SupplySections({ defaultMeal }) {
             >
               By Batch (1-7)
             </button>
-
-            <button
-              onClick={() => {
-                feedback('tick');
-                setSectionMode('size');
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                sectionMode === 'size'
-                  ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-xs'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-            >
-              Chunks of {customChunkSize}
-            </button>
           </div>
 
           <div className="flex items-center gap-1.5 min-w-[200px]">
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setIsCanteenLogOpen(true);
-              }}
-              className="p-2 sm:px-3 sm:py-2 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200/80 dark:border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
-              title="View Canteen & Supply Ops Log"
-            >
-              <History className="w-4 h-4 text-emerald-500" />
-              <span className="hidden sm:inline">Ops Log</span>
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setIsCanteenLogOpen(true);
+                }}
+                className="p-2 sm:px-3 sm:py-2 rounded-2xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200/80 dark:border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+                title="View Canteen & Supply Ops Log"
+              >
+                <History className="w-4 h-4 text-emerald-500" />
+                <span className="hidden sm:inline">Ops Log</span>
+              </button>
+            )}
 
             <ExportActionMenu
               onView={handleViewSupplyPdf}
@@ -526,6 +564,14 @@ export default function SupplySections({ defaultMeal }) {
           </div>
         </div>
       </div>
+
+      {/* ================= TACTICAL DATE & SCHEDULE SELECTOR RIBBON ================= */}
+      <TokenBoardDateRibbon
+        controller={dateController}
+        showCalendarPicker={true}
+        onSelectDate={handleSelectDate}
+        className="shadow-xs"
+      />
 
       {/* Manifest Freshness & Synchronization Banner */}
       {freshness.status === MANIFEST_STATUS.FRESH_IDENTICAL && (
@@ -548,18 +594,20 @@ export default function SupplySections({ defaultMeal }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-            <button
-              onClick={() => {
-                feedback('tick');
-                setIsCanteenLogOpen(true);
-              }}
-              className="px-3 py-1.5 rounded-xl border border-emerald-400/50 dark:border-emerald-600/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-500/10 transition-all flex items-center gap-1.5"
-            >
-              <History className="w-3.5 h-3.5" />
-              <span>Ops Log</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+              <button
+                onClick={() => {
+                  feedback('tick');
+                  setIsCanteenLogOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-xl border border-emerald-400/50 dark:border-emerald-600/40 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-500/10 transition-all flex items-center gap-1.5"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>Ops Log</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -585,16 +633,18 @@ export default function SupplySections({ defaultMeal }) {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto justify-end shrink-0">
-            <button
-              onClick={() => {
-                feedback('tick');
-                setIsCanteenLogOpen(true);
-              }}
-              className="px-3 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5"
-            >
-              <History className="w-3.5 h-3.5" />
-              <span>View Changes</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  feedback('tick');
+                  setIsCanteenLogOpen(true);
+                }}
+                className="px-3 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-200 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>View Changes</span>
+              </button>
+            )}
             <button
               onClick={() => handlePrintSupplyPdf(false)}
               className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white text-xs font-black shadow-md shadow-rose-600/25 flex items-center gap-1.5 transition-all transform active:scale-95"
@@ -615,7 +665,7 @@ export default function SupplySections({ defaultMeal }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white">
-                  Not Yet Printed for {isShowingTomorrow ? "Tomorrow's" : "Today's"} {isLunchMeal ? 'Lunch' : 'Breakfast'}
+                  Not Yet Printed for {isTomorrow ? "Tomorrow's" : isToday ? "Today's" : formatFriendlyDate(targetDateIST)} {isLunchMeal ? 'Lunch' : 'Breakfast'}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400">
                   Initial Rev 1
@@ -626,18 +676,20 @@ export default function SupplySections({ defaultMeal }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-            <button
-              onClick={() => {
-                feedback('tick');
-                setIsCanteenLogOpen(true);
-              }}
-              className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5"
-            >
-              <History className="w-3.5 h-3.5" />
-              <span>Ops Log</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+              <button
+                onClick={() => {
+                  feedback('tick');
+                  setIsCanteenLogOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 transition-all flex items-center gap-1.5"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>Ops Log</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -670,7 +722,7 @@ export default function SupplySections({ defaultMeal }) {
 
         <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xs">
           <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-            Active Sections
+            {sectionMode === 'batch' ? 'Active Batches' : 'Dynamic Sections'}
           </span>
           <span className="text-2xl font-black text-gray-900 dark:text-white mt-1 block">
             {dynamicSections.length}
@@ -756,8 +808,8 @@ export default function SupplySections({ defaultMeal }) {
         onClose={() => setIsExportModalOpen(false)}
         exportType="supply"
         targetDateIST={targetDateIST}
-        dayKey={day}
-        dayFull={isShowingTomorrow ? 'Tomorrow' : dayShort}
+        dayKey={effectiveDay}
+        dayFull={displayDayFull}
         documents={documents}
         sectionChunkSize={customChunkSize}
       />
@@ -771,13 +823,15 @@ export default function SupplySections({ defaultMeal }) {
         targetDateIST={targetDateIST}
       />
 
-      {/* Canteen & Supply Ops Activity Log Drawer */}
-      <CanteenOpsActivityDrawer
-        isOpen={isCanteenLogOpen}
-        onClose={() => setIsCanteenLogOpen(false)}
-        activeMeal={activeMeal}
-        targetDateIST={targetDateIST}
-      />
+      {/* Canteen & Supply Ops Activity Log Drawer (Admin Only) */}
+      {isAdmin && (
+        <CanteenOpsActivityDrawer
+          isOpen={isCanteenLogOpen}
+          onClose={handleCloseCanteenLog}
+          activeMeal={activeMeal}
+          targetDateIST={targetDateIST}
+        />
+      )}
 
       {/* Universal In-App Document Viewer & Action Modal */}
       <UniversalDocumentModal

@@ -24,19 +24,37 @@ export async function seedSuperAdmin(currentUser) {
     const staffRef = firebase.firestore().collection('staff_users').doc(currentUser.uid);
     const docSnap = await staffRef.get();
 
-    // Check if system already has ANY active super admin
+    // Fast-path: If user doc already exists and is configured as active Super Admin, return immediately
+    if (docSnap.exists) {
+      const existingData = docSnap.data();
+      if (
+        existingData.role === ROLES.DEVELOPER &&
+        existingData.status === 'active' &&
+        existingData.isSuperAdmin === true
+      ) {
+        return existingData;
+      }
+      // If already an active non-developer staff member and not designated seed, don't run super admin seeding
+      if (!isDesignatedSeed && existingData.status === 'active' && existingData.role) {
+        return existingData;
+      }
+    }
+
+    // Check if system already has ANY active super admin (only if unprovisioned or designated seed)
     let hasAnySuperAdmin = false;
-    try {
-      const superAdminQuery = await firebase
-        .firestore()
-        .collection('staff_users')
-        .where('role', '==', ROLES.DEVELOPER)
-        .where('status', '==', 'active')
-        .limit(1)
-        .get();
-      hasAnySuperAdmin = !superAdminQuery.empty;
-    } catch (qErr) {
-      console.warn('Could not query existing super admins:', qErr);
+    if (!isDesignatedSeed) {
+      try {
+        const superAdminQuery = await firebase
+          .firestore()
+          .collection('staff_users')
+          .where('role', '==', ROLES.DEVELOPER)
+          .where('status', '==', 'active')
+          .limit(1)
+          .get();
+        hasAnySuperAdmin = !superAdminQuery.empty;
+      } catch (qErr) {
+        console.warn('Could not query existing super admins:', qErr);
+      }
     }
 
     // Seed if this is the designated super admin account OR if the entire system has zero super admins
@@ -44,17 +62,6 @@ export async function seedSuperAdmin(currentUser) {
 
     if (shouldSeedAsSuperAdmin) {
       const existingData = docSnap.exists ? docSnap.data() : {};
-      
-      // If already correctly configured as active developer, skip write
-      if (
-        docSnap.exists &&
-        existingData.role === ROLES.DEVELOPER &&
-        existingData.status === 'active' &&
-        existingData.isSuperAdmin === true
-      ) {
-        return existingData;
-      }
-
       const seedPayload = {
         uid: currentUser.uid,
         email: normalizedEmail,

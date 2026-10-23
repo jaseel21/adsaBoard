@@ -15,6 +15,7 @@ import {
   AlertCircle,
   HelpCircle,
   Bell,
+  Ban,
 } from 'lucide-react';
 import { useWorldTime } from '../../utils/time';
 import { soundEngine } from '../../utils/soundEffects';
@@ -28,6 +29,7 @@ export default function ApexCommandHeader({
   lockStartTime,
   lockEndTime,
   onOpenLockModal,
+  onOpenBlockModal,
   onToggleLock,
   onOpenStaffModal,
   isCentralCommittee = false,
@@ -197,9 +199,25 @@ export default function ApexCommandHeader({
                   onOpenLockModal();
                 }}
                 className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-                title="Configure Schedule & Locking Rules"
+                title="Configure Cutoff Window & Board Lock Schedules"
               >
                 <Sliders className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Block & Fine Registry Console Trigger */}
+            {onOpenBlockModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  hapticEngine.lightTap();
+                  onOpenBlockModal();
+                }}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-gray-700 dark:text-gray-300 hover:text-rose-600 dark:hover:text-rose-400 border border-gray-200/60 dark:border-white/10 transition-colors"
+                title="Block & Fine Registry / Food Waste Penalties"
+              >
+                <Ban className="w-4 h-4 text-rose-500" />
               </button>
             )}
 
