@@ -295,6 +295,34 @@ const MenuTable = () => {
         </div>
       </div>
 
+      {/* ================= 1.5 SACRED DINING ETHICS & ADAB CALLOUT ================= */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-emerald-500/10 dark:from-emerald-950/40 dark:via-amber-950/20 dark:to-emerald-950/40 border border-emerald-500/25 dark:border-emerald-500/35 backdrop-blur-sm shadow-xs">
+        <div className="flex items-center gap-3 text-center sm:text-left">
+          <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white font-malayalam">
+              ആദാബുൽ മാഇദ: അന്നത്തിന്റെ ആത്മീയതയും തീൻമേശ മര്യാദകളും
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-malayalam">
+              ദർസിന്റെ പവിത്രമായ അന്നം, തിരുനബി ﷺ യുടെ ചര്യ, 1/3 വയറിന്റെ സമതുലിതാവസ്ഥ വായിക്കാം.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            navigate('/adab');
+          }}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-all active:scale-95 flex-shrink-0 cursor-pointer font-malayalam"
+        >
+          <span>വായിക്കുക</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* ================= 2. UPCOMING SPECIAL FEASTS ALERT BANNER ================= */}
       {upcomingFeasts.length > 0 && (
         <div className="p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-200/80 dark:border-purple-800/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">

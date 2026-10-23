@@ -97,6 +97,15 @@ const Footer = () => {
                   <span>{t('navSupport', 'Care & Support')}</span>
                 </Link>
               </ApexLinkPreview>
+              <span>•</span>
+              <Link
+                to="/adab"
+                onClick={() => feedback('tick')}
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 font-semibold underline decoration-dotted transition-colors flex items-center gap-1"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>{lang === 'ml' ? 'ആദാബുൽ മാഇദ' : 'Dining Ethics'}</span>
+              </Link>
             </div>
           </div>
 

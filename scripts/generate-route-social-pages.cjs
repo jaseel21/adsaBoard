@@ -69,6 +69,13 @@ const ROUTES = [
     image: `${BASE_DOMAIN}/og-preview.png`,
     url: `${BASE_DOMAIN}/student`,
   },
+  {
+    path: 'adab',
+    title: 'ആദാബുൽ മാഇദ • അന്നവും അദബും | ADSA T-Board',
+    description: 'ദർസിലെ പവിത്രമായ തീൻമേശ മര്യാദകൾ, തിരുനബി ﷺ യുടെ ചര്യ, 1/3 വയറിന്റെ സമതുലിതാവസ്ഥ, അന്നം പാഴാക്കാതിരിക്കാനുള്ള ആഹ്വാനം. ആലത്തൂർപടി ദർസ് ഫുഡ് മാനേജ്‌മെന്റ് സിസ്റ്റം.',
+    image: `${BASE_DOMAIN}/og-preview.png`,
+    url: `${BASE_DOMAIN}/adab`,
+  },
 ];
 
 console.log(`🚀 Prerendering route-specific Social HTML pages for ${BASE_DOMAIN}...`);

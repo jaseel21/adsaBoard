@@ -18,6 +18,7 @@ import DietaryManagement from './components/DietaryManagement';
 import AuditTrail from './components/audit/AuditTrail';
 import KitchenDisplay from './components/KitchenDisplay';
 import GuidePage from './components/guide/GuidePage';
+import DiningEthicsPage from './components/ethics/DiningEthicsPage';
 import NotFound from './components/NotFound';
 import AdminRoute from './components/guards/AdminRoute';
 import RoleRoute from './components/guards/RoleRoute';
@@ -83,6 +84,11 @@ function AppContent() {
             <Route path="/supply" element={<Navigate to="/breakfast" replace />} />
             <Route path="/manifest" element={<Navigate to="/breakfast" replace />} />
             <Route path="/guide" element={<GuidePage />} />
+            {/* Sacred Islamic Dining Ethics & Dars Adab Sanctuary */}
+            <Route path="/adab" element={<DiningEthicsPage />} />
+            <Route path="/ethics" element={<Navigate to="/adab" replace />} />
+            <Route path="/dining-ethics" element={<Navigate to="/adab" replace />} />
+            <Route path="/adab-al-maidah" element={<Navigate to="/adab" replace />} />
             <Route path="/support" element={<CareHubPage />} />
             <Route path="/feedback" element={<CareHubPage />} />
             <Route path="/contact" element={<CareHubPage />} />

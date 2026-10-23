@@ -9,6 +9,7 @@ import {
   Search,
   UserCheck,
   KeyRound,
+  Sparkles,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
@@ -165,6 +166,15 @@ export default function FloatingDesktopNav({
           label={lang === 'ml' ? 'മെനു' : 'Menu'}
           tooltip={t('navMenu', 'Food Menu')}
         />
+
+        {/* 2.5 Sacred Dining Ethics & Adab Tab */}
+        {/* <NavTabButton
+          onClick={() => handleNav('/adab')}
+          active={isActive('/adab')}
+          icon={Sparkles}
+          label={lang === 'ml' ? 'അദബ്' : 'Adab'}
+          tooltip={lang === 'ml' ? 'ആദാബുൽ മാഇദ (തീൻമേശ മര്യാദകൾ)' : 'Adab al-Ma’idah (Dining Ethics)'}
+        /> */}
 
         {/* 3. Student Dining Portal Tab */}
         {isStudentLoggedIn ? (
