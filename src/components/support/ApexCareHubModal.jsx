@@ -93,6 +93,7 @@ export default function ApexCareHubModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 20 }}
             transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            data-lenis-prevent
             className="relative w-full max-w-3xl bg-white dark:bg-[#09110e] border border-gray-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col z-10"
           >
             {/* Top Gradient Banner */}

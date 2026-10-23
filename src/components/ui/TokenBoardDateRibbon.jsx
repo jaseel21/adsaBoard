@@ -28,6 +28,7 @@ export default function TokenBoardDateRibbon({
   showCalendarPicker = true,
   onSelectDate = null,
   className = '',
+  children = null,
 }) {
   const { feedback } = useFeedback();
   const { t } = useLanguage();
@@ -267,6 +268,8 @@ export default function TokenBoardDateRibbon({
             <span className="hidden sm:inline">{t('resetToAuto', 'Auto')}</span>
           </button>
         )}
+
+        {children}
       </div>
     </div>
   );

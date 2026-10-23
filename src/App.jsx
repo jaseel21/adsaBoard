@@ -13,7 +13,7 @@ import PersonInfo from './store/StudentData';
 import Admin from './components/Admin';
 import AdminLogin from './components/AdminLogin';
 import StudentManagement from './components/StudentManagement';
-import MenuManagement from './components/MenuManagement';
+import UniversalMenuStudio from './components/menu/UniversalMenuStudio';
 import DietaryManagement from './components/DietaryManagement';
 import AuditTrail from './components/audit/AuditTrail';
 import KitchenDisplay from './components/KitchenDisplay';
@@ -29,7 +29,6 @@ import NotificationDrawer from './components/notifications/NotificationDrawer';
 import EmergencyNotificationDialog from './components/notifications/EmergencyNotificationDialog';
 import ApexNotificationManager from './components/notifications/admin/ApexNotificationManager';
 import CareHubPage from './components/support/CareHubPage';
-import ApexCareFloatingButton from './components/support/ApexCareFloatingButton';
 import SupportCommandCenter from './components/admin/support/SupportCommandCenter';
 import { AuthContext } from './store/AuthContext';
 import { ThemeProvider } from './store/ThemeContext';
@@ -37,6 +36,10 @@ import { LanguageProvider } from './store/LanguageContext';
 import { SidebarProvider, useSidebar } from './components/nav/SidebarContext';
 import BrowserLeftSidebar from './components/nav/BrowserLeftSidebar';
 import { ROLES } from './utils/rbac';
+import SmoothScrollProvider from './components/scroll/SmoothScrollProvider';
+import ScrollProgressBar from './components/scroll/ScrollProgressBar';
+import BackToTopButton from './components/scroll/BackToTopButton';
+import ScrollRestorationWatcher from './components/scroll/ScrollRestorationWatcher';
 import './App.css';
 
 function AppContent() {
@@ -47,6 +50,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
+      <ScrollProgressBar />
+      <ScrollRestorationWatcher />
       <Navbar isAdmin={isAdmin} />
       <div className="flex flex-1 w-full relative min-w-0">
         <BrowserLeftSidebar />
@@ -198,7 +203,7 @@ function AppContent() {
                     ROLES.DEVELOPER,
                   ]}
                 >
-                  <MenuManagement />
+                  <UniversalMenuStudio />
                 </RoleRoute>
               }
             />
@@ -235,10 +240,10 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>
+        <Footer />
         </main>
       </div>
-      {!location.pathname.startsWith('/kitchen') && <ApexCareFloatingButton />}
-      <Footer />
+      {!location.pathname.startsWith('/kitchen') && <BackToTopButton />}
     </div>
   );
 }
@@ -250,11 +255,13 @@ function App() {
         <PersonInfo>
           <NotificationProvider>
             <DialogProvider>
-              <SidebarProvider>
-                <AppContent />
-                <NotificationDrawer />
-                <EmergencyNotificationDialog />
-              </SidebarProvider>
+              <SmoothScrollProvider>
+                <SidebarProvider>
+                  <AppContent />
+                  <NotificationDrawer />
+                  <EmergencyNotificationDialog />
+                </SidebarProvider>
+              </SmoothScrollProvider>
             </DialogProvider>
           </NotificationProvider>
         </PersonInfo>

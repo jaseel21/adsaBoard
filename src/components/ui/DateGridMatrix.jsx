@@ -28,6 +28,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { dialog } from '../../utils/dialog';
 import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
 import DateTokenButton from './DateTokenButton';
+import DiningCalendarHeader from './calendar/DiningCalendarHeader';
 import StudentTemplateModal from './StudentTemplateModal';
 import DateTurnModal from './DateTurnModal';
 import DateHistoryDetailModal from './DateHistoryDetailModal';
@@ -115,6 +116,12 @@ export default function DateGridMatrix({
     const [y, m] = todayIST.split('-').map(Number);
     setCurrentYear(y);
     setCurrentMonth(m - 1);
+  };
+
+  const handleSelectMonthYear = (monthIndex, year) => {
+    feedback('tick');
+    setCurrentMonth(monthIndex);
+    setCurrentYear(year);
   };
 
   // Calendar days array for current month
@@ -412,215 +419,35 @@ export default function DateGridMatrix({
   return (
     <div className={`space-y-4 ${className}`}>
       
-      {/* ================= COMPACT UNIFIED HEADER & CONTROLS ================= */}
-      <div className="p-3 sm:p-4 rounded-2xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xs backdrop-blur-xl space-y-2.5">
-        
-        {/* Main Toolbar: Title + Month Switcher + Action Controls */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          
-          {/* Left: Title + Inline Stats */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-              <CalendarDays className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white leading-tight">
-                  {t('monthlyDiningManifest', 'Monthly Dining Calendar')}
-                </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                  {stats.upcomingDaysCount > 0
-                    ? `${stats.upcomingBreakfastsScheduled} Bf • ${stats.upcomingLunchesScheduled} Lu`
-                    : `${stats.pastBreakfastsTaken} Bf • ${stats.pastLunchesTaken} Lu`}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Month Switcher + Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-between sm:justify-end">
-            
-            {/* Month Switcher */}
-            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/10">
-              <button
-                type="button"
-                onClick={handlePrevMonth}
-                className="p-1 rounded-lg hover:bg-white dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors"
-                title="Previous Month"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-
-              <span className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white min-w-[95px] xs:min-w-[110px] text-center px-1">
-                {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {currentYear}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleNextMonth}
-                className="p-1 rounded-lg hover:bg-white dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors"
-                title="Next Month"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleJumpToToday}
-                className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
-              >
-                {t('todayBtn', 'Today')}
-              </button>
-            </div>
-
-            {/* Quick Action Buttons Group */}
-            {editable && !stats.isFullyPastMonth && (
-              <>
-                {/* Range Leave */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    feedback('tick');
-                    setSelectedModalDate(todayIST);
-                    setShowTurnModal(true);
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-500/20 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5"
-                  title="Schedule leave or meal overrides for a date range"
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('customRangeLeave', 'Range Leave')}</span>
-                  <span className="sm:hidden">Leave</span>
-                </button>
-
-                {/* Weekend Leave */}
-                <button
-                  type="button"
-                  onClick={() => handleQuickTurnWeekendOff(false)}
-                  className="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-500/20 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5"
-                  title="Turn Weekend OFF (Fri Bf/Lu + Sat Bf)"
-                >
-                  <Plane className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Weekend Off</span>
-                  <span className="sm:hidden">Weekend</span>
-                </button>
-              </>
-            )}
-
-            {/* Templates Button */}
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setShowTemplateModal(true);
-              }}
-              className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-500/20 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5"
-            >
-              <Bookmark className="w-3.5 h-3.5" />
-              <span>{t('templatesBtn', 'Templates')}</span>
-              {(student?.templates?.length > 0 || stats.scheduledCount > 0) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              )}
-            </button>
-
-            {/* Reset Overrides Pill (visible only if student has overrides) */}
-            {editable && sortedExceptionDates.length > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAllExceptions}
-                className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-500/20 text-xs font-bold transition-all active:scale-95 flex items-center gap-1"
-                title="Reset all date overrides back to weekly routine"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Reset ({sortedExceptionDates.length})</span>
-              </button>
-            )}
-
-            {/* View Mode Toggle: Grid vs List */}
-            <div className="inline-flex p-0.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10">
-              <button
-                type="button"
-                onClick={() => {
-                  feedback('tick');
-                  setActiveView('grid');
-                }}
-                className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeView === 'grid'
-                    ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                    : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
-                }`}
-                title={t('calendarGridView', 'Calendar Grid View')}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  feedback('tick');
-                  setActiveView('list');
-                }}
-                className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeView === 'list'
-                    ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                    : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
-                }`}
-                title={t('scheduledOverridesList', 'Scheduled Overrides List')}
-              >
-                <List className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Meal Tab (Only on small viewports < lg when in grid view) */}
-        {activeView === 'grid' && (
-          <div className="flex lg:hidden p-0.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-bold w-full">
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setMobileMealTab('both');
-              }}
-              className={`flex-1 py-1 rounded-lg transition-all text-center ${
-                mobileMealTab === 'both'
-                  ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              {t('viewBothParallel', 'Both Meals')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setMobileMealTab('breakfast');
-              }}
-              className={`flex-1 py-1 rounded-lg transition-all flex items-center justify-center gap-1 ${
-                mobileMealTab === 'breakfast'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Coffee className="w-3 h-3" />
-              <span>{t('navBreakfast') || 'Breakfast'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setMobileMealTab('lunch');
-              }}
-              className={`flex-1 py-1 rounded-lg transition-all flex items-center justify-center gap-1 ${
-                mobileMealTab === 'lunch'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Utensils className="w-3 h-3" />
-              <span>{t('navLunch') || 'Lunch'}</span>
-            </button>
-          </div>
-        )}
-      </div>
+      {/* ================= NEXT-LEVEL ADAPTIVE HEADER & COMMAND BAR ================= */}
+      <DiningCalendarHeader
+        currentYear={currentYear}
+        currentMonth={currentMonth}
+        todayIST={todayIST}
+        stats={stats}
+        student={student}
+        editable={editable}
+        sortedExceptionDates={sortedExceptionDates}
+        activeView={activeView}
+        setActiveView={setActiveView}
+        mealFilter={mobileMealTab}
+        setMealFilter={setMobileMealTab}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onJumpToToday={handleJumpToToday}
+        onSelectMonthYear={handleSelectMonthYear}
+        onOpenRangeLeave={() => {
+          feedback('tick');
+          setSelectedModalDate(todayIST);
+          setShowTurnModal(true);
+        }}
+        onTurnWeekendOff={() => handleQuickTurnWeekendOff(false)}
+        onOpenTemplates={() => {
+          feedback('tick');
+          setShowTemplateModal(true);
+        }}
+        onClearExceptions={handleClearAllExceptions}
+      />
 
       {/* ================= ARCHIVED MONTH BANNER ================= */}
       {stats.isFullyPastMonth && (
@@ -653,7 +480,7 @@ export default function DateGridMatrix({
 
       {/* ================= VIEW 1: DUAL PARALLEL TACTILE DATE TOKEN GRIDS (BREAKFAST & LUNCH) ================= */}
       {activeView === 'grid' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className={`grid gap-4 sm:gap-6 ${mobileMealTab === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-2xl mx-auto'}`}>
           
           {/* ================= 1. BREAKFAST CALENDAR CARD ================= */}
           {(mobileMealTab === 'both' || mobileMealTab === 'breakfast') && (

@@ -300,6 +300,7 @@ export default function AdvancedExportModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          data-lenis-prevent
           className="relative w-full max-w-2xl bg-white dark:bg-[#0e1715] border border-gray-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col"
         >
           {/* Header Banner */}

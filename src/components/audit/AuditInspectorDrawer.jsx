@@ -166,6 +166,7 @@ export default function AuditInspectorDrawer({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+          data-lenis-prevent
           className="relative z-10 w-full max-w-xl h-full bg-[#f8faf8] dark:bg-[#0c1412] text-gray-900 dark:text-gray-100 shadow-2xl border-l border-gray-200 dark:border-white/10 flex flex-col overflow-hidden pb-safe"
         >
           {/* Header */}

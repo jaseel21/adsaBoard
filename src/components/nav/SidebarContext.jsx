@@ -21,19 +21,24 @@ export function SidebarProvider({ children }) {
   const [sidebarOpen, setSidebarOpenState] = useState(() => {
     if (typeof window !== 'undefined') {
       const isLargeScreen = window.innerWidth >= 1024;
+      // On mobile viewports (< 1024px), sidebar MUST NEVER be open by default
       if (!isLargeScreen) return false;
       const saved = localStorage.getItem(STORAGE_KEY);
       // By default open on desktop unless explicitly set to 'false'
       return saved !== 'false';
     }
-    return true;
+    return false;
   });
 
-  // Track window resize to update isDesktop mode
+  // Track window resize to update isDesktop mode and close on mobile transition
   useEffect(() => {
     const handleResize = () => {
       const isLargeScreen = window.innerWidth >= 1024;
       setIsDesktop(isLargeScreen);
+      // Immediately close mobile drawer if resized down below desktop breakpoint
+      if (!isLargeScreen) {
+        setSidebarOpenState(false);
+      }
     };
 
     window.addEventListener('resize', handleResize);
@@ -41,14 +46,17 @@ export function SidebarProvider({ children }) {
   }, []);
 
   const setSidebarOpen = useCallback((open) => {
-    setSidebarOpenState(open);
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      try {
-        localStorage.setItem(STORAGE_KEY, open ? 'true' : 'false');
-      } catch (e) {
-        console.warn('Failed to save sidebar state to localStorage:', e);
+    setSidebarOpenState((prev) => {
+      const resolved = typeof open === 'function' ? open(prev) : open;
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+        try {
+          localStorage.setItem(STORAGE_KEY, resolved ? 'true' : 'false');
+        } catch (e) {
+          console.warn('Failed to save sidebar state to localStorage:', e);
+        }
       }
-    }
+      return resolved;
+    });
   }, []);
 
   const toggleSidebar = useCallback(() => {

@@ -171,6 +171,7 @@ export default function MealEditModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.2 }}
+          data-lenis-prevent
           className="relative w-full max-w-2xl bg-white dark:bg-[#0f1715] rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] pb-safe"
         >
           {/* Header */}

@@ -5,7 +5,6 @@ import {
   Search,
   ChevronDown,
   LogOut,
-  CreditCard,
   KeyRound,
   ShieldCheck,
   PanelLeftClose,
@@ -26,11 +25,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { dialog } from '../../utils/dialog';
 import firebase from '../../firebase/config';
-import ThemeSwitch from '../ThemeSwitch';
-import LanguageSwitch from '../LanguageSwitch';
 import StaffManagementModal from '../StaffManagementModal';
 import ShareActionModal from '../ui/ShareActionModal';
-import SocialCardStudioModal from '../preview/SocialCardStudioModal';
 
 export default function BrowserLeftSidebar() {
   const location = useLocation();
@@ -55,7 +51,6 @@ export default function BrowserLeftSidebar() {
   // Modals inside sidebar
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [passStudioOpen, setPassStudioOpen] = useState(false);
 
   const toggleCategory = (categoryId) => {
     feedback('tick');
@@ -215,19 +210,6 @@ export default function BrowserLeftSidebar() {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    feedback('tick');
-                    setPassStudioOpen(true);
-                  }}
-                  className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold text-[10px] border border-indigo-300/40 flex items-center gap-1"
-                  title="Open Dining Pass Studio"
-                >
-                  <CreditCard className="w-3 h-3" />
-                  <span>Pass</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={handleLogoutStudent}
                   className="p-1 rounded-md text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                   title="Sign Out Token"
@@ -305,7 +287,7 @@ export default function BrowserLeftSidebar() {
       </div>
 
       {/* 4. Categorized Navigation Groups */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div data-lenis-prevent className="flex-1 overflow-y-auto p-3 space-y-4">
         {searchQuery.trim() !== '' ? (
           /* Search Results */
           <div className="space-y-1">
@@ -419,25 +401,6 @@ export default function BrowserLeftSidebar() {
         )}
       </div>
 
-      {/* 5. Bottom Utility Bar */}
-      <div className="p-3 border-t border-gray-100 dark:border-white/10 bg-gray-50/80 dark:bg-black/30 flex items-center justify-between gap-1 flex-shrink-0">
-        <div className="flex items-center gap-1.5">
-          <LanguageSwitch />
-          <ThemeSwitch iconOnly={true} />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            feedback('pop');
-            setShareModalOpen(true);
-          }}
-          className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200/80 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-200 transition-colors"
-        >
-          Share
-        </button>
-      </div>
-
       {/* Modals triggered from sidebar */}
       <StaffManagementModal
         isOpen={staffModalOpen}
@@ -448,22 +411,6 @@ export default function BrowserLeftSidebar() {
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
       />
-
-      {stdata?.tokenNo && (
-        <SocialCardStudioModal
-          isOpen={passStudioOpen}
-          onClose={() => setPassStudioOpen(false)}
-          initialTemplate="student_pass"
-          initialData={{
-            tokenNumber: String(stdata.tokenNo || '0'),
-            studentName: stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`,
-            batch: stdata.batch || 'General Batch',
-            isBlocked: Boolean(stdata.block),
-            customUrl: 'https://canteen.alathurpadidars.in/',
-            description: `Official Dining Pass for Student #${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'}).`,
-          }}
-        />
-      )}
     </div>
   );
 

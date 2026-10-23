@@ -26,11 +26,9 @@ import {
   ShieldAlert,
   Send,
   Unlock,
-  CreditCard,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
-import SocialCardStudioModal from './preview/SocialCardStudioModal';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
@@ -108,7 +106,6 @@ function StudentPort() {
   // Dynamic Dietary Preferences & Self-Service Change Requests
   const [preferencesList, setPreferencesList] = useState([]);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
-  const [isPassStudioOpen, setIsPassStudioOpen] = useState(false);
   const [pendingDietaryRequest, setPendingDietaryRequest] = useState(() => stdata?.pendingDietaryRequest || null);
 
   // Meal Routine Selections
@@ -951,19 +948,6 @@ function StudentPort() {
               <span>{t('viewCanteenMenu', 'View Food Menu')}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setIsPassStudioOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold text-xs border border-indigo-300/50 dark:border-indigo-500/30 transition-colors"
-              title="Generate Digital Dining Pass Card"
-            >
-              <CreditCard className="w-4 h-4 text-indigo-500" />
-              <span>{t('digitalPassCard', 'Pass Card')}</span>
-            </button>
-
             {/* In-Header Save Preferences button when dirty and not blocked */}
             <AnimatePresence>
               {isDirty && !isBlocked && (
@@ -1796,20 +1780,6 @@ function StudentPort() {
         }}
       />
 
-      {/* Dynamic Student Pass Card Studio */}
-      <SocialCardStudioModal
-        isOpen={isPassStudioOpen}
-        onClose={() => setIsPassStudioOpen(false)}
-        initialTemplate="student_pass"
-        initialData={{
-          tokenNumber: String(stdata.tokenNo || '0'),
-          studentName: stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`,
-          batch: stdata.batch || 'General Batch',
-          isBlocked: Boolean(stdata.block),
-          customUrl: 'https://canteen.alathurpadidars.in/',
-          description: `Official Dining Pass for Student #${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'}).`,
-        }}
-      />
     </div>
   );
 }

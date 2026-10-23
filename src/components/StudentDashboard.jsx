@@ -705,8 +705,8 @@ export default function StudentDashboard() {
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{t('cutoffNotice', 'Daily update window: 02:00 PM - 11:00 PM IST')}</span>
                 <span className="text-white/40">•</span>
-                <strong className={portalStatus.isOpen ? 'text-emerald-300' : 'text-amber-300'}>
-                  {portalStatus.isOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Locked')}
+                <strong className={portalStatus.isUpdationWindowOpen ? 'text-emerald-300 font-bold' : 'text-amber-300 font-bold'}>
+                  {portalStatus.isUpdationWindowOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Closed')}
                 </strong>
               </span>
             </div>

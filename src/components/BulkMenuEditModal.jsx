@@ -127,6 +127,7 @@ export default function BulkMenuEditModal({ isOpen, onClose }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         onClick={(e) => e.stopPropagation()}
+        data-lenis-prevent
         className="w-full max-w-xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden pb-safe"
       >
         {/* Header */}

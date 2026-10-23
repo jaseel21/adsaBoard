@@ -1,10 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Languages, ChevronDown, Check } from 'lucide-react';
+import { Languages, ChevronDown, Check, Globe } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LanguageSwitch = ({ iconOnly = false }) => {
+const LANG_OPTIONS = [
+  { id: 'system', code: 'Auto', labelEn: 'System', labelMl: 'സിസ്റ്റം', sub: 'Auto' },
+  { id: 'en', code: 'EN', labelEn: 'English', labelMl: 'English', sub: 'EN' },
+  { id: 'ml', code: 'മല', labelEn: 'Malayalam', labelMl: 'മലയാളം', sub: 'ML' },
+];
+
+export default function LanguageSwitch({ iconOnly = false, className = '' }) {
   const { langPref, setLangPref, lang, t } = useLanguage();
   const { feedback } = useFeedback();
   const [open, setOpen] = useState(false);
@@ -17,140 +23,160 @@ const LanguageSwitch = ({ iconOnly = false }) => {
         setOpen(false);
       }
     };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleSelect = (mode) => {
     feedback('pop');
     setLangPref(mode);
-    setOpen(false);
-  };
-
-  const toggleLanguage = () => {
-    feedback('pop');
-    const nextLang = lang === 'ml' ? 'en' : 'ml';
-    setLangPref(nextLang);
   };
 
   const getLabel = () => {
     if (langPref === 'ml') return 'മലയാളം';
-    if (langPref === 'en') return 'EN';
-    return `Auto (${lang.toUpperCase()})`;
+    if (langPref === 'en') return 'English';
+    return `System (${lang.toUpperCase()})`;
   };
 
-  if (iconOnly) {
-    return (
-      <div className="relative flex items-center justify-center">
+  const getLangDescription = (mode) => {
+    if (lang === 'ml') {
+      if (mode === 'system') return `സിസ്റ്റം ഭാഷ സ്വയം നിർണ്ണയിക്കുന്നു (${lang.toUpperCase()})`;
+      if (mode === 'en') return 'ഇംഗ്ലീഷ് ഭാഷ സജീവമാണ്';
+      return 'മലയാളം ഭാഷ സജീവമാണ്';
+    }
+    if (mode === 'system') return `Auto-detects device locale (${lang.toUpperCase()})`;
+    if (mode === 'en') return 'English interface active';
+    return 'Malayalam interface active';
+  };
+
+  return (
+    <div className={`relative flex items-center justify-center ${className}`} ref={dropdownRef}>
+      {iconOnly ? (
         <button
           type="button"
-          onClick={toggleLanguage}
+          onClick={() => {
+            feedback('tick');
+            setOpen((prev) => !prev);
+          }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          aria-label={lang === 'ml' ? 'Switch to English' : 'മലയാളത്തിലേക്ക് മാറ്റുക'}
-          className="relative p-2.5 rounded-full text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10 transition-all select-none flex items-center justify-center group"
+          aria-label={`Language: ${getLabel()}`}
+          aria-expanded={open}
+          className={`relative p-2.5 rounded-full transition-all duration-200 select-none flex items-center justify-center group ${
+            open
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10'
+          }`}
         >
           <Languages className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
           <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-black uppercase tracking-tight px-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
             {lang === 'ml' ? 'മല' : 'EN'}
           </span>
+
+          {/* Hover Tooltip (when popover is closed) */}
+          <AnimatePresence>
+            {hovered && !open && (
+              <motion.div
+                initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                transition={{ duration: 0.12 }}
+                className="absolute top-full mt-2 px-2.5 py-1 rounded-xl bg-gray-900/95 dark:bg-[#15221e]/95 text-white border border-white/10 shadow-xl backdrop-blur-xl text-[11px] font-bold whitespace-nowrap pointer-events-none z-50 flex items-center gap-1.5"
+              >
+                <span>{`Language: ${getLabel()}`}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setOpen((prev) => !prev);
+          }}
+          aria-label="Switch Language"
+          aria-expanded={open}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100/80 dark:bg-white/10 hover:bg-gray-200/80 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200/70 dark:border-white/10 text-xs font-semibold transition-all duration-200 shadow-xs"
+        >
+          <Languages className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <span className="tracking-wide hidden sm:inline">{getLabel()}</span>
+          <span className="sm:hidden font-mono uppercase font-bold text-[11px]">{lang}</span>
+          <ChevronDown
+            className={`w-3 h-3 transition-transform duration-200 opacity-60 flex-shrink-0 ${
+              open ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+      )}
 
-        <AnimatePresence>
-          {hovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 4, scale: 0.95 }}
-              transition={{ duration: 0.12 }}
-              className="absolute top-full mt-2 px-2.5 py-1 rounded-xl bg-gray-900/95 dark:bg-[#15221e]/95 text-white border border-white/10 shadow-xl backdrop-blur-xl text-[11px] font-bold whitespace-nowrap pointer-events-none z-50 flex items-center gap-1.5"
-            >
-              <span>{lang === 'ml' ? 'Switch to English' : 'മലയാളത്തിലേക്ക് മാറ്റുക'}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => {
-          feedback('tick');
-          setOpen(!open);
-        }}
-        aria-label="Switch Language"
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100/80 dark:bg-white/10 hover:bg-gray-200/80 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 border border-gray-200/70 dark:border-white/10 text-xs font-medium transition-all duration-200 shadow-sm"
-      >
-        <Languages className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-        {/* Full label on desktop, compact code on mobile */}
-        <span className="font-semibold text-xs tracking-wide hidden sm:inline">{getLabel()}</span>
-        <span className="font-bold text-[11px] tracking-wider sm:hidden font-mono uppercase">{lang}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform duration-200 opacity-60 flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
-      </button>
-
+      {/* Popover Card with Animated Sliding Segmented Switch */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#131b18] border border-gray-200/80 dark:border-white/10 shadow-xl py-1.5 z-50 backdrop-blur-xl"
+            exit={{ opacity: 0, y: 6, scale: 0.94 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 350 }}
+            className="absolute top-full mt-2.5 right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 w-64 rounded-2xl bg-white/95 dark:bg-[#0c1412]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 shadow-2xl p-3 z-50 select-none"
           >
-            {/* System Default */}
-            <button
-              onClick={() => handleSelect('system')}
-              className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors ${
-                langPref === 'system'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
-              }`}
-            >
-              <div className="flex flex-col text-left">
-                <span>{t('langSystem')}</span>
-                <span className="text-[10px] text-gray-400">Auto detect</span>
-              </div>
-              {langPref === 'system' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
-            </button>
+            {/* Popover Header */}
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 dark:border-white/10">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {lang === 'ml' ? 'ഭാഷ ക്രമീകരണം' : 'Language'}
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase font-mono">
+                {langPref === 'system' ? 'Auto' : langPref}
+              </span>
+            </div>
 
-            {/* English */}
-            <button
-              onClick={() => handleSelect('en')}
-              className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors ${
-                langPref === 'en'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
-              }`}
-            >
-              <div className="flex flex-col text-left">
-                <span>English</span>
-                <span className="text-[10px] text-gray-400 font-mono">EN</span>
-              </div>
-              {langPref === 'en' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
-            </button>
+            {/* Tactile Sliding Segmented Switch (Option A inside Popover) */}
+            <div className="relative grid grid-cols-3 p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 gap-1">
+              {LANG_OPTIONS.map((opt) => {
+                const isSelected = langPref === opt.id;
+                const label = lang === 'ml' ? opt.labelMl : opt.labelEn;
 
-            {/* Malayalam */}
-            <button
-              onClick={() => handleSelect('ml')}
-              className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors ${
-                langPref === 'ml'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
-              }`}
-            >
-              <div className="flex flex-col text-left">
-                <span className="font-malayalam">മലയാളം</span>
-                <span className="text-[10px] text-gray-400">Malayalam</span>
-              </div>
-              {langPref === 'ml' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
-            </button>
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleSelect(opt.id)}
+                    className={`relative py-1.5 px-2 rounded-lg text-xs font-bold transition-colors flex flex-col items-center justify-center gap-1 z-10 ${
+                      isSelected
+                        ? 'text-gray-900 dark:text-white'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    {isSelected && (
+                      <motion.div
+                        layoutId="activeLangSegment"
+                        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                        className="absolute inset-0 bg-white dark:bg-[#1a2622] rounded-lg shadow-sm border border-gray-200/80 dark:border-white/15 -z-10"
+                      />
+                    )}
+                    <span className="text-[10px] font-mono uppercase font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+                      {opt.code}
+                    </span>
+                    <span className="text-[10px] tracking-tight">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Contextual Subtitle */}
+            <div className="mt-2.5 px-1 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <span className="leading-snug">{getLangDescription(langPref)}</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
-};
-
-export default LanguageSwitch;
+}

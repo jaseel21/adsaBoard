@@ -496,6 +496,7 @@ export function DialogProvider({ children }) {
               exit={{ opacity: 0, scale: 0.92, y: 14 }}
               transition={{ type: 'spring', stiffness: 450, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
+              data-lenis-prevent
               className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-[#0f1715]/95 border border-gray-200/90 dark:border-white/10 shadow-2xl p-5 xs:p-6 sm:p-7 space-y-4 sm:space-y-5 text-center relative overflow-hidden backdrop-blur-2xl max-h-[90dvh] overflow-y-auto pb-safe"
             >
               {/* Close Button */}

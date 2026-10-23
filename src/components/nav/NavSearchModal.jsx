@@ -79,6 +79,7 @@ export default function NavSearchModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          data-lenis-prevent
           className="relative w-full max-w-xl rounded-3xl bg-white/95 dark:bg-[#0f1715]/95 border border-gray-200/90 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden z-10 flex flex-col max-h-[80vh]"
         >
           {/* Search Header Bar */}

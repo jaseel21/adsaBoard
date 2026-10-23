@@ -6,7 +6,7 @@
 export const FAQ_CATEGORIES = [
   { id: 'all', key: 'faqCatAll', label: 'All Topics' },
   { id: 'cutoff', key: 'faqCatCutoff', label: 'Cutoff & Timing' },
-  { id: 'tokens', key: 'faqCatTokens', label: 'Token Locks & Passes' },
+  { id: 'tokens', key: 'faqCatTokens', label: 'Token Locks & Status' },
   { id: 'dietary', key: 'faqCatDietary', label: 'Dietary & Avoiders' },
   { id: 'billing', key: 'faqCatBilling', label: 'Billing & Records' },
   { id: 'general', key: 'faqCatGeneral', label: 'Campus & Canteen' },

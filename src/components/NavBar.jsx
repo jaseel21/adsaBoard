@@ -15,7 +15,6 @@ import MobileBottomDock from './nav/MobileBottomDock';
 import NavSearchModal from './nav/NavSearchModal';
 import StaffManagementModal from './StaffManagementModal';
 import ShareActionModal from './ui/ShareActionModal';
-import SocialCardStudioModal from './preview/SocialCardStudioModal';
 import NotificationTickerBanner from './notifications/NotificationTickerBanner';
 
 const Navbar = ({ isAdmin }) => {
@@ -42,7 +41,6 @@ const Navbar = ({ isAdmin }) => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [passStudioOpen, setPassStudioOpen] = useState(false);
 
   // Committee idle timeout: 15 mins
   useIdleTimer({
@@ -190,23 +188,6 @@ const Navbar = ({ isAdmin }) => {
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
       />
-
-      {/* Student Dining Pass Card Studio Modal */}
-      {stdata?.tokenNo && (
-        <SocialCardStudioModal
-          isOpen={passStudioOpen}
-          onClose={() => setPassStudioOpen(false)}
-          initialTemplate="student_pass"
-          initialData={{
-            tokenNumber: String(stdata.tokenNo || '0'),
-            studentName: stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`,
-            batch: stdata.batch || 'General Batch',
-            isBlocked: Boolean(stdata.block),
-            customUrl: 'https://canteen.alathurpadidars.in/',
-            description: `Official Dining Pass for Student #${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'}).`,
-          }}
-        />
-      )}
     </>
   );
 };

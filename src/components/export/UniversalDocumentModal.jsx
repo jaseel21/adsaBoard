@@ -218,6 +218,7 @@ export default function UniversalDocumentModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          data-lenis-prevent
           className={`relative w-full ${
             isFullscreen ? 'h-full max-w-full rounded-none' : 'max-w-5xl max-h-[92vh] rounded-3xl'
           } bg-white dark:bg-[#0c1412] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col transition-all duration-300`}

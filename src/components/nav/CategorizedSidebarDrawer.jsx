@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-  CreditCard,
   KeyRound,
   ShieldCheck,
   ExternalLink,
@@ -39,7 +38,6 @@ export default function CategorizedSidebarDrawer({
   isDeveloper,
   onOpenStaffModal,
   onOpenShareModal,
-  onOpenPassStudio,
   onLogoutAdmin,
   onLogoutStudent,
 }) {
@@ -220,19 +218,6 @@ export default function CategorizedSidebarDrawer({
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        feedback('tick');
-                        onOpenPassStudio();
-                        onClose();
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] border border-indigo-300/40 flex items-center gap-1"
-                    >
-                      <CreditCard className="w-3.5 h-3.5" />
-                      <span>Pass</span>
-                    </button>
-
                     <button
                       type="button"
                       onClick={() => {

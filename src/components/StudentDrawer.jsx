@@ -500,6 +500,7 @@ export default function StudentDrawer({
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
+            data-lenis-prevent
             className="absolute inset-y-0 right-0 w-full sm:max-w-xl md:max-w-2xl bg-white dark:bg-[#0c1412] border-l border-gray-200/80 dark:border-white/10 shadow-2xl z-10 flex flex-col overflow-hidden"
           >
             {/* Drawer Header */}

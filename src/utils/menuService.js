@@ -745,21 +745,10 @@ export async function deleteDateOverrides(datesArray) {
 /**
  * Resolves the effective menu for any specific calendar date, merging overrides on top of weekly routine.
  */
-export function getEffectiveMenuForDate(dateStr, weeklyMenu = DEFAULT_WEEKLY_MENU, overrides = {}) {
+export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = {}) {
   const dow = getDayOfWeekShort(dateStr);
   const defDay = DEFAULT_WEEKLY_MENU[dow] || {};
-  const rawRoutine = (weeklyMenu && weeklyMenu[dow]) ? weeklyMenu[dow] : defDay;
-
-  const hasSlotContent = (s) => Boolean(s?.title?.trim()) || (Array.isArray(s?.items) && s.items.length > 0);
-
-  const routineDay = {
-    ...defDay,
-    ...rawRoutine,
-    breakfast: hasSlotContent(rawRoutine.breakfast) ? rawRoutine.breakfast : (defDay.breakfast || rawRoutine.breakfast),
-    lunch: hasSlotContent(rawRoutine.lunch) ? rawRoutine.lunch : (defDay.lunch || rawRoutine.lunch),
-    evening: hasSlotContent(rawRoutine.evening) ? rawRoutine.evening : (defDay.evening || rawRoutine.evening),
-    dinner: hasSlotContent(rawRoutine.dinner) ? rawRoutine.dinner : (defDay.dinner || rawRoutine.dinner),
-  };
+  const routineDay = (weeklyMenu && weeklyMenu[dow]) ? weeklyMenu[dow] : defDay;
   const override = overrides ? overrides[dateStr] : null;
 
   if (!override) {

@@ -396,6 +396,7 @@ export default function StaffManagementModal({ isOpen, onClose }) {
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        data-lenis-prevent
         className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden"
       >
         {/* Header */}

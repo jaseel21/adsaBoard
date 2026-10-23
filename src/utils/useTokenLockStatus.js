@@ -325,7 +325,11 @@ export function useTokenLockStatus() {
   const tomorrowLockInfo = useMemo(() => getDateLockStatus(tomorrowIST), [getDateLockStatus, tomorrowIST]);
   const isTomorrowLocked = tomorrowLockInfo.isLocked;
 
-  const isUpdationWindowOpen = Boolean(isPostWindowOpen && isTimeInWindow);
+  const isUpdationWindowOpen = useMemo(() => {
+    if (effectiveMode === 'force_unlocked') return true;
+    if (effectiveMode === 'force_locked') return false;
+    return Boolean(isPostWindowOpen && isTimeInWindow);
+  }, [effectiveMode, isPostWindowOpen, isTimeInWindow]);
 
   // Is student portal accessible for login? (Always accessible unless emergency lockdown!)
   const isPortalAccessible = effectiveMode !== 'force_locked';

@@ -393,6 +393,7 @@ export default function CsvManagerModal({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
+        data-lenis-prevent
         className="w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] pb-safe"
       >
         {/* Header */}

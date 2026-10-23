@@ -74,6 +74,7 @@ export default function NotificationDrawer() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            data-lenis-prevent
             className="relative w-full max-w-md sm:max-w-lg h-full bg-white/95 dark:bg-[#0b1310]/95 backdrop-blur-2xl border-l border-gray-200/80 dark:border-white/10 shadow-2xl flex flex-col z-10"
             role="dialog"
             aria-modal="true"

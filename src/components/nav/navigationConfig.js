@@ -109,7 +109,7 @@ export const NAV_ITEMS = [
     shortLabelMl: 'പോർട്ടൽ',
     category: NAV_CATEGORIES.DINING.id,
     icon: UserCheck,
-    descriptionEn: 'Meal routine, date overrides, dietary preferences & digital pass',
+    descriptionEn: 'Meal routine, date overrides, and dietary preferences',
     descriptionMl: 'ഭക്ഷണ ക്രമീകരണങ്ങളും ഡയറ്ററി മാറ്റങ്ങളും',
     isPublic: false,
     requiresAuth: true,
@@ -118,7 +118,7 @@ export const NAV_ITEMS = [
     showInBottomDock: true,
     badgeTextEn: 'My Dining',
     badgeTextMl: 'എന്റെ ടോക്കൺ',
-    keywords: ['student', 'portal', 'token', 'routine', 'pass', 'വിദ്യാർത്ഥി', 'പോർട്ടൽ'],
+    keywords: ['student', 'portal', 'token', 'routine', 'വിദ്യാർത്ഥി', 'പോർട്ടൽ'],
   },
 
   // ================= 2. KITCHEN & MANIFESTS =================

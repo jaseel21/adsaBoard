@@ -15,7 +15,6 @@ import {
   UtensilsCrossed,
   ChefHat,
   LayoutGrid,
-  CreditCard,
   Bell,
   CheckCircle2,
 } from 'lucide-react';
@@ -33,7 +32,6 @@ const TEMPLATES = [
   { id: 'portal', label: 'Master Portal', icon: Sparkles },
   { id: 'menu', label: 'Today’s Menu', icon: UtensilsCrossed },
   { id: 'kitchen', label: 'Kitchen Manifest', icon: ChefHat },
-  { id: 'student_pass', label: 'Student Pass', icon: CreditCard },
   { id: 'announcement', label: 'Campus Notice', icon: Bell },
 ];
 
@@ -172,6 +170,7 @@ export default function SocialCardStudioModal({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.94, opacity: 0, y: 15 }}
           transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+          data-lenis-prevent
           className="relative w-full max-w-4xl max-h-[92vh] rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/15 p-5 sm:p-7 shadow-2xl flex flex-col z-10 overflow-y-auto select-none"
         >
           {/* Header */}

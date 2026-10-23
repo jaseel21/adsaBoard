@@ -191,7 +191,6 @@ export async function renderDynamicSocialCard(template = 'portal', options = {})
     board: '#10b981',
     kitchen: '#d97706',
     support: '#0ea5e9',
-    student_pass: '#6366f1',
     announcement: options.severity === 'critical' ? '#e11d48' : '#059669',
   };
   const themeColor = themeColors[template] || '#059669';
@@ -236,8 +235,6 @@ export async function renderDynamicSocialCard(template = 'portal', options = {})
   // Template Specific Content
   if (template === 'menu') {
     renderMenuTemplate(ctx, width, height, options);
-  } else if (template === 'student_pass') {
-    renderStudentPassTemplate(ctx, width, height, options);
   } else if (template === 'kitchen') {
     renderKitchenTemplate(ctx, width, height, options);
   } else if (template === 'announcement') {
@@ -415,64 +412,7 @@ function renderMenuTemplate(ctx, width, height, options) {
 }
 
 /**
- * 3. Student Dining Pass Template
- */
-function renderStudentPassTemplate(ctx, width, height, options) {
-  ctx.fillStyle = '#818cf8';
-  ctx.font = '900 56px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('Student Dining Pass', 76, 210);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '800 24px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('Official Token Attendance & Credential Card', 76, 250);
-
-  // Student Pass Card Island
-  const passWidth = width - 152;
-  const passHeight = 180;
-  const passY = 280;
-
-  roundRect(ctx, 76, passY, passWidth, passHeight, 20);
-  ctx.fillStyle = 'rgba(99, 102, 241, 0.12)';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(129, 140, 248, 0.4)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Token Number Badge
-  const tokenNo = options.tokenNumber || '108';
-  roundRect(ctx, 104, passY + 28, 90, 80, 16);
-  ctx.fillStyle = '#4f46e5';
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '900 36px -apple-system, monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(tokenNo, 104 + 45, passY + 80);
-  ctx.textAlign = 'left';
-
-  // Student Details
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '800 26px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText(options.studentName || 'Student Diner', 214, passY + 60);
-
-  ctx.fillStyle = '#c7d2fe';
-  ctx.font = '600 16px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText(`Academic Batch: ${options.batch || 'Senior Wing'} • Token #${tokenNo}`, 214, passY + 90);
-
-  // Status Pill
-  const isBlocked = options.isBlocked;
-  roundRect(ctx, 214, passY + 110, 140, 32, 10);
-  ctx.fillStyle = isBlocked ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
-  ctx.fill();
-  ctx.strokeStyle = isBlocked ? '#f87171' : '#34d399';
-  ctx.stroke();
-
-  ctx.fillStyle = isBlocked ? '#fca5a5' : '#86efac';
-  ctx.font = '700 12px -apple-system, sans-serif';
-  ctx.fillText(isBlocked ? '🔒 Token Locked' : '✅ Active Diner', 228, passY + 131);
-}
-
-/**
- * 4. Kitchen Manifest Template
+ * 3. Kitchen Manifest Template
  */
 function renderKitchenTemplate(ctx, width, height, options) {
   ctx.fillStyle = '#fbbf24';
