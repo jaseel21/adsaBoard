@@ -95,10 +95,10 @@ export default function AvoidersGroupedView({
         subtitle: subLabel,
         tokenList,
         icon: getCategoryIcon(pref.icon, 'w-5 h-5'),
-        copyText: `ADSA Mess • ${prefLabel} Avoiders (${tokenList.length} students):\n${tokenList.map((t) => `#${t}`).join(', ')}`,
+        copyText: `ADSA Mess • ${prefLabel} Avoiders (${tokenList.length} students):\n${tokenList.map((tok) => `#${tok}`).join(', ')}`,
       };
     });
-  }, [categorization, sectionsList, batchesList, preferences, rejectionsByPref, students, sortOrder, lang]);
+  }, [categorization, sectionsList, batchesList, preferences, rejectionsByPref, students, sortOrder, lang, t]);
 
   // Expanded accordions state (default: all expanded)
   const [expandedGroups, setExpandedGroups] = useState(() => {

@@ -233,7 +233,7 @@ export default function SettingsPage() {
                 <div className="p-12 text-center rounded-3xl bg-white/70 dark:bg-[#0c1412]/70 border border-gray-200/80 dark:border-white/10 space-y-3">
                   <Sliders className="w-8 h-8 text-gray-400 mx-auto opacity-50" />
                   <span className="text-sm font-extrabold text-gray-700 dark:text-gray-300 block">
-                    No Settings Found for "{searchQuery}"
+                    No Settings Found for &quot;{searchQuery}&quot;
                   </span>
                   <p className="text-xs text-gray-400 max-w-sm mx-auto">
                     Try searching for theme, language, audio, password, backup, or kiosk timeout.

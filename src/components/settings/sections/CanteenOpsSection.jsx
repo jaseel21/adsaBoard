@@ -189,7 +189,7 @@ export default function CanteenOpsSection({
                 {language === 'ml' ? 'പുതിയ ഡയറ്ററി മാറ്റങ്ങൾക്ക് അലാറം നൽകുക' : 'Dietary Avoidance Audio Chime'}
               </span>
               <span className="text-[10px] text-gray-400 block">
-                Emits an alert chime when a student's dietary change request is approved for today
+                Emits an alert chime when a student&apos;s dietary change request is approved for today
               </span>
             </div>
           </div>

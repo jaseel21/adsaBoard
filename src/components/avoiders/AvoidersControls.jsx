@@ -253,7 +253,7 @@ export default function AvoidersControls({
             className="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 min-w-0 truncate"
           >
             <option value="all_avoiders">
-              {t('allDietaryAvoiders', 'All Dietary Avoiders (1+)')}
+              {t('allDietaryAvoidersFilter', 'All Dietary Avoiders (1+)')}
             </option>
             <option value="all_students">
               {t('allEnrolledTokens', 'All Enrolled Diners')} ({totalCount})
@@ -318,7 +318,7 @@ export default function AvoidersControls({
           >
             <option value="tokenNo">{t('sortToken', 'Sort by: Token Number')}</option>
             <option value="nameEn">{t('sortNameEn', 'Sort by: Name (English A → Z)')}</option>
-            <option value="nameMl">{t('sortNameMl', 'Sort by: Name (Malayalam അ → ഹ)')}</option>
+            <option value="nameMl">{t('sortNameMlFull', 'Sort by: Name (Malayalam അ → ഹ)')}</option>
             <option value="batch">{t('sortBatch', 'Sort by: Academic Batch')}</option>
             <option value="avoidCount">{t('sortAvoidCount', 'Sort by: Exclusions Count')}</option>
           </select>
@@ -393,7 +393,7 @@ export default function AvoidersControls({
           {/* Filter Pills */}
           {searchQuery && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 max-w-[160px] truncate">
-              <span className="truncate">"{searchQuery}"</span>
+              <span className="truncate">&quot;{searchQuery}&quot;</span>
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}

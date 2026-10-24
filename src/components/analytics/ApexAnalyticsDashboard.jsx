@@ -42,8 +42,8 @@ export default function ApexAnalyticsDashboard() {
   const { t } = useLanguage();
 
   // Real-time Verified IST Clock
-  const { timeHms, longDate, dayShort } = useWorldTime('Asia/Kolkata');
-  const todayIST = useMemo(() => getTodayISTDate(), [longDate]);
+  const { timeHms, todayIST: worldTodayIST } = useWorldTime('Asia/Kolkata');
+  const todayIST = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
 
   // Firestore Data State
   const [students, setStudents] = useState([]);

@@ -481,6 +481,14 @@ export default function DateGridMatrix({
     }
   };
 
+  const handleRemoveSingleException = (dateStr) => {
+    feedback('warning');
+    const updated = removeDateException(student?.dateExceptions || {}, dateStr);
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
+    }
+  };
+
   const renderMealCard = (mealType) => {
     const isLunch = mealType === 'lunch';
     const mealTitle = isLunch
