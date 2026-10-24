@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <title>ADSA T-Board • Offline Sanctuary</title>
+    <meta name="theme-color" content="#059669" />
+    <style>
+      :root {
+        --bg: #080d0b;
+        --surface: #0f1715;
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #ffffff;
+        --text-muted: #9ca3af;
+        --emerald: #10b981;
+        --emerald-glow: rgba(16, 185, 129, 0.2);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        padding: 2.25rem 1.75rem;
+        max-width: 440px;
+        width: 100%;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .crest-wrapper {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 0 24px var(--emerald-glow);
+      }
+      .crest-wrapper img {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        margin-bottom: 1rem;
+      }
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #fbbf24;
+        animation: pulse 1.8s infinite;
+      }
+      h1 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+      }
+      p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.55;
+        margin-bottom: 1.5rem;
+      }
+      .schedule-box {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 0.85rem 1rem;
+        width: 100%;
+        text-align: left;
+        margin-bottom: 1.5rem;
+        font-size: 0.8rem;
+      }
+      .schedule-title {
+        font-weight: 700;
+        color: var(--emerald);
+        margin-bottom: 0.35rem;
+        display: flex;
+        justify-content: space-between;
+      }
+      .schedule-row {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-muted);
+        padding: 0.2rem 0;
+      }
+      .schedule-row span:last-child {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .btn {
+        background: linear-gradient(135deg, #059669, #10b981);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        padding: 0.85rem 1.75rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.15s, opacity 0.15s;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35);
+      }
+      .btn:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+      .footer {
+        margin-top: 1.5rem;
+        font-size: 0.75rem;
+        color: #6b7280;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.9); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="crest-wrapper">
+        <img
+          src="https://alathurpadiDars.in/wp-content/uploads/2019/08/Dars-Site-Logo1.png"
+          alt="Alathurpadi Dars Crest"
+          onerror="this.style.display='none'"
+        />
+      </div>
+
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span>Offline Sanctuary</span>
+      </div>
+
+      <h1>You're Currently Offline</h1>
+      <p>
+        Connection to the campus server is temporarily paused. ADSA T-Board has cached your student profile and recent meal selections. Reconnecting will automatically synchronize all attendance records.
+      </p>
+
+      <div class="schedule-box">
+        <div class="schedule-title">
+          <span>Campus Meal Reference</span>
+          <span>IST</span>
+        </div>
+        <div class="schedule-row">
+          <span>Breakfast Service</span>
+          <span>07:30 AM – 08:45 AM</span>
+        </div>
+        <div class="schedule-row">
+          <span>Breakfast Cutoff</span>
+          <span>07:00 AM Strict</span>
+        </div>
+        <div class="schedule-row">
+          <span>Lunch Service</span>
+          <span>12:45 PM – 02:00 PM</span>
+        </div>
+        <div class="schedule-row">
+          <span>Friday Special Lunch</span>
+          <span>01:15 PM – 02:15 PM</span>
+        </div>
+      </div>
+
+      <button class="btn" onclick="window.location.reload()">
+        <span>↻</span>
+        <span>Check Connection & Reload</span>
+      </button>
+
+      <div class="footer">
+        Alathurpadi Dars Food Management System • Melmuri, Malappuram
+      </div>
+    </div>
+  </body>
+</html>

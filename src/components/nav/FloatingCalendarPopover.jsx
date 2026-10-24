@@ -133,15 +133,24 @@ export default function FloatingCalendarPopover({
   const calendarCells = getMonthCalendarDays(viewYear, viewMonth);
   const hijriString = nowDate ? getHijriEstimate(nowDate) : '';
 
-  // Determine popover position relative to anchor
+  // Viewport-aware clamped positioning (zero transform conflict with Framer Motion)
   const style = {};
-  if (anchorRect) {
-    style.top = `${anchorRect.bottom + 8}px`;
-    style.left = `${Math.max(16, Math.min(window.innerWidth - 336, anchorRect.left - 120))}px`;
-  } else {
-    style.top = '64px';
-    style.left = '50%';
-    style.transform = 'translateX(-50%)';
+  if (typeof window !== 'undefined') {
+    const popoverWidth = Math.min(320, window.innerWidth - 24);
+    const isMobile = window.innerWidth < 768;
+    const padding = isMobile ? 12 : 16;
+    let targetLeft;
+
+    if (anchorRect) {
+      targetLeft = anchorRect.left + (anchorRect.width / 2) - (popoverWidth / 2);
+    } else {
+      targetLeft = (window.innerWidth - popoverWidth) / 2;
+    }
+
+    const clampedLeft = Math.max(padding, Math.min(window.innerWidth - popoverWidth - padding, targetLeft));
+    style.left = `${clampedLeft}px`;
+    style.top = anchorRect ? `${Math.max(8, anchorRect.bottom + 8)}px` : '64px';
+    style.width = `${popoverWidth}px`;
   }
 
   return createPortal(
@@ -164,7 +173,7 @@ export default function FloatingCalendarPopover({
           exit={{ opacity: 0, y: -8, scale: 0.95 }}
           transition={{ type: 'spring', damping: 26, stiffness: 360 }}
           style={style}
-          className="fixed pointer-events-auto w-[320px] rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 shadow-2xl p-4 select-none z-10"
+          className="fixed pointer-events-auto max-w-[calc(100vw-24px)] max-h-[calc(100vh-80px)] overflow-y-auto rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 shadow-2xl p-4 select-none z-10"
         >
           {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">

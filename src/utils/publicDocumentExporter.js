@@ -1,7 +1,12 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
-import { getEffectiveStudentMealStatus } from './studentExceptionService';
+import {
+  getEffectiveStudentMealStatus,
+  getTodayISTDate,
+  getDayOfWeekShort,
+  formatFriendlyDate,
+} from './studentExceptionService';
 import { getCachedCanteenConfig } from './canteenConfigService';
 
 const BATCH_NAMES = ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5', 'Batch 6', 'Batch 7'];
@@ -112,7 +117,7 @@ export function computeSectionsBreakdown({
       tokensToDisplay = activeTokens;
     } else if (statusFilter === 'all') {
       tokensToDisplay = slice.map(
-        (d) => `${d.tokenNo}${getEffectiveStudentMealStatus(d, targetDateIST, dayKey, meal) ? '✓' : '✗'}`
+        (d) => `${d.tokenNo}${getEffectiveStudentMealStatus(d, targetDateIST, dayKey, meal) ? ' (ON)' : ' (OFF)'}`
       );
     }
 
@@ -169,7 +174,7 @@ export function computeBatchBreakdown({
       tokensToDisplay = activeTokens;
     } else if (statusFilter === 'all') {
       tokensToDisplay = slice.map(
-        (d) => `${d.tokenNo}${getEffectiveStudentMealStatus(d, targetDateIST, dayKey, meal) ? '✓' : '✗'}`
+        (d) => `${d.tokenNo}${getEffectiveStudentMealStatus(d, targetDateIST, dayKey, meal) ? ' (ON)' : ' (OFF)'}`
       );
     }
 
@@ -318,7 +323,7 @@ export function generateSinglePageCombinedManifestDoc({
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(185, 28, 28);
-    doc.text(`⚠️ REV ${revision} UPDATE NOTE: ${String(deltaNotes).slice(0, 110)}`, 18, 38.2);
+    doc.text(`[ALERT] REV ${revision} UPDATE NOTE: ${String(deltaNotes).slice(0, 110)}`, 18, 38.2);
     currentY = 42;
   }
 
@@ -361,7 +366,7 @@ export function generateSinglePageCombinedManifestDoc({
     statusFilter === 'active_only'
       ? 'Lists Attending Diners'
       : statusFilter === 'all'
-      ? 'Roster Status (✓ Served / ✗ Skip)'
+      ? 'Roster Status (ON: Served / OFF: Skip)'
       : 'Numbers inside columns represent canceled/skipped tokens';
 
   // 3. SECTION 1: BREAKFAST SUPPLY MANIFEST
@@ -532,16 +537,26 @@ export function exportKitchenSupplyPDF(params) {
  * Generates an institutional Dietary & Avoiders Matrix PDF for mess cooks and food suppliers.
  * Displays which token numbers avoid specific dietary categories (e.g. Fish, Beef, Chicken, Egg).
  * Strictly anonymized with zero student personal data.
+ * Supports date targeting, day key resolution, attendance filtering (active diners vs all enrolled), and meal filters.
  */
 export function generateDietaryAvoidersDoc({
   preferences = [],
   documents = [],
-  rejectionsByPref = {},
+  rejectionsByPref = null,
   sort = 'ascending',
   selectedCategories = null,
+  targetDateIST = null,
+  dayKey = null,
+  dayFull = null,
+  attendanceScope = 'active_diners', // 'active_diners' | 'all'
+  mealFilter = 'both', // 'both' | 'breakfast' | 'lunch'
 }) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const brandColor = [5, 150, 105]; // Emerald
+
+  const effectiveDateIST = targetDateIST || getTodayISTDate();
+  const effectiveDayKey = dayKey || getDayOfWeekShort(effectiveDateIST);
+  const effectiveDayFull = dayFull || formatFriendlyDate(effectiveDateIST);
 
   // Filter active preferences
   let activePrefs = preferences.filter((p) => p.isActive !== false);
@@ -549,40 +564,67 @@ export function generateDietaryAvoidersDoc({
     activePrefs = activePrefs.filter((p) => selectedCategories.includes(p.id));
   }
 
-  // Compute rejections if not pre-provided
-  const rejections = { ...rejectionsByPref };
+  // Filter documents by attendance if requested
+  const relevantDocs = attendanceScope === 'active_diners'
+    ? documents.filter((d) => {
+        if (mealFilter === 'breakfast') {
+          return getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'breakfast');
+        }
+        if (mealFilter === 'lunch') {
+          return getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'lunch');
+        }
+        return (
+          getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'breakfast') ||
+          getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'lunch')
+        );
+      })
+    : documents;
+
+  // Compute rejections for relevant documents
+  const rejections = {};
   activePrefs.forEach((p) => {
-    if (!rejections[p.id]) {
-      const tokens = documents
+    if (rejectionsByPref && attendanceScope === 'all' && rejectionsByPref[p.id]) {
+      rejections[p.id] = sortTokenList(rejectionsByPref[p.id], sort);
+    } else {
+      const tokens = relevantDocs
         .filter((d) => d.obj2 && d.obj2[p.id] === false)
         .map((d) => d.tokenNo);
       rejections[p.id] = sortTokenList(tokens, sort);
-    } else {
-      rejections[p.id] = sortTokenList(rejections[p.id], sort);
     }
   });
 
-  // Header Banner
+  // Header Banner (y: 0 to 22mm)
   doc.setFillColor(...brandColor);
-  doc.rect(0, 0, 210, 21, 'F');
+  doc.rect(0, 0, 210, 22, 'F');
 
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('ALATHURPADI DARS — DIETARY AVOIDERS & SPECIAL EXCLUSIONS', 14, 9.5);
+  doc.text('ALATHURPADI DARS — DIETARY AVOIDERS & SPECIAL EXCLUSIONS', 14, 8.5);
 
   const sortLabel = sort === 'descending' ? 'DESC (200 → 1)' : 'ASC (1 → 200)';
-  doc.setFontSize(8);
+  const scopeLabel = attendanceScope === 'active_diners'
+    ? `Active Diners on Date (${mealFilter.toUpperCase()})`
+    : 'All Enrolled Diners';
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.text(
-    `Official Kitchen Reference  |  Date: ${new Date().toLocaleDateString('en-GB')}  |  Sort: ${sortLabel}  |  Total Enrolled: ${documents.length}`,
+    `Service Date: ${effectiveDateIST} (${effectiveDayFull.toUpperCase()})  |  Scope: ${scopeLabel}  |  Sort: ${sortLabel}`,
     14,
-    15.5
+    14.5
   );
 
-  // Summary Row Box
+  doc.setFontSize(6.5);
+  doc.setTextColor(200, 230, 220);
+  doc.text(
+    `Filtered Pool: ${relevantDocs.length} Diners (Total Enrolled: ${documents.length})  |  Official Kitchen Reference`,
+    14,
+    19
+  );
+
+  // Summary Row Box (y: 24 to 32.5mm)
   doc.setFillColor(243, 246, 244);
-  doc.roundedRect(14, 23, 182, 9, 2, 2, 'F');
+  doc.roundedRect(14, 24, 182, 8.5, 2, 2, 'F');
 
   let summaryText = 'Active Exclusions: ';
   activePrefs.forEach((p, idx) => {
@@ -593,7 +635,7 @@ export function generateDietaryAvoidersDoc({
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(60, 60, 60);
-  doc.text(summaryText, 18, 28.5);
+  doc.text(summaryText, 18, 29.5);
 
   // Construct Columns
   const columns = activePrefs.map((p) => ({
@@ -644,13 +686,13 @@ export function generateDietaryAvoidersDoc({
     Math.min(finalY + 8, 290)
   );
 
-  const dateSlug = new Date().toISOString().slice(0, 10);
-  const filename = `ADSA_Dietary_Avoiders_${dateSlug}_${sort}.pdf`;
+  const scopeSlug = attendanceScope === 'active_diners' ? mealFilter : 'all';
+  const filename = `ADSA_Dietary_Avoiders_${effectiveDateIST}_${scopeSlug}_${sort}.pdf`;
   return {
     doc,
     filename,
     title: 'Dietary Avoiders Matrix',
-    subtitle: `Kitchen Dietary Matrix (${sort})`,
+    subtitle: `${effectiveDateIST} (${effectiveDayFull}) • ${scopeLabel} • ${sort}`,
   };
 }
 
@@ -723,30 +765,57 @@ export function exportManifestCSV(params) {
 
 /**
  * Generates and downloads a CSV spreadsheet of the Dietary Avoiders Matrix.
+ * Supports date targeting, attendance filtering, and shift scopes.
  */
 export function generateDietaryCSVData({
   preferences = [],
   documents = [],
-  rejectionsByPref = {},
+  rejectionsByPref = null,
   sortOrder = 'ascending',
   selectedCategories = null,
+  targetDateIST = null,
+  dayKey = null,
+  dayFull = null,
+  attendanceScope = 'active_diners',
+  mealFilter = 'both',
 }) {
+  const effectiveDateIST = targetDateIST || getTodayISTDate();
+  const effectiveDayKey = dayKey || getDayOfWeekShort(effectiveDateIST);
+  const effectiveDayFull = dayFull || formatFriendlyDate(effectiveDateIST);
+
   let activePrefs = preferences.filter((p) => p.isActive !== false);
   if (selectedCategories && selectedCategories.length > 0) {
     activePrefs = activePrefs.filter((p) => selectedCategories.includes(p.id));
   }
 
-  const rejections = { ...rejectionsByPref };
+  const relevantDocs = attendanceScope === 'active_diners'
+    ? documents.filter((d) => {
+        if (mealFilter === 'breakfast') {
+          return getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'breakfast');
+        }
+        if (mealFilter === 'lunch') {
+          return getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'lunch');
+        }
+        return (
+          getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'breakfast') ||
+          getEffectiveStudentMealStatus(d, effectiveDateIST, effectiveDayKey, 'lunch')
+        );
+      })
+    : documents;
+
+  const rejections = {};
   activePrefs.forEach((p) => {
-    if (!rejections[p.id]) {
-      const tokens = documents
+    if (rejectionsByPref && attendanceScope === 'all' && rejectionsByPref[p.id]) {
+      rejections[p.id] = sortTokenList(rejectionsByPref[p.id], sortOrder);
+    } else {
+      const tokens = relevantDocs
         .filter((d) => d.obj2 && d.obj2[p.id] === false)
         .map((d) => d.tokenNo);
       rejections[p.id] = sortTokenList(tokens, sortOrder);
     }
   });
 
-  const sorted = sortDocuments(documents, sortOrder);
+  const sorted = sortDocuments(relevantDocs, sortOrder);
   const rows = sorted
     .filter((d) => activePrefs.some((p) => (rejections[p.id] || []).includes(d.tokenNo)))
     .map((doc) => {
@@ -758,6 +827,9 @@ export function generateDietaryCSVData({
       const row = {
         'Token No': doc.tokenNo,
         'Batch': doc.batch || 'Unassigned',
+        'Service Date': effectiveDateIST,
+        'Day': (effectiveDayFull || effectiveDayKey || '').toUpperCase(),
+        'Attendance Scope': attendanceScope === 'active_diners' ? `Active (${mealFilter})` : 'All Enrolled',
         'Avoided Items': avoidedItems,
       };
 
@@ -769,14 +841,14 @@ export function generateDietaryCSVData({
     });
 
   const csv = Papa.unparse(rows);
-  const dateSlug = new Date().toISOString().slice(0, 10);
-  const filename = `ADSA_Dietary_Avoiders_${dateSlug}_${sortOrder}.csv`;
+  const scopeSlug = attendanceScope === 'active_diners' ? mealFilter : 'all';
+  const filename = `ADSA_Dietary_Avoiders_${effectiveDateIST}_${scopeSlug}_${sortOrder}.csv`;
   return {
     csv,
     rows,
     filename,
     title: 'Dietary Avoiders Matrix (CSV)',
-    subtitle: `Dietary Matrix (${sortOrder})`,
+    subtitle: `${effectiveDateIST} (${effectiveDayFull}) • ${attendanceScope === 'active_diners' ? 'Active (' + mealFilter + ')' : 'All'} • ${sortOrder}`,
   };
 }
 

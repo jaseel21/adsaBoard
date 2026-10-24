@@ -23,6 +23,7 @@ import {
   Printer,
   History,
   Ban,
+  BarChart3,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -177,6 +178,17 @@ export default function ApexCommandPalette({
           iconColor: 'text-emerald-500',
           action: () => {
             navigate('/admin/audit-logs');
+            onClose();
+          },
+        },
+        {
+          id: 'analytics_intelligence',
+          title: 'Intelligence & Performance Analytics Command',
+          subtitle: 'Live dining telemetry, batch benchmarks, kitchen rations & waste economics (/admin/analytics)',
+          icon: BarChart3,
+          iconColor: 'text-emerald-500',
+          action: () => {
+            navigate('/admin/analytics');
             onClose();
           },
         }

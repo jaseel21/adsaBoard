@@ -56,7 +56,7 @@ export default function CalendarViewFilterHub({
             onClick={() => handleMealChange('breakfast')}
             className={`relative px-2.5 py-1 text-xs font-black rounded-lg transition-colors flex items-center gap-1 select-none ${
               mealFilter === 'breakfast'
-                ? 'text-amber-700 dark:text-amber-300'
+                ? 'text-emerald-700 dark:text-emerald-300'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
             }`}
           >
@@ -64,10 +64,10 @@ export default function CalendarViewFilterHub({
               <motion.div
                 layoutId="activeMealPill"
                 transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-amber-500/30"
+                className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-emerald-500/30"
               />
             )}
-            <Coffee className="w-3 h-3 text-amber-500" />
+            <Coffee className="w-3 h-3 text-emerald-500" />
             <span className="hidden sm:inline">{t('navBreakfast', 'Breakfast')}</span>
             <span className="sm:hidden">Bf</span>
           </button>

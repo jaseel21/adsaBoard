@@ -1,29 +1,85 @@
 {
+  "id": "/",
   "name": "ADSA T-Board • Alathurpadi Dars",
   "short_name": "ADSA T-Board",
   "description": "Official Food Logistics & Token Attendance Management System for Alathurpadi Dars.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "background_color": "#080d0b",
   "theme_color": "#059669",
   "orientation": "portrait-primary",
+  "categories": ["education", "food", "lifestyle", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Food Menu",
+      "short_name": "Menu",
+      "description": "View today's campus food menu and meal schedule",
+      "url": "/menu?source=pwa_shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Student Portal",
+      "short_name": "Portal",
+      "description": "Access your student dining token and meal blocking matrix",
+      "url": "/student?source=pwa_shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Live Token Board",
+      "short_name": "Board",
+      "description": "View campus live dining token dashboard",
+      "url": "/?source=pwa_shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Kitchen Display",
+      "short_name": "Kitchen",
+      "description": "Kitchen KDS headcounts and food preparation manifests",
+      "url": "/kitchen?source=pwa_shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
     {
       "src": "/favicon-32x32.png",
       "sizes": "32x32",
       "type": "image/png"
     },
     {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

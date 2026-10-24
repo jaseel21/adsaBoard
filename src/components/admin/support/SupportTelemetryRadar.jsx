@@ -9,6 +9,7 @@ import {
   BarChart3,
   TrendingUp,
   AlertTriangle,
+  Star,
 } from 'lucide-react';
 import { useLanguage } from '../../../store/LanguageContext';
 import { SUPPORT_CATEGORIES } from '../../../utils/supportTicketService';
@@ -165,8 +166,10 @@ export default function SupportTelemetryRadar({ tickets = [] }) {
             <span className="text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-400 font-mono">
               {metrics.satisfactionPercent}%
             </span>
-            <span className="text-xs font-mono font-bold text-gray-500">
-              ({metrics.avgRating}★)
+            <span className="text-xs font-mono font-bold text-gray-500 inline-flex items-center gap-0.5">
+              <span>({metrics.avgRating}</span>
+              <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 inline -mt-0.5" />
+              <span>)</span>
             </span>
           </div>
           <span className="text-[10px] text-gray-400 block mt-0.5">Real-time diner sentiment</span>

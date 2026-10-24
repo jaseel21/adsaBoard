@@ -1,5 +1,4 @@
-import React from 'react';
-import { ShieldCheck, Check, Building2, User, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, Check, Building2, User, Eye, EyeOff, Lock } from 'lucide-react';
 import { SENDER_AUTHORITIES, AUTHORITY_METADATA } from '../../../utils/notificationService';
 
 export default function SenderAttributionSelector({ value, onChange }) {
@@ -134,9 +133,9 @@ export default function SenderAttributionSelector({ value, onChange }) {
           </div>
         </div>
       ) : (
-        /* When Show Sender is OFF */
-        <div className="p-2.5 rounded-xl bg-black/5 dark:bg-black/30 text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
-          🔒 Notice will display as an anonymous neutral bulletin (<strong>&quot;Official Campus Bulletin&quot; / &quot;ഔദ്യോഗിക അറിയിപ്പ്&quot;</strong>) with no specific author or committee branding visible to users.
+        <div className="p-2.5 rounded-xl bg-black/5 dark:bg-black/30 text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed flex items-start gap-1.5">
+          <Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
+          <span>Notice will display as an anonymous neutral bulletin (<strong>&quot;Official Campus Bulletin&quot; / &quot;ഔദ്യോഗിക അറിയിപ്പ്&quot;</strong>) with no specific author or committee branding visible to users.</span>
         </div>
       )}
     </div>

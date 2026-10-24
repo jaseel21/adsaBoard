@@ -10,6 +10,7 @@ import {
   UserCheck,
   KeyRound,
   Sparkles,
+  Settings,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
@@ -40,7 +41,9 @@ function NavTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-full px-3 py-1.5 transition-all duration-150 select-none flex items-center justify-center gap-1.5 cursor-pointer text-xs font-semibold ${
+      className={`relative rounded-full ${
+        label ? 'px-3 py-1.5 gap-1.5' : 'w-7 h-7 p-1.5'
+      } transition-all duration-150 select-none flex items-center justify-center cursor-pointer text-xs font-semibold flex-shrink-0 ${
         active
           ? 'text-emerald-700 dark:text-emerald-300 font-extrabold'
           : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95'
@@ -56,8 +59,8 @@ function NavTabButton({
         />
       )}
 
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      <span className="tracking-tight whitespace-nowrap">{label}</span>
+      {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+      {label && <span className="tracking-tight whitespace-nowrap">{label}</span>}
 
       {pulseDot && (
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -224,33 +227,35 @@ export default function FloatingDesktopNav({
         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0" />
 
         {/* 6. Instant Search Action Icon */}
-        <button
-          type="button"
+        <NavTabButton
           onClick={() => {
             feedback('pop');
             onOpenSearch();
           }}
-          className="p-1.5 rounded-full text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-          title="Search pages (⌘K)"
-          aria-label="Search pages"
-        >
-          <Search className="w-4 h-4" />
-        </button>
+          active={false}
+          icon={Search}
+          tooltip="Search pages (⌘K)"
+        />
 
         {/* 7. Notification Bell */}
-        <div className="flex items-center justify-center p-0.5">
-          <NotificationBell />
-        </div>
+        <NotificationBell variant="pill" />
 
         {/* 8. Language Switcher (Icon Only with Indicator Badge) */}
-        <div className="flex items-center justify-center p-0.5">
-          <LanguageSwitch iconOnly={true} />
-        </div>
+        <LanguageSwitch iconOnly={true} />
 
         {/* 9. Theme Switcher (Icon Only) */}
-        <div className="flex items-center justify-center p-0.5">
-          <ThemeSwitch iconOnly={true} />
-        </div>
+        <ThemeSwitch iconOnly={true} />
+
+        {/* 10. Settings & Preferences */}
+        <NavTabButton
+          onClick={() => {
+            feedback('tick');
+            navigate('/settings');
+          }}
+          active={location.pathname.startsWith('/settings') || location.pathname.startsWith('/preferences')}
+          icon={Settings}
+          tooltip="Settings & Preferences (⌘,)"
+        />
 
         {/* Vertical Divider before Date & Time */}
         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0" />

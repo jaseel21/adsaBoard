@@ -32,6 +32,8 @@ import {
   HeartHandshake,
   Check,
   Info,
+  Zap,
+  Star,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
@@ -281,6 +283,11 @@ export default function LandingPage() {
       preferences,
       documents: studentsList,
       rejectionsByPref: aggregates.rejectionsMap,
+      targetDateIST: selectedTargetDateIST,
+      dayKey: selectedDayKey,
+      dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+      attendanceScope: 'active_diners',
+      mealFilter: 'both',
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
   };
@@ -291,6 +298,11 @@ export default function LandingPage() {
       preferences,
       documents: studentsList,
       rejectionsByPref: aggregates.rejectionsMap,
+      targetDateIST: selectedTargetDateIST,
+      dayKey: selectedDayKey,
+      dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+      attendanceScope: 'active_diners',
+      mealFilter: 'both',
     });
     doc.save(filename);
   };
@@ -302,6 +314,11 @@ export default function LandingPage() {
         preferences,
         documents: studentsList,
         rejectionsByPref: aggregates.rejectionsMap,
+        targetDateIST: selectedTargetDateIST,
+        dayKey: selectedDayKey,
+        dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+        attendanceScope: 'active_diners',
+        mealFilter: 'both',
       });
       const { blobUrl } = createPdfBlob(doc);
       await directPrintPdf(blobUrl);
@@ -317,13 +334,18 @@ export default function LandingPage() {
         preferences,
         documents: studentsList,
         rejectionsByPref: aggregates.rejectionsMap,
+        targetDateIST: selectedTargetDateIST,
+        dayKey: selectedDayKey,
+        dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
+        attendanceScope: 'active_diners',
+        mealFilter: 'both',
       });
       const { blob } = createPdfBlob(doc);
       await shareDocument({
         blob,
         filename,
         title,
-        text: `${title} • Alathurpadi Dars Canteen`,
+        text: `${title} (${selectedTargetDateIST}) • Alathurpadi Dars Canteen`,
       });
     } catch (err) {
       console.error('Share matrix error:', err);
@@ -613,8 +635,9 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300">
-                  {t('studentLoginNotice', '✨ Log in using your Token Number and secure PIN to manage your meals, schedule absences, and view history.')}
+                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>{t('studentLoginNotice', 'Log in using your Token Number and secure PIN to manage your meals, schedule absences, and view history.')}</span>
                 </div>
               </div>
 
@@ -680,8 +703,9 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300">
-                  {t('staffPrivilegeNotice', '⚡ Authenticated staff gain access to live Master Board controls, student rosters, dietary matrices, and immutable audit logs.')}
+                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+                  <Zap className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <span>{t('staffPrivilegeNotice', 'Authenticated staff gain access to live Master Board controls, student rosters, dietary matrices, and immutable audit logs.')}</span>
                 </div>
               </div>
 
@@ -759,8 +783,9 @@ export default function LandingPage() {
                     <Printer className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-400/30">
-                      {t('singlePageMasterBadge', '★ Single-Page Master')}
+                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-400/30 inline-flex items-center gap-1">
+                      <Star className="w-3 h-3 text-emerald-600 dark:text-emerald-400 fill-current" />
+                      <span>{t('singlePageMasterBadge', 'Single-Page Master')}</span>
                     </span>
                     <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-400/20">
                       {t('breakfastPlusLunchBadge', 'Breakfast + Lunch')}

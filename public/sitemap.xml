@@ -95,12 +95,12 @@
 
   <!-- 8. Document & Manifest Downloads -->
   <url>
-    <loc>https://canteen.alathurpadidars.in/list</loc>
+    <loc>https://canteen.alathurpadidars.in/avoiders</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/list" />
-    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/list" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://canteen.alathurpadidars.in/avoiders" />
+    <xhtml:link rel="alternate" hreflang="ml" href="https://canteen.alathurpadidars.in/avoiders" />
   </url>
 
   <!-- 9. Student Sign-In Portal -->

@@ -15,15 +15,49 @@
     --color-border: rgba(255, 255, 255, 0.08);
   }
 
-  html, body {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
     margin: 0;
     min-height: 100vh;
     min-height: 100dvh;
     width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
-    -webkit-text-size-adjust: 100%;
+    position: relative;
     -webkit-tap-highlight-color: transparent;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Universal Text Wrapping to Prevent Compound Word/Script Blowouts */
+  p, span, h1, h2, h3, h4, h5, h6, a, button, label {
+    overflow-wrap: break-word;
+  }
+
+  /* Universal Media Boundary Containment */
+  img, svg, video, canvas, audio, iframe, embed, object {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Isolated Horizontal Scroll Island Utility */
+  .scroll-island {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
   }
 
   /* Safe Area Inset Utility Classes for iOS & Android Gesture Navigation */
@@ -136,4 +170,39 @@
 
 .rotate-y-180 {
   transform: rotateY(180deg);
+}
+
+/* Font Scale Utilities */
+[data-font-scale="compact"] {
+  font-size: 14.5px;
+}
+[data-font-scale="balanced"] {
+  font-size: 16px;
+}
+[data-font-scale="roomy"] {
+  font-size: 17.5px;
+}
+[data-font-scale="kiosk"] {
+  font-size: 19px;
+}
+
+/* Low GPU Performance Mode (Disables Backdrop Filters for smooth 60fps on older devices) */
+.low-gpu-perf *, .low-gpu-perf .glass-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Midnight Obsidian Pure Black Theme */
+.obsidian-theme, .obsidian-theme body {
+  background-color: #000000 !important;
+}
+.obsidian-theme .dark {
+  --color-bg: #000000 !important;
+  --color-surface: #0a0a0a !important;
+}
+
+/* Kitchen Solar High-Contrast Mode */
+.solar-theme {
+  --color-bg: #12130e !important;
+  --color-surface: #1c1d15 !important;
 }

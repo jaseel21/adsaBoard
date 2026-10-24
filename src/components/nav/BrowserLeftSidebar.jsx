@@ -12,6 +12,8 @@ import {
   X,
   Sparkles,
   ArrowRight,
+  Settings,
+  BellRing,
 } from 'lucide-react';
 import {
   NAV_CATEGORIES,
@@ -28,6 +30,8 @@ import firebase from '../../firebase/config';
 import StaffManagementModal from '../StaffManagementModal';
 import ShareActionModal from '../ui/ShareActionModal';
 import CanteenOpsActivityDrawer from '../admin/CanteenOpsActivityDrawer';
+import BlockManagementModal from '../admin/BlockManagementModal';
+import MealAlarmModal from '../notifications/MealAlarmModal';
 
 export default function BrowserLeftSidebar() {
   const location = useLocation();
@@ -53,6 +57,8 @@ export default function BrowserLeftSidebar() {
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [opsLogOpen, setOpsLogOpen] = useState(false);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [alarmModalOpen, setAlarmModalOpen] = useState(false);
 
   const toggleCategory = (categoryId) => {
     feedback('tick');
@@ -101,6 +107,7 @@ export default function BrowserLeftSidebar() {
       if (item.action === 'open_staff_modal') setStaffModalOpen(true);
       if (item.action === 'open_share_modal') setShareModalOpen(true);
       if (item.action === 'open_ops_log_modal') setOpsLogOpen(true);
+      if (item.action === 'open_block_modal') setBlockModalOpen(true);
       if (!isDesktop) closeSidebar();
       return;
     }
@@ -213,6 +220,14 @@ export default function BrowserLeftSidebar() {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
+                  onClick={() => handleNavigate('/settings')}
+                  className="p-1 rounded-md text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                  title="Settings & Preferences"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={handleLogoutStudent}
                   className="p-1 rounded-md text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                   title="Sign Out Token"
@@ -237,14 +252,24 @@ export default function BrowserLeftSidebar() {
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleBadge?.badgeClass || ''}`}>
                 {roleBadge?.label || 'Staff'}
               </span>
-              <button
-                type="button"
-                onClick={handleLogoutAdmin}
-                className="flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:underline"
-              >
-                <LogOut className="w-3 h-3" />
-                <span>{t('navLogout', 'Logout')}</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleNavigate('/settings')}
+                  className="p-1 rounded-md text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                  title="Settings & Preferences"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogoutAdmin}
+                  className="flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:underline"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>{t('navLogout', 'Logout')}</span>
+                </button>
+              </div>
             </div>
             <div>
               <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
@@ -403,6 +428,42 @@ export default function BrowserLeftSidebar() {
           })
         )}
       </div>
+
+      {/* Persistent Settings & Alarms Footer Utility */}
+      <div className="p-2 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex-shrink-0 space-y-1">
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setAlarmModalOpen(true);
+          }}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <BellRing className="w-4 h-4 text-emerald-500" />
+            <span>{language === 'ml' ? 'മീൽ കട്ട് ഓഫ് അലാറം' : 'Meal Cutoff Alarms'}</span>
+          </div>
+          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+            IST
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleNavigate('/settings')}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+            location.pathname.startsWith('/settings') || location.pathname.startsWith('/preferences')
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="w-4 h-4 text-emerald-500" />
+            <span>{language === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings & Preferences'}</span>
+          </div>
+          <span className="text-[10px] font-mono text-gray-400">⌘,</span>
+        </button>
+      </div>
     </div>
   );
 
@@ -479,6 +540,18 @@ export default function BrowserLeftSidebar() {
       <CanteenOpsActivityDrawer
         isOpen={opsLogOpen}
         onClose={() => setOpsLogOpen(false)}
+      />
+
+      {/* Block & Fine Management Radar Modal (Admin Only) */}
+      <BlockManagementModal
+        isOpen={blockModalOpen}
+        onClose={() => setBlockModalOpen(false)}
+      />
+
+      {/* Meal Cutoff Alarm Configuration Modal */}
+      <MealAlarmModal
+        isOpen={alarmModalOpen}
+        onClose={() => setAlarmModalOpen(false)}
       />
     </>
   );

@@ -32,6 +32,10 @@ import {
   CalendarDays,
   Search,
   Filter,
+  Info,
+  Lock,
+  Sunrise,
+  Moon,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -576,7 +580,7 @@ export default function MenuManagement() {
     });
 
     doc.autoTable({
-      head: [['Day', '☕ Breakfast', '🍲 Lunch', '🫖 Evening Tea', '🌙 Dinner', 'Special Notice']],
+      head: [['Day', 'Breakfast', 'Lunch', 'Evening Tea', 'Dinner', 'Special Notice']],
       body: rows,
       startY: 30,
       theme: 'striped',
@@ -1174,8 +1178,11 @@ export default function MenuManagement() {
         {/* If Day is Archived, show reason banner */}
         {isDayArchived && (
           <div className="mt-3 p-3 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between">
-            <span>
-              ℹ️ <strong>Day Archived:</strong> {currentDayData.archiveReason || 'Canteen Closed / Routine Off for this day'}
+            <span className="inline-flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <span>
+                <strong>Day Archived:</strong> {currentDayData.archiveReason || 'Canteen Closed / Routine Off for this day'}
+              </span>
             </span>
             <span className="text-[11px] opacity-80">
               Home Spotlight will skip this day automatically.
@@ -1249,8 +1256,9 @@ export default function MenuManagement() {
                     <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">
                       {slot.label}
                     </h3>
-                    <span className="text-[11px] text-gray-400 font-medium">
-                      ⏰ {meal.timing || 'Standard Hours'}
+                    <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3 text-gray-400" />
+                      <span>{meal.timing || 'Standard Hours'}</span>
                     </span>
                   </div>
                 </div>
@@ -1281,8 +1289,11 @@ export default function MenuManagement() {
               {/* Main Dish Headline / Empty Prompt */}
               <div className="my-2.5">
                 {isSlotArchived ? (
-                  <div className="p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs">
-                    🔒 <strong>Archived:</strong> {meal.archiveReason || 'Meal not served on this day schedule.'}
+                  <div className="p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <span>
+                      <strong>Archived:</strong> {meal.archiveReason || 'Meal not served on this day schedule.'}
+                    </span>
                   </div>
                 ) : isEmpty ? (
                   <div
@@ -1510,23 +1521,27 @@ export default function MenuManagement() {
                         ) : (
                           <div className="flex flex-wrap gap-2 mt-2">
                             {ovr.breakfast?.title && (
-                              <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 text-xs font-semibold">
-                                🍳 BF: {ovr.breakfast.title}
+                              <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 text-xs font-semibold inline-flex items-center gap-1.5">
+                                <Sunrise className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                <span>BF: {ovr.breakfast.title}</span>
                               </span>
                             )}
                             {ovr.lunch?.title && (
-                              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 text-xs font-semibold">
-                                🍱 Lunch: {ovr.lunch.title}
+                              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 text-xs font-semibold inline-flex items-center gap-1.5">
+                                <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>Lunch: {ovr.lunch.title}</span>
                               </span>
                             )}
                             {ovr.evening?.title && (
-                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 text-xs font-semibold">
-                                ☕ Evening: {ovr.evening.title}
+                              <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 text-xs font-semibold inline-flex items-center gap-1.5">
+                                <Coffee className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                <span>Evening: {ovr.evening.title}</span>
                               </span>
                             )}
                             {ovr.dinner?.title && (
-                              <span className="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 text-xs font-semibold">
-                                🌙 Dinner: {ovr.dinner.title}
+                              <span className="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40 text-xs font-semibold inline-flex items-center gap-1.5">
+                                <Moon className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                                <span>Dinner: {ovr.dinner.title}</span>
                               </span>
                             )}
                           </div>

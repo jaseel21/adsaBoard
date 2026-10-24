@@ -57,7 +57,7 @@ export default function LanguageSwitch({ iconOnly = false, className = '' }) {
   };
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`} ref={dropdownRef}>
+    <div className={`relative flex items-center justify-center flex-shrink-0 ${className}`} ref={dropdownRef}>
       {iconOnly ? (
         <button
           type="button"
@@ -69,13 +69,19 @@ export default function LanguageSwitch({ iconOnly = false, className = '' }) {
           onMouseLeave={() => setHovered(false)}
           aria-label={`Language: ${getLabel()}`}
           aria-expanded={open}
-          className={`relative p-2.5 rounded-full transition-all duration-200 select-none flex items-center justify-center group ${
+          className={`relative rounded-full w-7 h-7 p-1.5 transition-all duration-150 select-none flex items-center justify-center cursor-pointer text-xs font-semibold flex-shrink-0 ${
             open
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-              : 'text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10'
+              ? 'text-emerald-700 dark:text-emerald-300 font-extrabold'
+              : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95'
           }`}
         >
-          <Languages className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+          {open && (
+            <motion.div
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+              className="absolute inset-0 bg-emerald-500/15 dark:bg-emerald-500/25 border border-emerald-500/35 rounded-full -z-10 shadow-xs"
+            />
+          )}
+          <Languages className="w-4 h-4 flex-shrink-0" />
           <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-black uppercase tracking-tight px-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
             {lang === 'ml' ? 'മല' : 'EN'}
           </span>

@@ -30,6 +30,7 @@ export default function StudentTemplateModal({
   onApplyTemplate,
   onSaveCustomTemplate,
   onDeleteCustomTemplate,
+  isAdmin = false,
 }) {
   const { feedback } = useFeedback();
   const { getDateLockStatus, todayIST } = useTokenLockStatus();
@@ -60,14 +61,14 @@ export default function StudentTemplateModal({
       const satDate = addDaysToDate(todayIST, daysUntilFriday + 1);
 
       // Check boundary and lock status
-      if (friDate <= addDaysToDate(todayIST, 365) && !getDateLockStatus(friDate).isLocked) {
+      if (friDate <= addDaysToDate(todayIST, 365) && !getDateLockStatus(friDate, { isAdmin }).isLocked) {
         newExceptions[friDate] = {
           breakfast: false,
           lunch: false,
           label: 'Weekend Leave (Fri)',
         };
       }
-      if (satDate <= addDaysToDate(todayIST, 365) && !getDateLockStatus(satDate).isLocked) {
+      if (satDate <= addDaysToDate(todayIST, 365) && !getDateLockStatus(satDate, { isAdmin }).isLocked) {
         const currentSatLunch = student?.obj?.lunch?.sa !== undefined ? Boolean(student.obj.lunch.sa) : true;
         newExceptions[satDate] = {
           breakfast: false,
@@ -90,7 +91,7 @@ export default function StudentTemplateModal({
 
     for (let i = 0; i <= 30; i++) {
       const d = addDaysToDate(todayIST, i);
-      if (getDateLockStatus(d).isLocked) continue; // Respect cutoff lock for tomorrow or past
+      if (getDateLockStatus(d, { isAdmin }).isLocked) continue; // Respect cutoff lock for non-admins
       const dayKey = getDayOfWeekShort(d);
       if (dayKey === 'mo' || dayKey === 'th') {
         const curBf = student?.obj?.breakfast?.[dayKey] !== undefined ? Boolean(student.obj.breakfast[dayKey]) : true;
@@ -114,7 +115,7 @@ export default function StudentTemplateModal({
     const newExceptions = { ...(student?.dateExceptions || {}) };
     for (let i = 0; i <= 30; i++) {
       const d = addDaysToDate(todayIST, i);
-      if (getDateLockStatus(d).isLocked) continue; // Respect cutoff lock for tomorrow or past
+      if (getDateLockStatus(d, { isAdmin }).isLocked) continue; // Respect cutoff lock for non-admins
       newExceptions[d] = {
         breakfast: true,
         lunch: true,
@@ -133,7 +134,7 @@ export default function StudentTemplateModal({
     const newExceptions = { ...(student?.dateExceptions || {}) };
     for (let i = 1; i <= 3; i++) {
       const d = addDaysToDate(todayIST, i);
-      if (getDateLockStatus(d).isLocked) continue; // Respect cutoff lock for tomorrow or past
+      if (getDateLockStatus(d, { isAdmin }).isLocked) continue; // Respect cutoff lock for non-admins
       newExceptions[d] = {
         breakfast: false,
         lunch: false,
@@ -169,13 +170,13 @@ export default function StudentTemplateModal({
     setShowCreateForm(false);
   };
 
-  // Apply a custom template created by the student (strictly preserving locked dates)
+  // Apply a custom template created by the student (strictly preserving locked dates for non-admins)
   const handleApplyCustom = (tpl) => {
     feedback('pop');
     if (onApplyTemplate) {
       const merged = { ...(student?.dateExceptions || {}) };
       Object.entries(tpl.dateExceptions || {}).forEach(([dateKey, val]) => {
-        if (!getDateLockStatus(dateKey).isLocked) {
+        if (!getDateLockStatus(dateKey, { isAdmin }).isLocked) {
           merged[dateKey] = val;
         }
       });
@@ -265,10 +266,10 @@ export default function StudentTemplateModal({
             </div>
 
             {/* Mon & Thu Sunnah Fasting */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-500/20 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-500/20 flex items-center justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <Moon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                     Mon & Thu Fasting
                   </h4>
@@ -281,7 +282,7 @@ export default function StudentTemplateModal({
               <button
                 type="button"
                 onClick={handleApplyMonThuFasting}
-                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 whitespace-nowrap"
+                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 whitespace-nowrap"
               >
                 Apply
               </button>

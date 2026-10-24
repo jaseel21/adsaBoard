@@ -32,6 +32,8 @@ import {
   Info,
   ExternalLink,
   Edit,
+  Receipt,
+  Ban,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
@@ -41,6 +43,7 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { useTokenBoardController } from '../utils/useTokenBoardController';
+import { getStudentFineAmount } from '../utils/mealScheduleService';
 
 import TokenLockManagerModal from './TokenLockManagerModal';
 import BlockManagementModal from './admin/BlockManagementModal';
@@ -167,6 +170,17 @@ export default function Admin() {
       }
     }
   }, [location.search, documents]);
+
+  // Keep popoverStudent synchronized with live Firestore documents
+  const popoverStudentId = popoverStudent?.id;
+  useEffect(() => {
+    if (popoverStudentId && documents?.length > 0) {
+      const match = documents.find((s) => s.id === popoverStudentId);
+      if (match) {
+        setPopoverStudent(match);
+      }
+    }
+  }, [documents, popoverStudentId]);
 
   // Master Board Lock Toggle
   const toggleBoardLock = async () => {
@@ -600,7 +614,7 @@ export default function Admin() {
             </button>
           </div>
         ) : viewCategory === 'batch' ? (
-          /* ================= VIEW MODE 2: BY ACADEMIC BATCH ================= */
+          /* ================= VIEW MODE 2: BY BATCH ================= */
           <div className="space-y-4 sm:space-y-5">
             {Object.entries(groupedByBatch).map(([batchName, batchStudents]) => {
               if (batchStudents.length === 0) return null;
@@ -722,6 +736,9 @@ export default function Admin() {
         targetDateIST={targetDateIST}
         effectiveDay={effectiveDay}
         onOpenFullDrawer={handleOpenFullDrawer}
+        onStudentUpdated={(updatedStudent) => {
+          setPopoverStudent(updatedStudent);
+        }}
         onOpenDetails={(s) => {
           setPopoverStudent(null);
           setDetailsDoc(s);
@@ -800,25 +817,50 @@ export default function Admin() {
                 {detailsDoc.block ? (
                   /* Blocked Student Notice */
                   <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <ShieldAlert className="w-5 h-5" />
+                    <div className="p-4 sm:p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 flex items-start gap-3.5 shadow-sm">
+                      <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-rose-300/60 dark:border-rose-500/30">
+                        <Ban className="w-6 h-6" />
                       </div>
-                      <div className="text-xs text-red-900 dark:text-red-200 min-w-0 flex-1">
-                        <span className="font-extrabold text-sm block">
-                          {t('tokenLockedByAdmin', `Token #${detailsDoc.tokenNo} Locked by Admin`).replace('{token}', detailsDoc.tokenNo)}
-                        </span>
-                        <span className="block mt-1 leading-relaxed text-red-800 dark:text-red-300">
-                          {t('studentTokenSuspendedDesc', 'This student account has been administratively suspended. Dining privileges and token changes are paused.')}
-                        </span>
+                      <div className="text-xs text-rose-950 dark:text-rose-100 min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-black text-base sm:text-lg block text-rose-950 dark:text-white">
+                            Token #{detailsDoc.tokenNo} Blocked
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300/60">
+                            Dual-Grid Suspension
+                          </span>
+                        </div>
+                        <p className="leading-relaxed text-rose-800 dark:text-rose-300 text-xs">
+                          {t(
+                            'studentDualGridBlockedDesc',
+                            'Both Breakfast and Lunch dining privileges are temporarily suspended due to food waste or attendance infraction.'
+                          )}
+                        </p>
                         {detailsDoc.blockReason && (
-                          <div className="mt-2.5 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
-                            <span className="font-bold text-red-950 dark:text-red-200">
+                          <div className="p-2.5 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200 dark:border-rose-500/20 text-xs">
+                            <span className="font-bold text-rose-950 dark:text-rose-200">
                               {t('blockReasonLabel', 'Reason')}:
                             </span>{' '}
-                            <span className="italic font-medium">&ldquo;{detailsDoc.blockReason}&rdquo;</span>
+                            <span className="italic font-medium text-rose-900 dark:text-rose-200">&ldquo;{detailsDoc.blockReason}&rdquo;</span>
                           </div>
                         )}
+
+                        {/* Prominent Fine Payable Notification Card */}
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-amber-950 dark:text-amber-200">
+                              <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                              <span>Fine Payable Amount</span>
+                            </div>
+                            <span className="font-mono text-lg font-black text-amber-950 dark:text-amber-100 px-2.5 py-0.5 rounded-xl bg-amber-500/20 border border-amber-500/30">
+                              ₹{getStudentFineAmount(detailsDoc)}
+                            </span>
+                          </div>
+
+                          <div className="p-2 rounded-xl bg-white/80 dark:bg-black/40 text-[11px] leading-relaxed text-amber-950 dark:text-amber-200">
+                            <strong>Notice to Student:</strong> Please pay the required fine of <strong>₹{getStudentFineAmount(detailsDoc)}</strong> at the <strong>ADSA Canteen Office</strong> to clear this block and restore both Breakfast and Lunch meal tokens.
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -828,14 +870,26 @@ export default function Admin() {
                         type="button"
                         onClick={() => {
                           feedback('tick');
+                          setDetailsDoc(null);
+                          setShowBlockModal(true);
+                        }}
+                        className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        <span>Manage Fine in Block Hub</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          feedback('tick');
                           const s = detailsDoc;
                           setDetailsDoc(null);
                           handleOpenFullDrawer(s);
                         }}
-                        className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
+                        className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
                       >
                         <Edit className="w-3.5 h-3.5" />
-                        <span>{t('editFullProfile', 'Edit Full Profile in Drawer')}</span>
+                        <span>{t('editFullProfile', 'Edit Profile')}</span>
                       </button>
                       <button
                         type="button"
@@ -966,7 +1020,6 @@ export default function Admin() {
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                               <span>{pref.labelEn || pref.name}</span>
-                              {!isIncluded && <span className="text-[10px] opacity-80">({t('exempt', 'Exempt')})</span>}
                             </span>
                           );
                         })}

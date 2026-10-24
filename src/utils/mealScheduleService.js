@@ -260,6 +260,77 @@ export function getStudentFineAmount(student, finePolicy = cachedFinePolicy) {
 }
 
 /**
+ * Admin utility to update the fine amount for an individual student.
+ * Persists to Firestore `students/{studentId}` and logs an audit trail event.
+ */
+export async function updateStudentFineAmount({
+  studentId,
+  tokenNo,
+  studentName = '',
+  newFineAmount,
+  reason = '',
+  actor = {},
+}) {
+  if (!studentId) throw new Error('Student ID is required to update fine.');
+
+  const amount = Number(newFineAmount);
+  if (isNaN(amount) || amount < 0) {
+    throw new Error('Valid fine amount is required (>= 0).');
+  }
+
+  const docRef = firebase.firestore().collection('students').doc(studentId);
+  const snap = await docRef.get();
+  const existingData = snap.exists ? snap.data() : {};
+  const previousFine = existingData.fineAmount !== undefined ? existingData.fineAmount : null;
+
+  const updates = {
+    fineAmount: amount,
+    fineReason: reason.trim() || existingData.fineReason || '',
+    updatedAt: new Date().toISOString(),
+    lastFineEditedAt: new Date().toISOString(),
+    lastFineEditedBy: actor.displayName || actor.email || 'Admin',
+  };
+
+  // If fine amount is set to 0, mark as waived automatically
+  if (amount === 0 && existingData.fineStatus !== 'waived') {
+    updates.fineStatus = 'waived';
+  } else if (amount > 0 && existingData.fineStatus === 'waived') {
+    updates.fineStatus = 'unpaid';
+  }
+
+  await docRef.update(updates);
+
+  // Log Audit Event
+  try {
+    await logAuditEvent({
+      action: 'UPDATE_STUDENT_FINE_AMOUNT',
+      category: AUDIT_CATEGORIES.TOKENS,
+      severity: AUDIT_SEVERITIES.INFO,
+      actor: {
+        uid: actor.uid || '',
+        displayName: actor.displayName || actor.email || 'Admin',
+        role: actor.role || 'canteen_committee',
+      },
+      target: {
+        type: 'student',
+        id: studentId,
+        label: `Token #${tokenNo || existingData.tokenNo || studentId}`,
+        tokenNo: Number(tokenNo || existingData.tokenNo),
+      },
+      changes: {
+        diffSummary: `Updated fine for Token #${tokenNo || existingData.tokenNo}: ₹${previousFine ?? 'Standard'} -> ₹${amount} (${reason.trim() || 'Admin adjustment'})`,
+        before: { fineAmount: previousFine },
+        after: { fineAmount: amount, reason: reason.trim() },
+      },
+    });
+  } catch (logErr) {
+    console.warn('Failed to record fine update audit log:', logErr);
+  }
+
+  return { success: true, newAmount: amount };
+}
+
+/**
  * Save updated meal schedule and/or fine policy to Firestore with full audit logging.
  */
 export async function saveMealScheduleAndFines({

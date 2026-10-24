@@ -182,9 +182,15 @@ export async function resolveLinkMetadata(rawUrl, options = {}) {
 
   // Tier 4: Check Curated Campus Links (0ms)
   const domain = extractDomain(url);
-  if (CURATED_CAMPUS_LINKS[domain]) {
+  const normalizedUrl = url.replace(/\/+$/, '');
+  const curatedMatch =
+    CURATED_CAMPUS_LINKS[url] ||
+    CURATED_CAMPUS_LINKS[normalizedUrl] ||
+    CURATED_CAMPUS_LINKS[domain];
+
+  if (curatedMatch) {
     const meta = {
-      ...CURATED_CAMPUS_LINKS[domain],
+      ...curatedMatch,
       url,
       cachedAt: Date.now(),
     };

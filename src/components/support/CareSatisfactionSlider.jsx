@@ -1,5 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import {
+  Frown,
+  Meh,
+  Smile,
+  SmilePlus,
+  Laugh,
+  Star,
+} from 'lucide-react';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { useLanguage } from '../../store/LanguageContext';
@@ -7,7 +15,7 @@ import { useLanguage } from '../../store/LanguageContext';
 const RATINGS = [
   {
     score: 1,
-    emoji: '😞',
+    icon: Frown,
     key: 'rateTerrible',
     defaultLabel: 'Needs Attention',
     color: 'from-rose-500 to-red-600',
@@ -17,7 +25,7 @@ const RATINGS = [
   },
   {
     score: 2,
-    emoji: '🙁',
+    icon: Meh,
     key: 'ratePoor',
     defaultLabel: 'Below Expectations',
     color: 'from-orange-500 to-amber-600',
@@ -27,7 +35,7 @@ const RATINGS = [
   },
   {
     score: 3,
-    emoji: '😐',
+    icon: Smile,
     key: 'rateFair',
     defaultLabel: 'Acceptable',
     color: 'from-amber-500 to-yellow-600',
@@ -37,7 +45,7 @@ const RATINGS = [
   },
   {
     score: 4,
-    emoji: '😊',
+    icon: SmilePlus,
     key: 'rateGood',
     defaultLabel: 'Great Taste',
     color: 'from-teal-500 to-emerald-600',
@@ -47,7 +55,7 @@ const RATINGS = [
   },
   {
     score: 5,
-    emoji: '🤩',
+    icon: Laugh,
     key: 'rateExcellent',
     defaultLabel: 'Outstanding!',
     color: 'from-emerald-500 via-green-500 to-teal-500',
@@ -82,6 +90,7 @@ export default function CareSatisfactionSlider({ value = 4, onChange }) {
       <div className="grid grid-cols-5 gap-1.5 sm:gap-2.5 p-1.5 rounded-2xl bg-gray-100/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 backdrop-blur-md">
         {RATINGS.map((item) => {
           const isSelected = item.score === value;
+          const Icon = item.icon;
           return (
             <motion.button
               key={item.score}
@@ -95,11 +104,12 @@ export default function CareSatisfactionSlider({ value = 4, onChange }) {
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/40 dark:hover:bg-white/5'
               }`}
             >
-              <span className={`text-2xl sm:text-3xl transition-transform duration-200 ${isSelected ? 'scale-115 animate-bounce-short' : 'grayscale-30 opacity-70'}`}>
-                {item.emoji}
+              <span className={`transition-transform duration-200 ${isSelected ? 'scale-110' : 'opacity-70'}`}>
+                <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${isSelected ? item.textColor : 'text-gray-400 dark:text-gray-500'}`} />
               </span>
-              <span className="text-[10px] sm:text-xs font-mono font-bold mt-1">
-                {item.score}★
+              <span className="text-[10px] sm:text-xs font-mono font-bold mt-1 inline-flex items-center gap-0.5">
+                {item.score}
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400 inline -mt-0.5" />
               </span>
 
               {isSelected && (

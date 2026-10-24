@@ -8,6 +8,7 @@ import {
   Utensils,
   Coffee,
   Moon,
+  Sunrise,
   Clock,
   Plus,
   Trash2,
@@ -508,10 +509,30 @@ export default function MenuCalendarMatrix({
                         {ovr.occasion || 'Special Dining Day'}
                       </h5>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
-                        {ovr.breakfast?.title && <span>🍳 BF: {ovr.breakfast.title}</span>}
-                        {ovr.lunch?.title && <span>🍱 Lunch: {ovr.lunch.title}</span>}
-                        {ovr.evening?.title && <span>☕ Evening: {ovr.evening.title}</span>}
-                        {ovr.dinner?.title && <span>🌙 Dinner: {ovr.dinner.title}</span>}
+                        {ovr.breakfast?.title && (
+                          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                            <Sunrise className="w-3.5 h-3.5" />
+                            <span>BF: {ovr.breakfast.title}</span>
+                          </span>
+                        )}
+                        {ovr.lunch?.title && (
+                          <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                            <Utensils className="w-3.5 h-3.5" />
+                            <span>Lunch: {ovr.lunch.title}</span>
+                          </span>
+                        )}
+                        {ovr.evening?.title && (
+                          <span className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400">
+                            <Coffee className="w-3.5 h-3.5" />
+                            <span>Evening: {ovr.evening.title}</span>
+                          </span>
+                        )}
+                        {ovr.dinner?.title && (
+                          <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-400">
+                            <Moon className="w-3.5 h-3.5" />
+                            <span>Dinner: {ovr.dinner.title}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

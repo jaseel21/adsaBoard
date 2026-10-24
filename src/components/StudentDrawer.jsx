@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Lock,
   Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
@@ -389,7 +390,7 @@ export default function StudentDrawer({
 
               dialog.alert({
                 type: 'warning',
-                title: '⚠️ Kitchen Manifest Desynchronization',
+                title: 'Kitchen Manifest Desynchronization',
                 message: `You updated dining/dietary preferences for Token #${tokenNum}, but kitchen manifest(s) have ALREADY been printed for: ${printLabels}.\n\nThe kitchen is currently holding an outdated sheet! Please reprint the manifest from Supply Sections or immediately notify kitchen staff.`,
               });
             }
@@ -652,8 +653,9 @@ export default function StudentDrawer({
                       }`}
                     />
                     {!isCanteenMode && isDuplicateToken && (
-                      <p className="mt-1 text-xs text-rose-500 font-medium">
-                        ⚠️ Token #{tokenNum} already exists! Please choose another number.
+                      <p className="mt-1 text-xs text-rose-500 font-medium inline-flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Token #{tokenNum} already exists! Please choose another number.</span>
                       </p>
                     )}
                   </div>
@@ -1010,15 +1012,21 @@ export default function StudentDrawer({
                       <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md">
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-[#0f1715] p-5 sm:p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-2xl"
+                          className="w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-[#0f1715] p-5 sm:p-6 space-y-4 border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-2xl"
                         >
                           <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/5">
                             <div>
-                              <h3 className="text-base font-black text-gray-900 dark:text-white">
-                                Date Overrides — Token #{tokenNo} ({nameEn || 'Student'})
-                              </h3>
-                              <p className="text-xs text-gray-500">
-                                Click any date in the calendar grid to turn breakfast/lunch ON or OFF on behalf of this student.
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-base font-black text-gray-900 dark:text-white">
+                                  Date Overrides — Token #{tokenNo} ({nameEn || 'Student'})
+                                </h3>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  <ShieldCheck className="w-3 h-3" />
+                                  Admin Override Mode
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Click any date in the calendar grid to turn breakfast/lunch ON or OFF with administrative cutoff bypass.
                               </p>
                             </div>
                             <button

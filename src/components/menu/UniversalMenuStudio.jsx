@@ -35,6 +35,7 @@ import {
   Tag,
   Eye,
   Info,
+  Lock,
 } from 'lucide-react';
 import { AuthContext } from '../../store/AuthContext';
 import { dialog } from '../../utils/dialog';
@@ -1121,8 +1122,18 @@ export default function UniversalMenuStudio() {
               />
             </button>
             <div>
-              <span className="font-bold text-xs text-gray-900 dark:text-white block">
-                {isClosedDay ? '🔒 Canteen Closed for this Selection' : '🍲 Supply Active & Normal Service'}
+              <span className="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
+                {isClosedDay ? (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    <span>Canteen Closed for this Selection</span>
+                  </>
+                ) : (
+                  <>
+                    <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                    <span>Supply Active & Normal Service</span>
+                  </>
+                )}
               </span>
               <span className="text-[11px] text-gray-500">
                 {isClosedDay ? 'Dining hall will display routine off-day notice to students.' : 'All scheduled meal slots will be prepared.'}
@@ -1293,8 +1304,8 @@ export default function UniversalMenuStudio() {
         {/* 7. Sticky Batch Action Bar */}
         <div className="sticky bottom-4 z-40 p-4 rounded-3xl bg-gray-900/95 dark:bg-[#0f1715]/95 text-white border border-white/10 shadow-2xl backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-              ✓
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <Check className="w-5 h-5" />
             </div>
             <div>
               <span className="text-xs font-bold block">

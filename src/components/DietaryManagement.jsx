@@ -307,7 +307,7 @@ export default function DietaryManagement() {
 
         dialog.alert({
           type: 'warning',
-          title: '⚠️ Kitchen Manifest Desynchronization',
+          title: 'Kitchen Manifest Desynchronization',
           message: `Dietary changes were saved (${actionDesc}), but physical kitchen sheet(s) have ALREADY been printed for: ${printLabels}.\n\nThe kitchen is currently holding an outdated sheet! Please reprint the manifest from Supply Sections or immediately inform the kitchen staff so special diets are not missed.`,
         });
       }

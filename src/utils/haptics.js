@@ -8,7 +8,7 @@ class HapticController {
     this.enabled = true;
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('adsa_haptics_enabled');
+        const stored = localStorage.getItem('adsatboard-haptics') || localStorage.getItem('adsa_haptics_enabled');
         if (stored !== null) {
           this.enabled = stored === 'true';
         }
@@ -25,6 +25,7 @@ class HapticController {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('adsa_haptics_enabled', String(this.enabled));
+        localStorage.setItem('adsatboard-haptics', String(this.enabled));
       } catch (_) {}
     }
   }
@@ -41,7 +42,7 @@ class HapticController {
     }
   }
 
-  // Quick 8ms tap for keycaps
+  // Quick 8ms tap for keycaps and tabs
   lightTap() {
     this.vibrate(8);
   }
@@ -49,6 +50,11 @@ class HapticController {
   // 15ms firm tick for switches and locks
   mediumTick() {
     this.vibrate(15);
+  }
+
+  // Meal token block / unblock confirmation pulse
+  tokenToggle() {
+    this.vibrate([15, 30, 20]);
   }
 
   // Success double-pulse

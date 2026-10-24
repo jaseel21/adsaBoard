@@ -14,6 +14,21 @@ export default class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     console.error('ErrorBoundary caught an unhandled error:', error, errorInfo);
+    if (typeof window !== 'undefined') {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (_) {}
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (!prevState.hasError && this.state.hasError) {
+      if (typeof window !== 'undefined') {
+        try {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        } catch (_) {}
+      }
+    }
   }
 
   handleReload = () => {
@@ -27,7 +42,16 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-[60vh] w-full flex items-center justify-center p-4 xs:p-6 sm:p-8">
+        <div
+          ref={(el) => {
+            if (el && typeof window !== 'undefined') {
+              try {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } catch (_) {}
+            }
+          }}
+          className="min-h-[75vh] w-full flex items-center justify-center p-4 xs:p-6 sm:p-8"
+        >
           <div className="max-w-md w-full rounded-3xl bg-white/95 dark:bg-[#0f1715]/95 border border-red-200/80 dark:border-red-500/20 shadow-2xl backdrop-blur-xl p-6 sm:p-8 text-center space-y-5">
             <div className="w-14 h-14 mx-auto rounded-2xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shadow-md">
               <AlertTriangle className="w-7 h-7" />

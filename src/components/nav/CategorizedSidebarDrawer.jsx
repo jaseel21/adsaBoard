@@ -13,6 +13,7 @@ import {
   Sparkles,
   Lock,
   ArrowRight,
+  Settings,
 } from 'lucide-react';
 import {
   NAV_CATEGORIES,
@@ -23,6 +24,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import ThemeSwitch from '../ThemeSwitch';
 import LanguageSwitch from '../LanguageSwitch';
+import BlockManagementModal from '../admin/BlockManagementModal';
 
 export default function CategorizedSidebarDrawer({
   isOpen,
@@ -48,6 +50,7 @@ export default function CategorizedSidebarDrawer({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
 
   const toggleCategory = (categoryId) => {
     feedback('tick');
@@ -69,6 +72,8 @@ export default function CategorizedSidebarDrawer({
         onOpenStaffModal();
       } else if (item.action === 'open_share_modal') {
         onOpenShareModal();
+      } else if (item.action === 'open_block_modal') {
+        setBlockModalOpen(true);
       }
       onClose();
       return;
@@ -446,6 +451,15 @@ export default function CategorizedSidebarDrawer({
             <div className="flex items-center gap-2">
               <LanguageSwitch />
               <ThemeSwitch />
+              <button
+                type="button"
+                onClick={() => handleNavigate('/settings')}
+                className="p-2 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-white/10 border border-gray-200/60 dark:border-white/10 active:scale-95 transition-colors flex items-center justify-center cursor-pointer"
+                title={language === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings & Preferences'}
+                aria-label="Settings"
+              >
+                <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </button>
             </div>
 
             <button
@@ -462,6 +476,12 @@ export default function CategorizedSidebarDrawer({
           </div>
         </motion.div>
       </div>
+
+      {/* Block & Fine Management Radar Modal */}
+      <BlockManagementModal
+        isOpen={blockModalOpen}
+        onClose={() => setBlockModalOpen(false)}
+      />
     </AnimatePresence>
   );
 }

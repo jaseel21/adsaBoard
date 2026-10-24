@@ -63,6 +63,7 @@ export default function ApexOperationsRadar({
     let beefAvoid = 0;
     let fishAvoid = 0;
     let chickenAvoid = 0;
+    let muttonAvoid = 0;
     let standardFullDiet = 0;
     let multiAllergen = 0;
 
@@ -80,8 +81,9 @@ export default function ApexOperationsRadar({
       const noBeef = obj2.beef === false;
       const noFish = obj2.fish === false;
       const noChicken = obj2.chicken === false;
+      const noMutton = obj2.mutton === false;
 
-      const avoidances = [noBeef, noFish, noChicken].filter(Boolean).length;
+      const avoidances = [noBeef, noFish, noChicken, noMutton].filter(Boolean).length;
 
       if (avoidances === 0) {
         standardFullDiet++;
@@ -89,6 +91,7 @@ export default function ApexOperationsRadar({
         if (noBeef) beefAvoid++;
         if (noFish) fishAvoid++;
         if (noChicken) chickenAvoid++;
+        if (noMutton) muttonAvoid++;
         if (avoidances > 1) multiAllergen++;
       }
     });
@@ -98,6 +101,7 @@ export default function ApexOperationsRadar({
       beefAvoid,
       fishAvoid,
       chickenAvoid,
+      muttonAvoid,
       multiAllergen,
       totalDining: activeCount,
     };
@@ -210,8 +214,24 @@ export default function ApexOperationsRadar({
             })}
           </div>
 
-          <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
-            <span>{t('colorIndexLegend', 'Color Index: 🟢 >80% High • 🟡 60-79% Normal • 🔴 <60% Low')}</span>
+          <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+            <div className="inline-flex items-center gap-1.5 flex-wrap">
+              <span className="font-semibold text-gray-600 dark:text-gray-300">{t('colorIndexTitle', 'Color Index')}:</span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" />
+                <span>&gt;80% {t('high', 'High')}</span>
+              </span>
+              <span className="opacity-40">•</span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 shadow-xs" />
+                <span>60-79% {t('normal', 'Normal')}</span>
+              </span>
+              <span className="opacity-40">•</span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shadow-xs" />
+                <span>&lt;60% {t('low', 'Low')}</span>
+              </span>
+            </div>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">{t('realtimeFeed', 'Real-time Feed')}</span>
           </div>
         </div>
@@ -240,7 +260,7 @@ export default function ApexOperationsRadar({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 mt-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-3">
               {/* Standard Diet */}
               <div className="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-500/20">
                 <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400">
@@ -261,6 +281,17 @@ export default function ApexOperationsRadar({
                   {dietaryAnalytics.beefAvoid}
                 </div>
                 <span className="text-[10px] text-gray-500 dark:text-gray-400">{t('separateServing', 'Separate serving')}</span>
+              </div>
+
+              {/* Mutton Avoidance */}
+              <div className="p-3 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-500/20">
+                <span className="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400">
+                  {t('muttonAvoidance', 'Mutton Avoidance')}
+                </span>
+                <div className="text-xl font-black text-gray-900 dark:text-white font-mono mt-0.5">
+                  {dietaryAnalytics.muttonAvoid}
+                </div>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400">{t('muttonFree', 'Mutton-free')}</span>
               </div>
 
               {/* Fish Avoidance */}

@@ -63,11 +63,18 @@ const ROUTES = [
     url: `${BASE_DOMAIN}/lunch`,
   },
   {
-    path: 'list',
-    title: 'Dietary Avoiders & Manifest Documents • ADSA T-Board',
+    path: 'avoiders',
+    title: 'Dietary Avoiders Matrix & Kitchen Exclusion Roster • ADSA T-Board',
     description: 'Official student dietary avoidance registers, PDF export manifests, and culinary logs for Alathurpadi Dars.',
     image: `${BASE_DOMAIN}/og-preview.png`,
-    url: `${BASE_DOMAIN}/list`,
+    url: `${BASE_DOMAIN}/avoiders`,
+  },
+  {
+    path: 'list',
+    title: 'Dietary Avoiders Matrix & Kitchen Exclusion Roster • ADSA T-Board',
+    description: 'Official student dietary avoidance registers, PDF export manifests, and culinary logs for Alathurpadi Dars.',
+    image: `${BASE_DOMAIN}/og-preview.png`,
+    url: `${BASE_DOMAIN}/avoiders`,
   },
   {
     path: 'student',
@@ -82,6 +89,13 @@ const ROUTES = [
     description: 'ദർസിലെ പവിത്രമായ തീൻമേശ മര്യാദകൾ, തിരുനബി ﷺ യുടെ ചര്യ, 1/3 വയറിന്റെ സമതുലിതാവസ്ഥ, അന്നം പാഴാക്കാതിരിക്കാനുള്ള ആഹ്വാനം. ആലത്തൂർപടി ദർസ് ഫുഡ് മാനേജ്‌മെന്റ് സിസ്റ്റം.',
     image: `${BASE_DOMAIN}/og-preview.png`,
     url: `${BASE_DOMAIN}/adab`,
+  },
+  {
+    path: 'settings',
+    title: 'Preferences & System Controls • ADSA T-Board',
+    description: 'Personalize themes, synthesized Web Audio acoustic feedback, dining PIN security, and database backup controls.',
+    image: `${BASE_DOMAIN}/og-preview.png`,
+    url: `${BASE_DOMAIN}/settings`,
   },
 ];
 

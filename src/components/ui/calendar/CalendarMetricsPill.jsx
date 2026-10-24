@@ -45,8 +45,8 @@ export default function CalendarMetricsPill({ stats, monthOverridesCount = 0 }) 
               )}
             </span>
             {monthOverridesCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
-                <Zap className="w-2.5 h-2.5" />
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25 flex items-center gap-0.5">
+                <Zap className="w-2.5 h-2.5 text-indigo-500" />
                 {monthOverridesCount}
               </span>
             )}
@@ -77,7 +77,7 @@ export default function CalendarMetricsPill({ stats, monthOverridesCount = 0 }) 
             <div className="space-y-1.5 text-[11px]">
               <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
                 <span className="flex items-center gap-1.5">
-                  <Coffee className="w-3 h-3 text-amber-500" />
+                  <Coffee className="w-3 h-3 text-emerald-500" />
                   Breakfasts Active:
                 </span>
                 <span className="font-mono font-bold text-gray-900 dark:text-white">
@@ -96,9 +96,9 @@ export default function CalendarMetricsPill({ stats, monthOverridesCount = 0 }) 
               </div>
 
               {monthOverridesCount > 0 && (
-                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 pt-1 border-t border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 pt-1 border-t border-gray-100 dark:border-white/5">
                   <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
+                    <Zap className="w-3 h-3 text-indigo-500" />
                     Month Overrides:
                   </span>
                   <span className="font-mono font-bold">{monthOverridesCount} dates</span>

@@ -44,6 +44,8 @@ import {
   Calendar as CalendarIcon,
   SlidersHorizontal,
   UtensilsCrossed,
+  Ban,
+  Receipt,
 } from 'lucide-react';
 
 import { useLanguage } from '../store/LanguageContext';
@@ -57,6 +59,7 @@ import {
   formatFriendlyDate,
   addDaysToDate,
 } from '../utils/studentExceptionService';
+import { getStudentFineAmount } from '../utils/mealScheduleService';
 import { useTokenBoardController } from '../utils/useTokenBoardController';
 import {
   exportSinglePageCombinedManifestPDF,
@@ -304,6 +307,11 @@ export default function StudentDashboard() {
       preferences: preferencesList,
       documents,
       sort: 'ascending',
+      targetDateIST,
+      dayKey: effectiveDay,
+      dayFull,
+      attendanceScope: 'active_diners',
+      mealFilter: isLunch ? 'lunch' : 'breakfast',
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
   };
@@ -314,6 +322,11 @@ export default function StudentDashboard() {
       preferences: preferencesList,
       documents,
       sort: 'ascending',
+      targetDateIST,
+      dayKey: effectiveDay,
+      dayFull,
+      attendanceScope: 'active_diners',
+      mealFilter: isLunch ? 'lunch' : 'breakfast',
     });
     doc.save(filename);
   };
@@ -325,6 +338,11 @@ export default function StudentDashboard() {
         preferences: preferencesList,
         documents,
         sort: 'ascending',
+        targetDateIST,
+        dayKey: effectiveDay,
+        dayFull,
+        attendanceScope: 'active_diners',
+        mealFilter: isLunch ? 'lunch' : 'breakfast',
       });
       const { blobUrl } = createPdfBlob(doc);
       await directPrintPdf(blobUrl);
@@ -340,13 +358,18 @@ export default function StudentDashboard() {
         preferences: preferencesList,
         documents,
         sort: 'ascending',
+        targetDateIST,
+        dayKey: effectiveDay,
+        dayFull,
+        attendanceScope: 'active_diners',
+        mealFilter: isLunch ? 'lunch' : 'breakfast',
       });
       const { blob } = createPdfBlob(doc);
       await shareDocument({
         blob,
         filename,
         title,
-        text: `${title} • Alathurpadi Dars Canteen`,
+        text: `${title} (${targetDateIST}) • Alathurpadi Dars Canteen`,
       });
     } catch (err) {
       console.error('Share dietary matrix error:', err);
@@ -1132,16 +1155,25 @@ export default function StudentDashboard() {
                       aria-label="Filter by dietary preference"
                       className="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                     >
-                      <option value="all">{t('allDietaryInclusions', 'All Dietary Inclusions')}</option>
+                      <option value="all">{t('allDietaryInclusions', 'All Diners (Full Board)')}</option>
+                      <option value="any_avoiders">
+                        {t('allDietaryAvoiders', 'All Dietary Avoiders')} • {metrics?.totalAvoidersRoster || metrics?.totalAvoiders || 0}
+                      </option>
                       {preferencesList.map((p) => {
-                        const avoidersCount = metrics?.dietaryTallies?.[`${p.id}_avoiders`] || 0;
-                        const prefLabel = lang === 'ml' && p.labelMl ? p.labelMl : (prefLabel || p.labelEn || p.name);
+                        const avoidersCount =
+                          metrics?.dietaryTallies?.[`${p.id}_avoiders_total`] !== undefined
+                            ? metrics.dietaryTallies[`${p.id}_avoiders_total`]
+                            : (metrics?.dietaryTallies?.[`${p.id}_avoiders`] || 0);
+                        const prefLabel = lang === 'ml' && p.labelMl ? p.labelMl : (p.labelEn || p.name);
                         return (
                           <option key={p.id} value={p.id}>
                             {prefLabel} • {avoidersCount} {t('avoiders', 'avoiders')}
                           </option>
                         );
                       })}
+                      <option value="standard_full">
+                        {t('standardFullDiet', 'Standard Full Diet')} • {metrics?.standardFullDietCount || (metrics?.total - (metrics?.totalAvoiders || 0))}
+                      </option>
                     </select>
                   </div>
 
@@ -1665,17 +1697,6 @@ export default function StudentDashboard() {
 
       </section>
 
-      {/* ========================================================================= */}
-      {/* 7. FOOTER                                                                 */}
-      {/* ========================================================================= */}
-      <footer className="pt-6 pb-4 border-t border-gray-200/60 dark:border-white/10 text-center space-y-1 text-xs text-gray-500 dark:text-gray-400">
-        <p className="font-semibold text-gray-700 dark:text-gray-300">
-          {t('orgName', 'Alathurpadi Dars Students Association (ADSA)')} • {t('appSubtitle', 'Canteen System')}
-        </p>
-        <p className="text-[11px] text-gray-400 dark:text-gray-500">
-          {t('historicalNote', 'Historical Alathurpadi Juma Masjid, Malappuram, Kerala')}
-        </p>
-      </footer>
 
       {/* ========================================================================= */}
       {/* MODAL: STUDENT DETAILS (Full 7-Day Schedule & Info)                       */}
@@ -1752,28 +1773,52 @@ export default function StudentDashboard() {
                   /* ================= BLOCKED STUDENT VIEW: ONLY PERSONAL DETAILS & NOTICE ================= */
                   <div className="space-y-4">
                     {/* Admin Blocked Alert */}
-                    <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-500/30 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <ShieldAlert className="w-5 h-5" />
+                    <div className="p-4 sm:p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 flex items-start gap-3.5 shadow-sm">
+                      <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-rose-300/60 dark:border-rose-500/30">
+                        <Ban className="w-6 h-6" />
                       </div>
-                      <div className="text-xs text-red-900 dark:text-red-200 min-w-0 flex-1">
-                        <span className="font-extrabold text-sm block">
-                          {t('tokenLockedByAdmin', `Token #${detailsDoc.tokenNo} Locked by Admin`).replace('{token}', detailsDoc.tokenNo)}
-                        </span>
-                        <span className="block mt-1 leading-relaxed text-red-800 dark:text-red-300">
-                          {t('studentTokenSuspendedDesc', 'This student account has been administratively suspended. Dining privileges and token changes are paused.')}
-                        </span>
+                      <div className="text-xs text-rose-950 dark:text-rose-100 min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-black text-base sm:text-lg block text-rose-950 dark:text-white">
+                            Token #{detailsDoc.tokenNo} Blocked
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300/60">
+                            Dual-Grid Suspension
+                          </span>
+                        </div>
+                        
+                        <p className="leading-relaxed text-rose-800 dark:text-rose-300 text-xs">
+                          {t(
+                            'studentDualGridBlockedDesc',
+                            'Both Breakfast and Lunch dining privileges are temporarily suspended due to food waste or attendance infraction.'
+                          )}
+                        </p>
+
                         {detailsDoc.blockReason && (
-                          <div className="mt-2.5 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-red-200 dark:border-red-500/20 text-xs">
-                            <span className="font-bold text-red-950 dark:text-red-200">
+                          <div className="p-2.5 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200 dark:border-rose-500/20 text-xs">
+                            <span className="font-bold text-rose-950 dark:text-rose-200">
                               {t('blockReasonLabel', 'Reason')}:
                             </span>{' '}
-                            <span className="italic font-medium">&ldquo;{detailsDoc.blockReason}&rdquo;</span>
+                            <span className="italic font-medium text-rose-900 dark:text-rose-200">&ldquo;{detailsDoc.blockReason}&rdquo;</span>
                           </div>
                         )}
-                        <span className="block mt-2 text-[11px] text-red-700/80 dark:text-red-300/80">
-                          {t('consultOffice', 'Please consult the ADSA Office or Canteen Secretary to resolve status.')}
-                        </span>
+
+                        {/* Prominent Fine Payable Notification Card */}
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-amber-950 dark:text-amber-200">
+                              <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                              <span>Fine Payable Amount</span>
+                            </div>
+                            <span className="font-mono text-lg font-black text-amber-950 dark:text-amber-100 px-2.5 py-0.5 rounded-xl bg-amber-500/20 border border-amber-500/30">
+                              ₹{getStudentFineAmount(detailsDoc)}
+                            </span>
+                          </div>
+
+                          <div className="p-2 rounded-xl bg-white/80 dark:bg-black/40 text-[11px] leading-relaxed text-amber-950 dark:text-amber-200">
+                            <strong>Notice to Student:</strong> Please pay the required fine of <strong>₹{getStudentFineAmount(detailsDoc)}</strong> at the <strong>ADSA Canteen Office</strong> to clear this block and restore both your Breakfast and Lunch meal tokens.
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1904,15 +1949,20 @@ export default function StudentDashboard() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{t('navLunch') || 'Lunch Routine'}</span>
+                          {isLunch ? (
+                            <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+                          ) : (
+                            <Coffee className="w-3.5 h-3.5 text-amber-500" />
+                          )}
+                          <span>{isLunch ? (t('navLunch') || 'Lunch Routine') : (t('navBreakfast') || 'Breakfast Routine')}</span>
                         </span>
                         <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
                       </div>
 
                       <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                         {daysList.map(({ key, label }) => {
-                          const active = detailsDoc.obj?.lunch?.[key] === true;
+                          const mealSchedule = isLunch ? detailsDoc.obj?.lunch : detailsDoc.obj?.breakfast;
+                          const active = mealSchedule?.[key] !== undefined ? Boolean(mealSchedule[key]) : true;
                           const isCurrentDay = key === effectiveDay;
                           return (
                             <div
@@ -1955,7 +2005,6 @@ export default function StudentDashboard() {
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                               <span>{lang === 'ml' && pref.labelMl ? pref.labelMl : (pref.labelEn || pref.name)}</span>
-                              {!isIncluded && <span className="text-[10px] opacity-80">({t('exempt', 'Exempt')})</span>}
                             </span>
                           );
                         })}

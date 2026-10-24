@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import StudentDashboard from './components/StudentDashboard';
 import LandingPage from './components/LandingPage';
@@ -6,7 +6,7 @@ import Login from './components/Login';
 import StudentPort from './components/StudentPort';
 import Navbar from './components/NavBar';
 import Footer from './components/Footer';
-import List from './components/List';
+import DietaryAvoidersPage from './components/DietaryAvoidersPage';
 import SupplySections from './components/SupplySections';
 import Menu from './components/Menu';
 import PersonInfo from './store/StudentData';
@@ -16,6 +16,7 @@ import StudentManagement from './components/StudentManagement';
 import UniversalMenuStudio from './components/menu/UniversalMenuStudio';
 import DietaryManagement from './components/DietaryManagement';
 import AuditTrail from './components/audit/AuditTrail';
+import ApexAnalyticsDashboard from './components/analytics/ApexAnalyticsDashboard';
 import KitchenDisplay from './components/KitchenDisplay';
 import GuidePage from './components/guide/GuidePage';
 import DiningEthicsPage from './components/ethics/DiningEthicsPage';
@@ -41,6 +42,11 @@ import SmoothScrollProvider from './components/scroll/SmoothScrollProvider';
 import ScrollProgressBar from './components/scroll/ScrollProgressBar';
 import BackToTopButton from './components/scroll/BackToTopButton';
 import ScrollRestorationWatcher from './components/scroll/ScrollRestorationWatcher';
+import SettingsPage from './components/settings/SettingsPage';
+import { PreferencesProvider } from './store/PreferencesContext';
+import OfflineStatusIndicator from './components/ui/OfflineStatusIndicator';
+import PwaInstallPrompt from './components/pwa/PwaInstallPrompt';
+import { checkAndTriggerMealAlarms } from './utils/mealAlarmService';
 import './App.css';
 
 function AppContent() {
@@ -49,10 +55,20 @@ function AppContent() {
   const location = useLocation();
   const { sidebarOpen } = useSidebar();
 
+  // Background check for meal cutoff alarms every 60 seconds
+  useEffect(() => {
+    checkAndTriggerMealAlarms();
+    const interval = setInterval(() => {
+      checkAndTriggerMealAlarms();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
       <ScrollProgressBar />
       <ScrollRestorationWatcher />
+      <OfflineStatusIndicator />
       <Navbar isAdmin={isAdmin} />
       <div className="flex flex-1 w-full relative min-w-0">
         <BrowserLeftSidebar />
@@ -78,6 +94,11 @@ function AppContent() {
 
             {/* Public Document Downloads & Information */}
             <Route path="/login" element={<Login />} />
+            {/* Dietary Avoiders Matrix Sheet (/avoiders canonical, with /list, /avoiders-list, /dietary-matrix aliases) */}
+            <Route path="/avoiders" element={<DietaryAvoidersPage />} />
+            <Route path="/list" element={<Navigate to="/avoiders" replace />} />
+            <Route path="/avoiders-list" element={<Navigate to="/avoiders" replace />} />
+            <Route path="/dietary-matrix" element={<Navigate to="/avoiders" replace />} />
             {/* Consolidated Public Supply Manifest (/supply) */}
             <Route path="/supply" element={<SupplySections />} />
             <Route path="/manifest" element={<Navigate to="/supply" replace />} />
@@ -94,6 +115,9 @@ function AppContent() {
             <Route path="/support" element={<CareHubPage />} />
             <Route path="/feedback" element={<CareHubPage />} />
             <Route path="/contact" element={<CareHubPage />} />
+            {/* System Preferences & Personalization */}
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/preferences" element={<Navigate to="/settings" replace />} />
 
             {/* Student Dining Portal (Clean canonical route + backward-compatible alias) */}
             <Route
@@ -164,6 +188,26 @@ function AppContent() {
             />
             <Route path="/admin/audit" element={<Navigate to="/admin/audit-logs" replace />} />
             <Route path="/audit-logs" element={<Navigate to="/admin/audit-logs" replace />} />
+
+            {/* Apex Intelligence, Performance & Dining Analytics Suite */}
+            <Route
+              path="/admin/analytics"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <ApexAnalyticsDashboard />
+                </RoleRoute>
+              }
+            />
+            <Route path="/analytics" element={<Navigate to="/admin/analytics" replace />} />
+            <Route path="/admin/performance" element={<Navigate to="/admin/analytics" replace />} />
+            <Route path="/admin/reports" element={<Navigate to="/admin/analytics" replace />} />
+            <Route path="/admin/intelligence" element={<Navigate to="/admin/analytics" replace />} />
 
             {/* Broadcast Notifications & Announcements (Canteen Sub-Committee, Central, Devs) */}
             <Route
@@ -275,19 +319,22 @@ function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <PersonInfo>
-          <NotificationProvider>
-            <DialogProvider>
-              <SmoothScrollProvider>
-                <SidebarProvider>
-                  <AppContent />
-                  <NotificationDrawer />
-                  <EmergencyNotificationDialog />
-                </SidebarProvider>
-              </SmoothScrollProvider>
-            </DialogProvider>
-          </NotificationProvider>
-        </PersonInfo>
+        <PreferencesProvider>
+          <PersonInfo>
+            <NotificationProvider>
+              <DialogProvider>
+                <SmoothScrollProvider>
+                  <SidebarProvider>
+                    <AppContent />
+                    <NotificationDrawer />
+                    <EmergencyNotificationDialog />
+                    <PwaInstallPrompt />
+                  </SidebarProvider>
+                </SmoothScrollProvider>
+              </DialogProvider>
+            </NotificationProvider>
+          </PersonInfo>
+        </PreferencesProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

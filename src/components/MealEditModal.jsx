@@ -473,8 +473,9 @@ export default function MealEditModal({
                   <p className="text-xs text-gray-600 dark:text-gray-300">
                     {items.length > 0 ? items.join(' • ') : 'No items listed'}
                   </p>
-                  <span className="text-[11px] text-gray-400 font-medium block">
-                    ⏰ {timing || slotInfo.defaultTiming}
+                  <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1.5 mt-0.5">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    <span>{timing || slotInfo.defaultTiming}</span>
                   </span>
                 </div>
               </div>

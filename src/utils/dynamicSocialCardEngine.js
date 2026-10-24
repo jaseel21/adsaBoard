@@ -219,7 +219,7 @@ export async function renderDynamicSocialCard(template = 'portal', options = {})
     month: 'short',
     year: 'numeric',
   });
-  const datePillText = `📅 ${todayStr} (IST)`;
+  const datePillText = `${todayStr} • IST`;
   ctx.font = '700 13px -apple-system, "Plus Jakarta Sans", sans-serif';
   const datePillWidth = ctx.measureText(datePillText).width + 24;
   roundRect(ctx, width - 76 - datePillWidth, 76, datePillWidth, 38, 12);
@@ -304,17 +304,18 @@ function renderPortalTemplate(ctx, width, height, options) {
 
   // Feature Badges Row
   const badges = [
-    { label: '⚡ Live 3D Token Matrix', color: '#10b981' },
-    { label: '🍲 Kitchen Display (KDS)', color: '#14b8a6' },
-    { label: '🚫 Dietary Avoiders', color: '#f43f5e' },
-    { label: '⏰ Cutoff 14:00 IST', color: '#f59e0b' },
+    { label: 'Live 3D Token Matrix', color: '#10b981' },
+    { label: 'Kitchen Display (KDS)', color: '#14b8a6' },
+    { label: 'Dietary Avoiders', color: '#f43f5e' },
+    { label: 'Cutoff 14:00 IST', color: '#f59e0b' },
   ];
 
   let badgeX = 76;
   const badgeY = height === 1080 ? 460 : 395;
   badges.forEach((b) => {
     ctx.font = '700 14px -apple-system, "Plus Jakarta Sans", sans-serif';
-    const bWidth = ctx.measureText(b.label).width + 30;
+    const textWidth = ctx.measureText(b.label).width;
+    const bWidth = textWidth + 40;
 
     roundRect(ctx, badgeX, badgeY, bWidth, 48, 14);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
@@ -323,8 +324,14 @@ function renderPortalTemplate(ctx, width, height, options) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
+    // Elegant colored indicator dot
+    ctx.beginPath();
+    ctx.arc(badgeX + 18, badgeY + 24, 4, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(b.label, badgeX + 15, badgeY + 29);
+    ctx.fillText(b.label, badgeX + 30, badgeY + 29);
     badgeX += bWidth + 14;
   });
 }
@@ -362,7 +369,7 @@ function renderMenuTemplate(ctx, width, height, options) {
 
   ctx.fillStyle = '#5eead4';
   ctx.font = '800 13px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('☕ BREAKFAST (07:00 - 08:30 IST)', 96, cardY + 34);
+  ctx.fillText('BREAKFAST (07:00 - 08:30 IST)', 96, cardY + 34);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '800 20px -apple-system, "Plus Jakarta Sans", sans-serif';
@@ -383,7 +390,7 @@ function renderMenuTemplate(ctx, width, height, options) {
 
   ctx.fillStyle = '#fda4af';
   ctx.font = '800 13px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('🍲 LUNCH (12:30 - 14:00 IST)', lunchX + 20, cardY + 34);
+  ctx.fillText('LUNCH (12:30 - 14:00 IST)', lunchX + 20, cardY + 34);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '800 20px -apple-system, "Plus Jakarta Sans", sans-serif';
@@ -405,7 +412,7 @@ function renderMenuTemplate(ctx, width, height, options) {
   ctx.fillStyle = '#fbbf24';
   ctx.font = '700 13px -apple-system, "Plus Jakarta Sans", sans-serif';
   ctx.fillText(
-    '⏰ Daily Cutoff strictly at 14:00 IST for tomorrow’s preparation counts & dietary exclusions.',
+    'Daily Cutoff strictly at 14:00 IST for tomorrow’s preparation counts & dietary exclusions.',
     96,
     bannerY + 26
   );
@@ -484,7 +491,7 @@ function renderAnnouncementTemplate(ctx, width, height, options) {
   const isCritical = options.severity === 'critical';
   ctx.fillStyle = isCritical ? '#f43f5e' : '#34d399';
   ctx.font = '900 56px -apple-system, "Plus Jakarta Sans", sans-serif';
-  ctx.fillText(isCritical ? '⚠️ Campus Alert' : '📢 Official Bulletin', 76, 210);
+  ctx.fillText(isCritical ? 'Campus Alert' : 'Official Bulletin', 76, 210);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '800 28px -apple-system, "Plus Jakarta Sans", sans-serif';

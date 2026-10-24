@@ -196,15 +196,31 @@ export function useTokenLockStatus() {
   /**
    * Granular Date Lock Evaluator:
    * Returns exact lock status, code, and user-facing explanation for ANY given calendar date.
+   * Supports administrative bypass via options.isAdmin = true
    */
   const getDateLockStatus = useCallback(
-    (targetDateStr) => {
+    (targetDateStr, options = false) => {
       if (!targetDateStr) {
         return { isLocked: true, reason: 'Invalid date', code: 'INVALID' };
       }
 
-      // Emergency lockdown overrides all dates
+      const isAdmin = typeof options === 'boolean'
+        ? options
+        : Boolean(options && (options.isAdmin || options.role === 'admin' || options.role === 'canteen_committee' || options.role === 'central_committee'));
+
+      // Emergency lockdown overrides all dates unless administrative bypass
       if (effectiveMode === 'force_locked') {
+        if (isAdmin) {
+          return {
+            isLocked: false,
+            isAdminOverride: true,
+            reason: 'Emergency Lockdown active for students • Admin override authority enabled.',
+            code: 'ADMIN_EMERGENCY_OVERRIDE',
+            isTomorrow: targetDateStr === tomorrowIST,
+            isToday: targetDateStr === todayIST,
+            isPast: targetDateStr < todayIST,
+          };
+        }
         return {
           isLocked: true,
           reason: 'Emergency Lockdown: Token updates are temporarily frozen by administration.',
@@ -219,6 +235,7 @@ export function useTokenLockStatus() {
       if (effectiveMode === 'force_unlocked') {
         return {
           isLocked: false,
+          isAdminOverride: true,
           reason: 'Admin Override Active: Updates unlocked for all dates.',
           code: 'OVERRIDE_UNLOCKED',
           isTomorrow: targetDateStr === tomorrowIST,
@@ -231,6 +248,7 @@ export function useTokenLockStatus() {
       if (targetDateStr < todayIST) {
         return {
           isLocked: true,
+          isAdminOverride: false,
           reason: 'Past Date: Cannot modify previous days.',
           code: 'PAST',
           isTomorrow: false,
@@ -239,10 +257,22 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 2. Today is always locked (meal orders are finalized / food prep underway) unless admin force unlocked
+      // 2. Today is closed for regular students, but editable by admin!
       if (targetDateStr === todayIST) {
+        if (isAdmin) {
+          return {
+            isLocked: false,
+            isAdminOverride: true,
+            reason: "Today's meal orders are finalized for kitchen prep • Admin override authority enabled.",
+            code: 'ADMIN_TODAY_OVERRIDE',
+            isTomorrow: false,
+            isToday: true,
+            isPast: false,
+          };
+        }
         return {
           isLocked: true,
+          isAdminOverride: false,
           reason: "Today's meal orders are finalized. Updates for today are closed.",
           code: 'TODAY_CLOSED',
           isTomorrow: false,
@@ -252,13 +282,12 @@ export function useTokenLockStatus() {
       }
 
       // 3. Tomorrow (The cutoff target):
-      // Unlocked during the active board updation window (e.g. 2:00 PM to 11:00 PM IST).
-      // Locked before window open time (e.g. before 2:00 PM) and locked after cutoff deadline (e.g. past 11:00 PM).
       if (targetDateStr === tomorrowIST) {
-        // Anti-tamper check: If clock is unverified and device settings were tampered, lock tomorrow to prevent bypass
-        if (!isSynced && isDeviceDesynced) {
+        // Anti-tamper check: If clock is unverified and device settings were tampered, lock tomorrow for non-admins
+        if (!isAdmin && !isSynced && isDeviceDesynced) {
           return {
             isLocked: true,
+            isAdminOverride: false,
             reason: 'System time verification required: Device clock mismatch detected. Please check network connection.',
             code: 'TIME_DESYNC_BLOCKED',
             isTomorrow: true,
@@ -270,8 +299,21 @@ export function useTokenLockStatus() {
 
         const isPastCutoff = Boolean(timeHms && timeHms > endTimeHms);
         if (isPastCutoff) {
+          if (isAdmin) {
+            return {
+              isLocked: false,
+              isAdminOverride: true,
+              reason: `Tomorrow's cutoff passed at ${formatTime12(activeWindow.endTime)} • Admin override authority enabled.`,
+              code: 'ADMIN_CUTOFF_OVERRIDE',
+              isTomorrow: true,
+              isToday: false,
+              isPast: false,
+              isPastCutoff: true,
+            };
+          }
           return {
             isLocked: true,
+            isAdminOverride: false,
             reason: `Tomorrow's cutoff passed at ${formatTime12(activeWindow.endTime)}. Changes are locked for kitchen prep.`,
             code: 'CUTOFF_PASSED',
             isTomorrow: true,
@@ -283,8 +325,21 @@ export function useTokenLockStatus() {
 
         const isBeforeWindow = Boolean(timeHms && timeHms < startTimeHms);
         if (isBeforeWindow) {
+          if (isAdmin) {
+            return {
+              isLocked: false,
+              isAdminOverride: true,
+              reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)} • Admin override authority enabled.`,
+              code: 'ADMIN_WINDOW_OVERRIDE',
+              isTomorrow: true,
+              isToday: false,
+              isPast: false,
+              isPastCutoff: false,
+            };
+          }
           return {
             isLocked: true,
+            isAdminOverride: false,
             reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)}.`,
             code: 'BEFORE_WINDOW',
             isTomorrow: true,
@@ -296,6 +351,7 @@ export function useTokenLockStatus() {
 
         return {
           isLocked: false,
+          isAdminOverride: isAdmin,
           reason: `Open for tomorrow until cutoff at ${formatTime12(activeWindow.endTime)}.`,
           code: 'TOMORROW_OPEN',
           isTomorrow: true,
@@ -308,6 +364,7 @@ export function useTokenLockStatus() {
       // 4. Future dates (Day after tomorrow onward): ALWAYS UNLOCKED for advance scheduling!
       return {
         isLocked: false,
+        isAdminOverride: false,
         reason: 'Advance booking open. You can freely toggle meals or schedule leaves.',
         code: 'FUTURE_OPEN',
         isTomorrow: false,
@@ -374,7 +431,7 @@ export function useTokenLockStatus() {
   return {
     // Core Granular Evaluators
     getDateLockStatus,
-    isDateLocked: (d) => getDateLockStatus(d).isLocked,
+    isDateLocked: (d, options = false) => getDateLockStatus(d, options).isLocked,
 
     // Today, Tomorrow & Target Context
     todayIST,

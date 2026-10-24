@@ -5,6 +5,10 @@ import 'lenis/dist/lenis.css'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import Context from "./store/AuthContext.jsx"
+import { registerServiceWorker } from './utils/pwaManager'
+
+// Initialize PWA Service Worker
+registerServiceWorker()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

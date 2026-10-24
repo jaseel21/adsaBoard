@@ -31,6 +31,8 @@ import {
   Info,
   ExternalLink,
   History,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
@@ -482,11 +484,16 @@ const MenuTable = () => {
                   )}
                 </div>
 
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  {activeDayData.isArchived || activeDayData.isClosed
-                    ? `⚠️ ${t('canteenClosedNotice', 'Canteen dining hall is closed for food service on this date.')}`
-                    : activeDayData.note || t('standardDiningRoutine', 'Standard campus dining hall menu schedule')}
-                </p>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  {activeDayData.isArchived || activeDayData.isClosed ? (
+                    <span className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-medium">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{t('canteenClosedNotice', 'Canteen dining hall is closed for food service on this date.')}</span>
+                    </span>
+                  ) : (
+                    activeDayData.note || t('standardDiningRoutine', 'Standard campus dining hall menu schedule')
+                  )}
+                </div>
               </div>
 
               {/* Action shortcuts */}
@@ -509,8 +516,9 @@ const MenuTable = () => {
           {/* Canteen Closed Alert Banner */}
           {(activeDayData.isArchived || activeDayData.isClosed) && (
             <div className="p-4 rounded-2xl bg-amber-100/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 text-xs sm:text-sm space-y-1">
-              <div className="font-bold flex items-center gap-2">
-                <span>🔒 {t('canteenClosed', 'Canteen Closed')}</span>
+              <div className="font-bold flex items-center gap-1.5">
+                <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>{t('canteenClosed', 'Canteen Closed')}</span>
               </div>
               <p className="text-xs text-amber-800 dark:text-amber-300">
                 {activeDayData.closureReason ||
@@ -915,15 +923,19 @@ const MenuTable = () => {
                   </div>
 
                   {isArchived ? (
-                    <div className="p-3 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs">
-                      ℹ️ <strong>{t('canteenClosed', 'Canteen Closed')}:</strong>{' '}
-                      {item.closureReason || item.archiveReason || t('routineOffDay', 'Routine Off Day')}
+                    <div className="p-3 rounded-xl bg-amber-100/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      <span>
+                        <strong>{t('canteenClosed', 'Canteen Closed')}:</strong>{' '}
+                        {item.closureReason || item.archiveReason || t('routineOffDay', 'Routine Off Day')}
+                      </span>
                     </div>
                   ) : (
                     <>
                       {item.note && (
-                        <p className="text-[11px] text-amber-700 dark:text-amber-400 mb-2 italic">
-                          ℹ️ {item.note}
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 mb-2 italic flex items-center gap-1">
+                          <Info className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                          <span>{item.note}</span>
                         </p>
                       )}
 
@@ -932,8 +944,9 @@ const MenuTable = () => {
                         {!item.breakfast?.isArchived && item.breakfast?.isAvailable !== false && (
                           <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-500/20">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-extrabold text-[11px] text-amber-800 dark:text-amber-400 flex items-center gap-1">
-                                ☕ {t('breakfast', 'Breakfast')}
+                              <span className="font-extrabold text-[11px] text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                                <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                <span>{t('breakfast', 'Breakfast')}</span>
                               </span>
                               {item.breakfast?.timing && (
                                 <span className="text-[10px] text-gray-400 font-mono">
@@ -956,8 +969,9 @@ const MenuTable = () => {
                         {!item.lunch?.isArchived && item.lunch?.isAvailable !== false && (
                           <div className="p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-500/20">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-extrabold text-[11px] text-emerald-800 dark:text-emerald-400 flex items-center gap-1">
-                                🍲 {t('lunch', 'Lunch')}
+                              <span className="font-extrabold text-[11px] text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                                <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>{t('lunch', 'Lunch')}</span>
                               </span>
                               {item.lunch?.timing && (
                                 <span className="text-[10px] text-gray-400 font-mono">
@@ -980,8 +994,9 @@ const MenuTable = () => {
                         {!item.evening?.isArchived && item.evening?.isAvailable !== false && (
                           <div className="p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-500/20">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-extrabold text-[11px] text-blue-800 dark:text-blue-400 flex items-center gap-1">
-                                🫖 {t('eveningTea', 'Evening Tea')}
+                              <span className="font-extrabold text-[11px] text-blue-800 dark:text-blue-400 flex items-center gap-1.5">
+                                <Coffee className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                <span>{t('eveningTea', 'Evening Tea')}</span>
                               </span>
                               {item.evening?.timing && (
                                 <span className="text-[10px] text-gray-400 font-mono">
@@ -1004,8 +1019,9 @@ const MenuTable = () => {
                         {!item.dinner?.isArchived && item.dinner?.isAvailable !== false && (
                           <div className="p-2.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-500/20">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-extrabold text-[11px] text-purple-800 dark:text-purple-400 flex items-center gap-1">
-                                🌙 {t('dinner', 'Dinner')}
+                              <span className="font-extrabold text-[11px] text-purple-800 dark:text-purple-400 flex items-center gap-1.5">
+                                <Moon className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                                <span>{t('dinner', 'Dinner')}</span>
                               </span>
                               {item.dinner?.timing && (
                                 <span className="text-[10px] text-gray-400 font-mono">
@@ -1042,22 +1058,34 @@ const MenuTable = () => {
                     </th>
                     {hasVisibleBreakfast && (
                       <th className="py-4 px-5 font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                        ☕ {t('breakfast', 'Breakfast')}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Coffee className="w-3.5 h-3.5" />
+                          <span>{t('breakfast', 'Breakfast')}</span>
+                        </span>
                       </th>
                     )}
                     {hasVisibleLunch && (
                       <th className="py-4 px-5 font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-                        🍲 {t('lunch', 'Lunch')}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Utensils className="w-3.5 h-3.5" />
+                          <span>{t('lunch', 'Lunch')}</span>
+                        </span>
                       </th>
                     )}
                     {hasVisibleEvening && (
                       <th className="py-4 px-5 font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-                        🫖 {t('eveningTea', 'Evening Tea')}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Coffee className="w-3.5 h-3.5" />
+                          <span>{t('eveningTea', 'Evening Tea')}</span>
+                        </span>
                       </th>
                     )}
                     {hasVisibleDinner && (
                       <th className="py-4 px-5 font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider">
-                        🌙 {t('dinner', 'Dinner')}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Moon className="w-3.5 h-3.5" />
+                          <span>{t('dinner', 'Dinner')}</span>
+                        </span>
                       </th>
                     )}
                   </tr>
@@ -1095,7 +1123,10 @@ const MenuTable = () => {
                             colSpan={totalCols - 1}
                             className="py-4 px-5 text-amber-800 dark:text-amber-300 italic text-xs"
                           >
-                            🔒 {t('canteenClosed', 'Canteen Closed')} —{' '}
+                            <span className="inline-flex items-center gap-1.5 font-bold mr-1 text-amber-900 dark:text-amber-200">
+                              <Lock className="w-3.5 h-3.5 text-amber-600" />
+                              <span>{t('canteenClosed', 'Canteen Closed')} —</span>
+                            </span>
                             {item.closureReason ||
                               item.archiveReason ||
                               t('canteenClosedRoutineNotice', 'Routine Off Day. No dining hall supply.')}
@@ -1168,8 +1199,9 @@ const MenuTable = () => {
                                   </p>
                                 )}
                                 {item.breakfast?.timing && (
-                                  <span className="text-[10px] text-gray-400 block mt-1">
-                                    ⏰ {item.breakfast.timing}
+                                  <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span>{item.breakfast.timing}</span>
                                   </span>
                                 )}
                               </>
@@ -1212,8 +1244,9 @@ const MenuTable = () => {
                                   </p>
                                 )}
                                 {item.lunch?.timing && (
-                                  <span className="text-[10px] text-gray-400 block mt-1">
-                                    ⏰ {item.lunch.timing}
+                                  <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span>{item.lunch.timing}</span>
                                   </span>
                                 )}
                               </>
@@ -1237,8 +1270,9 @@ const MenuTable = () => {
                                   </p>
                                 )}
                                 {item.evening?.timing && (
-                                  <span className="text-[10px] text-gray-400 block mt-1">
-                                    ⏰ {item.evening.timing}
+                                  <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span>{item.evening.timing}</span>
                                   </span>
                                 )}
                               </>
@@ -1262,8 +1296,9 @@ const MenuTable = () => {
                                   </p>
                                 )}
                                 {item.dinner?.timing && (
-                                  <span className="text-[10px] text-gray-400 block mt-1">
-                                    ⏰ {item.dinner.timing}
+                                  <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span>{item.dinner.timing}</span>
                                   </span>
                                 )}
                               </div>

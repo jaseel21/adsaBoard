@@ -27,11 +27,13 @@ import {
   Send,
   Unlock,
   Ban,
+  Receipt,
 } from 'lucide-react';
 import { getStudentFineAmount } from '../utils/mealScheduleService';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
 import firebase from '../firebase/config';
+import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -64,6 +66,11 @@ import {
 
 function StudentPort() {
   const { stdata, setStdata, logoutStudent } = useContext(DataOfOne);
+  const authContext = useContext(AuthContext);
+  const isAdmin = Boolean(
+    authContext?.user &&
+    ['canteen_committee', 'central_committee', 'admin', 'super_admin'].includes(authContext?.role)
+  );
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
@@ -74,6 +81,17 @@ function StudentPort() {
 
   const isBlocked = unblockDocStatus ? Boolean(unblockDocStatus.block) : Boolean(stdata?.block);
   const pendingUnblock = unblockDocStatus ? unblockDocStatus.pendingUnblockRequest : stdata?.pendingUnblockRequest;
+
+  const activeStudentDoc = useMemo(() => {
+    return {
+      ...(stdata || {}),
+      ...(unblockDocStatus || {}),
+    };
+  }, [stdata, unblockDocStatus]);
+
+  const fineDue = useMemo(() => {
+    return getStudentFineAmount(activeStudentDoc);
+  }, [activeStudentDoc]);
   const {
     todayIST,
     todayDayShort,
@@ -909,10 +927,10 @@ function StudentPort() {
               #{stdata.tokenNo}
               {isBlocked && (
                 <span
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 border-2 border-white dark:border-[#0f1715] flex items-center justify-center text-[10px] shadow-sm"
-                  title={t('tokenLockedBadge', 'Token Locked (Read-Only)')}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 border-2 border-white dark:border-[#0f1715] flex items-center justify-center text-[10px] shadow-sm"
+                  title={t('tokenLockedBadge', 'Account Blocked')}
                 >
-                  <Lock className="w-2.5 h-2.5 text-white" />
+                  <Ban className="w-2.5 h-2.5 text-white" />
                 </span>
               )}
             </div>
@@ -934,10 +952,16 @@ function StudentPort() {
                   <span>{t('officialRecordReadOnly', 'Official Record • Read-Only')}</span>
                 </span>
                 {isBlocked && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/30">
-                    <Lock className="w-3 h-3 text-red-500" />
-                    <span>{t('tokenLockedBadge', 'Token Locked (Read-Only)')}</span>
-                  </span>
+                  <>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                      <Ban className="w-3 h-3 text-rose-500" />
+                      <span>{t('tokenLockedBadge', 'Account Blocked')}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/40 shadow-xs animate-pulse">
+                      <Receipt className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                      <span>{t('finePayableAmount', 'Fine Due')}: ₹{fineDue}</span>
+                    </span>
+                  </>
                 )}
               </div>
               {stdata.nameMl && (
@@ -946,9 +970,14 @@ function StudentPort() {
                 </p>
               )}
               {isBlocked ? (
-                <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-red-600 dark:text-red-400 font-semibold">
-                  <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>{t('tokenLockedPortalNotice', 'Your dining token is currently locked by the Canteen Committee. You are viewing your details in Read-Only mode.')}</span>
+                <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-rose-700 dark:text-rose-300 font-semibold flex-wrap">
+                  <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0 text-rose-600 dark:text-rose-400" />
+                  <span>
+                    {t('tokenLockedPortalNotice', 'Your dining account is currently blocked by the Canteen Committee.')}{' '}
+                    <strong className="text-amber-800 dark:text-amber-300 font-bold">
+                      ({t('finePayableAmount', 'Fine Due')}: ₹{fineDue} • Pay at ADSA Canteen Office to restore)
+                    </strong>
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-gray-500 dark:text-gray-400">
@@ -1029,7 +1058,7 @@ function StudentPort() {
                 <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Clock className="w-6 h-6 animate-pulse" />
                 </div>
-                <div className="text-xs sm:text-sm text-amber-950 dark:text-amber-200 space-y-1 min-w-0">
+                <div className="text-xs sm:text-sm text-amber-950 dark:text-amber-200 space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-black text-sm sm:text-base text-amber-950 dark:text-amber-100">
                       {t('unblockRequestPending', 'Unblock Request Pending')} (#{pendingUnblock.ticketNumber})
@@ -1049,6 +1078,16 @@ function StudentPort() {
                       Note: &ldquo;{pendingUnblock.reasonNote}&rdquo;
                     </p>
                   )}
+                  {/* Fine Verification Note */}
+                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-black/30 border border-amber-300/50 dark:border-amber-500/30 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-950 dark:text-amber-100 font-bold">
+                      <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>{t('finePayableAmount', 'Fine Payable Amount')}:</span>
+                    </div>
+                    <span className="font-mono text-sm font-black text-amber-950 dark:text-amber-100 px-2 py-0.5 rounded-lg bg-amber-500/20">
+                      ₹{fineDue}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1074,58 +1113,92 @@ function StudentPort() {
               </div>
             </div>
           ) : (
-            /* Standard Blocked Banner with Immediate Action Button */
-            <div className="rounded-3xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 p-4 sm:p-6 shadow-md backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs border border-rose-300/60 dark:border-rose-500/30">
-                  <Ban className="w-6 h-6" />
-                </div>
-                <div className="flex-1 min-w-0 text-xs sm:text-sm text-rose-900 dark:text-rose-200 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-extrabold text-sm sm:text-base text-rose-950 dark:text-rose-100">
-                      Token #{stdata.tokenNo} Blocked by Admin
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-200/60 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 uppercase tracking-wide">
-                      Dual-Grid Suspension
-                    </span>
+            /* Standard Blocked Banner with Comprehensive Fine Card & Instructions */
+            <div className="rounded-3xl bg-gradient-to-br from-rose-50 via-red-50 to-rose-100/60 dark:from-rose-950/50 dark:via-red-950/40 dark:to-rose-900/30 border border-rose-300 dark:border-rose-500/30 p-5 sm:p-6 shadow-lg backdrop-blur-xl space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm border border-rose-300/60 dark:border-rose-500/30">
+                    <Ban className="w-6 h-6" />
                   </div>
-                  <p className="text-rose-800 dark:text-rose-300 text-xs leading-relaxed">
-                    This dining token is temporarily blocked due to a food waste or attendance infraction. Breakfast and Lunch privileges are paused.
-                  </p>
-                  {stdata.blockReason && (
-                    <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-black/30 border border-rose-200 dark:border-rose-500/20 text-xs">
-                      <span className="font-bold text-rose-950 dark:text-rose-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
-                      <span className="italic font-medium text-rose-900 dark:text-rose-200">&ldquo;{stdata.blockReason}&rdquo;</span>
-                    </div>
-                  )}
-
-                  {/* Calculated Fine Due Banner */}
-                  {getStudentFineAmount(stdata) > 0 && (
-                    <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-2 text-xs text-amber-900 dark:text-amber-200">
-                      <div>
-                        <span className="font-extrabold block">Fine Payable:</span>
-                        <span className="text-[11px] opacity-80">Settle at ADSA office or upload payment receipt with your appeal.</span>
-                      </div>
-                      <span className="font-mono text-base font-black px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-950 dark:text-amber-100 flex-shrink-0">
-                        ₹{getStudentFineAmount(stdata)}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-black text-base sm:text-lg text-rose-950 dark:text-white">
+                        Token #{stdata.tokenNo} Blocked • {t('dualGridSuspension', 'Dual-Grid Suspension')}
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300/60">
+                        Meals Paused
                       </span>
                     </div>
-                  )}
+                    <p className="text-rose-900 dark:text-rose-200 text-xs sm:text-sm leading-relaxed">
+                      {t('studentDualGridBlockedDesc', 'Both Breakfast and Lunch dining privileges are temporarily suspended due to food waste or attendance infraction.')}
+                    </p>
+                    {activeStudentDoc.blockReason && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200 dark:border-rose-500/20 text-xs">
+                        <span className="font-bold text-rose-950 dark:text-rose-100">{t('blockReasonLabel', 'Reason')}:</span>{' '}
+                        <span className="italic font-medium text-rose-900 dark:text-rose-200">&ldquo;{activeStudentDoc.blockReason}&rdquo;</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="w-full sm:w-auto flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      setIsUnblockModalOpen(true);
+                    }}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{t('requestUnblockBtn', 'Submit Unblock Appeal')}</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="w-full sm:w-auto flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    feedback('tick');
-                    setIsUnblockModalOpen(true);
-                  }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all cursor-pointer"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{t('requestUnblockBtn', 'Submit Unblock Appeal')}</span>
-                </button>
+              {/* Prominent Fine Payable & Instructions Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-amber-500/10 border border-amber-500/35 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-amber-500/20">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-100 uppercase tracking-wide">
+                      {t('finePayableAmount', 'Fine Payable Amount')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">Payable at Mess Office:</span>
+                    <span className="font-mono text-xl sm:text-2xl font-black text-amber-950 dark:text-amber-100 px-3 py-1 rounded-xl bg-amber-500/25 border border-amber-500/40 shadow-xs">
+                      ₹{fineDue}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2-Step Settlement Roadmap */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-amber-950 dark:text-amber-200">
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-black/30 border border-amber-500/20 flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-mono font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      1
+                    </span>
+                    <div className="space-y-0.5">
+                      <strong className="block text-amber-950 dark:text-amber-100 font-bold">Step 1: Pay Fine at Canteen Office</strong>
+                      <p className="text-[11px] text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
+                        Pay <strong>₹{fineDue}</strong> directly at the <strong>ADSA Canteen Office</strong> or to the mess secretary in charge.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-black/30 border border-amber-500/20 flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-mono font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      2
+                    </span>
+                    <div className="space-y-0.5">
+                      <strong className="block text-emerald-950 dark:text-emerald-200 font-bold">Step 2: Submit Appeal with Receipt</strong>
+                      <p className="text-[11px] text-amber-900/90 dark:text-amber-300/90 leading-relaxed">
+                        Click &ldquo;Submit Unblock Appeal&rdquo; to attach your payment receipt or explanation. Central Committee will verify and unblock both meal grids.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1167,9 +1240,9 @@ function StudentPort() {
                 </div>
 
                 {isBlocked ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 select-none">
-                    <Lock className="w-3 h-3 text-gray-400" />
-                    <span>{t('locked', 'Locked')}</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 select-none">
+                    <Ban className="w-3 h-3 text-rose-500" />
+                    <span>{t('dualGridSuspension', 'Dual-Grid Suspended')}</span>
                   </span>
                 ) : (
                   <button
@@ -1197,9 +1270,9 @@ function StudentPort() {
                         {isLockedDay && (
                           <span
                             title={dayInfo?.isTomorrow ? `Tomorrow is locked past ${endTime}. Edits apply starting next week.` : `Today is locked. Edits apply starting next week.`}
-                            className="text-amber-500 text-[10px]"
+                            className="inline-flex items-center text-amber-500"
                           >
-                            🔒
+                            <Lock className="w-2.5 h-2.5" />
                           </span>
                         )}
                       </span>
@@ -1207,13 +1280,16 @@ function StudentPort() {
                         type="button"
                         onClick={() => {
                           if (isBlocked) {
-                            dialog.toast.info(t('tokenLockedBadge', 'Token Locked'), t('routineLockedNotice', 'Routine updates are disabled while token is locked'));
+                            dialog.toast.warning(
+                              t('tokenLockedBadge', 'Account Blocked'),
+                              `Dual-Grid Suspension: Breakfast is paused. Please settle the ₹${fineDue} fine at ADSA Canteen Office.`
+                            );
                             return;
                           }
                           toggleBreakfastDay(key);
                         }}
                         disabled={isBlocked}
-                        title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Locked)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
+                        title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Suspended)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
                         className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform font-mono shadow-sm ${
                           isBlocked
                             ? active
@@ -1283,9 +1359,9 @@ function StudentPort() {
                 </div>
 
                 {isBlocked ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 select-none">
-                    <Lock className="w-3 h-3 text-gray-400" />
-                    <span>{t('locked', 'Locked')}</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 select-none">
+                    <Ban className="w-3 h-3 text-rose-500" />
+                    <span>{t('dualGridSuspension', 'Dual-Grid Suspended')}</span>
                   </span>
                 ) : (
                   <button
@@ -1313,9 +1389,9 @@ function StudentPort() {
                         {isLockedDay && (
                           <span
                             title={dayInfo?.isTomorrow ? `Tomorrow is locked past ${endTime}. Edits apply starting next week.` : `Today is locked. Edits apply starting next week.`}
-                            className="text-amber-500 text-[10px]"
+                            className="inline-flex items-center text-amber-500"
                           >
-                            🔒
+                            <Lock className="w-2.5 h-2.5" />
                           </span>
                         )}
                       </span>
@@ -1323,13 +1399,16 @@ function StudentPort() {
                         type="button"
                         onClick={() => {
                           if (isBlocked) {
-                            dialog.toast.info(t('tokenLockedBadge', 'Token Locked'), t('routineLockedNotice', 'Routine updates are disabled while token is locked'));
+                            dialog.toast.warning(
+                              t('tokenLockedBadge', 'Account Blocked'),
+                              `Dual-Grid Suspension: Lunch is paused. Please settle the ₹${fineDue} fine at ADSA Canteen Office.`
+                            );
                             return;
                           }
                           toggleLunchDay(key);
                         }}
                         disabled={isBlocked}
-                        title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Locked)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
+                        title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Suspended)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
                         className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform font-mono shadow-sm ${
                           isBlocked
                             ? active
@@ -1383,9 +1462,14 @@ function StudentPort() {
           </div>
 
           {isBlocked && (
-            <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/20 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
-              <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{t('routineLockedDesc', 'Weekly dining schedule cannot be changed while account is suspended.')}</span>
+            <div className="p-3 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-500/20 flex items-center justify-between gap-2 text-xs text-rose-800 dark:text-rose-300">
+              <div className="flex items-center gap-2">
+                <Ban className="w-4 h-4 flex-shrink-0 text-rose-600 dark:text-rose-400" />
+                <span>{t('routineLockedDesc', 'Weekly dining schedule cannot be changed while account is suspended.')}</span>
+              </div>
+              <span className="font-mono font-bold text-rose-950 dark:text-white px-2 py-0.5 rounded-lg bg-rose-500/15">
+                Fine Due: ₹{fineDue}
+              </span>
             </div>
           )}
         </div>
@@ -1393,20 +1477,35 @@ function StudentPort() {
         {/* ================= SECTION 2: MONTHLY DINING CALENDAR & DATE OVERRIDES ================= */}
         <div className="space-y-4">
           {isBlocked && (
-            <div className="p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/20 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300">
-              <Lock className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')}</span>
+            <div className="p-3 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-500/20 flex items-center justify-between gap-2 text-xs text-rose-800 dark:text-rose-300">
+              <div className="flex items-center gap-2">
+                <Ban className="w-4 h-4 flex-shrink-0 text-rose-600 dark:text-rose-400" />
+                <span>{t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')}</span>
+              </div>
+              <span className="font-mono font-bold text-rose-950 dark:text-white px-2 py-0.5 rounded-lg bg-rose-500/15">
+                Fine Due: ₹{fineDue}
+              </span>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-semibold">Admin Override Active — Cutoff locks for today and tomorrow are bypassed.</span>
+              </div>
             </div>
           )}
 
           <DateGridMatrix
             student={studentForMatrix}
             onSaveExceptions={(updated) => {
-              if (isBlocked) return;
+              if (isBlocked && !isAdmin) return;
               setDateExceptions(updated);
             }}
             onSaveTemplates={handleSaveTemplates}
-            editable={!isBlocked}
+            editable={isAdmin || !isBlocked}
+            isAdmin={isAdmin}
           />
         </div>
 
@@ -1613,9 +1712,9 @@ function StudentPort() {
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             {isBlocked ? (
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-extrabold text-xs border border-red-200 dark:border-red-500/20 select-none">
-                  <Lock className="w-4 h-4 text-red-500" />
-                  <span>{t('tokenLockedReadOnlyDock', 'Token Locked • Read-Only Mode')}</span>
+                <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-extrabold text-xs border border-rose-200 dark:border-rose-500/20 select-none">
+                  <Ban className="w-4 h-4 text-rose-500" />
+                  <span>{t('tokenLockedReadOnlyDock', 'Account Blocked • Meals Suspended')}</span>
                 </div>
                 {pendingUnblock?.status === 'pending' ? (
                   <button
@@ -1638,8 +1737,8 @@ function StudentPort() {
                     }}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
                   >
-                    <Unlock className="w-3.5 h-3.5" />
-                    <span>{t('requestUnblockBtn', 'Request to Unblock')}</span>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{t('requestUnblockBtn', 'Submit Unblock Appeal')}</span>
                   </button>
                 )}
               </div>
@@ -1671,13 +1770,13 @@ function StudentPort() {
           <div className="flex items-center gap-1.5 xs:gap-2 pl-1 xs:pl-2 sm:pl-3 min-w-0">
             {isBlocked ? (
               <>
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0 animate-pulse" />
                 <div className="min-w-0">
-                  <span className="text-xs sm:text-sm font-extrabold text-red-600 dark:text-red-400 block truncate">
-                    {t('tokenLockedReadOnlyDock', 'Token Locked • Read-Only Mode')}
+                  <span className="text-xs sm:text-sm font-extrabold text-rose-600 dark:text-rose-400 block truncate">
+                    {t('tokenLockedReadOnlyDock', 'Account Blocked • Meals Suspended')} (Fine Due: ₹{fineDue})
                   </span>
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate">
-                    {t('routineLockedDesc', 'Weekly dining schedule cannot be changed while account is suspended.')}
+                    {t('fineNoticePayAtOffice', 'Pay fine at ADSA Canteen Office to restore.')}
                   </span>
                 </div>
               </>
@@ -1820,7 +1919,7 @@ function StudentPort() {
       <UnblockRequestModal
         isOpen={isUnblockModalOpen}
         onClose={() => setIsUnblockModalOpen(false)}
-        student={stdata}
+        student={activeStudentDoc}
         onSuccess={() => {
           // Success callback
         }}

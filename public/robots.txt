@@ -16,7 +16,7 @@ Allow: /guide
 Allow: /support
 Allow: /feedback
 Allow: /contact
-Allow: /list
+Allow: /avoiders
 Allow: /login
 
 # Disallow Internal Admin, Staff Consoles, and Authenticated Student Portals

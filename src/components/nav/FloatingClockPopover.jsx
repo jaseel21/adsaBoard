@@ -144,15 +144,24 @@ export default function FloatingClockPopover({
 
   if (!isOpen || typeof document === 'undefined') return null;
 
-  // Determine popover position relative to anchor
+  // Viewport-aware clamped positioning (zero transform conflict with Framer Motion)
   const style = {};
-  if (anchorRect) {
-    style.top = `${anchorRect.bottom + 8}px`;
-    style.left = `${Math.max(16, Math.min(window.innerWidth - 368, anchorRect.right - 300))}px`;
-  } else {
-    style.top = '64px';
-    style.left = '50%';
-    style.transform = 'translateX(-50%)';
+  if (typeof window !== 'undefined') {
+    const popoverWidth = Math.min(350, window.innerWidth - 24);
+    const isMobile = window.innerWidth < 768;
+    const padding = isMobile ? 12 : 16;
+    let targetLeft;
+
+    if (anchorRect) {
+      targetLeft = anchorRect.left + (anchorRect.width / 2) - (popoverWidth / 2);
+    } else {
+      targetLeft = (window.innerWidth - popoverWidth) / 2;
+    }
+
+    const clampedLeft = Math.max(padding, Math.min(window.innerWidth - popoverWidth - padding, targetLeft));
+    style.left = `${clampedLeft}px`;
+    style.top = anchorRect ? `${Math.max(8, anchorRect.bottom + 8)}px` : '64px';
+    style.width = `${popoverWidth}px`;
   }
 
   return createPortal(
@@ -175,7 +184,7 @@ export default function FloatingClockPopover({
           exit={{ opacity: 0, y: -8, scale: 0.95 }}
           transition={{ type: 'spring', damping: 26, stiffness: 360 }}
           style={style}
-          className="fixed pointer-events-auto w-[350px] rounded-3xl bg-white/95 dark:bg-[#090f0d]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 shadow-2xl p-4 select-none z-10 space-y-3"
+          className="fixed pointer-events-auto max-w-[calc(100vw-24px)] max-h-[calc(100vh-80px)] overflow-y-auto rounded-3xl bg-white/95 dark:bg-[#090f0d]/95 backdrop-blur-2xl border border-gray-200/90 dark:border-white/15 shadow-2xl p-4 select-none z-10 space-y-3"
         >
           {/* Header */}
           <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 dark:border-white/10">
@@ -426,33 +435,6 @@ export default function FloatingClockPopover({
             <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium pl-5">
               {windowMilestone.text}
             </p>
-          </div>
-
-          {/* Quick Nav Actions */}
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate('/menu');
-              }}
-              className="py-2 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-            >
-              <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{lang === 'ml' ? 'മെനു കാണുക' : 'Full Menu'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate('/student');
-              }}
-              className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm shadow-emerald-600/25"
-            >
-              <span>{lang === 'ml' ? 'പോർട്ടൽ' : 'My Portal'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
 
           {/* Telemetry Footer */}

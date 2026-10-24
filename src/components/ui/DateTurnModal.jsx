@@ -14,6 +14,8 @@ import {
   ArrowRight,
   Sun,
   Moon,
+  PowerOff,
+  CheckCircle2,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
@@ -47,7 +49,7 @@ export default function DateTurnModal({
   ], [t]);
 
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
-  const lockInfo = useMemo(() => (dateStr ? getDateLockStatus(dateStr) : { isLocked: false }), [getDateLockStatus, dateStr]);
+  const lockInfo = useMemo(() => (dateStr ? getDateLockStatus(dateStr, { isAdmin }) : { isLocked: false }), [getDateLockStatus, dateStr, isAdmin]);
   const isDateLocked = isAdmin ? false : Boolean(lockInfo.isLocked);
 
   // Determine current meal status from student routine + existing exception
@@ -181,7 +183,7 @@ export default function DateTurnModal({
 
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {statusInfo.hasException ? (
-                <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+                <span className="text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   {t('customOverrideTag', 'Custom Override Active: {label}').replace('{label}', statusInfo.label || 'Modified')}
                 </span>
@@ -198,11 +200,21 @@ export default function DateTurnModal({
 
         {/* Lock Alert Banner if cutoff has passed */}
         {isDateLocked && (
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-700 dark:text-amber-300">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-2xl bg-slate-500/10 border border-slate-500/20 flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-slate-500" />
             <div>
               <span className="font-bold block">{t('dateLockedTitle', 'Updates Closed for this Date')}</span>
               <span className="opacity-90">{lockInfo.reason || t('dateLockedDesc', 'Updates are locked to preserve kitchen preparations.')}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Cutoff Bypass Badge */}
+        {isAdmin && lockInfo.isAdminOverride && (
+          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-semibold">{t('adminCutoffNotice', 'Admin override mode active. You can modify locked dates.')}</span>
             </div>
           </div>
         )}
@@ -223,7 +235,7 @@ export default function DateTurnModal({
               }}
               className={`p-4 rounded-2xl text-left border transition-all duration-200 transform active:scale-95 flex items-center justify-between ${
                 localBf
-                  ? 'bg-gradient-to-br from-amber-50 to-amber-100/70 dark:from-amber-950/40 dark:to-amber-900/20 border-amber-300 dark:border-amber-500/40 shadow-sm'
+                  ? 'bg-gradient-to-br from-teal-50 to-teal-100/70 dark:from-teal-950/40 dark:to-teal-900/20 border-teal-300 dark:border-teal-500/40 shadow-sm'
                   : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/10 opacity-70'
               }`}
             >
@@ -231,7 +243,7 @@ export default function DateTurnModal({
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
                     localBf
-                      ? 'bg-amber-500 text-white shadow-sm'
+                      ? 'bg-teal-600 text-white shadow-sm'
                       : 'bg-gray-200 dark:bg-white/10 text-gray-400'
                   }`}
                 >
@@ -313,27 +325,30 @@ export default function DateTurnModal({
             <button
               type="button"
               onClick={handleTurnDayOff}
-              className="py-2.5 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/20 hover:bg-rose-100 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center"
+              className="py-2 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/20 hover:bg-rose-100 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center cursor-pointer"
             >
-              <span className="text-[11px] leading-tight">{t('allOffAction', '🛑 All OFF')}</span>
+              <PowerOff className="w-4 h-4 text-rose-500 mb-0.5" />
+              <span className="text-[11px] leading-tight font-extrabold">{t('allOffAction', 'All OFF')}</span>
               <span className="text-[9px] font-normal opacity-75">{t('allOffSub', 'Leave / Fast')}</span>
             </button>
 
             <button
               type="button"
               onClick={handleTurnDayOn}
-              className="py-2.5 px-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center"
+              className="py-2 px-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center cursor-pointer"
             >
-              <span className="text-[11px] leading-tight">{t('allOnAction', '🟢 All ON')}</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 mb-0.5" />
+              <span className="text-[11px] leading-tight font-extrabold">{t('allOnAction', 'All ON')}</span>
               <span className="text-[9px] font-normal opacity-75">{t('allOnSub', 'Attend Meals')}</span>
             </button>
 
             <button
               type="button"
               onClick={handleResetToRoutine}
-              className="py-2.5 px-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 hover:bg-gray-200 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center"
+              className="py-2 px-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 hover:bg-gray-200 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all active:scale-95 text-center cursor-pointer"
             >
-              <span className="text-[11px] leading-tight">{t('resetRoutineAction', '🔄 Reset Routine')}</span>
+              <RotateCcw className="w-4 h-4 text-gray-500 dark:text-gray-400 mb-0.5" />
+              <span className="text-[11px] leading-tight font-extrabold">{t('resetRoutineAction', 'Reset Routine')}</span>
               <span className="text-[9px] font-normal opacity-75">{t('clearOverrideSub', 'Clear Override')}</span>
             </button>
           </div>

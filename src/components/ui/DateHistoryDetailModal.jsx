@@ -12,6 +12,7 @@ import {
   XCircle,
   Sparkles,
   Info,
+  Check,
 } from 'lucide-react';
 import { formatFriendlyDate, getDayOfWeekShort } from '../../utils/studentExceptionService';
 import { useLanguage } from '../../store/LanguageContext';
@@ -124,11 +125,11 @@ export default function DateHistoryDetailModal({
                 ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-500/20 text-emerald-900 dark:text-emerald-200'
                 : !isBfOn && !isLuOn
                 ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-500/20 text-rose-900 dark:text-rose-200'
-                : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-500/20 text-amber-900 dark:text-amber-200'
+                : 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-500/20 text-indigo-900 dark:text-indigo-200'
             }`}>
               <div className="flex items-center gap-2.5">
                 <span className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                  isBfOn && isLuOn ? 'bg-emerald-500 animate-pulse' : !isBfOn && !isLuOn ? 'bg-rose-500' : 'bg-amber-500'
+                  isBfOn && isLuOn ? 'bg-emerald-500 animate-pulse' : !isBfOn && !isLuOn ? 'bg-rose-500' : 'bg-indigo-500'
                 }`} />
                 <span className="text-xs sm:text-sm font-extrabold">
                   {isBfOn && isLuOn
@@ -142,7 +143,7 @@ export default function DateHistoryDetailModal({
               </div>
 
               {hasException && (
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                   <Tag className="w-2.5 h-2.5" />
                   Override
                 </span>
@@ -153,7 +154,7 @@ export default function DateHistoryDetailModal({
             <div className="p-4 rounded-2xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/5 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <div className="p-1.5 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
                     <Coffee className="w-4 h-4" />
                   </div>
                   <div>
@@ -232,13 +233,18 @@ export default function DateHistoryDetailModal({
                     return (
                       <span
                         key={pref.id}
-                        className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${
+                        className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border inline-flex items-center gap-1 ${
                           isIncluded
                             ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
                             : 'bg-gray-100 text-gray-400 dark:bg-white/5 border-transparent line-through opacity-60'
                         }`}
                       >
-                        {pref.labelEn} {isIncluded ? '✓' : '✗'}
+                        <span>{pref.labelEn}</span>
+                        {isIncluded ? (
+                          <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <X className="w-2.5 h-2.5 text-rose-500" />
+                        )}
                       </span>
                     );
                   })}

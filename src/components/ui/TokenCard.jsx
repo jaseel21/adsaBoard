@@ -39,6 +39,12 @@ export default function TokenCard({
     if (doc.obj2.fish === false) dietaryAvoided.push({ id: 'fish', label: t('noFish', 'No Fish') });
     if (doc.obj2.chicken === false) dietaryAvoided.push({ id: 'chicken', label: t('noChicken', 'No Chicken') });
     if (doc.obj2.mutton === false) dietaryAvoided.push({ id: 'mutton', label: t('noMutton', 'No Mutton') });
+
+    Object.entries(doc.obj2).forEach(([k, v]) => {
+      if (v === false && !['beef', 'fish', 'chicken', 'mutton'].includes(k)) {
+        dietaryAvoided.push({ id: k, label: `No ${k.charAt(0).toUpperCase() + k.slice(1)}` });
+      }
+    });
   }
 
   return (

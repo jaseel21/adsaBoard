@@ -276,16 +276,25 @@ export default function TokenBoardControls({
             aria-label="Filter by dietary preference"
             className="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           >
-            <option value="all">{t('allDietaryInclusions', 'All Dietary Inclusions')}</option>
+            <option value="all">{t('allDietaryInclusions', 'All Diners (Full Board)')}</option>
+            <option value="any_avoiders">
+              {t('allDietaryAvoiders', 'All Dietary Avoiders')} • {metrics?.totalAvoidersRoster || metrics?.totalAvoiders || 0}
+            </option>
             {preferencesList.map((p) => {
-              const avoidersCount = metrics?.dietaryTallies?.[`${p.id}_avoiders`] || 0;
-              const prefLabel = lang === 'ml' && p.labelMl ? p.labelMl : p.labelEn;
+              const avoidersCount =
+                metrics?.dietaryTallies?.[`${p.id}_avoiders_total`] !== undefined
+                  ? metrics.dietaryTallies[`${p.id}_avoiders_total`]
+                  : (metrics?.dietaryTallies?.[`${p.id}_avoiders`] || 0);
+              const prefLabel = lang === 'ml' && p.labelMl ? p.labelMl : (p.labelEn || p.name);
               return (
                 <option key={p.id} value={p.id}>
                   {prefLabel} • {avoidersCount} {t('avoiders', 'avoiders')}
                 </option>
               );
             })}
+            <option value="standard_full">
+              {t('standardFullDiet', 'Standard Full Diet')} • {metrics?.standardFullDietCount || (metrics?.total - (metrics?.totalAvoiders || 0))}
+            </option>
           </select>
         </div>
       </div>
@@ -393,8 +402,16 @@ export default function TokenBoardControls({
 
             {dietaryFilter !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 font-semibold">
-                <span>{t('diet', 'Diet')}: {dietaryFilter}</span>
-                <button type="button" onClick={() => setDietaryFilter('all')} className="hover:text-rose-500">
+                <span>
+                  {t('diet', 'Diet')}: {
+                    dietaryFilter === 'any_avoiders'
+                      ? t('allDietaryAvoiders', 'All Avoiders')
+                      : dietaryFilter === 'standard_full'
+                      ? t('standardFullDiet', 'Full Diet')
+                      : `${dietaryFilter.toUpperCase()} AVOIDERS`
+                  }
+                </span>
+                <button type="button" onClick={() => setDietaryFilter('all')} className="hover:text-rose-500 cursor-pointer">
                   <X className="w-3 h-3" />
                 </button>
               </span>

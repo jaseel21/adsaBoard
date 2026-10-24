@@ -184,7 +184,12 @@ export function useTokenBoardController(options = {}) {
     preferencesList.forEach((pref) => {
       dietaryTallies[pref.id] = 0;
       dietaryTallies[`${pref.id}_avoiders`] = 0;
+      dietaryTallies[`${pref.id}_avoiders_total`] = 0;
     });
+
+    let totalAvoidersRoster = 0;
+    let totalAvoidersActiveMeal = 0;
+    let standardFullDietActiveCount = 0;
 
     const activeMealKey = isLunch ? 'lunch' : 'breakfast';
 
@@ -196,6 +201,19 @@ export function useTokenBoardController(options = {}) {
       const isLunchActive = !isBlocked && getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, 'lunch');
       const isBfActive = !isBlocked && getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, 'breakfast');
       const hasDateExc = Boolean(getActiveStudentException(doc, targetDateIST, activeMealKey));
+
+      const obj2 = doc.obj2 || {};
+      const hasAnyAvoidance = Object.values(obj2).some((v) => v === false);
+      if (hasAnyAvoidance) {
+        totalAvoidersRoster++;
+      }
+
+      // Tally roster-wide avoiders per category
+      preferencesList.forEach((pref) => {
+        if (obj2[pref.id] === false) {
+          dietaryTallies[`${pref.id}_avoiders_total`] = (dietaryTallies[`${pref.id}_avoiders_total`] || 0) + 1;
+        }
+      });
 
       if (isLunchActive) lunchCount++;
       if (isBfActive) breakfastCount++;
@@ -214,8 +232,14 @@ export function useTokenBoardController(options = {}) {
 
       // Compute dietary tallies for currently active diners
       if (isMealActive) {
+        if (hasAnyAvoidance) {
+          totalAvoidersActiveMeal++;
+        } else {
+          standardFullDietActiveCount++;
+        }
+
         preferencesList.forEach((pref) => {
-          const eats = doc.obj2 && doc.obj2[pref.id] !== undefined ? Boolean(doc.obj2[pref.id]) : true;
+          const eats = obj2[pref.id] !== undefined ? Boolean(obj2[pref.id]) : true;
           if (eats) {
             dietaryTallies[pref.id] = (dietaryTallies[pref.id] || 0) + 1;
           } else {
@@ -238,6 +262,9 @@ export function useTokenBoardController(options = {}) {
       leaveCount: leaveCurrent,
       blockedCount,
       activePercentage,
+      totalAvoiders: totalAvoidersActiveMeal,
+      totalAvoidersRoster,
+      standardFullDietCount: standardFullDietActiveCount,
       dietaryTallies,
     };
   }, [documents, targetDateIST, effectiveDay, isLunch, preferencesList]);
@@ -278,9 +305,21 @@ export function useTokenBoardController(options = {}) {
         }
 
         // 3. Dietary Preferences Filter Matching
-        if (dietaryFilter !== 'all') {
-          if (doc.obj2 && doc.obj2[dietaryFilter] === false) {
-            return false;
+        if (dietaryFilter && dietaryFilter !== 'all') {
+          const obj2 = doc.obj2 || {};
+          const hasAnyAvoidance = Object.values(obj2).some((v) => v === false);
+
+          if (dietaryFilter === 'any_avoiders') {
+            if (!hasAnyAvoidance) return false;
+          } else if (dietaryFilter === 'standard_full') {
+            if (hasAnyAvoidance) return false;
+          } else {
+            const targetPref = dietaryFilter.startsWith('avoid_')
+              ? dietaryFilter.replace('avoid_', '')
+              : dietaryFilter;
+            if (obj2[targetPref] !== false) {
+              return false;
+            }
           }
         }
 

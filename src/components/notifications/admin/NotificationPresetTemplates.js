@@ -56,7 +56,7 @@ export const NOTIFICATION_PRESETS = [
     cta: {
       label: 'Check Avoiders List',
       actionType: 'route',
-      target: '/list',
+      target: '/avoiders',
     },
     body: 'All students with specific dietary exclusions (Fish/Beef/Chicken avoiders) are requested to verify their preferences with the Canteen Sub-Committee before Friday.',
   },
