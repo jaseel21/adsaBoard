@@ -54,6 +54,7 @@ import TokenBoardControls from './ui/TokenBoardControls';
 import TokenBoardDateRibbon from './ui/TokenBoardDateRibbon';
 import AdminTokenPopover from './ui/AdminTokenPopover';
 import DietaryBreakdownModal from './ui/DietaryBreakdownModal';
+import { getCategoryIcon } from './avoiders/dietaryIcons';
 
 import ApexCommandHeader from './admin/ApexCommandHeader';
 import ApexTelemetryHud from './admin/ApexTelemetryHud';
@@ -78,7 +79,7 @@ export default function Admin() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, role, isCentralCommittee } = useContext(AuthContext);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
 
   const roleBadge = useMemo(() => getRoleBadgeInfo(role), [role]);
@@ -106,10 +107,15 @@ export default function Admin() {
     viewDensity,
     groupedByBatch,
     groupedBySection,
+    groupedByDietary,
     collapsedBatches,
     toggleBatchCollapse,
     collapseAllBatches,
     expandAllBatches,
+    collapsedDietary,
+    toggleDietaryCollapse,
+    collapseAllDietary,
+    expandAllDietary,
     metrics,
   } = controller;
 
@@ -593,6 +599,26 @@ export default function Admin() {
               </button>
             </div>
           )}
+
+          {viewCategory === 'dietary' && (
+            <div className="flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={expandAllDietary}
+                className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+              >
+                {t('expandAll', 'Expand All')}
+              </button>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+              <button
+                type="button"
+                onClick={collapseAllDietary}
+                className="text-gray-500 dark:text-gray-400 font-medium hover:underline"
+              >
+                {t('collapseAll', 'Collapse All')}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Empty Search / Filter State */}
@@ -716,6 +742,104 @@ export default function Admin() {
                 {renderTokenItems(section.students)}
               </div>
             ))}
+          </div>
+        ) : viewCategory === 'dietary' ? (
+          /* ================= VIEW MODE 4: BY DIETARY PREFERENCES / AVOIDERS ================= */
+          <div className="space-y-4 sm:space-y-5">
+            {groupedByDietary.map((group) => {
+              if (group.students.length === 0) return null;
+              const isCollapsed = Boolean(collapsedDietary[group.id]);
+              const groupPercentage = group.students.length > 0 ? Math.round((group.activeCount / group.students.length) * 100) : 0;
+
+              return (
+                <div
+                  key={group.id}
+                  className="rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] overflow-hidden shadow-xs"
+                >
+                  {/* Dietary Header Bar */}
+                  <button
+                    type="button"
+                    onClick={() => toggleDietaryCollapse(group.id)}
+                    className="w-full p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-gray-50/70 dark:bg-white/[0.03] hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                          group.type === 'standard'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                            : group.type === 'multi'
+                            ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                            : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                        }`}
+                      >
+                        {getCategoryIcon(group.icon, 'w-4 h-4')}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white">
+                            {lang === 'ml' && group.nameMl ? group.nameMl : group.name}
+                          </h3>
+                          <span className="px-2 py-0.2 rounded-md bg-black/5 dark:bg-white/10 text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                            {group.students.length} {t('students', 'students')}
+                          </span>
+                          {group.type === 'avoidance' && (
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                              {t('avoiders', 'Avoiders')}
+                            </span>
+                          )}
+                          {group.type === 'multi' && (
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                              {t('multiAvoidersCategory', 'Multi')}
+                            </span>
+                          )}
+                          {group.type === 'standard' && (
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              {t('standardFullDiet', 'Full Diet')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500">
+                          {group.type === 'standard'
+                            ? t('standardFullDietSubtitle', 'No food restrictions / All items accepted')
+                            : group.type === 'multi'
+                            ? t('multiAvoidersSubtitle', 'Students avoiding 2 or more food items')
+                            : t('tokensRange', 'Tokens {start} – {end}')
+                                .replace('{start}', group.students[0]?.tokenNo || '')
+                                .replace('{end}', group.students[group.students.length - 1]?.tokenNo || '')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {group.activeCount} / {group.students.length} {t('studentsActive', 'Active')} ({groupPercentage}%)
+                        </span>
+                        <div className="w-24 sm:w-32 h-1.5 rounded-full bg-gray-200 dark:bg-white/10 mt-1 overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                            style={{ width: `${groupPercentage}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {isCollapsed ? (
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Group Body */}
+                  {!isCollapsed && (
+                    <div className="p-3.5 sm:p-5 border-t border-gray-100 dark:border-white/5">
+                      {renderTokenItems(group.students)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           /* ================= VIEW MODE 1: ALL TOKENS CONTINUOUS GRID ================= */
@@ -942,23 +1066,51 @@ export default function Admin() {
                         <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
                       </div>
 
-                      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                         {daysList.map(({ key, label }) => {
                           const active = detailsDoc.obj?.breakfast?.[key] === true;
                           const isCurrentDay = key === effectiveDay;
                           return (
-                            <div
-                              key={key}
-                              className={`p-2 rounded-xl text-center border font-mono transition-all ${
-                                isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
-                              } ${
-                                active
-                                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
-                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
-                              }`}
-                            >
-                              <span className="block text-[10px] font-bold uppercase">{label}</span>
-                              <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
+                            <div key={key} className="flex flex-col items-center gap-1.5 min-w-0">
+                              {/* Weekday Short Column Header */}
+                              <span
+                                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center select-none ${
+                                  isCurrentDay
+                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                              >
+                                {label}
+                              </span>
+
+                              {/* Perfect Square Tactile Tile */}
+                              <div
+                                title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}`}
+                                aria-label={`${label}: Breakfast ${active ? 'Active' : 'Off'}`}
+                                className={`
+                                  relative group flex items-center justify-center flex-shrink-0
+                                  w-full aspect-square rounded-xl sm:rounded-2xl select-none font-extrabold
+                                  shadow-sm transition-all duration-150 cursor-default overflow-hidden
+                                  ${
+                                    isCurrentDay
+                                      ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 dark:ring-offset-[#0f1715] z-10'
+                                      : ''
+                                  }
+                                  ${
+                                    active
+                                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
+                                      : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
+                                  }
+                                `}
+                              >
+                                <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
+                                {active ? (
+                                  <Coffee className="w-4 h-4 text-white drop-shadow-xs" />
+                                ) : (
+                                  <X className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
+                                )}
+                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white/70" />
+                              </div>
                             </div>
                           );
                         })}
@@ -975,23 +1127,51 @@ export default function Admin() {
                         <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
                       </div>
 
-                      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                         {daysList.map(({ key, label }) => {
-                          const active = detailsDoc.obj?.lunch?.[key] === true;
+                          const active = detailsDoc.obj?.lunch?.[key] !== undefined ? Boolean(detailsDoc.obj?.lunch[key]) : true;
                           const isCurrentDay = key === effectiveDay;
                           return (
-                            <div
-                              key={key}
-                              className={`p-2 rounded-xl text-center border font-mono transition-all ${
-                                isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
-                              } ${
-                                active
-                                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
-                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
-                              }`}
-                            >
-                              <span className="block text-[10px] font-bold uppercase">{label}</span>
-                              <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
+                            <div key={key} className="flex flex-col items-center gap-1.5 min-w-0">
+                              {/* Weekday Short Column Header */}
+                              <span
+                                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center select-none ${
+                                  isCurrentDay
+                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                              >
+                                {label}
+                              </span>
+
+                              {/* Perfect Square Tactile Tile */}
+                              <div
+                                title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}`}
+                                aria-label={`${label}: Lunch ${active ? 'Active' : 'Off'}`}
+                                className={`
+                                  relative group flex items-center justify-center flex-shrink-0
+                                  w-full aspect-square rounded-xl sm:rounded-2xl select-none font-extrabold
+                                  shadow-sm transition-all duration-150 cursor-default overflow-hidden
+                                  ${
+                                    isCurrentDay
+                                      ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 dark:ring-offset-[#0f1715] z-10'
+                                      : ''
+                                  }
+                                  ${
+                                    active
+                                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
+                                      : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
+                                  }
+                                `}
+                              >
+                                <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
+                                {active ? (
+                                  <Utensils className="w-4 h-4 text-white drop-shadow-xs" />
+                                ) : (
+                                  <X className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
+                                )}
+                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white/70" />
+                              </div>
                             </div>
                           );
                         })}

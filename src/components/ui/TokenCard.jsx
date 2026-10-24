@@ -47,13 +47,37 @@ export default function TokenCard({
     });
   }
 
+  const statusDescription = isBlocked
+    ? t('locked', 'Locked')
+    : onLeave
+    ? t('leave', 'On Leave')
+    : isOn
+    ? isLunch
+      ? t('lunchOn', 'Lunch Active')
+      : t('breakfastOn', 'Breakfast Active')
+    : isLunch
+    ? t('lunchOff', 'Lunch Cancelled')
+    : t('breakfastOff', 'Breakfast Cancelled');
+
+  const fullAccessibleLabel = `Token ${tokenNumber}, ${nameEn}${nameMl ? `, ${nameMl}` : ''}, Batch ${batch}. Status: ${statusDescription}. ${dietaryAvoided.length > 0 ? `Diet: Excludes ${dietaryAvoided.map(d => d.label).join(', ')}` : ''}. Press Enter to view details.`;
+
   return (
     <motion.div
+      role="button"
+      tabIndex={0}
+      aria-label={fullAccessibleLabel}
+      aria-pressed={Boolean(isOn)}
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 450, damping: 25 }}
       onClick={() => onClick(doc)}
-      className={`relative group rounded-2xl p-3.5 sm:p-4 bg-white/90 dark:bg-[#0f1715]/90 border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between gap-2.5 select-none ${
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(doc);
+        }
+      }}
+      className={`relative group rounded-2xl p-3.5 sm:p-4 bg-white/90 dark:bg-[#0f1715]/90 border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between gap-2.5 select-none focus-visible:ring-4 focus-visible:ring-emerald-500/60 focus-visible:outline-none ${
         isBlocked
           ? 'border-gray-300 dark:border-white/10 opacity-75'
           : isOn
@@ -61,64 +85,62 @@ export default function TokenCard({
           : 'border-rose-300/80 dark:border-rose-500/25 bg-rose-500/[0.02]'
       } ${className}`}
     >
-      {/* Top Header: Token Number & Meal Status Badge */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* Tactile Token Number Square */}
-          <div
-            className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-extrabold font-mono text-sm sm:text-base text-white shadow-sm flex-shrink-0 ${
-              isBlocked
-                ? 'bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-600'
-                : isOn
-                ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/25 border border-emerald-400'
-                : 'bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/25 border border-rose-400'
-            }`}
-          >
-            {tokenNumber}
-            {isBlocked && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center shadow-sm z-10">
-                <Lock className="w-2.5 h-2.5 text-gray-300" />
-              </span>
-            )}
-          </div>
-
-          {/* Student Names */}
-          <div className="min-w-0 flex-1">
-            <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
-              {nameEn}
-            </h4>
-            {nameMl && (
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate font-malayalam">
-                {nameMl}
-              </p>
-            )}
-          </div>
+      {/* Tier 1: Token Number & Meal Status Badge Row */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Tactile Token Number Square */}
+        <div
+          className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-extrabold font-mono text-sm sm:text-base text-white shadow-sm flex-shrink-0 ${
+            isBlocked
+              ? 'bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-600'
+              : isOn
+              ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/25 border border-emerald-400'
+              : 'bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/25 border border-rose-400'
+          }`}
+        >
+          {tokenNumber}
+          {isBlocked && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center shadow-sm z-10">
+              <Lock className="w-2.5 h-2.5 text-gray-300" />
+            </span>
+          )}
         </div>
 
         {/* Meal Pill Badge */}
         <div className="flex-shrink-0">
           {isBlocked ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300">
               <Lock className="w-2.5 h-2.5" />
               <span>{t('locked', 'Locked')}</span>
             </span>
           ) : onLeave ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
               <CalendarDays className="w-2.5 h-2.5" />
               <span>{t('leave', 'Leave')}</span>
             </span>
           ) : isOn ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
               <CheckCircle2 className="w-2.5 h-2.5" />
               <span>{isLunch ? t('lunchOn', 'Lunch ON') : t('breakfastOn', 'Breakfast ON')}</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
               <XCircle className="w-2.5 h-2.5" />
               <span>{isLunch ? t('lunchOff', 'Lunch OFF') : t('breakfastOff', 'Breakfast OFF')}</span>
             </span>
           )}
         </div>
+      </div>
+
+      {/* Tier 2: Dedicated Full-Width Student Identity Row */}
+      <div className="min-w-0 pt-0.5">
+        <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-snug line-clamp-2" title={nameEn}>
+          {nameEn}
+        </h4>
+        {nameMl && (
+          <p lang="ml" className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate font-malayalam mt-0.5" title={nameMl}>
+            {nameMl}
+          </p>
+        )}
       </div>
 
       {/* Middle & Footer: Batch & Dietary Badges */}

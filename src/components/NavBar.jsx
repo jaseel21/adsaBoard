@@ -7,6 +7,7 @@ import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { usePreferences } from '../store/PreferencesContext';
 import { useSidebar } from './nav/SidebarContext';
 
 import FloatingDesktopNav from './nav/FloatingDesktopNav';
@@ -58,10 +59,22 @@ const Navbar = ({ isAdmin }) => {
     enabled: Boolean(user && isAdmin),
   });
 
-  // Student idle timeout: 2.5 mins
+  const { preferences } = usePreferences();
+  const kioskMode = preferences?.kioskTimeoutMode || 'strict';
+  const studentTimeoutConfig = React.useMemo(() => {
+    if (kioskMode === 'persistent') {
+      return { timeoutMs: 86400000, warningMs: 60000, enabled: false };
+    }
+    if (kioskMode === 'extended') {
+      return { timeoutMs: 900000, warningMs: 30000, enabled: true }; // 15 mins
+    }
+    return { timeoutMs: 150000, warningMs: 25000, enabled: true }; // 2.5 mins strict
+  }, [kioskMode]);
+
+  // Student idle timeout (respects preferences.kioskTimeoutMode)
   useIdleTimer({
-    timeoutMs: 150000,
-    warningMs: 25000,
+    timeoutMs: studentTimeoutConfig.timeoutMs,
+    warningMs: studentTimeoutConfig.warningMs,
     onTimeout: () => {
       if (stdata) {
         if (logoutStudent) logoutStudent();
@@ -75,7 +88,7 @@ const Navbar = ({ isAdmin }) => {
         }
       }
     },
-    enabled: Boolean(stdata && !user),
+    enabled: Boolean(stdata && !user && studentTimeoutConfig.enabled),
   });
 
   // Global Command+K / Ctrl+K search listener
@@ -130,7 +143,7 @@ const Navbar = ({ isAdmin }) => {
   return (
     <>
       {/* Top Header Placeholder to give comfortable space for floating navbar */}
-      <header className="relative w-full">
+      <header id="nav-landmark" role="banner" aria-label="Primary Navigation" className="relative w-full">
         {/* Desktop Floating Dynamic Island Navbar */}
         <FloatingDesktopNav
           user={user}
@@ -156,7 +169,9 @@ const Navbar = ({ isAdmin }) => {
       </header>
 
       {/* Ambient Broadcast Sticky Banner Marquee */}
-      <NotificationTickerBanner />
+      <div id="announcements-landmark" role="region" aria-label="Announcements & Cutoffs">
+        <NotificationTickerBanner />
+      </div>
 
       {/* Mobile Floating Bottom Ergonomic Dock */}
       <MobileBottomDock

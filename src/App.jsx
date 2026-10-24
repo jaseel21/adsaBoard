@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import StudentDashboard from './components/StudentDashboard';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
@@ -43,17 +43,39 @@ import ScrollProgressBar from './components/scroll/ScrollProgressBar';
 import BackToTopButton from './components/scroll/BackToTopButton';
 import ScrollRestorationWatcher from './components/scroll/ScrollRestorationWatcher';
 import SettingsPage from './components/settings/SettingsPage';
-import { PreferencesProvider } from './store/PreferencesContext';
+import { PreferencesProvider, usePreferences } from './store/PreferencesContext';
 import OfflineStatusIndicator from './components/ui/OfflineStatusIndicator';
 import PwaInstallPrompt from './components/pwa/PwaInstallPrompt';
 import { checkAndTriggerMealAlarms } from './utils/mealAlarmService';
+import SkipToContent from './components/a11y/SkipToContent';
+import AriaLiveAnnouncer from './components/a11y/AriaLiveAnnouncer';
+import ColorBlindFilterDefs from './components/a11y/ColorBlindFilterDefs';
+import ReadingGuideRuler from './components/a11y/ReadingGuideRuler';
+import AccessibilityQuickDock from './components/a11y/AccessibilityQuickDock';
 import './App.css';
 
 function AppContent() {
   const { user, role, loadingAuth, homeRoute } = useContext(AuthContext);
   const isAdmin = Boolean(user);
   const location = useLocation();
+  const navigate = useNavigate();
   const { sidebarOpen } = useSidebar();
+  const { preferences } = usePreferences();
+
+  // Cold-Start Default Gateway Route handling
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hasRedirected = sessionStorage.getItem('adsatboard-landing-routed');
+    if (
+      !hasRedirected &&
+      location.pathname === '/' &&
+      preferences?.defaultLandingRoute &&
+      preferences.defaultLandingRoute !== '/'
+    ) {
+      sessionStorage.setItem('adsatboard-landing-routed', 'true');
+      navigate(preferences.defaultLandingRoute, { replace: true });
+    }
+  }, [location.pathname, preferences?.defaultLandingRoute, navigate]);
 
   // Background check for meal cutoff alarms every 60 seconds
   useEffect(() => {
@@ -66,6 +88,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
+      <SkipToContent />
+      <AriaLiveAnnouncer />
+      <ColorBlindFilterDefs />
+      <ReadingGuideRuler />
+      <AccessibilityQuickDock />
       <ScrollProgressBar />
       <ScrollRestorationWatcher />
       <OfflineStatusIndicator />
@@ -79,7 +106,13 @@ function AppContent() {
           }`}
           aria-hidden="true"
         />
-        <main className="flex-1 w-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-8 transition-all duration-300">
+        <main
+          id="main-content"
+          tabIndex="-1"
+          role="main"
+          aria-label="Main Content"
+          className="flex-1 w-full min-w-0 flex flex-col overflow-x-hidden pb-24 md:pb-8 transition-all duration-300 outline-none"
+        >
         <ErrorBoundary>
           <Routes>
             {/* Unified Public Student Dashboard / Home */}

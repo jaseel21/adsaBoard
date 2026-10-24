@@ -41,6 +41,8 @@ export default function MenuCalendarMatrix({
   weeklyMenu = DEFAULT_WEEKLY_MENU,
   overrides = {},
   onSelectDate,
+  onDeleteOverride,
+  onAddNewFeast,
   onOpenRangedModal,
   onOpenPresetsModal,
   className = '',
@@ -365,7 +367,21 @@ export default function MenuCalendarMatrix({
                       </span>
                     )}
 
-                    {hasOverride && !isClosed && (
+                    {effective.dayStatus === 'event' && !isClosed && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[9px] font-extrabold flex items-center gap-0.5">
+                        <CalendarDays className="w-2.5 h-2.5" />
+                        <span className="hidden sm:inline">Event</span>
+                      </span>
+                    )}
+
+                    {effective.dayStatus === 'fasting' && !isClosed && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-cyan-600 text-white text-[9px] font-extrabold flex items-center gap-0.5">
+                        <Moon className="w-2.5 h-2.5" />
+                        <span className="hidden sm:inline">Fast</span>
+                      </span>
+                    )}
+
+                    {hasOverride && !isClosed && effective.dayStatus !== 'event' && effective.dayStatus !== 'fasting' && (
                       <span className="px-1.5 py-0.5 rounded-md bg-purple-600 text-white text-[9px] font-extrabold flex items-center gap-0.5">
                         <Sparkles className="w-2.5 h-2.5" />
                         <span className="hidden sm:inline">Feast</span>
@@ -384,13 +400,13 @@ export default function MenuCalendarMatrix({
                     <div className="my-1 flex-1 flex flex-col justify-center">
                       {isClosed ? (
                         <div className="text-[10px] sm:text-[11px] font-bold text-rose-600 dark:text-rose-400 truncate">
-                          {effective.closureReason || 'Canteen Closed'}
+                          {effective.closureReason || effective.leaveReason || 'Canteen Closed'}
                         </div>
                       ) : (
                         <div className="space-y-0.5">
-                          {hasOverride && override.occasion && (
+                          {(override?.occasion || override?.eventTitle || effective.occasion) && (
                             <div className="text-[10px] sm:text-[11px] font-extrabold text-purple-700 dark:text-purple-300 truncate">
-                              {override.occasion}
+                              {override?.eventTitle || override?.occasion || effective.occasion}
                             </div>
                           )}
                           <div className="text-[10px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
@@ -472,7 +488,8 @@ export default function MenuCalendarMatrix({
                 type="button"
                 onClick={() => {
                   feedback('tick');
-                  if (onSelectDate) onSelectDate(todayIST);
+                  if (onAddNewFeast) onAddNewFeast(todayIST);
+                  else if (onSelectDate) onSelectDate(todayIST);
                 }}
                 className="mt-3 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700"
               >
@@ -495,42 +512,58 @@ export default function MenuCalendarMatrix({
                       <Calendar className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-black text-purple-600 dark:text-purple-400">
                           {formatFriendlyDate(ovr.dateStr, true)}
                         </span>
                         {ovr.isClosed && (
                           <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black uppercase">
-                            Closed
+                            Closed / Leave
+                          </span>
+                        )}
+                        {ovr.dayStatus === 'event' && (
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-500 text-white text-[10px] font-black uppercase">
+                            Event
+                          </span>
+                        )}
+                        {ovr.dayStatus === 'fasting' && (
+                          <span className="px-2 py-0.5 rounded-md bg-cyan-500 text-white text-[10px] font-black uppercase">
+                            Fasting
                           </span>
                         )}
                       </div>
                       <h5 className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">
-                        {ovr.occasion || 'Special Dining Day'}
+                        {ovr.eventTitle || ovr.occasion || 'Special Dining Day'}
                       </h5>
+                      {ovr.eventVenue && (
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                          Venue: <span className="font-semibold text-gray-700 dark:text-gray-300">{ovr.eventVenue}</span>
+                          {ovr.eventSponsor && ` • Sponsored by ${ovr.eventSponsor}`}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
                         {ovr.breakfast?.title && (
                           <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
                             <Sunrise className="w-3.5 h-3.5" />
-                            <span>BF: {ovr.breakfast.title}</span>
+                            <span>BF: {ovr.breakfast.title} {ovr.breakfast.timing ? `(${ovr.breakfast.timing})` : ''}</span>
                           </span>
                         )}
                         {ovr.lunch?.title && (
                           <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
                             <Utensils className="w-3.5 h-3.5" />
-                            <span>Lunch: {ovr.lunch.title}</span>
+                            <span>Lunch: {ovr.lunch.title} {ovr.lunch.timing ? `(${ovr.lunch.timing})` : ''}</span>
                           </span>
                         )}
                         {ovr.evening?.title && (
                           <span className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400">
                             <Coffee className="w-3.5 h-3.5" />
-                            <span>Evening: {ovr.evening.title}</span>
+                            <span>Evening: {ovr.evening.title} {ovr.evening.timing ? `(${ovr.evening.timing})` : ''}</span>
                           </span>
                         )}
                         {ovr.dinner?.title && (
                           <span className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-400">
                             <Moon className="w-3.5 h-3.5" />
-                            <span>Dinner: {ovr.dinner.title}</span>
+                            <span>Dinner: {ovr.dinner.title} {ovr.dinner.timing ? `(${ovr.dinner.timing})` : ''}</span>
                           </span>
                         )}
                       </div>
@@ -538,10 +571,33 @@ export default function MenuCalendarMatrix({
                   </div>
 
                   <div className="flex items-center space-x-2 self-end sm:self-center">
-                    <span className="text-xs font-bold text-purple-600 dark:text-purple-400 group-hover:underline flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        feedback('tick');
+                        if (onSelectDate) onSelectDate(ovr.dateStr);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800/40 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-xs font-bold flex items-center gap-1 transition-all"
+                    >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit</span>
-                    </span>
+                    </button>
+
+                    {onDeleteOverride && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          feedback('pop');
+                          onDeleteOverride(ovr.dateStr);
+                        }}
+                        className="p-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all"
+                        title="Delete override / Reset to routine"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

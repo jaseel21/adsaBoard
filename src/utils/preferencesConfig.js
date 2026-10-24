@@ -11,6 +11,7 @@ import {
   Smartphone,
   Sparkles,
   Laptop,
+  Accessibility,
 } from 'lucide-react';
 import { ROLES, hasRole } from './rbac';
 
@@ -22,6 +23,7 @@ export const DEFAULT_PREFERENCES = {
   language: 'system', // 'system' | 'en' | 'ml'
   clockFormat: '12h', // '12h' | '24h'
   showHijriDate: true,
+  hijriDateOffset: 0, // -2 | -1 | 0 | 1 | 2 (days offset for local Hilal moon sighting)
   defaultLandingRoute: '/', // '/', '/menu', '/student', '/kitchen', '/admin'
   smoothScrollEnabled: true,
 
@@ -31,6 +33,19 @@ export const DEFAULT_PREFERENCES = {
   fontSizeScale: 'balanced', // 'compact' | 'balanced' | 'roomy' | 'kiosk'
   motionFidelity: 'cinematic', // 'cinematic' | 'ergonomic' | 'reduced'
   accentGlow: true,
+
+  // Advanced Universal Accessibility (WCAG 2.2 AA/AAA)
+  highContrastMode: 'standard', // 'standard' | 'high' | 'maximum_oled'
+  colorBlindFilter: 'none', // 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'
+  underlineLinks: false,
+  bigCursor: false,
+  dyslexicFont: false, // Atkinson Hyperlegible
+  textSpacing: 'standard', // 'standard' | 'enhanced'
+  readingGuide: false, // Cognitive cursor line ruler
+  focusRingStyle: 'prominent', // 'subtle' | 'prominent' | 'high_visibility_halo'
+  screenReaderVerbosity: 'balanced', // 'compact' | 'balanced' | 'descriptive'
+  voiceAssistance: false, // Web Speech API voice synthesis
+  voiceRate: 1.0, // 0.8 to 1.5
 
   // Sound & Tactile
   soundEnabled: true,
@@ -72,6 +87,17 @@ export const SETTINGS_SECTIONS = [
     descriptionMl: 'ഡാർക്ക്/ലൈറ്റ് തീം, അക്ഷര വലിപ്പം, ഡിസൈൻ ശൈലി',
     icon: Palette,
     color: 'teal',
+    isPublic: true,
+  },
+  {
+    id: 'accessibility',
+    hash: '#accessibility',
+    labelEn: 'Accessibility & Inclusion',
+    labelMl: 'ആക്സസിബിലിറ്റി & ഇൻക്ലൂഷൻ',
+    descriptionEn: 'Colorblind filters, high contrast, dyslexic font, TTS voice & reading ruler',
+    descriptionMl: 'കളർ-ബ്ലൈൻഡ് ഫിൽട്ടർ, ഹൈ കോൺട്രാസ്റ്റ്, വോയ്സ് വായന, റീഡിംഗ് റൂളർ',
+    icon: Accessibility,
+    color: 'cyan',
     isPublic: true,
   },
   {

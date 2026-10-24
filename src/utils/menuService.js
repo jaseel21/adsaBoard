@@ -1,6 +1,6 @@
 import firebase from '../firebase/config';
 import { addDaysToDate, getDayOfWeekShort } from './studentExceptionService';
-import { getCachedMealSchedule } from './mealScheduleService';
+import { getCachedMealSchedule, getCanonicalMealTiming } from './mealScheduleService';
 
 // Verified canonical Alathurpadi Dars canteen schedule (System Baseline)
 export const DEFAULT_WEEKLY_MENU = {
@@ -15,7 +15,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Porotta & Kadala',
       items: ['Kerala Porotta', 'Spicy Kadala Curry', 'Hot Tea'],
       category: 'Veg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '09:00 AM - 09:30 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -23,7 +23,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Rice & Beef/Fish Curry',
       items: ['Matta Rice', 'Beef Roast / Curry', 'Fried Fish', 'Sambar', 'Lime Pickle'],
       category: 'Non-Veg',
-      timing: '12:30 PM - 02:00 PM',
+      timing: '01:30 PM - 02:15 PM',
       isAvailable: true,
       isArchived: false,
     },
@@ -55,7 +55,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Appam & Veg Curry',
       items: ['Vellayappam', 'Mixed Vegetable Stew', 'Milk Tea'],
       category: 'Veg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '07:30 AM - 08:45 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -63,7 +63,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Rice & Chicken/Fish Curry',
       items: ['Matta Rice', 'Chicken Curry', 'Ayala Fish Curry', 'Cabbage Thoran', 'Pickle'],
       category: 'Non-Veg',
-      timing: '12:30 PM - 02:00 PM',
+      timing: '12:45 PM - 02:00 PM',
       isAvailable: true,
       isArchived: false,
     },
@@ -95,7 +95,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Idli & Sambar',
       items: ['Steamed Idli', 'Vegetable Sambar', 'Coconut Chutney', 'Tea'],
       category: 'Veg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '07:30 AM - 08:45 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -103,7 +103,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Rice & Fish Curry/Veg',
       items: ['Matta Rice', 'Fresh Fish Curry', 'Aviyal / Pulissery', 'Pickle'],
       category: 'Non-Veg',
-      timing: '12:30 PM - 02:00 PM',
+      timing: '12:45 PM - 02:00 PM',
       isAvailable: true,
       isArchived: false,
     },
@@ -135,7 +135,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Dosa & Chutney',
       items: ['Crispy Dosa', 'Tomato Chutney', 'Coconut Chutney', 'Tea'],
       category: 'Veg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '07:30 AM - 08:45 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -143,7 +143,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Rice & Meat Curry',
       items: ['Matta Rice', 'Kerala Beef / Mutton Curry', 'Fish Fry', 'Beetroot Thoran', 'Pickle'],
       category: 'Non-Veg',
-      timing: '12:30 PM - 02:00 PM',
+      timing: '12:45 PM - 02:00 PM',
       isAvailable: true,
       isArchived: false,
     },
@@ -175,7 +175,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Puttu & Kadala',
       items: ['Rice Puttu', 'Spicy Kadala Curry', 'Pappadam', 'Black Tea'],
       category: 'Veg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '07:30 AM - 08:45 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -183,7 +183,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Rice & Fish Curry',
       items: ['Matta Rice', 'Kottayam Style Fish Curry', 'Aviyal', 'Papad', 'Pickle'],
       category: 'Non-Veg',
-      timing: '12:30 PM - 02:00 PM',
+      timing: '12:45 PM - 02:00 PM',
       isAvailable: true,
       isArchived: false,
     },
@@ -215,7 +215,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Pathiri & Curry',
       items: ['Thin Ari Pathiri', 'Chicken Curry / Mutton Gravy', 'Cardamom Tea'],
       category: 'Non-Veg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '07:30 AM - 08:45 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -255,7 +255,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Porotta & Egg Curry',
       items: ['Kerala Porotta', 'Egg Roast Curry', 'Hot Tea'],
       category: 'Egg',
-      timing: '07:00 AM - 08:30 AM',
+      timing: '07:30 AM - 08:45 AM',
       isAvailable: true,
       isArchived: false,
     },
@@ -263,7 +263,7 @@ export const DEFAULT_WEEKLY_MENU = {
       title: 'Rice & Fish Curry',
       items: ['Matta Rice', 'Fish Curry & Fry', 'Thoran', 'Sambar', 'Pickle'],
       category: 'Non-Veg',
-      timing: '12:30 PM - 02:00 PM',
+      timing: '12:45 PM - 02:00 PM',
       isAvailable: true,
       isArchived: false,
     },
@@ -322,32 +322,32 @@ export function createEmptyWeeklyMenu() {
       breakfast: {
         title: '',
         items: [],
-        category: 'Veg',
-        timing: '07:00 AM - 08:30 AM',
+        category: '',
+        timing: getCanonicalMealTiming(k, 'breakfast'),
         isAvailable: true,
         isArchived: false,
       },
       lunch: {
         title: '',
         items: [],
-        category: 'Non-Veg',
-        timing: '12:30 PM - 02:00 PM',
+        category: '',
+        timing: getCanonicalMealTiming(k, 'lunch'),
         isAvailable: true,
         isArchived: false,
       },
       evening: {
         title: '',
         items: [],
-        category: 'Veg',
-        timing: '04:30 PM - 05:30 PM',
+        category: '',
+        timing: getCanonicalMealTiming(k, 'evening'),
         isAvailable: true,
         isArchived: false,
       },
       dinner: {
         title: '',
         items: [],
-        category: 'Veg',
-        timing: '08:30 PM - 09:30 PM',
+        category: '',
+        timing: getCanonicalMealTiming(k, 'dinner'),
         isAvailable: false,
         isArchived: false,
       },
@@ -359,39 +359,39 @@ export function createEmptyWeeklyMenu() {
 // Curated library of traditional Malabar Dars delicacies for fast autocomplete / preset insertion
 export const DISH_PRESETS = {
   breakfast: [
-    { title: 'Porotta & Kadala', items: ['Kerala Porotta', 'Spicy Kadala Curry', 'Hot Tea'], category: 'Veg' },
-    { title: 'Appam & Veg Curry', items: ['Vellayappam', 'Mixed Veg Stew', 'Milk Tea'], category: 'Veg' },
-    { title: 'Appam & Egg Roast', items: ['Vellayappam', 'Egg Roast', 'Tea'], category: 'Egg' },
-    { title: 'Idli & Sambar', items: ['Steamed Idli', 'Vegetable Sambar', 'Coconut Chutney'], category: 'Veg' },
-    { title: 'Dosa & Chutney', items: ['Crispy Dosa', 'Tomato Chutney', 'Coconut Chutney'], category: 'Veg' },
-    { title: 'Puttu & Kadala', items: ['Rice Puttu', 'Kadala Curry', 'Pappadam'], category: 'Veg' },
-    { title: 'Puttu & Payar', items: ['Rice Puttu', 'Cherupayar Puzhukku', 'Pappadam'], category: 'Veg' },
-    { title: 'Pathiri & Chicken Curry', items: ['Ari Pathiri', 'Chicken Curry', 'Cardamom Tea'], category: 'Non-Veg' },
-    { title: 'Porotta & Egg Curry', items: ['Kerala Porotta', 'Egg Curry', 'Hot Tea'], category: 'Egg' },
-    { title: 'Poori & Masala', items: ['Fluffy Poori', 'Potato Masala', 'Tea'], category: 'Veg' },
+    { title: 'Porotta & Kadala', items: ['Kerala Porotta', 'Spicy Kadala Curry', 'Hot Tea'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Appam & Veg Curry', items: ['Vellayappam', 'Mixed Veg Stew', 'Milk Tea'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Appam & Egg Roast', items: ['Vellayappam', 'Egg Roast', 'Tea'], category: 'Egg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Idli & Sambar', items: ['Steamed Idli', 'Vegetable Sambar', 'Coconut Chutney'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Dosa & Chutney', items: ['Crispy Dosa', 'Tomato Chutney', 'Coconut Chutney'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Puttu & Kadala', items: ['Rice Puttu', 'Kadala Curry', 'Pappadam'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Puttu & Payar', items: ['Rice Puttu', 'Cherupayar Puzhukku', 'Pappadam'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Pathiri & Chicken Curry', items: ['Ari Pathiri', 'Chicken Curry', 'Cardamom Tea'], category: 'Non-Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Porotta & Egg Curry', items: ['Kerala Porotta', 'Egg Curry', 'Hot Tea'], category: 'Egg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
+    { title: 'Poori & Masala', items: ['Fluffy Poori', 'Potato Masala', 'Tea'], category: 'Veg', timing: '07:30 AM - 08:45 AM', timeMode: 'clock' },
   ],
   lunch: [
-    { title: 'Rice & Beef/Fish Curry', items: ['Matta Rice', 'Beef Roast / Curry', 'Fried Fish', 'Sambar', 'Pickle'], category: 'Non-Veg' },
-    { title: 'Rice & Chicken/Fish Curry', items: ['Matta Rice', 'Chicken Curry', 'Ayala Fish Curry', 'Thoran', 'Pickle'], category: 'Non-Veg' },
-    { title: 'Special Dum Biriyani', items: ['Malabar Dum Biriyani', 'Chicken 65', 'Date Pickle', 'Raita', 'Papad'], category: 'Special' },
-    { title: 'Ghee Rice & Chicken Roast', items: ['Neychoru (Ghee Rice)', 'Chicken Roast', 'Dalcha / Kurma', 'Salad'], category: 'Special' },
-    { title: 'Rice & Fish Curry/Veg', items: ['Matta Rice', 'Fresh Fish Curry', 'Aviyal / Pulissery', 'Pickle'], category: 'Non-Veg' },
-    { title: 'Rice & Meat Curry', items: ['Matta Rice', 'Kerala Beef Curry', 'Fish Fry', 'Beetroot Thoran'], category: 'Non-Veg' },
-    { title: 'Traditional Sadya (Veg)', items: ['Matta Rice', 'Sambar', 'Aviyal', 'Thoran', 'Payasam', 'Papad'], category: 'Veg' },
+    { title: 'Rice & Beef/Fish Curry', items: ['Matta Rice', 'Beef Roast / Curry', 'Fried Fish', 'Sambar', 'Pickle'], category: 'Non-Veg', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
+    { title: 'Rice & Chicken/Fish Curry', items: ['Matta Rice', 'Chicken Curry', 'Ayala Fish Curry', 'Thoran', 'Pickle'], category: 'Non-Veg', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
+    { title: 'Special Dum Biriyani', items: ['Malabar Dum Biriyani', 'Chicken 65', 'Date Pickle', 'Raita', 'Papad'], category: 'Special', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
+    { title: 'Ghee Rice & Chicken Roast', items: ['Neychoru (Ghee Rice)', 'Chicken Roast', 'Dalcha / Kurma', 'Salad'], category: 'Special', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
+    { title: 'Rice & Fish Curry/Veg', items: ['Matta Rice', 'Fresh Fish Curry', 'Aviyal / Pulissery', 'Pickle'], category: 'Non-Veg', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
+    { title: 'Rice & Meat Curry', items: ['Matta Rice', 'Kerala Beef Curry', 'Fish Fry', 'Beetroot Thoran'], category: 'Non-Veg', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
+    { title: 'Traditional Sadya (Veg)', items: ['Matta Rice', 'Sambar', 'Aviyal', 'Thoran', 'Payasam', 'Papad'], category: 'Veg', timing: '12:45 PM - 02:00 PM', timeMode: 'clock' },
   ],
   evening: [
-    { title: 'Sulaimani & Snacks', items: ['Hot Sulaimani', 'Parippuvada / Samosa'], category: 'Veg' },
-    { title: 'Tea & Pazhampori', items: ['Milk Tea', 'Banana Fritters (Pazhampori)'], category: 'Veg' },
-    { title: 'Black Tea & Uzhunnuvada', items: ['Cardamom Black Tea', 'Crispy Medu Vada'], category: 'Veg' },
-    { title: 'Sulaimani & Sukhiyan', items: ['Sulaimani', 'Sweet Sukhiyan'], category: 'Veg' },
-    { title: 'Tea & Cutlet', items: ['Hot Milk Tea', 'Meat / Veg Cutlet'], category: 'Non-Veg' },
+    { title: 'Sulaimani & Snacks', items: ['Hot Sulaimani', 'Parippuvada / Samosa'], category: 'Veg', timing: '04:30 PM - 05:30 PM', timeMode: 'clock' },
+    { title: 'Tea & Pazhampori', items: ['Milk Tea', 'Banana Fritters (Pazhampori)'], category: 'Veg', timing: '04:30 PM - 05:30 PM', timeMode: 'clock' },
+    { title: 'Black Tea & Uzhunnuvada', items: ['Cardamom Black Tea', 'Crispy Medu Vada'], category: 'Veg', timing: '04:30 PM - 05:30 PM', timeMode: 'clock' },
+    { title: 'Sulaimani & Sukhiyan', items: ['Sulaimani', 'Sweet Sukhiyan'], category: 'Veg', timing: '04:30 PM - 05:30 PM', timeMode: 'clock' },
+    { title: 'Tea & Cutlet', items: ['Hot Milk Tea', 'Meat / Veg Cutlet'], category: 'Non-Veg', timing: '04:30 PM - 05:30 PM', timeMode: 'clock' },
   ],
   dinner: [
-    { title: 'Steamed Rice & Veg Thoran', items: ['Steamed Rice', 'Payar Thoran', 'Pappadam', 'Morukari'], category: 'Veg' },
-    { title: 'Kanji & Payar Thoran', items: ['Puzhukal Rice Kanji', 'Vanpayar Thoran', 'Pappadam', 'Chammanthi'], category: 'Veg' },
-    { title: 'Chapathi & Veg Kurma', items: ['Wheat Chapathi', 'Vegetable Kurma', 'Black Tea'], category: 'Veg' },
-    { title: 'Rice & Fish Curry', items: ['Warm Rice', 'Fish Curry', 'Papad', 'Pickle'], category: 'Non-Veg' },
-    { title: 'Chapathi & Egg Curry', items: ['Soft Chapathi', 'Egg Roast Gravy'], category: 'Egg' },
+    { title: 'Steamed Rice & Veg Thoran', items: ['Steamed Rice', 'Payar Thoran', 'Pappadam', 'Morukari'], category: 'Veg', timing: '08:30 PM - 09:30 PM', timeMode: 'clock' },
+    { title: 'Kanji & Payar Thoran', items: ['Puzhukal Rice Kanji', 'Vanpayar Thoran', 'Pappadam', 'Chammanthi'], category: 'Veg', timing: '08:30 PM - 09:30 PM', timeMode: 'clock' },
+    { title: 'Chapathi & Veg Kurma', items: ['Wheat Chapathi', 'Vegetable Kurma', 'Black Tea'], category: 'Veg', timing: '08:30 PM - 09:30 PM', timeMode: 'clock' },
+    { title: 'Rice & Fish Curry', items: ['Warm Rice', 'Fish Curry', 'Papad', 'Pickle'], category: 'Non-Veg', timing: '08:30 PM - 09:30 PM', timeMode: 'clock' },
+    { title: 'Chapathi & Egg Curry', items: ['Soft Chapathi', 'Egg Roast Gravy'], category: 'Egg', timing: '08:30 PM - 09:30 PM', timeMode: 'clock' },
   ],
 };
 
@@ -569,10 +569,10 @@ export async function clearDayMenu(dayKey, userEmail = 'admin') {
     isArchived: false,
     archiveReason: '',
     note: '',
-    breakfast: { title: '', items: [], category: 'Veg', timing: '07:00 AM - 08:30 AM', isAvailable: true, isArchived: false },
-    lunch: { title: '', items: [], category: 'Non-Veg', timing: '12:30 PM - 02:00 PM', isAvailable: true, isArchived: false },
-    evening: { title: '', items: [], category: 'Veg', timing: '04:30 PM - 05:30 PM', isAvailable: true, isArchived: false },
-    dinner: { title: '', items: [], category: 'Veg', timing: '08:30 PM - 09:30 PM', isAvailable: false, isArchived: false },
+    breakfast: { title: '', items: [], category: '', timing: getCanonicalMealTiming(dayKey, 'breakfast'), isAvailable: true, isArchived: false },
+    lunch: { title: '', items: [], category: '', timing: getCanonicalMealTiming(dayKey, 'lunch'), isAvailable: true, isArchived: false },
+    evening: { title: '', items: [], category: '', timing: getCanonicalMealTiming(dayKey, 'evening'), isAvailable: true, isArchived: false },
+    dinner: { title: '', items: [], category: '', timing: getCanonicalMealTiming(dayKey, 'dinner'), isAvailable: true, isArchived: false },
   };
 
   const docRef = MENU_DOC_REF();
@@ -759,47 +759,84 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
   const dynamicBfTiming = daySched?.breakfast?.label || '07:30 AM - 08:45 AM';
   const dynamicLunchTiming = daySched?.lunch?.label || (dow === 'fr' ? '01:15 PM - 02:15 PM' : '12:45 PM - 02:00 PM');
 
-  // Helper to ensure dynamic timing fallback
-  const resolveMealTiming = (mealObj, dynamicTiming) => {
-    if (!mealObj) return mealObj;
-    return {
-      ...mealObj,
-      timing: mealObj.timing || dynamicTiming,
+  // Helper to ensure dynamic timing fallback and slot status preservation
+  const resolveMealSlot = (routineSlot, overrideSlot, fallbackTiming) => {
+    const base = routineSlot || {};
+    const ovr = overrideSlot || {};
+    const merged = {
+      ...base,
+      ...ovr,
+      timing: ovr.timing || base.timing || fallbackTiming,
+      timeMode: ovr.timeMode || base.timeMode || 'clock',
+      slotStatus: ovr.slotStatus || base.slotStatus || (ovr.isArchived || base.isArchived ? 'leave' : 'serving'),
+      isAvailable: ovr.slotStatus === 'leave' ? false : (ovr.isAvailable !== undefined ? ovr.isAvailable : base.isAvailable !== undefined ? base.isAvailable : true),
+      isArchived: Boolean(ovr.slotStatus === 'leave' || ovr.isArchived || base.isArchived),
+      leaveReason: ovr.leaveReason || base.leaveReason || '',
+      eventTitle: ovr.eventTitle || base.eventTitle || '',
+      eventVenue: ovr.eventVenue || base.eventVenue || '',
+      eventSponsor: ovr.eventSponsor || base.eventSponsor || '',
+      eventNotes: ovr.eventNotes || base.eventNotes || '',
+      fastingTitle: ovr.fastingTitle || base.fastingTitle || '',
     };
+    return merged;
   };
 
-  const baseBf = resolveMealTiming(routineDay.breakfast, dynamicBfTiming);
-  const baseLunch = resolveMealTiming(routineDay.lunch, dynamicLunchTiming);
+  const bfSlot = resolveMealSlot(routineDay.breakfast, override?.breakfast, dynamicBfTiming);
+  const lunchSlot = resolveMealSlot(routineDay.lunch, override?.lunch, dynamicLunchTiming);
+  const eveningSlot = resolveMealSlot(routineDay.evening, override?.evening, '04:30 PM - 05:30 PM');
+  const dinnerSlot = resolveMealSlot(routineDay.dinner, override?.dinner, '08:30 PM - 09:30 PM');
 
   if (!override) {
+    const isDayClosed = Boolean(routineDay.isArchived || routineDay.isClosed || routineDay.dayStatus === 'leave');
     return {
       ...routineDay,
       date: dateStr,
       isOverride: false,
-      breakfast: baseBf,
-      lunch: baseLunch,
+      dayStatus: routineDay.dayStatus || (isDayClosed ? 'leave' : 'standard'),
+      isClosed: isDayClosed,
+      isArchived: isDayClosed,
+      breakfast: bfSlot,
+      lunch: lunchSlot,
+      evening: eveningSlot,
+      dinner: dinnerSlot,
     };
   }
 
-  // Merge override on top of routine (override.timing takes precedence if set)
+  // Merge override on top of routine
+  const isDayClosed = Boolean(
+    override.dayStatus === 'leave' ||
+    override.isHoliday ||
+    override.isClosed ||
+    routineDay.isArchived ||
+    routineDay.isClosed
+  );
+
+  const resolvedDayStatus = override.dayStatus ||
+    (isDayClosed ? 'leave' : override.occasion ? 'event' : routineDay.dayStatus || 'standard');
+
   return {
     ...routineDay,
+    ...override,
     date: dateStr,
     isOverride: true,
-    occasion: override.occasion || routineDay.note || '',
-    note: override.note || override.occasion || routineDay.note || '',
-    isHoliday: Boolean(override.isHoliday),
-    holidayReason: override.holidayReason || '',
-    isArchived: Boolean(override.isHoliday) || Boolean(routineDay.isArchived),
-    archiveReason: override.holidayReason || routineDay.archiveReason || '',
-    breakfast: override.breakfast
-      ? { ...baseBf, ...override.breakfast, timing: override.breakfast.timing || baseBf.timing }
-      : baseBf,
-    lunch: override.lunch
-      ? { ...baseLunch, ...override.lunch, timing: override.lunch.timing || baseLunch.timing }
-      : baseLunch,
-    evening: override.evening ? { ...routineDay.evening, ...override.evening } : routineDay.evening,
-    dinner: override.dinner ? { ...routineDay.dinner, ...override.dinner } : routineDay.dinner,
+    dayStatus: resolvedDayStatus,
+    occasion: override.occasion || override.eventTitle || routineDay.note || '',
+    note: override.note || override.occasion || override.eventTitle || routineDay.note || '',
+    eventTitle: override.eventTitle || override.occasion || '',
+    eventVenue: override.eventVenue || '',
+    eventSponsor: override.eventSponsor || '',
+    eventNotes: override.eventNotes || '',
+    fastingTitle: override.fastingTitle || '',
+    isHoliday: Boolean(override.isHoliday || isDayClosed),
+    isClosed: isDayClosed,
+    isArchived: isDayClosed,
+    closureReason: override.closureReason || override.leaveReason || override.holidayReason || routineDay.closureReason || '',
+    leaveReason: override.leaveReason || override.closureReason || override.holidayReason || '',
+    holidayReason: override.holidayReason || override.closureReason || '',
+    breakfast: bfSlot,
+    lunch: lunchSlot,
+    evening: eveningSlot,
+    dinner: dinnerSlot,
   };
 }
 
@@ -942,6 +979,9 @@ export async function addDishPreset(slotKey, preset) {
     title: preset.title.trim(),
     items: Array.isArray(preset.items) ? preset.items : [preset.title.trim()],
     category: preset.category || 'Veg',
+    ...(preset.timing ? { timing: preset.timing.trim() } : {}),
+    ...(preset.timeMode ? { timeMode: preset.timeMode } : {}),
+    ...(preset.specialTag ? { specialTag: preset.specialTag } : {}),
   });
 
   current[slotKey] = slotPresets;
@@ -962,7 +1002,8 @@ export async function updateDishPreset(slotKey, oldTitle, updatedPreset) {
       title: updatedPreset.title.trim(),
       items: Array.isArray(updatedPreset.items) ? updatedPreset.items : [updatedPreset.title.trim()],
       category: updatedPreset.category || 'Veg',
-      ...(updatedPreset.timing ? { timing: updatedPreset.timing } : {}),
+      ...(updatedPreset.timing ? { timing: updatedPreset.timing.trim() } : {}),
+      ...(updatedPreset.timeMode ? { timeMode: updatedPreset.timeMode } : {}),
       ...(updatedPreset.specialTag ? { specialTag: updatedPreset.specialTag } : {}),
     };
     if (idx !== -1) {

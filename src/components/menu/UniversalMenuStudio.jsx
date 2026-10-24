@@ -36,6 +36,10 @@ import {
   Eye,
   Info,
   Lock,
+  Moon,
+  UtensilsCrossed,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import { AuthContext } from '../../store/AuthContext';
 import { dialog } from '../../utils/dialog';
@@ -51,6 +55,8 @@ import {
   resetWeeklyMenuToDefault,
   resetMenuToEmpty,
   clearDayMenu,
+  archiveDay,
+  archiveSlot,
   subscribeToDateOverrides,
   saveDateOverride,
   deleteDateOverride,
@@ -68,7 +74,14 @@ import {
   formatFriendlyDate,
   getDayOfWeekShort,
 } from '../../utils/studentExceptionService';
+import {
+  getCanonicalMealTiming,
+  subscribeToMealScheduleAndFines,
+} from '../../utils/mealScheduleService';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/auditLogger';
+import MenuCalendarMatrix from './MenuCalendarMatrix';
+import MealTimingInput from './MealTimingInput';
+import RangedMenuModal from './RangedMenuModal';
 
 const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
@@ -90,8 +103,8 @@ const CATEGORIES = [
 ];
 
 const SLOT_CONFIGS = [
-  { key: 'breakfast', label: 'Breakfast', icon: Coffee, color: 'amber', defaultTiming: '07:00 AM - 08:30 AM' },
-  { key: 'lunch', label: 'Lunch', icon: Utensils, color: 'emerald', defaultTiming: '12:30 PM - 02:00 PM' },
+  { key: 'breakfast', label: 'Breakfast', icon: Coffee, color: 'amber', defaultTiming: '07:30 AM - 08:45 AM' },
+  { key: 'lunch', label: 'Lunch', icon: Utensils, color: 'emerald', defaultTiming: '12:45 PM - 02:00 PM' },
   { key: 'evening', label: 'Evening Tea', icon: Coffee, color: 'blue', defaultTiming: '04:30 PM - 05:30 PM' },
   { key: 'dinner', label: 'Dinner', icon: Utensils, color: 'purple', defaultTiming: '08:30 PM - 09:30 PM' },
 ];
@@ -99,8 +112,16 @@ const SLOT_CONFIGS = [
 const createEmptySlot = (defaultTiming = '') => ({
   title: '',
   items: [],
-  category: 'Veg',
+  category: '',
   timing: defaultTiming,
+  timeMode: 'clock',
+  slotStatus: 'serving', // 'serving' | 'leave' | 'event' | 'fasting'
+  leaveReason: '',
+  eventTitle: '',
+  eventVenue: '',
+  eventSponsor: '',
+  eventNotes: '',
+  fastingTitle: '',
   isAvailable: true,
   isArchived: false,
 });
@@ -136,14 +157,23 @@ export default function UniversalMenuStudio() {
   const [rangeDayFilter, setRangeDayFilter] = useState('all'); // 'all' | 'fridays' | 'weekdays' | 'weekends'
 
   // Metadata for Feast & Closure
+  const [dayStatus, setDayStatus] = useState('standard'); // 'standard' | 'leave' | 'event' | 'fasting'
   const [occasion, setOccasion] = useState('');
   const [isClosedDay, setIsClosedDay] = useState(false);
   const [closureReason, setClosureReason] = useState('');
+  const [eventVenue, setEventVenue] = useState('');
+  const [eventSponsor, setEventSponsor] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
+  const [fastingTitle, setFastingTitle] = useState('');
+
+  // Calendar Studio State
+  const [editingCalendarDate, setEditingCalendarDate] = useState(null);
+  const [isRangedModalOpen, setIsRangedModalOpen] = useState(false);
 
   // Active Meal Canvas Form State (4 Slots)
   const [slotData, setSlotData] = useState({
-    breakfast: createEmptySlot('07:00 AM - 08:30 AM'),
-    lunch: createEmptySlot('12:30 PM - 02:00 PM'),
+    breakfast: createEmptySlot('07:30 AM - 08:45 AM'),
+    lunch: createEmptySlot('12:45 PM - 02:00 PM'),
     evening: createEmptySlot('04:30 PM - 05:30 PM'),
     dinner: createEmptySlot('08:30 PM - 09:30 PM'),
   });
@@ -153,7 +183,13 @@ export default function UniversalMenuStudio() {
   const [presetSearch, setPresetSearch] = useState('');
   const [activePresetSlot, setActivePresetSlot] = useState('breakfast');
   const [editingPreset, setEditingPreset] = useState(null);
-  const [newPresetForm, setNewPresetForm] = useState({ title: '', itemsStr: '', category: 'Veg' });
+  const [newPresetForm, setNewPresetForm] = useState({
+    title: '',
+    itemsStr: '',
+    category: '',
+    timing: '',
+    timeMode: 'clock',
+  });
   const [isAddingPreset, setIsAddingPreset] = useState(false);
 
   // Sync initial day from world clock
@@ -162,6 +198,24 @@ export default function UniversalMenuStudio() {
       setSelectedDayKey(dayShort);
     }
   }, [dayShort]);
+
+  // Live campus timing version tracker from Firestore settings/canteen_config
+  const [scheduleVersion, setScheduleVersion] = useState(0);
+
+  useEffect(() => {
+    const unsub = subscribeToMealScheduleAndFines(() => {
+      setScheduleVersion((v) => v + 1);
+    });
+    return () => unsub();
+  }, []);
+
+  // Effective Day of Week key depending on whether user is editing a single day or a specific calendar date
+  const effectiveDayKey = useMemo(() => {
+    if (scope === 'calendar_date' && targetDate) {
+      return getDayOfWeekShort(targetDate);
+    }
+    return selectedDayKey;
+  }, [scope, targetDate, selectedDayKey]);
 
   // Firestore Subscriptions
   useEffect(() => {
@@ -190,45 +244,106 @@ export default function UniversalMenuStudio() {
 
   // Populate active canvas whenever Scope or Scope Target changes
   useEffect(() => {
+    const buildSlot = (slotObj, defaultTiming) => {
+      if (!slotObj) return createEmptySlot(defaultTiming);
+      return {
+        ...createEmptySlot(defaultTiming),
+        ...slotObj,
+        timing: slotObj.timing || defaultTiming,
+        timeMode: slotObj.timeMode || 'clock',
+        slotStatus: slotObj.slotStatus || (slotObj.isArchived ? 'leave' : 'serving'),
+        isAvailable: slotObj.slotStatus === 'leave' ? false : (slotObj.isAvailable !== undefined ? slotObj.isAvailable : true),
+        isArchived: Boolean(slotObj.slotStatus === 'leave' || slotObj.isArchived),
+        leaveReason: slotObj.leaveReason || '',
+        eventTitle: slotObj.eventTitle || '',
+        eventVenue: slotObj.eventVenue || '',
+        eventSponsor: slotObj.eventSponsor || '',
+        eventNotes: slotObj.eventNotes || '',
+        fastingTitle: slotObj.fastingTitle || '',
+      };
+    };
+
     if (scope === 'single_day') {
       const source = studioMode === 'template' ? defaultTemplate : weeklyMenu;
       const dayData = source[selectedDayKey] || {};
+      const bfTiming = getCanonicalMealTiming(selectedDayKey, 'breakfast');
+      const lunchTiming = getCanonicalMealTiming(selectedDayKey, 'lunch');
+      const eveningTiming = getCanonicalMealTiming(selectedDayKey, 'evening');
+      const dinnerTiming = getCanonicalMealTiming(selectedDayKey, 'dinner');
+
       setSlotData({
-        breakfast: dayData.breakfast ? { ...dayData.breakfast } : createEmptySlot('07:00 AM - 08:30 AM'),
-        lunch: dayData.lunch ? { ...dayData.lunch } : createEmptySlot('12:30 PM - 02:00 PM'),
-        evening: dayData.evening ? { ...dayData.evening } : createEmptySlot('04:30 PM - 05:30 PM'),
-        dinner: dayData.dinner ? { ...dayData.dinner } : createEmptySlot('08:30 PM - 09:30 PM'),
+        breakfast: buildSlot(dayData.breakfast, bfTiming),
+        lunch: buildSlot(dayData.lunch, lunchTiming),
+        evening: buildSlot(dayData.evening, eveningTiming),
+        dinner: buildSlot(dayData.dinner, dinnerTiming),
       });
-      setIsClosedDay(Boolean(dayData.isArchived || dayData.isClosed));
+
+      const isArchived = Boolean(dayData.isArchived);
+      const isClosed = Boolean(isArchived || dayData.isClosed);
+      setIsClosedDay(isClosed);
       setClosureReason(dayData.closureReason || dayData.archiveReason || '');
-      setOccasion(dayData.note || '');
+      setOccasion(dayData.note || dayData.eventTitle || '');
+      setEventVenue(dayData.eventVenue || '');
+      setEventSponsor(dayData.eventSponsor || '');
+      setEventNotes(dayData.eventNotes || '');
+      setFastingTitle(dayData.fastingTitle || '');
+      setDayStatus(
+        dayData.dayStatus === 'archived' || isArchived
+          ? 'archived'
+          : dayData.dayStatus === 'leave' || dayData.dayStatus === 'closed' || isClosed
+          ? 'closed'
+          : dayData.dayStatus || (dayData.fastingTitle ? 'fasting' : dayData.note ? 'event' : 'standard')
+      );
     } else if (scope === 'calendar_date') {
       const ovr = overrides[targetDate];
+      const dow = getDayOfWeekShort(targetDate);
+      const bfTiming = getCanonicalMealTiming(dow, 'breakfast');
+      const lunchTiming = getCanonicalMealTiming(dow, 'lunch');
+      const eveningTiming = getCanonicalMealTiming(dow, 'evening');
+      const dinnerTiming = getCanonicalMealTiming(dow, 'dinner');
+
       if (ovr) {
         setSlotData({
-          breakfast: ovr.breakfast ? { ...ovr.breakfast } : createEmptySlot('07:00 AM - 08:30 AM'),
-          lunch: ovr.lunch ? { ...ovr.lunch } : createEmptySlot('12:30 PM - 02:00 PM'),
-          evening: ovr.evening ? { ...ovr.evening } : createEmptySlot('04:30 PM - 05:30 PM'),
-          dinner: ovr.dinner ? { ...ovr.dinner } : createEmptySlot('08:30 PM - 09:30 PM'),
+          breakfast: buildSlot(ovr.breakfast, bfTiming),
+          lunch: buildSlot(ovr.lunch, lunchTiming),
+          evening: buildSlot(ovr.evening, eveningTiming),
+          dinner: buildSlot(ovr.dinner, dinnerTiming),
         });
-        setIsClosedDay(Boolean(ovr.isHoliday || ovr.isClosed));
-        setClosureReason(ovr.holidayReason || ovr.closureReason || '');
-        setOccasion(ovr.occasion || '');
+        const isArchived = Boolean(ovr.isArchived);
+        const isClosed = Boolean(ovr.isHoliday || ovr.isClosed || isArchived);
+        setIsClosedDay(isClosed);
+        setClosureReason(ovr.holidayReason || ovr.closureReason || ovr.leaveReason || ovr.archiveReason || '');
+        setOccasion(ovr.occasion || ovr.eventTitle || '');
+        setEventVenue(ovr.eventVenue || '');
+        setEventSponsor(ovr.eventSponsor || '');
+        setEventNotes(ovr.eventNotes || '');
+        setFastingTitle(ovr.fastingTitle || '');
+        setDayStatus(
+          ovr.dayStatus === 'archived' || isArchived
+            ? 'archived'
+            : ovr.dayStatus === 'leave' || ovr.dayStatus === 'closed' || isClosed
+            ? 'closed'
+            : ovr.dayStatus || (ovr.fastingTitle ? 'fasting' : ovr.occasion ? 'event' : 'standard')
+        );
       } else {
-        const dow = getDayOfWeekShort(targetDate);
         const routine = weeklyMenu[dow] || {};
         setSlotData({
-          breakfast: routine.breakfast ? { ...routine.breakfast } : createEmptySlot('07:00 AM - 08:30 AM'),
-          lunch: routine.lunch ? { ...routine.lunch } : createEmptySlot('12:30 PM - 02:00 PM'),
-          evening: routine.evening ? { ...routine.evening } : createEmptySlot('04:30 PM - 05:30 PM'),
-          dinner: routine.dinner ? { ...routine.dinner } : createEmptySlot('08:30 PM - 09:30 PM'),
+          breakfast: buildSlot(routine.breakfast, bfTiming),
+          lunch: buildSlot(routine.lunch, lunchTiming),
+          evening: buildSlot(routine.evening, eveningTiming),
+          dinner: buildSlot(routine.dinner, dinnerTiming),
         });
         setIsClosedDay(false);
         setClosureReason('');
         setOccasion('');
+        setEventVenue('');
+        setEventSponsor('');
+        setEventNotes('');
+        setFastingTitle('');
+        setDayStatus('standard');
       }
     }
-  }, [scope, selectedDayKey, targetDate, weeklyMenu, defaultTemplate, overrides, studioMode]);
+  }, [scope, selectedDayKey, targetDate, weeklyMenu, defaultTemplate, overrides, studioMode, scheduleVersion]);
 
   // Auth gate check
   const checkAuth = useCallback(() => {
@@ -293,8 +408,10 @@ export default function UniversalMenuStudio() {
       [slotKey]: {
         ...prev[slotKey],
         title: preset.title || '',
-        category: preset.category || 'Veg',
+        category: preset.category || '',
         items: Array.isArray(preset.items) ? [...preset.items] : [],
+        ...(preset.timing ? { timing: preset.timing } : {}),
+        ...(preset.timeMode ? { timeMode: preset.timeMode } : {}),
       },
     }));
     dialog.toast.success('Preset Applied', `Populated ${preset.title} into ${slotKey}.`);
@@ -317,13 +434,115 @@ export default function UniversalMenuStudio() {
       feedback('pop');
       await addDishPreset(slotKey, {
         title: current.title.trim(),
-        category: current.category || 'Veg',
+        category: current.category || '',
         items: current.items || [],
+        timing: current.timing || '',
+        timeMode: current.timeMode || 'clock',
       });
       dialog.toast.success('Preset Saved', `"${current.title}" added to ${slotKey} presets.`);
     } catch (err) {
       console.error('Error saving preset:', err);
       dialog.alert({ type: 'error', title: 'Preset Save Failed', message: err.message });
+    }
+  };
+
+  // Single meal slot delete / clear to blank
+  const handleClearSlot = async (slotKey) => {
+    feedback('trash');
+    const slotCfg = SLOT_CONFIGS.find((s) => s.key === slotKey);
+    const label = slotCfg ? slotCfg.label : slotKey;
+    const confirmed = await dialog.confirm({
+      title: `Clear ${label}?`,
+      message: `Reset ${label} to clean blank dishes and campus standard timing?`,
+      icon: 'trash',
+      confirmColor: 'rose',
+      confirmText: 'Clear Slot',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
+      const canonical = getCanonicalMealTiming(effectiveDayKey, slotKey);
+      setSlotData((prev) => ({
+        ...prev,
+        [slotKey]: createEmptySlot(canonical),
+      }));
+      dialog.toast.info('Slot Cleared', `${label} reset to blank.`);
+    }
+  };
+
+  // Single meal slot archive / restore toggle
+  const handleToggleArchiveSlot = (slotKey) => {
+    feedback('tick');
+    const isCurrentlyArchived = Boolean(slotData[slotKey]?.isArchived);
+    if (!isCurrentlyArchived) {
+      setSlotData((prev) => ({
+        ...prev,
+        [slotKey]: {
+          ...prev[slotKey],
+          isArchived: true,
+          isAvailable: false,
+          slotStatus: 'leave',
+          leaveReason: prev[slotKey]?.leaveReason || 'Archived / Suspended',
+        },
+      }));
+      dialog.toast.warning('Meal Slot Archived', `${slotKey} slot marked as archived.`);
+    } else {
+      setSlotData((prev) => ({
+        ...prev,
+        [slotKey]: {
+          ...prev[slotKey],
+          isArchived: false,
+          isAvailable: true,
+          slotStatus: 'serving',
+          leaveReason: '',
+        },
+      }));
+      dialog.toast.success('Meal Slot Restored', `${slotKey} slot unarchived and active.`);
+    }
+  };
+
+  // Full day archive / unarchive toggle
+  const handleToggleArchiveDay = async () => {
+    feedback('tick');
+    const isCurrentlyArchived = dayStatus === 'archived' || isClosedDay;
+    if (!isCurrentlyArchived) {
+      setDayStatus('archived');
+      setIsClosedDay(true);
+      if (!closureReason) setClosureReason('Archived Schedule (Inactive Day)');
+      dialog.toast.warning('Day Marked Archived', 'Day set to archived. Click "Save & Publish Menu" to commit.');
+    } else {
+      setDayStatus('standard');
+      setIsClosedDay(false);
+      setClosureReason('');
+      dialog.toast.success('Day Unarchived', 'Day set to standard serving. Click "Save & Publish Menu" to commit.');
+    }
+  };
+
+  // Delete Date Override and restore standard routine
+  const handleDeleteOverride = async (dateKey) => {
+    if (!checkAuth()) return;
+    const confirmed = await dialog.confirm({
+      title: 'Delete Date Override?',
+      message: `Revert ${formatFriendlyDate(dateKey)} back to the standard weekly dining routine? All custom dishes, events, or closure notices for this date will be removed.`,
+      confirmColor: 'rose',
+      confirmText: 'Delete Override',
+      cancelText: 'Cancel',
+      icon: 'trash',
+    });
+
+    if (confirmed) {
+      try {
+        setSaving(true);
+        feedback('pop');
+        await deleteDateOverride(dateKey);
+        dialog.toast.success('Override Deleted', `Restored ${formatFriendlyDate(dateKey)} to routine.`);
+        if (editingCalendarDate === dateKey) {
+          setEditingCalendarDate(null);
+        }
+      } catch (err) {
+        dialog.alert({ type: 'error', title: 'Delete Failed', message: err.message });
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -334,11 +553,56 @@ export default function UniversalMenuStudio() {
     feedback('tick');
 
     try {
+      const isDayArchived = dayStatus === 'archived';
+      const isDayClosed = dayStatus === 'closed' || isDayArchived || isClosedDay;
+
       const sanitizedSlots = {
-        breakfast: { ...slotData.breakfast },
-        lunch: { ...slotData.lunch },
-        evening: { ...slotData.evening },
-        dinner: { ...slotData.dinner },
+        breakfast: {
+          ...slotData.breakfast,
+          timing: slotData.breakfast?.timing || '',
+          timeMode: slotData.breakfast?.timeMode || 'clock',
+          slotStatus: slotData.breakfast?.slotStatus || 'serving',
+          isAvailable: !isDayClosed && (slotData.breakfast?.slotStatus || 'serving') === 'serving' && !slotData.breakfast?.isArchived,
+          isArchived: isDayClosed || (slotData.breakfast?.slotStatus || 'serving') === 'leave' || Boolean(slotData.breakfast?.isArchived),
+        },
+        lunch: {
+          ...slotData.lunch,
+          timing: slotData.lunch?.timing || '',
+          timeMode: slotData.lunch?.timeMode || 'clock',
+          slotStatus: slotData.lunch?.slotStatus || 'serving',
+          isAvailable: !isDayClosed && (slotData.lunch?.slotStatus || 'serving') === 'serving' && !slotData.lunch?.isArchived,
+          isArchived: isDayClosed || (slotData.lunch?.slotStatus || 'serving') === 'leave' || Boolean(slotData.lunch?.isArchived),
+        },
+        evening: {
+          ...slotData.evening,
+          timing: slotData.evening?.timing || '',
+          timeMode: slotData.evening?.timeMode || 'clock',
+          slotStatus: slotData.evening?.slotStatus || 'serving',
+          isAvailable: !isDayClosed && (slotData.evening?.slotStatus || 'serving') === 'serving' && !slotData.evening?.isArchived,
+          isArchived: isDayClosed || (slotData.evening?.slotStatus || 'serving') === 'leave' || Boolean(slotData.evening?.isArchived),
+        },
+        dinner: {
+          ...slotData.dinner,
+          timing: slotData.dinner?.timing || '',
+          timeMode: slotData.dinner?.timeMode || 'clock',
+          slotStatus: slotData.dinner?.slotStatus || 'serving',
+          isAvailable: !isDayClosed && (slotData.dinner?.slotStatus || 'serving') === 'serving' && !slotData.dinner?.isArchived,
+          isArchived: isDayClosed || (slotData.dinner?.slotStatus || 'serving') === 'leave' || Boolean(slotData.dinner?.isArchived),
+        },
+      };
+
+      const dayMetadata = {
+        dayStatus: dayStatus || 'standard',
+        isArchived: isDayClosed || isDayArchived,
+        isClosed: isDayClosed,
+        archiveReason: isDayArchived ? (closureReason || 'Archived Day (Suspended)') : '',
+        closureReason: isDayClosed ? (closureReason || (isDayArchived ? 'Archived Day (Suspended)' : 'Canteen Closed / Routine Off')) : '',
+        leaveReason: isDayClosed ? (closureReason || (isDayArchived ? 'Archived Day (Suspended)' : 'Canteen Closed / Routine Off')) : '',
+        eventTitle: dayStatus === 'event' ? occasion : '',
+        eventVenue: dayStatus === 'event' ? eventVenue : '',
+        eventSponsor: dayStatus === 'event' ? eventSponsor : '',
+        eventNotes: dayStatus === 'event' ? eventNotes : '',
+        fastingTitle: dayStatus === 'fasting' ? fastingTitle : '',
       };
 
       if (scope === 'single_day') {
@@ -347,9 +611,7 @@ export default function UniversalMenuStudio() {
           dayName: DAY_NAMES[selectedDayKey] || selectedDayKey.toUpperCase(),
           dayShort: selectedDayKey.toUpperCase(),
           note: occasion || '',
-          isArchived: isClosedDay,
-          isClosed: isClosedDay,
-          closureReason: isClosedDay ? closureReason : '',
+          ...dayMetadata,
           ...sanitizedSlots,
         };
 
@@ -367,8 +629,8 @@ export default function UniversalMenuStudio() {
           category: AUDIT_CATEGORIES.CANTEEN_OPS,
           severity: AUDIT_SEVERITIES.INFO,
           actor: user?.email || 'admin',
-          summary: `Updated menu for ${DAY_NAMES[selectedDayKey]} (Scope: Single Day)`,
-          details: { dayKey: selectedDayKey, slots: sanitizedSlots },
+          summary: `Updated menu for ${DAY_NAMES[selectedDayKey]} (Scope: Single Day, Status: ${dayStatus})`,
+          details: { dayKey: selectedDayKey, status: dayStatus, slots: sanitizedSlots },
         });
       } else if (scope === 'bulk_days') {
         if (bulkDays.length === 0) {
@@ -385,9 +647,7 @@ export default function UniversalMenuStudio() {
             ...updatedWeek[dKey],
             dayKey: dKey,
             dayName: DAY_NAMES[dKey],
-            isArchived: isClosedDay,
-            isClosed: isClosedDay,
-            closureReason: isClosedDay ? closureReason : '',
+            ...dayMetadata,
             ...sanitizedSlots,
           };
         });
@@ -406,7 +666,7 @@ export default function UniversalMenuStudio() {
           severity: AUDIT_SEVERITIES.WARNING,
           actor: user?.email || 'admin',
           summary: `Bulk updated ${bulkDays.length} days (${bulkDays.join(', ')})`,
-          details: { days: bulkDays },
+          details: { days: bulkDays, status: dayStatus },
         });
       } else if (scope === 'calendar_date') {
         if (!targetDate) {
@@ -417,12 +677,11 @@ export default function UniversalMenuStudio() {
 
         const overridePayload = {
           dateStr: targetDate,
-          occasion: occasion || 'Special Feast Menu',
+          occasion: occasion || (dayStatus === 'event' ? 'Campus Event / Feast' : dayStatus === 'fasting' ? 'Fasting Routine' : isDayClosed ? 'Canteen Closed' : 'Special Menu'),
           note: occasion || '',
-          isHoliday: isClosedDay,
-          isClosed: isClosedDay,
-          holidayReason: isClosedDay ? closureReason : '',
-          closureReason: isClosedDay ? closureReason : '',
+          isHoliday: isDayClosed,
+          holidayReason: isDayClosed ? (closureReason || 'Canteen Closed') : '',
+          ...dayMetadata,
           ...sanitizedSlots,
         };
 
@@ -434,8 +693,8 @@ export default function UniversalMenuStudio() {
           category: AUDIT_CATEGORIES.CANTEEN_OPS,
           severity: AUDIT_SEVERITIES.INFO,
           actor: user?.email || 'admin',
-          summary: `Set date override for ${targetDate}: ${occasion || 'Special Menu'}`,
-          details: { targetDate, occasion },
+          summary: `Set date override for ${targetDate}: ${occasion || dayStatus}`,
+          details: { targetDate, occasion, status: dayStatus },
         });
       } else if (scope === 'date_range') {
         if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) {
@@ -445,12 +704,11 @@ export default function UniversalMenuStudio() {
         }
 
         const rangeOverrideData = {
-          occasion: occasion || 'Range Period Menu',
+          occasion: occasion || (dayStatus === 'event' ? 'Campus Event Period' : dayStatus === 'fasting' ? 'Fasting Period' : isDayClosed ? 'Canteen Holiday Period' : 'Range Period Menu'),
           note: occasion || '',
-          isHoliday: isClosedDay,
-          isClosed: isClosedDay,
-          holidayReason: isClosedDay ? closureReason : '',
-          closureReason: isClosedDay ? closureReason : '',
+          isHoliday: isDayClosed,
+          holidayReason: isDayClosed ? (closureReason || 'Canteen Closed') : '',
+          ...dayMetadata,
           ...sanitizedSlots,
         };
 
@@ -463,7 +721,7 @@ export default function UniversalMenuStudio() {
           severity: AUDIT_SEVERITIES.WARNING,
           actor: user?.email || 'admin',
           summary: `Ranged menu applied from ${rangeStart} to ${rangeEnd} (${result.count} days)`,
-          details: { rangeStart, rangeEnd, filter: rangeDayFilter, count: result.count },
+          details: { rangeStart, rangeEnd, filter: rangeDayFilter, count: result.count, status: dayStatus },
         });
       }
     } catch (err) {
@@ -495,12 +753,12 @@ export default function UniversalMenuStudio() {
         dialog.toast.success('Override Removed', `Restored ${formatFriendlyDate(targetDate)} to standard routine.`);
       } else {
         setSlotData({
-          breakfast: createEmptySlot('07:00 AM - 08:30 AM'),
-          lunch: createEmptySlot('12:30 PM - 02:00 PM'),
-          evening: createEmptySlot('04:30 PM - 05:30 PM'),
-          dinner: createEmptySlot('08:30 PM - 09:30 PM'),
+          breakfast: createEmptySlot(getCanonicalMealTiming(effectiveDayKey, 'breakfast')),
+          lunch: createEmptySlot(getCanonicalMealTiming(effectiveDayKey, 'lunch')),
+          evening: createEmptySlot(getCanonicalMealTiming(effectiveDayKey, 'evening')),
+          dinner: createEmptySlot(getCanonicalMealTiming(effectiveDayKey, 'dinner')),
         });
-        dialog.toast.info('Canvas Cleared', 'Click "Save Changes" to commit blank dishes.');
+        dialog.toast.info('Canvas Cleared', 'Click "Save & Publish Menu" to commit blank dishes.');
       }
     }
   };
@@ -566,6 +824,8 @@ export default function UniversalMenuStudio() {
           title: newPresetForm.title.trim(),
           category: newPresetForm.category,
           items,
+          timing: newPresetForm.timing || '',
+          timeMode: newPresetForm.timeMode || 'clock',
         });
         dialog.toast.success('Preset Updated', `"${newPresetForm.title}" updated.`);
       } else {
@@ -573,10 +833,12 @@ export default function UniversalMenuStudio() {
           title: newPresetForm.title.trim(),
           category: newPresetForm.category,
           items,
+          timing: newPresetForm.timing || '',
+          timeMode: newPresetForm.timeMode || 'clock',
         });
         dialog.toast.success('Preset Created', `"${newPresetForm.title}" saved.`);
       }
-      setNewPresetForm({ title: '', itemsStr: '', category: 'Veg' });
+      setNewPresetForm({ title: '', itemsStr: '', category: 'Veg', timing: '', timeMode: 'clock' });
       setEditingPreset(null);
       setIsAddingPreset(false);
     } catch (err) {
@@ -671,6 +933,7 @@ export default function UniversalMenuStudio() {
             onClick={() => {
               feedback('tick');
               setStudioMode('live');
+              setEditingCalendarDate(null);
               if (scope === 'calendar_date') setScope('single_day');
             }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
@@ -687,6 +950,7 @@ export default function UniversalMenuStudio() {
             onClick={() => {
               feedback('tick');
               setStudioMode('template');
+              setEditingCalendarDate(null);
               setScope('single_day');
             }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
@@ -703,6 +967,7 @@ export default function UniversalMenuStudio() {
             onClick={() => {
               feedback('tick');
               setStudioMode('calendar');
+              setEditingCalendarDate(null);
               setScope('calendar_date');
             }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
@@ -716,8 +981,74 @@ export default function UniversalMenuStudio() {
           </button>
         </div>
 
-        {/* 3. Universal Scope Engine Selector */}
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-4">
+        {/* If Calendar Studio Mode and not editing a specific date, show Full Interactive Calendar Matrix */}
+        {studioMode === 'calendar' && !editingCalendarDate ? (
+          <MenuCalendarMatrix
+            weeklyMenu={weeklyMenu}
+            overrides={overrides}
+            onSelectDate={(dateStr) => {
+              feedback('tick');
+              setTargetDate(dateStr);
+              setEditingCalendarDate(dateStr);
+              setScope('calendar_date');
+            }}
+            onAddNewFeast={(dateStr) => {
+              feedback('tick');
+              const d = dateStr || todayStr;
+              setTargetDate(d);
+              setEditingCalendarDate(d);
+              setScope('calendar_date');
+              setDayStatus('event');
+              if (!occasion) setOccasion('Campus Feast');
+            }}
+            onDeleteOverride={handleDeleteOverride}
+            onOpenRangedModal={() => setIsRangedModalOpen(true)}
+          />
+        ) : (
+          <>
+            {/* Calendar override active edit breadcrumb & delete override button */}
+            {studioMode === 'calendar' && editingCalendarDate && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-3xl bg-purple-500/10 border border-purple-200 dark:border-purple-800/40 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      feedback('tick');
+                      setEditingCalendarDate(null);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Calendar Matrix</span>
+                  </button>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <h3 className="text-sm sm:text-base font-black text-purple-900 dark:text-purple-200">
+                        Feast & Date Override: {formatFriendlyDate(targetDate)}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-purple-700/80 dark:text-purple-300/80">
+                      Configuring custom dishes, event replacement, or leave routine for this specific date.
+                    </p>
+                  </div>
+                </div>
+
+                {overrides[targetDate] && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteOverride(targetDate)}
+                    className="px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-bold flex items-center gap-1.5 transition-all self-end sm:self-auto"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Override</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* 3. Universal Scope Engine Selector (Active in Live / Template Mode) */}
+            {studioMode !== 'calendar' && (
+              <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
@@ -945,6 +1276,7 @@ export default function UniversalMenuStudio() {
             )}
           </div>
         </div>
+      )}
 
         {/* 4. Embedded Presets Palette Shelf (Collapsible Drawer) */}
         <AnimatePresence>
@@ -1003,7 +1335,7 @@ export default function UniversalMenuStudio() {
                   <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
                     {editingPreset ? `Edit ${editingPreset.title}` : `Add New ${activePresetSlot} Preset`}
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="text"
                       value={newPresetForm.title}
@@ -1018,29 +1350,38 @@ export default function UniversalMenuStudio() {
                       placeholder="Items (comma-separated: Porotta, Curry, Tea)"
                       className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold"
                     />
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={newPresetForm.category}
-                        onChange={(e) => setNewPresetForm((p) => ({ ...p, category: e.target.value }))}
-                        className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex-1"
-                      >
-                        {CATEGORIES.map((c) => (
-                          <option key={c.key} value={c.key}>{c.label}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={handleSaveInlinePreset}
-                        className="px-3 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setIsAddingPreset(false)}
-                        className="p-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-500"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  </div>
+
+                  <MealTimingInput
+                    value={newPresetForm.timing}
+                    timeMode={newPresetForm.timeMode}
+                    onChange={(timing, mode) => setNewPresetForm((p) => ({ ...p, timing, timeMode: mode }))}
+                    slotKey={activePresetSlot}
+                  />
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <select
+                      value={newPresetForm.category}
+                      onChange={(e) => setNewPresetForm((p) => ({ ...p, category: e.target.value }))}
+                      className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/20 text-xs font-bold flex-1"
+                    >
+                      <option value="">None (No Tag)</option>
+                      {CATEGORIES.map((c) => (
+                        <option key={c.key} value={c.key}>{c.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleSaveInlinePreset}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm"
+                    >
+                      Save Preset
+                    </button>
+                    <button
+                      onClick={() => setIsAddingPreset(false)}
+                      className="p-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-500"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               )}
@@ -1060,10 +1401,18 @@ export default function UniversalMenuStudio() {
                         <span className="text-[10px] text-gray-500 dark:text-gray-400 block line-clamp-1">
                           {preset.items?.join(' • ') || 'No side items'}
                         </span>
+                        {preset.timing && (
+                          <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.2 rounded-md text-[9px] font-mono font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                            <Clock className="w-2.5 h-2.5 text-purple-500" />
+                            <span>{preset.timing}</span>
+                          </span>
+                        )}
                       </div>
-                      <span className="px-1.5 py-0.2 rounded-md text-[9px] font-bold border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300">
-                        {preset.category}
-                      </span>
+                      {preset.category && (
+                        <span className="px-1.5 py-0.2 rounded-md text-[9px] font-bold border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300">
+                          {preset.category}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-white/5">
@@ -1102,53 +1451,339 @@ export default function UniversalMenuStudio() {
           )}
         </AnimatePresence>
 
-        {/* 5. Canteen Closed Toggle */}
-        <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setIsClosedDay((prev) => !prev);
-              }}
-              className={`w-11 h-6 rounded-full transition-colors relative p-0.5 ${
-                isClosedDay ? 'bg-amber-500' : 'bg-gray-200 dark:bg-white/10'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
-                  isClosedDay ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
+        {/* 5. Systematic Day Operational Mode Selector */}
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <span className="font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
-                {isClosedDay ? (
-                  <>
-                    <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                    <span>Canteen Closed for this Selection</span>
-                  </>
-                ) : (
-                  <>
-                    <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                    <span>Supply Active & Normal Service</span>
-                  </>
-                )}
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                Day Operational Status
               </span>
-              <span className="text-[11px] text-gray-500">
-                {isClosedDay ? 'Dining hall will display routine off-day notice to students.' : 'All scheduled meal slots will be prepared.'}
-              </span>
+              <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                How should the dining hall operate for this selection?
+              </h3>
+            </div>
+
+            {/* 4-way Segmented Selector */}
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 p-1 rounded-2xl bg-gray-100/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setDayStatus('standard');
+                  setIsClosedDay(false);
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  dayStatus === 'standard'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Utensils className="w-3.5 h-3.5" />
+                <span>Standard</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setDayStatus('closed');
+                  setIsClosedDay(true);
+                  if (!closureReason) setClosureReason('Routine Off-Day');
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  dayStatus === 'closed'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Closed / Leave</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setDayStatus('event');
+                  setIsClosedDay(false);
+                  if (!occasion) setOccasion('Campus Feast & Gathering');
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  dayStatus === 'event'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Event / Feast</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setDayStatus('fasting');
+                  setIsClosedDay(false);
+                  if (!fastingTitle) setFastingTitle('Sunnah Fast Routine');
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  dayStatus === 'fasting'
+                    ? 'bg-cyan-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span>Fasting Routine</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  setDayStatus('archived');
+                  setIsClosedDay(true);
+                  if (!closureReason) setClosureReason('Archived Schedule (Inactive Day)');
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  dayStatus === 'archived'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Archive className="w-3.5 h-3.5" />
+                <span>Archived</span>
+              </button>
             </div>
           </div>
 
-          {isClosedDay && (
-            <input
-              type="text"
-              value={closureReason}
-              onChange={(e) => setClosureReason(e.target.value)}
-              placeholder="Reason (e.g. Routine Off-Day, Campus Holiday, Kitchen Maintenance)"
-              className="px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 text-xs font-bold text-amber-900 dark:text-amber-200 sm:w-80"
-            />
+          {/* Contextual Panel for Archived Day */}
+          {dayStatus === 'archived' && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 space-y-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <Archive className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Day Schedule Archived (Meals Suspended / Off-Board)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setDayStatus('standard');
+                    setIsClosedDay(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors"
+                >
+                  Unarchive Day
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={closureReason}
+                  onChange={(e) => setClosureReason(e.target.value)}
+                  placeholder="Specify Archive Reason (e.g. Vacation Break, Semester End, Routine Suspended)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-[#121c19] text-xs font-bold text-amber-950 dark:text-amber-100 placeholder-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Quick Reasons:</span>
+                  {[
+                    'Vacation Break',
+                    'Term Break Off',
+                    'Semester Transition',
+                    'Canteen Inactive',
+                    'Special Off-Routine',
+                  ].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setClosureReason(r)}
+                      className="px-2.5 py-1 rounded-lg bg-amber-100/80 dark:bg-amber-900/40 hover:bg-amber-200 text-amber-800 dark:text-amber-200 text-[11px] font-bold transition-colors"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Contextual Panel for Closed / Leave */}
+          {dayStatus === 'closed' && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 space-y-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Canteen Dining Hall Closed & Supply Suspended</span>
+                </span>
+                <span className="text-[11px] text-rose-700/80 dark:text-rose-400/80">
+                  Notice banner will appear on student screens and public board.
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={closureReason}
+                  onChange={(e) => setClosureReason(e.target.value)}
+                  placeholder="Specify Leave / Closure Reason (e.g. Routine Off-Day, Campus Holiday, Kitchen Maintenance)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-[#121c19] text-xs font-bold text-rose-950 dark:text-rose-100 placeholder-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase">Quick Reasons:</span>
+                  {[
+                    'Routine Off-Day',
+                    'Campus Holiday',
+                    'Kitchen Maintenance',
+                    'Study Leave Break',
+                    'Vacation Period',
+                    'Special Cleaning Day',
+                  ].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setClosureReason(r)}
+                      className="px-2.5 py-1 rounded-lg bg-rose-100/80 dark:bg-rose-900/40 hover:bg-rose-200 text-rose-800 dark:text-rose-200 text-[11px] font-bold transition-colors"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Contextual Panel for Campus Event / Feast */}
+          {dayStatus === 'event' && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 space-y-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs font-bold text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Replaced by Campus Event / Special Feast</span>
+                </span>
+                <span className="text-[11px] text-purple-700/80 dark:text-purple-400/80">
+                  Event metadata and special feast dishes will be highlighted across digital displays.
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase block mb-1">
+                    Event Title / Occasion
+                  </label>
+                  <input
+                    type="text"
+                    value={occasion}
+                    onChange={(e) => setOccasion(e.target.value)}
+                    placeholder="e.g. Milad Sharif Feast, Union Assembly"
+                    className="w-full px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase block mb-1">
+                    Venue / Dining Location
+                  </label>
+                  <input
+                    type="text"
+                    value={eventVenue}
+                    onChange={(e) => setEventVenue(e.target.value)}
+                    placeholder="e.g. Campus Central Grounds, Auditorium"
+                    className="w-full px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase block mb-1">
+                    Sponsor / Host (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={eventSponsor}
+                    onChange={(e) => setEventSponsor(e.target.value)}
+                    placeholder="e.g. Batch 2024, Alumni Association"
+                    className="w-full px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase block mb-1">
+                  Event Notes / Special Instructions
+                </label>
+                <input
+                  type="text"
+                  value={eventNotes}
+                  onChange={(e) => setEventNotes(e.target.value)}
+                  placeholder="e.g. Food packets will be distributed after Maghrib prayer."
+                  className="w-full px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Contextual Panel for Fasting Routine */}
+          {dayStatus === 'fasting' && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-900/40 space-y-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs font-bold text-cyan-800 dark:text-cyan-300 flex items-center gap-1.5">
+                  <Moon className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>Fasting Routine (Sahar & Iftar Schedule)</span>
+                </span>
+                <span className="text-[11px] text-cyan-700/80 dark:text-cyan-400/80">
+                  Lunch will be suspended; Sahar and Iftar meal timings will be prioritized.
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={fastingTitle}
+                  onChange={(e) => setFastingTitle(e.target.value)}
+                  placeholder="Fasting Occasion (e.g. Monday Sunnah Fast, Ashura Fast)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-cyan-300 dark:border-cyan-800 bg-white dark:bg-[#121c19] text-xs font-bold text-cyan-950 dark:text-cyan-100 placeholder-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 uppercase">Presets:</span>
+                  {[
+                    'Monday Sunnah Fast',
+                    'Thursday Sunnah Fast',
+                    'Ayyam al-Beed Fast',
+                    'Ashura Fast',
+                    'Arafah Fast',
+                    'Ramadan Routine',
+                  ].map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setFastingTitle(f)}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-100/80 dark:bg-cyan-900/40 hover:bg-cyan-200 text-cyan-800 dark:text-cyan-200 text-[11px] font-bold transition-colors"
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
 
@@ -1156,16 +1791,25 @@ export default function UniversalMenuStudio() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {SLOT_CONFIGS.map((slot) => {
             const current = slotData[slot.key] || createEmptySlot(slot.defaultTiming);
+            const slotStatus = current.slotStatus || 'serving';
             const slotPresets = Array.isArray(presetsMap[slot.key]) ? presetsMap[slot.key].slice(0, 4) : [];
             const Icon = slot.icon;
 
             return (
               <div
                 key={slot.key}
-                className="p-5 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm space-y-4 transition-all"
+                className={`p-5 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border shadow-sm space-y-4 transition-all ${
+                  slotStatus === 'leave'
+                    ? 'border-rose-200 dark:border-rose-900/50 bg-rose-50/20 dark:bg-rose-950/10'
+                    : slotStatus === 'event'
+                    ? 'border-purple-200 dark:border-purple-900/50 bg-purple-50/20 dark:bg-purple-950/10'
+                    : slotStatus === 'fasting'
+                    ? 'border-cyan-200 dark:border-cyan-900/50 bg-cyan-50/20 dark:bg-cyan-950/10'
+                    : 'border-gray-200/80 dark:border-white/10'
+                }`}
               >
                 {/* Slot Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300">
                       <Icon className="w-4 h-4 text-emerald-500" />
@@ -1180,120 +1824,328 @@ export default function UniversalMenuStudio() {
                     </div>
                   </div>
 
-                  {/* Slot Actions */}
-                  <div className="flex items-center gap-1.5">
+                  {/* Slot Status Switcher & Save Preset Button */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1 p-0.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/50 dark:border-white/5">
+                      <button
+                        type="button"
+                        onClick={() => handleSlotChange(slot.key, 'slotStatus', 'serving')}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                          slotStatus === 'serving'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        Serving
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSlotChange(slot.key, 'slotStatus', 'leave');
+                          if (!current.leaveReason) handleSlotChange(slot.key, 'leaveReason', 'No Meal Served');
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                          slotStatus === 'leave'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        Leave
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSlotChange(slot.key, 'slotStatus', 'event');
+                          if (!current.eventTitle) handleSlotChange(slot.key, 'eventTitle', 'Special Event Feast');
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                          slotStatus === 'event'
+                            ? 'bg-purple-600 text-white shadow-xs'
+                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        Event
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSlotChange(slot.key, 'slotStatus', 'fasting');
+                          if (!current.fastingTitle) handleSlotChange(slot.key, 'fastingTitle', slot.key === 'dinner' ? 'Iftar Meal' : 'Sahar Meal');
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                          slotStatus === 'fasting'
+                            ? 'bg-cyan-600 text-white shadow-xs'
+                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        Fast
+                      </button>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => handleSaveSlotAsPreset(slot.key)}
-                      className="px-2 py-1 rounded-lg border border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 hover:bg-purple-50 text-[10px] font-bold flex items-center gap-1 transition-colors"
+                      className="px-2 py-1 rounded-lg border border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/30 text-[10px] font-bold flex items-center gap-1 transition-colors"
                       title="Save as reusable preset"
                     >
                       <BookmarkPlus className="w-3 h-3" />
-                      <span>Save Preset</span>
+                      <span className="hidden sm:inline">Preset</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleArchiveSlot(slot.key)}
+                      className={`px-2 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                        current.isArchived
+                          ? 'border-amber-400 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'
+                          : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-amber-600 hover:border-amber-300'
+                      }`}
+                      title={current.isArchived ? 'Unarchive meal slot' : 'Archive meal slot'}
+                    >
+                      {current.isArchived ? <ArchiveRestore className="w-3 h-3 text-amber-500" /> : <Archive className="w-3 h-3" />}
+                      <span className="hidden sm:inline">{current.isArchived ? 'Archived' : 'Archive'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleClearSlot(slot.key)}
+                      className="p-1 rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:text-rose-600 hover:border-rose-300 dark:hover:border-rose-800 transition-colors"
+                      title={`Clear ${slot.label} slot`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Title & Timing Inputs */}
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={current.title}
-                    onChange={(e) => handleSlotChange(slot.key, 'title', e.target.value)}
-                    placeholder={`e.g. ${slot.key === 'breakfast' ? 'Porotta & Kadala' : slot.key === 'lunch' ? 'Rice & Chicken Curry' : 'Snacks & Tea'}`}
-                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-black/20 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                {/* Archived Slot Notice Banner */}
+                {current.isArchived && (
+                  <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-300">
+                      <Archive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>This meal slot is archived (suspended).</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleArchiveSlot(slot.key)}
+                      className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold shrink-0 transition-colors"
+                    >
+                      Restore Slot
+                    </button>
+                  </div>
+                )}
 
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                {/* Context: Leave / Suspended */}
+                {slotStatus === 'leave' && (
+                  <div className="p-3.5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 space-y-2.5">
+                    <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-bold text-xs">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>{slot.label} Suspended (Leave / Kitchen Off)</span>
+                    </div>
                     <input
                       type="text"
-                      value={current.timing}
-                      onChange={(e) => handleSlotChange(slot.key, 'timing', e.target.value)}
-                      placeholder="Serving window (e.g. 07:00 AM - 08:30 AM)"
-                      className="w-full px-2.5 py-1 rounded-lg border border-gray-200/60 dark:border-white/5 bg-transparent text-[11px] font-mono text-gray-600 dark:text-gray-300"
+                      value={current.leaveReason || ''}
+                      onChange={(e) => handleSlotChange(slot.key, 'leaveReason', e.target.value)}
+                      placeholder="Reason for suspension (e.g. No breakfast - Dars extended, Self cooked)"
+                      className="w-full px-3 py-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-[#121c19] text-xs font-bold text-rose-950 dark:text-rose-200 placeholder-rose-400"
                     />
-                  </div>
-                </div>
-
-                {/* Dietary Category Badges */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-gray-400 block uppercase">
-                    Dietary Classification
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {CATEGORIES.map((cat) => {
-                      const isActive = (current.category || 'Veg') === cat.key;
-                      return (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {['No Meal Served', 'Class / Dars Extended', 'Combined with Next Meal', 'Maintenance Break'].map((r) => (
                         <button
-                          key={cat.key}
+                          key={r}
                           type="button"
-                          onClick={() => handleSlotChange(slot.key, 'category', cat.key)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
-                            isActive
-                              ? `${cat.badgeClass} ring-2 ring-emerald-500/30 scale-105`
-                              : 'border-gray-200/70 dark:border-white/10 text-gray-500 dark:text-gray-400'
-                          }`}
+                          onClick={() => handleSlotChange(slot.key, 'leaveReason', r)}
+                          className="px-2 py-0.5 rounded-md bg-rose-100/80 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 text-[10px] font-bold transition-colors"
                         >
-                          {cat.label}
+                          {r}
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Dish Side Items (Tags) */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-gray-400 block uppercase">
-                    Dishes & Ingredients
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5 min-h-[32px] p-1.5 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5">
-                    {Array.isArray(current.items) &&
-                      current.items.map((it, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-[#192420] text-gray-800 dark:text-gray-200 text-[11px] font-medium border border-gray-200 dark:border-white/10 shadow-xs"
-                        >
-                          <span>{it}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(slot.key, idx)}
-                            className="hover:text-rose-500"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </span>
                       ))}
+                    </div>
+                  </div>
+                )}
 
-                    <input
-                      type="text"
-                      placeholder="+ add item (hit Enter)"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddItem(slot.key, e.target.value);
-                          e.target.value = '';
-                        }
+                {/* Context: Event / Replaced */}
+                {slotStatus === 'event' && (
+                  <div className="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 space-y-2.5">
+                    <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold text-xs">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                      <span>{slot.label} Replaced by Event / Program Feast</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={current.eventTitle || ''}
+                        onChange={(e) => handleSlotChange(slot.key, 'eventTitle', e.target.value)}
+                        placeholder="Feast Title (e.g. Assembly Biryani)"
+                        className="px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                      />
+                      <input
+                        type="text"
+                        value={current.eventVenue || ''}
+                        onChange={(e) => handleSlotChange(slot.key, 'eventVenue', e.target.value)}
+                        placeholder="Venue (e.g. Auditorium Hall)"
+                        className="px-3 py-1.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <MealTimingInput
+                      value={current.timing}
+                      timeMode={current.timeMode}
+                      onChange={(timing, mode) => {
+                        handleSlotChange(slot.key, 'timing', timing);
+                        handleSlotChange(slot.key, 'timeMode', mode);
                       }}
-                      className="px-2 py-0.5 text-xs bg-transparent focus:outline-none flex-1 min-w-[120px] text-gray-900 dark:text-white"
+                      dayKey={effectiveDayKey}
+                      slotKey={slot.key}
                     />
                   </div>
-                </div>
+                )}
 
-                {/* Quick Presets for this slot */}
-                {slotPresets.length > 0 && (
-                  <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-gray-400">Quick Fill:</span>
-                    {slotPresets.map((p, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleApplyPreset(slot.key, p)}
-                        className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-[10px] font-bold border border-purple-200 dark:border-purple-800/40 transition-colors"
-                      >
-                        {p.title}
-                      </button>
-                    ))}
+                {/* Context: Fasting Routine */}
+                {slotStatus === 'fasting' && (
+                  <div className="p-3.5 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-900/40 space-y-2.5">
+                    <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300 font-bold text-xs">
+                      <Moon className="w-3.5 h-3.5 text-cyan-500" />
+                      <span>Fasting Routine Slot ({slot.key === 'dinner' ? 'Iftar Meal' : slot.key === 'breakfast' ? 'Sahar Meal' : 'Fasting Window'})</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={current.fastingTitle || current.title || ''}
+                      onChange={(e) => {
+                        handleSlotChange(slot.key, 'fastingTitle', e.target.value);
+                        handleSlotChange(slot.key, 'title', e.target.value);
+                      }}
+                      placeholder="Meal Title (e.g. Fresh Juice, Dates & Porridge / Sahar Kanji)"
+                      className="w-full px-3 py-1.5 rounded-xl border border-cyan-300 dark:border-cyan-800 bg-white dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                    />
+                    <MealTimingInput
+                      value={current.timing}
+                      timeMode={current.timeMode}
+                      onChange={(timing, mode) => {
+                        handleSlotChange(slot.key, 'timing', timing);
+                        handleSlotChange(slot.key, 'timeMode', mode);
+                      }}
+                      dayKey={effectiveDayKey}
+                      slotKey={slot.key}
+                    />
+                  </div>
+                )}
+
+                {/* Standard Serving Form */}
+                {slotStatus === 'serving' && (
+                  <div className="space-y-3">
+                    {/* Dish Title */}
+                    <input
+                      type="text"
+                      value={current.title}
+                      onChange={(e) => handleSlotChange(slot.key, 'title', e.target.value)}
+                      placeholder={`e.g. ${slot.key === 'breakfast' ? 'Porotta & Kadala' : slot.key === 'lunch' ? 'Rice & Chicken Curry' : slot.key === 'evening' ? 'Tea & Parippuvada' : 'Neychor & Beef'}`}
+                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-black/20 text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+
+                    {/* Meal Timing Input (Clock or Text / Dars with Malabar presets) */}
+                    <MealTimingInput
+                      value={current.timing}
+                      timeMode={current.timeMode}
+                      onChange={(timing, mode) => {
+                        handleSlotChange(slot.key, 'timing', timing);
+                        handleSlotChange(slot.key, 'timeMode', mode);
+                      }}
+                      dayKey={effectiveDayKey}
+                      slotKey={slot.key}
+                    />
+
+                    {/* Dietary Category Badges */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-gray-400 block uppercase">
+                        Dietary Classification
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleSlotChange(slot.key, 'category', '')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
+                            !current.category
+                              ? 'bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-gray-100 border-gray-400 dark:border-gray-600 ring-2 ring-gray-400/40 scale-105'
+                              : 'border-gray-200/70 dark:border-white/10 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                          }`}
+                          title="No dietary tag (neutral/untagged)"
+                        >
+                          ✕ None
+                        </button>
+                        {CATEGORIES.map((cat) => {
+                          const isActive = current.category === cat.key;
+                          return (
+                            <button
+                              key={cat.key}
+                              type="button"
+                              onClick={() => handleSlotChange(slot.key, 'category', isActive ? '' : cat.key)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
+                                isActive
+                                  ? `${cat.badgeClass} ring-2 ring-emerald-500/30 scale-105`
+                                  : 'border-gray-200/70 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                              }`}
+                              title={isActive ? 'Click to deselect tag' : `Set as ${cat.label}`}
+                            >
+                              {cat.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Dish Side Items (Tags) */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-gray-400 block uppercase">
+                        Dishes & Ingredients
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 min-h-[32px] p-1.5 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5">
+                        {Array.isArray(current.items) &&
+                          current.items.map((it, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-[#192420] text-gray-800 dark:text-gray-200 text-[11px] font-medium border border-gray-200 dark:border-white/10 shadow-xs"
+                            >
+                              <span>{it}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(slot.key, idx)}
+                                className="hover:text-rose-500"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </span>
+                          ))}
+
+                        <input
+                          type="text"
+                          placeholder="+ add item (hit Enter)"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddItem(slot.key, e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                          className="px-2 py-0.5 text-xs bg-transparent focus:outline-none flex-1 min-w-[120px] text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Presets for this slot */}
+                    {slotPresets.length > 0 && (
+                      <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-gray-400">Quick Fill:</span>
+                        {slotPresets.map((p, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleApplyPreset(slot.key, p)}
+                            className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 text-purple-700 dark:text-purple-300 text-[10px] font-bold border border-purple-200 dark:border-purple-800/40 transition-colors"
+                          >
+                            {p.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1319,6 +2171,28 @@ export default function UniversalMenuStudio() {
 
           <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
             <button
+              onClick={handleToggleArchiveDay}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors ${
+                dayStatus === 'archived'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                  : 'bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white'
+              }`}
+              title={dayStatus === 'archived' ? 'Restore day schedule' : 'Archive day schedule'}
+            >
+              {dayStatus === 'archived' ? (
+                <>
+                  <ArchiveRestore className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Unarchive Day</span>
+                </>
+              ) : (
+                <>
+                  <Archive className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Archive Day</span>
+                </>
+              )}
+            </button>
+
+            <button
               onClick={handleClearCurrentSelection}
               className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-colors"
             >
@@ -1336,6 +2210,16 @@ export default function UniversalMenuStudio() {
             </button>
           </div>
         </div>
+      </>
+    )}
+
+    {/* Ranged Menu Multi-Date Override Modal */}
+    <RangedMenuModal
+      isOpen={isRangedModalOpen}
+      onClose={() => setIsRangedModalOpen(false)}
+      weeklyMenu={weeklyMenu}
+      userEmail={user?.email || 'admin'}
+    />
 
       </div>
     </div>

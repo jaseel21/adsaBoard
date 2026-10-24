@@ -482,6 +482,13 @@ const MenuTable = () => {
                       <span>{activeDayData.occasion || 'Special Feast Override'}</span>
                     </span>
                   )}
+
+                  {activeDayData.fastingTitle && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-black uppercase tracking-wider shadow-xs">
+                      <Moon className="w-3 h-3" />
+                      <span>{activeDayData.fastingTitle}</span>
+                    </span>
+                  )}
                 </div>
 
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -494,6 +501,22 @@ const MenuTable = () => {
                     activeDayData.note || t('standardDiningRoutine', 'Standard campus dining hall menu schedule')
                   )}
                 </div>
+
+                {activeDayData.dayStatus === 'event' && (activeDayData.eventVenue || activeDayData.eventSponsor || activeDayData.eventNotes) && (
+                  <div className="mt-2.5 p-3 rounded-2xl bg-purple-100/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 text-xs text-purple-900 dark:text-purple-200 space-y-1">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                      <span>{activeDayData.eventTitle || activeDayData.occasion || 'Campus Program & Feast'}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-purple-700 dark:text-purple-300">
+                      {activeDayData.eventVenue && <span>📍 Venue: {activeDayData.eventVenue}</span>}
+                      {activeDayData.eventSponsor && <span>🤝 Sponsor: {activeDayData.eventSponsor}</span>}
+                    </div>
+                    {activeDayData.eventNotes && (
+                      <p className="text-[11px] text-purple-600/90 dark:text-purple-400/90">{activeDayData.eventNotes}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Action shortcuts */}
@@ -522,6 +545,7 @@ const MenuTable = () => {
               </div>
               <p className="text-xs text-amber-800 dark:text-amber-300">
                 {activeDayData.closureReason ||
+                  activeDayData.leaveReason ||
                   activeDayData.archiveReason ||
                   activeDayData.holidayReason ||
                   t('canteenClosedRoutineNotice', 'Routine Off Day. No kitchen food service is scheduled.')}
@@ -564,10 +588,29 @@ const MenuTable = () => {
                     </div>
                   )}
 
-                  {activeDayData.breakfast?.isArchived || activeDayData.breakfast?.isAvailable === false ? (
-                    <p className="text-xs text-gray-400 italic">No breakfast service scheduled</p>
+                  {activeDayData.breakfast?.isArchived || activeDayData.breakfast?.isAvailable === false || activeDayData.breakfast?.slotStatus === 'leave' ? (
+                    <div className="py-2 space-y-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700/60 inline-block">
+                        Leave / Off
+                      </span>
+                      <p className="text-xs text-rose-600 dark:text-rose-400 font-medium italic">
+                        {activeDayData.breakfast?.leaveReason || 'No breakfast service scheduled'}
+                      </p>
+                    </div>
                   ) : (
                     <>
+                      {activeDayData.breakfast?.slotStatus === 'event' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 inline-flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>{activeDayData.breakfast?.eventTitle || 'Event Feast'}</span>
+                        </span>
+                      )}
+                      {activeDayData.breakfast?.slotStatus === 'fasting' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/60 inline-flex items-center gap-1">
+                          <Moon className="w-2.5 h-2.5" />
+                          <span>{activeDayData.breakfast?.fastingTitle || 'Sahar Window'}</span>
+                        </span>
+                      )}
                       <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-snug">
                         {activeDayData.breakfast?.title || t('noDishSet', 'No dish set')}
                       </h3>
@@ -605,7 +648,7 @@ const MenuTable = () => {
               {/* 2. Lunch Slot */}
               <div
                 className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all flex flex-col justify-between ${
-                  activeDayData.lunch?.isArchived || activeDayData.lunch?.isAvailable === false
+                  activeDayData.lunch?.isArchived || activeDayData.lunch?.isAvailable === false || activeDayData.lunch?.slotStatus === 'leave'
                     ? 'bg-gray-50/50 dark:bg-white/5 border-dashed border-gray-200 dark:border-white/10 opacity-70'
                     : activeSlotMeta?.slot === 'lunch' && isToday
                     ? 'bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-950/40 dark:to-teal-950/20 border-emerald-400 dark:border-emerald-500/50 shadow-md ring-2 ring-emerald-400/40'
@@ -633,10 +676,29 @@ const MenuTable = () => {
                     </div>
                   )}
 
-                  {activeDayData.lunch?.isArchived || activeDayData.lunch?.isAvailable === false ? (
-                    <p className="text-xs text-gray-400 italic">No lunch service scheduled</p>
+                  {activeDayData.lunch?.isArchived || activeDayData.lunch?.isAvailable === false || activeDayData.lunch?.slotStatus === 'leave' ? (
+                    <div className="py-2 space-y-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700/60 inline-block">
+                        Leave / Off
+                      </span>
+                      <p className="text-xs text-rose-600 dark:text-rose-400 font-medium italic">
+                        {activeDayData.lunch?.leaveReason || 'No lunch service scheduled'}
+                      </p>
+                    </div>
                   ) : (
                     <>
+                      {activeDayData.lunch?.slotStatus === 'event' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 inline-flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>{activeDayData.lunch?.eventTitle || 'Event Feast'}</span>
+                        </span>
+                      )}
+                      {activeDayData.lunch?.slotStatus === 'fasting' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/60 inline-flex items-center gap-1">
+                          <Moon className="w-2.5 h-2.5" />
+                          <span>Fasting (Lunch Suspended)</span>
+                        </span>
+                      )}
                       <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-snug">
                         {activeDayData.lunch?.title || t('noDishSet', 'No dish set')}
                       </h3>
@@ -674,7 +736,7 @@ const MenuTable = () => {
               {/* 3. Evening Refreshment Slot */}
               <div
                 className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all flex flex-col justify-between ${
-                  activeDayData.evening?.isArchived || activeDayData.evening?.isAvailable === false
+                  activeDayData.evening?.isArchived || activeDayData.evening?.isAvailable === false || activeDayData.evening?.slotStatus === 'leave'
                     ? 'bg-gray-50/50 dark:bg-white/5 border-dashed border-gray-200 dark:border-white/10 opacity-70'
                     : activeSlotMeta?.slot === 'evening' && isToday
                     ? 'bg-gradient-to-br from-blue-50 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/20 border-blue-400 dark:border-blue-500/50 shadow-md ring-2 ring-blue-400/40'
@@ -702,10 +764,29 @@ const MenuTable = () => {
                     </div>
                   )}
 
-                  {activeDayData.evening?.isArchived || activeDayData.evening?.isAvailable === false ? (
-                    <p className="text-xs text-gray-400 italic">No evening refreshment scheduled</p>
+                  {activeDayData.evening?.isArchived || activeDayData.evening?.isAvailable === false || activeDayData.evening?.slotStatus === 'leave' ? (
+                    <div className="py-2 space-y-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700/60 inline-block">
+                        Leave / Off
+                      </span>
+                      <p className="text-xs text-rose-600 dark:text-rose-400 font-medium italic">
+                        {activeDayData.evening?.leaveReason || 'No evening refreshment scheduled'}
+                      </p>
+                    </div>
                   ) : (
                     <>
+                      {activeDayData.evening?.slotStatus === 'event' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 inline-flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>{activeDayData.evening?.eventTitle || 'Event Tea'}</span>
+                        </span>
+                      )}
+                      {activeDayData.evening?.slotStatus === 'fasting' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/60 inline-flex items-center gap-1">
+                          <Moon className="w-2.5 h-2.5" />
+                          <span>Fasting Routine</span>
+                        </span>
+                      )}
                       <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-snug">
                         {activeDayData.evening?.title || t('noDishSet', 'No dish set')}
                       </h3>
@@ -743,7 +824,7 @@ const MenuTable = () => {
               {/* 4. Dinner Slot */}
               <div
                 className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all flex flex-col justify-between ${
-                  activeDayData.dinner?.isArchived || activeDayData.dinner?.isAvailable === false
+                  activeDayData.dinner?.isArchived || activeDayData.dinner?.isAvailable === false || activeDayData.dinner?.slotStatus === 'leave'
                     ? 'bg-gray-50/50 dark:bg-white/5 border-dashed border-gray-200 dark:border-white/10 opacity-70'
                     : activeSlotMeta?.slot === 'dinner' && isToday
                     ? 'bg-gradient-to-br from-purple-50 to-pink-50/60 dark:from-purple-950/40 dark:to-pink-950/20 border-purple-400 dark:border-purple-500/50 shadow-md ring-2 ring-purple-400/40'
@@ -771,10 +852,29 @@ const MenuTable = () => {
                     </div>
                   )}
 
-                  {activeDayData.dinner?.isArchived || activeDayData.dinner?.isAvailable === false ? (
-                    <p className="text-xs text-gray-400 italic">No dinner service scheduled</p>
+                  {activeDayData.dinner?.isArchived || activeDayData.dinner?.isAvailable === false || activeDayData.dinner?.slotStatus === 'leave' ? (
+                    <div className="py-2 space-y-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700/60 inline-block">
+                        Leave / Off
+                      </span>
+                      <p className="text-xs text-rose-600 dark:text-rose-400 font-medium italic">
+                        {activeDayData.dinner?.leaveReason || 'No dinner service scheduled'}
+                      </p>
+                    </div>
                   ) : (
                     <>
+                      {activeDayData.dinner?.slotStatus === 'event' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 inline-flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>{activeDayData.dinner?.eventTitle || 'Event Dinner Feast'}</span>
+                        </span>
+                      )}
+                      {activeDayData.dinner?.slotStatus === 'fasting' && (
+                        <span className="mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/60 inline-flex items-center gap-1">
+                          <Moon className="w-2.5 h-2.5" />
+                          <span>{activeDayData.dinner?.fastingTitle || 'Iftar Meal & Dinner'}</span>
+                        </span>
+                      )}
                       <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white leading-snug">
                         {activeDayData.dinner?.title || t('noDishSet', 'No dish set')}
                       </h3>
@@ -1322,9 +1422,9 @@ const MenuTable = () => {
         initialTemplate="menu"
         initialData={{
           breakfastDish: activeDayData?.breakfast?.title || 'Weekly Breakfast Schedule',
-          breakfastCategory: activeDayData?.breakfast?.category || 'Veg / Egg',
+          breakfastCategory: activeDayData?.breakfast?.category || 'Standard',
           lunchDish: activeDayData?.lunch?.title || 'Weekly Lunch Schedule',
-          lunchCategory: activeDayData?.lunch?.category || 'Non-Veg / Veg',
+          lunchCategory: activeDayData?.lunch?.category || 'Standard',
           dateStr: formatFriendlyDate(targetDateIST),
           customUrl: 'https://canteen.alathurpadidars.in/menu',
           description: `${formatFriendlyDate(targetDateIST, true)} Menu: ${

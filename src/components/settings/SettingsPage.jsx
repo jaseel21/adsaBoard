@@ -16,6 +16,7 @@ import SettingsUnsavedDock from './SettingsUnsavedDock';
 
 import GeneralSection from './sections/GeneralSection';
 import AppearanceSection from './sections/AppearanceSection';
+import AccessibilitySection from './sections/AccessibilitySection';
 import SoundHapticsSection from './sections/SoundHapticsSection';
 import AccountProfileSection from './sections/AccountProfileSection';
 import SecuritySessionsSection from './sections/SecuritySessionsSection';
@@ -101,6 +102,8 @@ export default function SettingsPage() {
         return <GeneralSection preferences={preferences} setPreference={setPreference} />;
       case 'appearance':
         return <AppearanceSection preferences={preferences} setPreference={setPreference} />;
+      case 'accessibility':
+        return <AccessibilitySection preferences={preferences} setPreference={setPreference} />;
       case 'feedback':
         return <SoundHapticsSection preferences={preferences} setPreference={setPreference} />;
       case 'account':

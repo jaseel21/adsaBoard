@@ -12,31 +12,26 @@ import {
   Languages,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
+import { usePreferences } from '../../store/PreferencesContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
+import { getCalibratedHijriDate } from '../../utils/hijriCalendar';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-
-function calculateHijri(dateObj) {
-  if (!dateObj) return '';
-  try {
-    const formatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    return formatter.format(dateObj);
-  } catch (_) {
-    return '';
-  }
-}
 
 export default function LiveSystemTelemetry() {
   const { t, lang, setLangPref, langPref } = useLanguage();
+  const { preferences } = usePreferences();
   const { soundEnabled, setSoundEnabled, feedback } = useFeedback();
   const { isOnline } = useNetworkStatus();
-  const { timeParts, nowDate, dayFull } = useWorldTime('Asia/Kolkata');
+  const { timeParts, timeParts24, nowDate, dayFull } = useWorldTime('Asia/Kolkata');
 
-  const hijriEstimate = useMemo(() => calculateHijri(nowDate), [nowDate]);
+  const is24h = preferences?.clockFormat === '24h';
+  const activeTimeParts = is24h && timeParts24 ? timeParts24 : timeParts;
+
+  const hijriData = useMemo(
+    () => getCalibratedHijriDate(nowDate, preferences?.hijriDateOffset || 0),
+    [nowDate, preferences?.hijriDateOffset]
+  );
 
   const toggleSound = () => {
     feedback('pop');
@@ -79,14 +74,16 @@ export default function LiveSystemTelemetry() {
             <div>
               <div className="flex items-baseline gap-1 font-mono">
                 <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white tracking-tight">
-                  {timeParts.hours}:{timeParts.minutes}
+                  {activeTimeParts.hours}:{activeTimeParts.minutes}
                 </span>
                 <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  :{timeParts.seconds}
+                  :{activeTimeParts.seconds}
                 </span>
-                <span className="text-[10px] font-medium text-gray-400 dark:text-gray-400 ml-0.5 uppercase">
-                  {timeParts.period}
-                </span>
+                {!is24h && (
+                  <span className="text-[10px] font-medium text-gray-400 dark:text-gray-400 ml-0.5 uppercase">
+                    {activeTimeParts.period}
+                  </span>
+                )}
               </div>
               <p className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <span>{dayFull}</span>
@@ -97,14 +94,14 @@ export default function LiveSystemTelemetry() {
           </div>
 
           {/* Hijri Lunar Date */}
-          {hijriEstimate && (
+          {preferences?.showHijriDate !== false && hijriData && (
             <div className="text-right">
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                 <Calendar className="w-2.5 h-2.5" />
                 <span>Hijri</span>
               </span>
               <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 mt-1">
-                {hijriEstimate}
+                {lang === 'ml' ? hijriData.formattedMl : hijriData.formattedEn}
               </p>
             </div>
           )}

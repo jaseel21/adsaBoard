@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import firebase from '../firebase/config';
 
 export const DAY_SHORT = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
@@ -385,7 +385,7 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
     return `${hh}:${mm}:${ss} ${period}`;
   }, [istParts]);
 
-  // Split time parts for digital clock rendering
+  // Split time parts for digital clock rendering (12-hour format)
   const timeParts = useMemo(() => {
     const h12 = istParts.hours24 % 12 === 0 ? 12 : istParts.hours24 % 12;
     const period = istParts.hours24 >= 12 ? 'PM' : 'AM';
@@ -394,6 +394,16 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
       minutes: String(istParts.minutes).padStart(2, '0'),
       seconds: String(istParts.seconds).padStart(2, '0'),
       period,
+    };
+  }, [istParts]);
+
+  // Split time parts for 24-hour digital clock rendering
+  const timeParts24 = useMemo(() => {
+    return {
+      hours: String(istParts.hours24).padStart(2, '0'),
+      minutes: String(istParts.minutes).padStart(2, '0'),
+      seconds: String(istParts.seconds).padStart(2, '0'),
+      period: '',
     };
   }, [istParts]);
 
@@ -429,12 +439,25 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
   const isDeviceDesynced = Math.abs(deviceOffsetMs) > 60000;
   const deviceOffsetMinutes = Math.round(deviceOffsetMs / 60000);
 
+  /**
+   * Formats current IST time according to requested format ('12h' or '24h')
+   */
+  const formatTime = useCallback(
+    (format = '12h', includeSeconds = false) => {
+      return formatISTTime(istParts, format, includeSeconds);
+    },
+    [istParts]
+  );
+
   return {
     serverDateTimeISO: nowDate.toISOString(),
     nowDate,
+    istParts,
     timeHms,
     time12,
     timeParts,
+    timeParts24,
+    formatTime,
     dayShort,
     dayFull,
     longDate,
@@ -445,5 +468,50 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
     isDeviceDesynced,
     deviceOffsetMinutes,
     error: syncState.error,
+  };
+}
+
+/**
+ * Universal Formatter for IST Time according to 12h or 24h format convention
+ *
+ * @param {Object} istParts - Output from getISTDateParts
+ * @param {'12h'|'24h'} format - Time format convention ('12h' or '24h')
+ * @param {boolean} includeSeconds - Whether to include seconds (:ss)
+ * @returns {Object} { hours, minutes, seconds, period, formattedString }
+ */
+export function formatISTTime(istParts, format = '12h', includeSeconds = false) {
+  if (!istParts) {
+    return {
+      hours: '--',
+      minutes: '--',
+      seconds: '--',
+      period: '',
+      formattedString: '--:--',
+    };
+  }
+
+  const mm = String(istParts.minutes).padStart(2, '0');
+  const ss = String(istParts.seconds).padStart(2, '0');
+
+  if (format === '24h') {
+    const hh24 = String(istParts.hours24).padStart(2, '0');
+    return {
+      hours: hh24,
+      minutes: mm,
+      seconds: ss,
+      period: '',
+      formattedString: includeSeconds ? `${hh24}:${mm}:${ss}` : `${hh24}:${mm}`,
+    };
+  }
+
+  const h12 = istParts.hours24 % 12 === 0 ? 12 : istParts.hours24 % 12;
+  const hh12 = String(h12).padStart(2, '0');
+  const period = istParts.hours24 >= 12 ? 'PM' : 'AM';
+  return {
+    hours: hh12,
+    minutes: mm,
+    seconds: ss,
+    period,
+    formattedString: includeSeconds ? `${hh12}:${mm}:${ss} ${period}` : `${hh12}:${mm} ${period}`,
   };
 }

@@ -113,11 +113,19 @@ export default function DateTokenButton({
           ? `ADMIN OVERRIDE: Cutoff bypassed. Bf: ${breakfast ? 'ON' : 'OFF'}, Lunch: ${lunch ? 'ON' : 'OFF'}`
           : `Bf: ${breakfast ? 'ON' : 'OFF'} • Lunch: ${lunch ? 'ON' : 'OFF'} (Click to manage)`
       }${hasException ? ` • [Override: ${exceptionLabel || 'Custom'}]` : ''}`}
-      aria-label={`Date ${dateStr} ${isHistorical ? 'History' : effectiveLocked ? 'Locked' : ''}`}
+      aria-label={`${dateStr}, ${dayOfWeek}. ${
+        isHardDisabled
+          ? 'Out of calendar range.'
+          : isHistorical
+          ? `Archived: Breakfast ${breakfast ? 'Served' : 'Off'}, Lunch ${lunch ? 'Served' : 'Off'}.`
+          : effectiveLocked
+          ? `Locked (${lockReason || 'Cutoff passed'}): Breakfast ${breakfast ? 'Active' : 'Off'}, Lunch ${lunch ? 'Active' : 'Off'}.`
+          : `Breakfast is ${breakfast ? 'Active' : 'Off'}, Lunch is ${lunch ? 'Active' : 'Off'}.${hasException ? ` Override: ${exceptionLabel || 'Custom'}.` : ''} Press Enter to manage.`
+      }`}
       className={`
         relative group flex flex-col items-center justify-between p-1 sm:p-1.5
         w-full aspect-square rounded-xl sm:rounded-2xl select-none font-black font-mono
-        shadow-sm transition-all duration-150 focus:outline-none overflow-hidden
+        shadow-sm transition-all duration-150 focus-visible:ring-4 focus-visible:ring-emerald-400 focus-visible:outline-none focus-visible:z-20 overflow-hidden
         ${bgClass}
         ${exceptionBorderClass}
         ${isToday ? 'ring-2 ring-emerald-400 dark:ring-emerald-300 ring-offset-2 dark:ring-offset-[#0f1715] z-10' : ''}

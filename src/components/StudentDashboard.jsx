@@ -78,6 +78,7 @@ import AdvancedExportModal from './export/AdvancedExportModal';
 import UniversalDocumentModal from './export/UniversalDocumentModal';
 import ExportActionMenu from './export/ExportActionMenu';
 import TokenBoardGuideModal from './guide/TokenBoardGuideModal';
+import { getCategoryIcon } from './avoiders/dietaryIcons';
 import useSEO from '../hooks/useSEO';
 
 export default function StudentDashboard() {
@@ -144,10 +145,15 @@ export default function StudentDashboard() {
     groupedByBatch,
     groupedByBatchList,
     groupedBySection,
+    groupedByDietary,
     collapsedBatches,
     toggleBatchCollapse,
     collapseAllBatches,
     expandAllBatches,
+    collapsedDietary,
+    toggleDietaryCollapse,
+    collapseAllDietary,
+    expandAllDietary,
     resetAllFilters,
     hasActiveFilters,
     activeFilterCount,
@@ -961,6 +967,22 @@ export default function StudentDashboard() {
                 >
                   {t('byDynamicSections', 'By Sections')}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedback('tick');
+                    setViewCategory('dietary');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    viewCategory === 'dietary'
+                      ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm font-bold'
+                      : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <UtensilsCrossed className="w-3.5 h-3.5" />
+                  <span>{t('byDietaryPreferences', 'By Dietary')}</span>
+                </button>
               </div>
 
               {/* Density Toggle (Matrix vs Cards) */}
@@ -1433,6 +1455,167 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : viewCategory === 'dietary' ? (
+            /* By Dietary Preferences / Avoiders View */
+            <div className="space-y-4">
+              {groupedByDietary.filter((g) => g.students && g.students.length > 0).length > 0 && (
+                <div className="flex items-center justify-between gap-2 mb-2 px-1 text-xs">
+                  <span className="text-gray-500 dark:text-gray-400 font-semibold">
+                    {t('dietaryGroupsSummary', '{count} dietary groups active').replace(
+                      '{count}',
+                      groupedByDietary.filter((g) => g.students && g.students.length > 0).length
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        expandAllDietary();
+                      }}
+                      className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                    >
+                      {t('expandAll', 'Expand All')}
+                    </button>
+                    <span className="text-gray-300 dark:text-gray-600">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        collapseAllDietary();
+                      }}
+                      className="text-gray-500 dark:text-gray-400 font-medium hover:underline cursor-pointer"
+                    >
+                      {t('collapseAll', 'Collapse All')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {groupedByDietary.map((group) => {
+                if (!group.students || group.students.length === 0) return null;
+                const isCollapsed = Boolean(collapsedDietary[group.id]);
+
+                return (
+                  <div
+                    key={group.id}
+                    className="rounded-2xl sm:rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        toggleDietaryCollapse(group.id);
+                      }}
+                      className="w-full p-4 sm:p-5 flex items-center justify-between bg-gray-50/80 dark:bg-white/5 border-b border-gray-200/60 dark:border-white/10 hover:bg-gray-100/80 dark:hover:bg-white/10 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+                            group.type === 'standard'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                              : group.type === 'multi'
+                              ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+                              : 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {getCategoryIcon(group.icon, 'w-5 h-5')}
+                        </div>
+                        <div>
+                          <h3 className="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
+                            {lang === 'ml' && group.nameMl ? group.nameMl : group.name}
+                            {group.type === 'avoidance' && (
+                              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                {t('avoiders', 'Avoiders')}
+                              </span>
+                            )}
+                            {group.type === 'multi' && (
+                              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                                {t('multiAvoidersCategory', 'Multi')}
+                              </span>
+                            )}
+                            {group.type === 'standard' && (
+                              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                {t('standardFullDiet', 'Full Diet')}
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {group.students.length} {t('studentsInDietaryGroup', 'Students in this category')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                          {group.activeCount} / {group.totalCount} {t('statusActive', 'Active')}
+                        </span>
+                        {isCollapsed ? (
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                    </button>
+
+                    {!isCollapsed && (
+                      <div className="p-4 sm:p-5">
+                        {viewDensity === 'cards' ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                            {group.students.map((doc) => {
+                              const isOn = getEffectiveStudentMealStatus(
+                                doc,
+                                targetDateIST,
+                                effectiveDay,
+                                isLunch ? 'lunch' : 'breakfast'
+                              );
+                              const isBlocked = Boolean(doc.block);
+                              const hasDateExc = Boolean(
+                                getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                              );
+                              return (
+                                <TokenCard
+                                  key={doc.id || doc.tokenNo}
+                                  doc={doc}
+                                  isOn={isOn}
+                                  onLeave={hasDateExc}
+                                  isBlocked={isBlocked}
+                                  isLunch={isLunch}
+                                  onClick={handleOpenDetails}
+                                />
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 min-[380px]:gap-2.5 sm:gap-3">
+                            {group.students.map((doc) => {
+                              const isOn = getEffectiveStudentMealStatus(
+                                doc,
+                                targetDateIST,
+                                effectiveDay,
+                                isLunch ? 'lunch' : 'breakfast'
+                              );
+                              const hasDateExc = Boolean(
+                                getActiveStudentException(doc, targetDateIST, isLunch ? 'lunch' : 'breakfast')
+                              );
+                              return (
+                                <TokenButton
+                                  key={doc.id || doc.tokenNo}
+                                  doc={doc}
+                                  isOn={isOn}
+                                  onLeave={hasDateExc}
+                                  onClick={handleOpenDetails}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : viewDensity === 'cards' ? (
             /* Detailed Student Cards View (All Tokens Mode) */
@@ -1922,23 +2105,51 @@ export default function StudentDashboard() {
                         <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
                       </div>
 
-                      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                         {daysList.map(({ key, label }) => {
                           const active = detailsDoc.obj?.breakfast?.[key] === true;
                           const isCurrentDay = key === effectiveDay;
                           return (
-                            <div
-                              key={key}
-                              className={`p-2 rounded-xl text-center border font-mono transition-all ${
-                                isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
-                              } ${
-                                active
-                                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
-                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
-                              }`}
-                            >
-                              <span className="block text-[10px] font-bold uppercase">{label}</span>
-                              <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
+                            <div key={key} className="flex flex-col items-center gap-1.5 min-w-0">
+                              {/* Weekday Short Column Header */}
+                              <span
+                                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center select-none ${
+                                  isCurrentDay
+                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                              >
+                                {label}
+                              </span>
+
+                              {/* Perfect Square Tactile Tile */}
+                              <div
+                                title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}`}
+                                aria-label={`${label}: Breakfast ${active ? 'Active' : 'Off'}`}
+                                className={`
+                                  relative group flex items-center justify-center flex-shrink-0
+                                  w-full aspect-square rounded-xl sm:rounded-2xl select-none font-extrabold
+                                  shadow-sm transition-all duration-150 cursor-default overflow-hidden
+                                  ${
+                                    isCurrentDay
+                                      ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 dark:ring-offset-[#0f1715] z-10'
+                                      : ''
+                                  }
+                                  ${
+                                    active
+                                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
+                                      : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
+                                  }
+                                `}
+                              >
+                                <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
+                                {active ? (
+                                  <Coffee className="w-4 h-4 text-white drop-shadow-xs" />
+                                ) : (
+                                  <X className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
+                                )}
+                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white/70" />
+                              </div>
                             </div>
                           );
                         })}
@@ -1949,34 +2160,57 @@ export default function StudentDashboard() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                          {isLunch ? (
-                            <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                          )}
-                          <span>{isLunch ? (t('navLunch') || 'Lunch Routine') : (t('navBreakfast') || 'Breakfast Routine')}</span>
+                          <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>{t('navLunch') || 'Lunch Routine'}</span>
                         </span>
                         <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
                       </div>
 
-                      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                         {daysList.map(({ key, label }) => {
-                          const mealSchedule = isLunch ? detailsDoc.obj?.lunch : detailsDoc.obj?.breakfast;
-                          const active = mealSchedule?.[key] !== undefined ? Boolean(mealSchedule[key]) : true;
+                          const active = detailsDoc.obj?.lunch?.[key] !== undefined ? Boolean(detailsDoc.obj?.lunch[key]) : true;
                           const isCurrentDay = key === effectiveDay;
                           return (
-                            <div
-                              key={key}
-                              className={`p-2 rounded-xl text-center border font-mono transition-all ${
-                                isCurrentDay ? 'ring-2 ring-emerald-500/60 ring-offset-1' : ''
-                              } ${
-                                active
-                                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400/40 shadow-xs'
-                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30'
-                              }`}
-                            >
-                              <span className="block text-[10px] font-bold uppercase">{label}</span>
-                              <span className="block text-xs font-black mt-0.5">{active ? 'ON' : 'OFF'}</span>
+                            <div key={key} className="flex flex-col items-center gap-1.5 min-w-0">
+                              {/* Weekday Short Column Header */}
+                              <span
+                                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center select-none ${
+                                  isCurrentDay
+                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                              >
+                                {label}
+                              </span>
+
+                              {/* Perfect Square Tactile Tile */}
+                              <div
+                                title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}`}
+                                aria-label={`${label}: Lunch ${active ? 'Active' : 'Off'}`}
+                                className={`
+                                  relative group flex items-center justify-center flex-shrink-0
+                                  w-full aspect-square rounded-xl sm:rounded-2xl select-none font-extrabold
+                                  shadow-sm transition-all duration-150 cursor-default overflow-hidden
+                                  ${
+                                    isCurrentDay
+                                      ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 dark:ring-offset-[#0f1715] z-10'
+                                      : ''
+                                  }
+                                  ${
+                                    active
+                                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
+                                      : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
+                                  }
+                                `}
+                              >
+                                <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
+                                {active ? (
+                                  <Utensils className="w-4 h-4 text-white drop-shadow-xs" />
+                                ) : (
+                                  <X className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
+                                )}
+                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white/70" />
+                              </div>
                             </div>
                           );
                         })}

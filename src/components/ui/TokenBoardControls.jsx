@@ -178,6 +178,22 @@ export default function TokenBoardControls({
             >
               {t('byDynamicSections', 'By Sections')}
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setViewCategory('dietary');
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                viewCategory === 'dietary'
+                  ? 'bg-white dark:bg-[#1a2521] text-emerald-600 dark:text-emerald-400 shadow-sm font-bold'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5" />
+              <span>{t('byDietaryPreferences', 'By Dietary')}</span>
+            </button>
           </div>
 
           {/* Density Toggle (Matrix buttons vs Rich Cards) */}

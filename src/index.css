@@ -206,3 +206,105 @@
   --color-bg: #12130e !important;
   --color-surface: #1c1d15 !important;
 }
+
+/* Universal Accessible Focus System */
+:focus-visible {
+  outline: 3px solid #10b981 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-focus-ring="high_visibility_halo"] :focus-visible {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.5) !important;
+}
+
+/* Atkinson Hyperlegible Dyslexic Font Support */
+[data-dyslexic-font="true"],
+[data-dyslexic-font="true"] body,
+[data-dyslexic-font="true"] p,
+[data-dyslexic-font="true"] span,
+[data-dyslexic-font="true"] h1,
+[data-dyslexic-font="true"] h2,
+[data-dyslexic-font="true"] h3,
+[data-dyslexic-font="true"] h4,
+[data-dyslexic-font="true"] h5,
+[data-dyslexic-font="true"] h6,
+[data-dyslexic-font="true"] button,
+[data-dyslexic-font="true"] input,
+[data-dyslexic-font="true"] select {
+  font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* Enhanced Text Spacing (WCAG 1.4.12) */
+[data-text-spacing="enhanced"] {
+  letter-spacing: 0.12em !important;
+  word-spacing: 0.16em !important;
+}
+[data-text-spacing="enhanced"] p,
+[data-text-spacing="enhanced"] span,
+[data-text-spacing="enhanced"] h1,
+[data-text-spacing="enhanced"] h2,
+[data-text-spacing="enhanced"] h3,
+[data-text-spacing="enhanced"] a,
+[data-text-spacing="enhanced"] button {
+  line-height: 1.85 !important;
+}
+
+/* Underline Links Mode */
+[data-underline-links="true"] a:not([class*="no-underline"]) {
+  text-decoration: underline !important;
+  text-underline-offset: 4px !important;
+}
+
+/* High Contrast Modes */
+[data-high-contrast="high"] {
+  --color-border: rgba(0, 0, 0, 0.3);
+}
+.dark[data-high-contrast="high"] {
+  --color-border: rgba(255, 255, 255, 0.35);
+}
+[data-high-contrast="high"] button,
+[data-high-contrast="high"] .glass-panel,
+[data-high-contrast="high"] input {
+  border-width: 2px !important;
+}
+
+[data-high-contrast="maximum_oled"] {
+  --color-bg: #000000 !important;
+  --color-surface: #0a0a0a !important;
+  --color-border: #ffffff !important;
+}
+[data-high-contrast="maximum_oled"] body {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Colorblind Daltonization SVG Filters */
+[data-colorblind-filter="protanopia"] body {
+  filter: url(#a11y-filter-protanopia);
+}
+[data-colorblind-filter="deuteranopia"] body {
+  filter: url(#a11y-filter-deuteranopia);
+}
+[data-colorblind-filter="tritanopia"] body {
+  filter: url(#a11y-filter-tritanopia);
+}
+[data-colorblind-filter="achromatopsia"] body {
+  filter: url(#a11y-filter-achromatopsia);
+}
+
+/* Motion Fidelity Preferences */
+[data-motion-fidelity="reduced"] *,
+[data-motion-fidelity="reduced"] *::before,
+[data-motion-fidelity="reduced"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-motion-fidelity="ergonomic"] * {
+  transition-duration: 0.15s !important;
+}

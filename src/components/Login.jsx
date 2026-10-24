@@ -55,35 +55,89 @@ function Login() {
 
   const loginWith = useCallback(async () => {
     try {
-      const StInfo = await firebase
-        .firestore()
-        .collection('students')
-        .where('tokenNo', '==', parseInt(token, 10))
-        .where('password', '==', pass)
-        .get();
-
-      if (!StInfo.empty) {
-        const studentDoc = StInfo.docs[0];
-        const studentData = {
-          id: studentDoc.id,
-          documentId: studentDoc.id,
-          ...studentDoc.data(),
-        };
-        setStdata(studentData);
-        feedback('success');
-        if (studentData.block) {
-          dialog.toast.info(
-            t('tokenLockedByAdmin') || 'Token Locked by Admin',
-            t('tokenLockedPortalNotice') || 'Your dining token is currently locked. You are viewing your details in Read-Only mode.',
-            4000
-          );
-        }
-        const returnUrl = location.state?.from;
-        navigate(returnUrl || '/student');
-      } else {
-        feedback('warning');
-        setErr('Invalid token number or password');
+      const cleanId = (token || '').trim().replace(/^@/, '');
+      if (!cleanId) {
+        setErr(t('enterTokenOrUsername') || 'Please enter your token number or username');
+        return;
       }
+
+      const studentsRef = firebase.firestore().collection('students');
+      let matchedDoc = null;
+
+      // 1. If numeric, first search by tokenNo
+      if (/^\d+$/.test(cleanId)) {
+        const tokenQuery = await studentsRef
+          .where('tokenNo', '==', parseInt(cleanId, 10))
+          .limit(1)
+          .get();
+
+        if (!tokenQuery.empty) {
+          matchedDoc = tokenQuery.docs[0];
+        }
+      }
+
+      // 2. If not found or if input has letters, search by username & uname
+      if (!matchedDoc) {
+        const normalizedUname = cleanId.toLowerCase();
+        const usernameQuery = await studentsRef
+          .where('username', '==', normalizedUname)
+          .limit(1)
+          .get();
+
+        if (!usernameQuery.empty) {
+          matchedDoc = usernameQuery.docs[0];
+        } else {
+          const unameQuery = await studentsRef
+            .where('uname', '==', normalizedUname)
+            .limit(1)
+            .get();
+
+          if (!unameQuery.empty) {
+            matchedDoc = unameQuery.docs[0];
+          } else {
+            // Case-sensitive exact fallback lookup
+            const exactQuery = await studentsRef
+              .where('username', '==', cleanId)
+              .limit(1)
+              .get();
+            if (!exactQuery.empty) {
+              matchedDoc = exactQuery.docs[0];
+            }
+          }
+        }
+      }
+
+      if (!matchedDoc) {
+        feedback('warning');
+        setErr(t('studentNotFound') || 'Token number or username not found. Please check and try again.');
+        return;
+      }
+
+      const sData = matchedDoc.data();
+      if (sData.password !== pass) {
+        feedback('warning');
+        setErr(t('invalidPassword') || 'Incorrect password for this student account.');
+        return;
+      }
+
+      const studentData = {
+        id: matchedDoc.id,
+        documentId: matchedDoc.id,
+        ...sData,
+      };
+
+      setStdata(studentData);
+      feedback('success');
+      if (studentData.block) {
+        dialog.toast.info(
+          t('tokenLockedByAdmin') || 'Token Locked by Admin',
+          t('tokenLockedPortalNotice') ||
+            'Your dining token is currently locked. You are viewing your details in Read-Only mode.',
+          4000
+        );
+      }
+      const returnUrl = location.state?.from;
+      navigate(returnUrl || '/student');
     } catch (error) {
       console.error('Login error:', error);
       feedback('warning');
@@ -94,8 +148,9 @@ function Login() {
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
       setIsLoading(true);
-      if (!token || isNaN(parseInt(token, 10))) {
-        setErr('Please enter a valid numeric token number.');
+      const cleanId = (token || '').trim();
+      if (!cleanId) {
+        setErr(t('enterTokenOrUsername') || 'Please enter your token number or username.');
         return;
       }
 
@@ -105,25 +160,14 @@ function Login() {
         return;
       }
 
-      const studentQuery = await firebase
-        .firestore()
-        .collection('students')
-        .where('tokenNo', '==', parseInt(token, 10))
-        .get();
-
-      if (!studentQuery.empty) {
-        await loginWith();
-      } else {
-        feedback('warning');
-        setErr('Token not found. Please check and try again.');
-      }
+      await loginWith();
     } catch (error) {
       console.error('Error fetching token status:', error);
-      setErr('Error checking token status.');
+      setErr('Error checking account status.');
     } finally {
       setIsLoading(false);
     }
-  }, [token, isPortalAccessible, loginWith, feedback]);
+  }, [token, isPortalAccessible, loginWith, t, feedback]);
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -168,7 +212,7 @@ function Login() {
               {t('studentPortalLogin', 'Student Portal')}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('enterTokenNumber', 'Enter your token number and password to manage meal selections')}
+              {t('enterTokenNumberOrUsername', 'Enter your token number or @username and password to manage meal selections')}
             </p>
           </div>
 
@@ -213,24 +257,27 @@ function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Token Input */}
+            {/* Token or Username Input */}
             <div className="space-y-1.5">
               <label
                 htmlFor="token"
                 className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
               >
-                {t('tokenNumber') || 'Token Number'}
+                {t('tokenNumberOrUsername', 'Token Number or Username')}
               </label>
               <input
                 id="token"
-                type="number"
+                type="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
                 value={token}
                 onChange={(e) => {
                   setToken(e.target.value);
                   setErr('');
                 }}
-                placeholder="e.g. 101"
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="Enter your token or username"
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 required
               />
             </div>

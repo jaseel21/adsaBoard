@@ -15,9 +15,12 @@ import {
   ExternalLink,
   ChefHat,
   Zap,
+  Moon,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
+import { usePreferences } from '../../store/PreferencesContext';
 import { useWorldTime } from '../../utils/time';
+import { getCalibratedHijriDate } from '../../utils/hijriCalendar';
 import { useTokenLockStatus, formatTime12 } from '../../utils/useTokenLockStatus';
 import {
   getLiveMealRadar,
@@ -32,10 +35,12 @@ export default function FloatingClockPopover({
 }) {
   const navigate = useNavigate();
   const { lang, t } = useLanguage();
+  const { preferences } = usePreferences();
   const popoverRef = useRef(null);
   const {
     nowDate,
     timeParts,
+    timeParts24,
     timeHms,
     dayShort,
     dayFull,
@@ -43,6 +48,13 @@ export default function FloatingClockPopover({
     isSynced,
     syncSource,
   } = useWorldTime('Asia/Kolkata');
+
+  const is24h = preferences?.clockFormat === '24h';
+  const activeTimeParts = is24h && timeParts24 ? timeParts24 : timeParts;
+
+  const hijriData = useMemo(() => {
+    return getCalibratedHijriDate(nowDate, preferences?.hijriDateOffset || 0);
+  }, [nowDate, preferences?.hijriDateOffset]);
 
   const { activeWindow, isUpdationWindowOpen, rawStartTime, rawEndTime } = useTokenLockStatus();
   const [schedule, setSchedule] = useState(() => getCachedMealSchedule());
@@ -284,14 +296,16 @@ export default function FloatingClockPopover({
             {/* Large Digital Clock Readout */}
             <div className="flex-1 text-right">
               <div className="font-mono text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                {timeParts ? (
+                {activeTimeParts ? (
                   <>
-                    <span>{timeParts.hours}</span>
+                    <span>{activeTimeParts.hours}</span>
                     <span className="text-emerald-500 animate-pulse">:</span>
-                    <span>{timeParts.minutes}</span>
+                    <span>{activeTimeParts.minutes}</span>
                     <span className="text-emerald-500 animate-pulse">:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{timeParts.seconds}</span>
-                    <span className="ml-1 text-xs font-bold text-gray-500 dark:text-gray-400">{timeParts.period}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">{activeTimeParts.seconds}</span>
+                    {!is24h && (
+                      <span className="ml-1 text-xs font-bold text-gray-500 dark:text-gray-400">{activeTimeParts.period}</span>
+                    )}
                   </>
                 ) : (
                   '--:--:--'
@@ -302,6 +316,52 @@ export default function FloatingClockPopover({
               </p>
             </div>
           </div>
+
+          {/* Advanced Hijri Calendar Display */}
+          {preferences?.showHijriDate !== false && hijriData && (
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 border border-amber-500/20 dark:border-emerald-500/20 shadow-xs space-y-1.5 select-none">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="p-1 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                    <Moon className="w-3.5 h-3.5 fill-amber-500/20" />
+                  </div>
+                  <span className="text-xs font-extrabold text-amber-900 dark:text-amber-200">
+                    {lang === 'ml' ? hijriData.formattedMl : hijriData.formattedEn}
+                  </span>
+                </div>
+
+                <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300">
+                  {hijriData.offsetDays === 0
+                    ? 'Hilal ±0d'
+                    : `${hijriData.offsetDays > 0 ? '+' : ''}${hijriData.offsetDays}d Hilal`}
+                </span>
+              </div>
+
+              {/* Badges for Islamic events and sacred status */}
+              <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                {hijriData.isSacredMonth && (
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    {lang === 'ml' ? 'ഹറാം മാസം (Sacred)' : 'Sacred Month'}
+                  </span>
+                )}
+                {hijriData.isAyyamAlBeed && (
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/30">
+                    {lang === 'ml' ? 'അയ്യാമുൽ ബീള് (White Days)' : 'Ayyam al-Beed'}
+                  </span>
+                )}
+                {hijriData.isFriday && (
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    {lang === 'ml' ? 'ജുമുഅ മുബാറക്' : 'Jumu’ah Mubarak'}
+                  </span>
+                )}
+                {hijriData.specialEventEn && (
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                    {lang === 'ml' ? hijriData.specialEventMl : hijriData.specialEventEn}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Dynamic Live Meal Radar Banner */}
           <div className={`p-2.5 rounded-2xl border transition-all ${

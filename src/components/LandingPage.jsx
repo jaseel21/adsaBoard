@@ -39,6 +39,7 @@ import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
+import { usePreferences } from '../store/PreferencesContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { useWorldTime } from '../utils/time';
@@ -81,7 +82,8 @@ export default function LandingPage() {
     defaultDayOffset,
   } = useTokenLockStatus();
 
-  const [is24Hour, setIs24Hour] = useState(false);
+  const { preferences: clientPreferences, setPreference } = usePreferences();
+  const is24Hour = clientPreferences?.clockFormat === '24h';
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Document Manifest Target Selection: 'today' (0) | 'tomorrow' (1)
@@ -504,7 +506,7 @@ export default function LandingPage() {
                   type="button"
                   onClick={() => {
                     feedback('tick');
-                    setIs24Hour((prev) => !prev);
+                    setPreference('clockFormat', is24Hour ? '12h' : '24h');
                   }}
                   className="font-mono font-black text-sm sm:text-base text-white tracking-wider hover:text-emerald-300 transition-colors cursor-pointer select-none"
                   title={t('clockFormatTitle', 'Click to toggle 12h / 24h format')}

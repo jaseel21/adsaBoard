@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
 import { dialog } from '../../utils/dialog';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 const DialogContext = createContext(null);
 
@@ -164,6 +165,13 @@ export function DialogProvider({ children }) {
     setDialogState(null);
     setPromptInput('');
   }, []);
+
+  const modalTrapRef = useFocusTrap({
+    active: Boolean(dialogState),
+    onClose: closeDialog,
+    initialFocusRef: dialogState?.type === 'prompt' ? promptInputRef : null,
+    restoreFocus: true,
+  });
 
   // Dismiss a specific toast
   const dismissToast = useCallback((id) => {
@@ -495,6 +503,11 @@ export function DialogProvider({ children }) {
             onClick={closeDialog}
           >
             <motion.div
+              ref={modalTrapRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="app-dialog-title"
+              aria-describedby={dialogState.message ? "app-dialog-message" : undefined}
               initial={{ opacity: 0, scale: 0.92, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 14 }}
@@ -508,7 +521,7 @@ export function DialogProvider({ children }) {
                 type="button"
                 onClick={closeDialog}
                 aria-label="Close dialog"
-                className="absolute right-4 top-4 p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                className="absolute right-4 top-4 p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors focus:ring-2 focus:ring-emerald-500/50 outline-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -518,11 +531,17 @@ export function DialogProvider({ children }) {
 
               {/* Title & Body */}
               <div className="space-y-2">
-                <h3 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-white leading-snug">
+                <h3
+                  id="app-dialog-title"
+                  className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-white leading-snug"
+                >
                   {dialogState.title}
                 </h3>
                 {dialogState.message && (
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-sm mx-auto">
+                  <p
+                    id="app-dialog-message"
+                    className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-sm mx-auto"
+                  >
                     {dialogState.message}
                   </p>
                 )}

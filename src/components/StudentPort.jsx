@@ -36,6 +36,7 @@ import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
+import { usePreferences } from '../store/PreferencesContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useIdleTimer } from '../utils/useIdleTimer';
 import { subscribeToPreferences } from '../utils/preferenceService';
@@ -74,6 +75,19 @@ function StudentPort() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
+  const { preferences } = usePreferences();
+
+  // Public Kiosk Inactivity Protection: Dynamic timeout based on preferences (strict 90s, extended 15m, persistent disabled)
+  const kioskMode = preferences?.kioskTimeoutMode || 'strict';
+  const kioskTimeoutConfig = useMemo(() => {
+    if (kioskMode === 'persistent') {
+      return { timeoutMs: 86400000, warningMs: 60000, enabled: false };
+    }
+    if (kioskMode === 'extended') {
+      return { timeoutMs: 900000, warningMs: 30000, enabled: true };
+    }
+    return { timeoutMs: 90000, warningMs: 15000, enabled: true };
+  }, [kioskMode]);
 
   // Live real-time unblock and lock status subscription
   const [unblockDocStatus, setUnblockDocStatus] = useState(null);
@@ -110,7 +124,7 @@ function StudentPort() {
     getDateLockStatus,
   } = useTokenLockStatus();
 
-  // Public Kiosk Inactivity Protection: Auto-logout after 90 seconds of inactivity
+  // Public Kiosk Inactivity Protection: Auto-logout
   const handleKioskTimeout = () => {
     feedback('warning');
     if (logoutStudent) logoutStudent();
@@ -118,10 +132,10 @@ function StudentPort() {
   };
 
   const { isWarning, remainingSeconds, resetTimer } = useIdleTimer({
-    timeoutMs: 90000,
-    warningMs: 15000,
+    timeoutMs: kioskTimeoutConfig.timeoutMs,
+    warningMs: kioskTimeoutConfig.warningMs,
     onTimeout: handleKioskTimeout,
-    enabled: Boolean(stdata?.tokenNo),
+    enabled: Boolean(stdata?.tokenNo && kioskTimeoutConfig.enabled),
   });
 
   // Dynamic Dietary Preferences & Self-Service Change Requests

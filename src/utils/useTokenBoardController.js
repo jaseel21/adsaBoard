@@ -56,9 +56,10 @@ export function useTokenBoardController(options = {}) {
   const [sortBy, setSortBy] = useState('token_asc'); // 'token_asc' | 'token_desc' | 'name_asc' | 'name_ml' | 'status_active' | 'status_off' | 'room_asc'
 
   // Layout & Density States
-  const [viewCategory, setViewCategory] = useState(initialViewCategory); // 'all' | 'batch' | 'section'
+  const [viewCategory, setViewCategory] = useState(initialViewCategory); // 'all' | 'batch' | 'section' | 'dietary'
   const [viewDensity, setViewDensity] = useState(initialViewDensity); // 'matrix' | 'cards'
   const [collapsedBatches, setCollapsedBatches] = useState({});
+  const [collapsedDietary, setCollapsedDietary] = useState({});
 
   // Verified IST Server Clock
   const {
@@ -484,6 +485,85 @@ export function useTokenBoardController(options = {}) {
     return sections;
   }, [filteredDocuments, isLunch, targetDateIST, effectiveDay, sectionChunkSize]);
 
+  // Grouping Mode 4: By Dietary Preferences / Avoiders
+  const groupedByDietary = useMemo(() => {
+    const mealKey = isLunch ? 'lunch' : 'breakfast';
+    const groups = [];
+
+    const getActiveCount = (students) => {
+      return students.filter(
+        (doc) => !doc.block && getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, mealKey)
+      ).length;
+    };
+
+    // 1. Individual Preference Groups (Beef, Fish, Chicken, Mutton, etc.)
+    preferencesList.forEach((pref) => {
+      const avoiders = filteredDocuments.filter(
+        (doc) => doc.obj2 && doc.obj2[pref.id] === false
+      );
+
+      if (avoiders.length > 0) {
+        groups.push({
+          id: `pref_${pref.id}`,
+          prefId: pref.id,
+          name: `${pref.labelEn || pref.name || pref.id} Avoiders`,
+          nameMl: `${pref.labelMl || pref.name || pref.id} ഒഴിവാക്കുന്നവർ`,
+          subtitle: pref.labelEn || pref.name || pref.id,
+          icon: pref.icon || pref.id,
+          students: avoiders,
+          activeCount: getActiveCount(avoiders),
+          totalCount: avoiders.length,
+          type: 'avoidance',
+        });
+      }
+    });
+
+    // 2. Multi-Item Avoiders (students who avoid 2 or more food items)
+    const multiAvoiders = filteredDocuments.filter((doc) => {
+      const obj2 = doc.obj2 || {};
+      const avoidCount = Object.values(obj2).filter((v) => v === false).length;
+      return avoidCount >= 2;
+    });
+
+    if (multiAvoiders.length > 0) {
+      groups.push({
+        id: 'multi_avoiders',
+        prefId: 'multi',
+        name: 'Multi-Item Avoiders',
+        nameMl: 'ഒന്നിലധികം ഒഴിവാക്കലുകൾ',
+        subtitle: 'Students with 2+ food exclusions',
+        icon: 'Layers',
+        students: multiAvoiders,
+        activeCount: getActiveCount(multiAvoiders),
+        totalCount: multiAvoiders.length,
+        type: 'multi',
+      });
+    }
+
+    // 3. Standard Full Diet (students with no dietary exclusions)
+    const standardStudents = filteredDocuments.filter((doc) => {
+      const obj2 = doc.obj2 || {};
+      return Object.values(obj2).every((v) => v !== false);
+    });
+
+    if (standardStudents.length > 0) {
+      groups.push({
+        id: 'standard_full',
+        prefId: 'standard',
+        name: 'Standard Full Diet',
+        nameMl: 'പൂർണ്ണ ഭക്ഷണം (എല്ലാം കഴിക്കുന്നവർ)',
+        subtitle: 'No food restrictions / All items accepted',
+        icon: 'CheckCircle2',
+        students: standardStudents,
+        activeCount: getActiveCount(standardStudents),
+        totalCount: standardStudents.length,
+        type: 'standard',
+      });
+    }
+
+    return groups;
+  }, [preferencesList, filteredDocuments, isLunch, targetDateIST, effectiveDay]);
+
   // Track active non-default filter counts
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -525,6 +605,25 @@ export function useTokenBoardController(options = {}) {
 
   const expandAllBatches = useCallback(() => {
     setCollapsedBatches({});
+  }, []);
+
+  const toggleDietaryCollapse = useCallback((groupId) => {
+    setCollapsedDietary((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  }, []);
+
+  const collapseAllDietary = useCallback(() => {
+    const all = {};
+    groupedByDietary.forEach((g) => {
+      all[g.id] = true;
+    });
+    setCollapsedDietary(all);
+  }, [groupedByDietary]);
+
+  const expandAllDietary = useCallback(() => {
+    setCollapsedDietary({});
   }, []);
 
   const setDateToToday = useCallback(() => {
@@ -630,11 +729,16 @@ export function useTokenBoardController(options = {}) {
     groupedByBatch,
     groupedByBatchList,
     groupedBySection,
+    groupedByDietary,
     sectionChunkSize,
     collapsedBatches,
     toggleBatchCollapse,
     collapseAllBatches,
     expandAllBatches,
+    collapsedDietary,
+    toggleDietaryCollapse,
+    collapseAllDietary,
+    expandAllDietary,
 
     // Real-Time Analytics & Headcounts
     metrics,

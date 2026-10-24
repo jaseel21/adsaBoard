@@ -30,6 +30,11 @@ export default function ScrollRestorationWatcher() {
     } else {
       // Immediate clean restoration to top
       scrollTo(0, { immediate: true });
+      // Accessible focus shift to main-content landmark so screen reader resumes at top of new page
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.focus({ preventScroll: true });
+      }
     }
   }, [location.pathname, location.hash, scrollTo]);
 

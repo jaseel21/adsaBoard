@@ -558,10 +558,12 @@ export default function DateGridMatrix({
           </div>
 
           {/* Day of Week Column Headers */}
-          <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
+          <div role="row" className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
             {dayHeaders.map((dh) => (
               <span
                 key={dh.key}
+                role="columnheader"
+                aria-label={dh.label}
                 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"
               >
                 {dh.label}
@@ -570,12 +572,18 @@ export default function DateGridMatrix({
           </div>
 
           {/* 7-Column Token Cells Grid */}
-          <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+          <div
+            role="grid"
+            aria-label={`${MONTH_NAMES[currentMonth]} ${currentYear} Dining Calendar Grid`}
+            className="grid grid-cols-7 gap-1 sm:gap-1.5"
+          >
             {calendarDays.map((day) => {
               if (day.isBlank) {
                 return (
                   <div
                     key={day.key}
+                    role="gridcell"
+                    aria-hidden="true"
                     className="w-full aspect-square rounded-xl sm:rounded-2xl bg-gray-50/30 dark:bg-white/[0.01] pointer-events-none"
                   />
                 );

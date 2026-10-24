@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
+import { usePreferences } from '../../store/PreferencesContext';
 import NotificationBell from '../notifications/NotificationBell';
 import { useScrollHeader } from '../scroll/useScrollHeader';
 import FloatingCalendarPopover from './FloatingCalendarPopover';
@@ -18,7 +19,8 @@ export default function MobileTopBar({
 }) {
   const navigate = useNavigate();
   const { feedback } = useFeedback();
-  const { nowDate, timeParts, dayFull } = useWorldTime('Asia/Kolkata');
+  const { preferences } = usePreferences();
+  const { nowDate, timeParts, formatTime, dayFull } = useWorldTime('Asia/Kolkata');
 
   // Synchronized directional scroll hook (auto-hides on scroll down, reveals on scroll up)
   const isVisible = useScrollHeader({ threshold: 25, delta: 6 });
@@ -147,7 +149,9 @@ export default function MobileTopBar({
               aria-label="Open Clock"
             >
               <span className="font-mono font-bold tracking-tight whitespace-nowrap">
-                {timeParts
+                {formatTime
+                  ? formatTime(preferences?.clockFormat || '12h', false).formattedString
+                  : timeParts
                   ? `${timeParts.hours}:${timeParts.minutes} ${timeParts.period}`
                   : '--:--'}
               </span>

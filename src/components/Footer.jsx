@@ -34,7 +34,9 @@ export default function Footer() {
 
   return (
     <footer
+      id="footer-landmark"
       role="contentinfo"
+      aria-label="Footer and Campus Information"
       className="relative mt-auto border-t border-gray-200/80 dark:border-white/10 bg-white/85 dark:bg-[#080d0b]/90 backdrop-blur-2xl transition-colors duration-300 overflow-hidden"
     >
       {/* Decorative Top Multi-Color Aurora Accent Line */}

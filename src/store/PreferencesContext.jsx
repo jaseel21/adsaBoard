@@ -129,8 +129,18 @@ export function PreferencesProvider({ children }) {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
-    // Font Scale
+    // Font Scale & Motion Fidelity
     root.setAttribute('data-font-scale', draft.fontSizeScale || 'balanced');
+    root.setAttribute('data-motion-fidelity', draft.motionFidelity || 'cinematic');
+
+    // Accessibility Attributes
+    root.setAttribute('data-high-contrast', draft.highContrastMode || 'standard');
+    root.setAttribute('data-colorblind-filter', draft.colorBlindFilter || 'none');
+    root.setAttribute('data-dyslexic-font', String(Boolean(draft.dyslexicFont)));
+    root.setAttribute('data-text-spacing', draft.textSpacing || 'standard');
+    root.setAttribute('data-focus-ring', draft.focusRingStyle || 'prominent');
+    root.setAttribute('data-underline-links', String(Boolean(draft.underlineLinks)));
+    root.setAttribute('data-big-cursor', String(Boolean(draft.bigCursor)));
 
     // Glassmorphism
     if (draft.glassmorphismLevel === 'off') {
@@ -152,7 +162,19 @@ export function PreferencesProvider({ children }) {
     } else {
       root.classList.remove('obsidian-theme');
     }
-  }, [draft.fontSizeScale, draft.glassmorphismLevel, draft.theme]);
+  }, [
+    draft.fontSizeScale,
+    draft.motionFidelity,
+    draft.glassmorphismLevel,
+    draft.theme,
+    draft.highContrastMode,
+    draft.colorBlindFilter,
+    draft.dyslexicFont,
+    draft.textSpacing,
+    draft.focusRingStyle,
+    draft.underlineLinks,
+    draft.bigCursor,
+  ]);
 
   const value = useMemo(
     () => ({

@@ -15,6 +15,7 @@ import {
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
+import { usePreferences } from '../../store/PreferencesContext';
 import { useSidebar } from './SidebarContext';
 import LanguageSwitch from '../LanguageSwitch';
 import ThemeSwitch from '../ThemeSwitch';
@@ -86,7 +87,8 @@ export default function FloatingDesktopNav({
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
-  const { nowDate, timeParts, dayFull } = useWorldTime('Asia/Kolkata');
+  const { preferences } = usePreferences();
+  const { nowDate, timeParts, formatTime, dayFull } = useWorldTime('Asia/Kolkata');
   const { sidebarOpen, isDesktop } = useSidebar();
 
   // Directional scroll show/hide hook (glides out on scroll down, returns on scroll up)
@@ -306,7 +308,9 @@ export default function FloatingDesktopNav({
             aria-label="Open Proper Clock"
           >
             <span className="font-mono font-bold tracking-tight">
-              {timeParts
+              {formatTime
+                ? formatTime(preferences?.clockFormat || '12h', false).formattedString
+                : timeParts
                 ? `${timeParts.hours}:${timeParts.minutes} ${timeParts.period}`
                 : '--:--'}
             </span>

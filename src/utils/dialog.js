@@ -4,6 +4,8 @@
  * seamlessly without prop drilling or hook restrictions.
  */
 
+import { announceA11y } from '../hooks/useA11yAnnounce';
+
 class DialogManager {
   constructor() {
     this._handler = null;
@@ -37,18 +39,35 @@ class DialogManager {
   }
 
   confirm(options) {
+    if (options?.title || options?.message) {
+      const text = [options.title, options.message].filter(Boolean).join('. ');
+      announceA11y(`Confirmation: ${text}`, 'assertive');
+    }
     return this._call('showConfirm', options);
   }
 
   alert(options) {
+    if (options?.title || options?.message) {
+      const text = [options.title, options.message].filter(Boolean).join('. ');
+      announceA11y(`Alert: ${text}`, 'assertive');
+    }
     return this._call('showAlert', options);
   }
 
   prompt(options) {
+    if (options?.title || options?.message) {
+      const text = [options.title, options.message].filter(Boolean).join('. ');
+      announceA11y(`Prompt: ${text}`, 'assertive');
+    }
     return this._call('showPrompt', options);
   }
 
   toast(options) {
+    if (options) {
+      const mode = options.type === 'error' || options.type === 'warning' ? 'assertive' : 'polite';
+      const text = [options.title, options.message].filter(Boolean).join(': ');
+      if (text) announceA11y(text, mode);
+    }
     return this._call('showToast', options);
   }
 

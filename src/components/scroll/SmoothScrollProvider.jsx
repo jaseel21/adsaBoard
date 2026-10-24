@@ -9,6 +9,8 @@ import React, {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ReactLenis, useLenis } from 'lenis/react';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { usePreferences } from '../../store/PreferencesContext';
 
 const SmoothScrollContext = createContext({
   lenis: null,
@@ -116,22 +118,17 @@ export default function SmoothScrollProvider({ children }) {
   const location = useLocation();
   const lenisRef = useRef(null);
 
-  // Check user OS reduced motion preference
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  // Synchronize with both OS reduced motion and in-app preferences
+  const prefersReducedMotion = useReducedMotion();
+  const { preferences } = usePreferences();
 
   // Operational exclusion: Kitchen Display (/kitchen) requires zero-latency raw touch responsiveness
   const isKitchenRoute = location.pathname.startsWith('/kitchen');
-  const isBypassed = prefersReducedMotion || isKitchenRoute;
+  const isBypassed =
+    prefersReducedMotion ||
+    isKitchenRoute ||
+    preferences?.smoothScrollEnabled === false ||
+    preferences?.motionFidelity === 'reduced';
 
   // Curated physics configuration
   const lenisOptions = useMemo(

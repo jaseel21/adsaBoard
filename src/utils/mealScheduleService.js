@@ -145,6 +145,81 @@ export function getCachedFinePolicy() {
 }
 
 /**
+ * Returns canonical meal timing for any day of week and meal slot,
+ * pulling dynamic live schedule from Firestore/cache and falling back to defaults.
+ * Properly handles Friday Jumu'ah timing vs standard weekday timings.
+ */
+export function getCanonicalMealTiming(dayKey = 'su', slotKey = 'breakfast') {
+  const dKey = String(dayKey).toLowerCase();
+  const sched = cachedSchedule?.[dKey] || DEFAULT_MEAL_SCHEDULE[dKey] || DEFAULT_MEAL_SCHEDULE.su;
+
+  if (slotKey === 'breakfast') {
+    if (sched?.breakfast?.startTime && sched?.breakfast?.endTime) {
+      return formatMealTimeRange(sched.breakfast.startTime, sched.breakfast.endTime);
+    }
+    return sched?.breakfast?.label || '07:30 AM - 08:45 AM';
+  }
+  if (slotKey === 'lunch') {
+    if (sched?.lunch?.startTime && sched?.lunch?.endTime) {
+      return formatMealTimeRange(sched.lunch.startTime, sched.lunch.endTime);
+    }
+    return sched?.lunch?.label || (dKey === 'fr' ? '01:15 PM - 02:15 PM' : '12:45 PM - 02:00 PM');
+  }
+  if (slotKey === 'evening') {
+    if (sched?.evening?.startTime && sched?.evening?.endTime) {
+      return formatMealTimeRange(sched.evening.startTime, sched.evening.endTime);
+    }
+    return sched?.evening?.label || '04:30 PM - 05:30 PM';
+  }
+  if (slotKey === 'dinner') {
+    if (sched?.dinner?.startTime && sched?.dinner?.endTime) {
+      return formatMealTimeRange(sched.dinner.startTime, sched.dinner.endTime);
+    }
+    return sched?.dinner?.label || '08:30 PM - 09:30 PM';
+  }
+  return '';
+}
+
+/**
+ * Asynchronously fetches the fresh canonical meal timing directly from Firestore settings/canteen_config.
+ * Updates cachedSchedule immediately and returns the exact formatted window.
+ */
+export async function fetchFreshCanonicalMealTiming(dayKey = 'su', slotKey = 'breakfast') {
+  const dKey = String(dayKey).toLowerCase();
+  try {
+    const snap = await CANTEEN_CONFIG_DOC_REF().get();
+    if (snap.exists) {
+      const data = snap.data() || {};
+      if (data.mealSchedule) {
+        cachedSchedule = mergeWithDefaultSchedule(data.mealSchedule);
+      }
+      if (data.finePolicy) {
+        cachedFinePolicy = mergeWithDefaultFinePolicy(data.finePolicy);
+      }
+    }
+  } catch (err) {
+    console.warn('Error fetching fresh canteen config:', err);
+  }
+  return getCanonicalMealTiming(dKey, slotKey);
+}
+
+// Eager background subscriber to guarantee cachedSchedule is always warm and in-sync with settings/canteen_config
+let eagerUnsub = null;
+export function initEagerMealSchedule() {
+  if (eagerUnsub) return;
+  try {
+    eagerUnsub = subscribeToMealScheduleAndFines(() => {});
+  } catch (err) {
+    console.warn('Could not initialize eager meal schedule subscription:', err);
+  }
+}
+try {
+  initEagerMealSchedule();
+} catch (e) {
+  // Safe in environments without Firestore
+}
+
+/**
  * Real-time listener for meal schedule and fine policies.
  */
 export function subscribeToMealScheduleAndFines(onUpdate, onError) {
@@ -214,6 +289,12 @@ function mergeWithDefaultSchedule(remote) {
         ...(remote?.[d]?.lunch || {}),
       },
     };
+    if (remote?.[d]?.evening) {
+      merged[d].evening = { ...remote[d].evening };
+    }
+    if (remote?.[d]?.dinner) {
+      merged[d].dinner = { ...remote[d].dinner };
+    }
     // Ensure display label is up to date
     merged[d].breakfast.label = formatMealTimeRange(
       merged[d].breakfast.startTime,
@@ -223,6 +304,18 @@ function mergeWithDefaultSchedule(remote) {
       merged[d].lunch.startTime,
       merged[d].lunch.endTime
     );
+    if (merged[d].evening?.startTime && merged[d].evening?.endTime) {
+      merged[d].evening.label = formatMealTimeRange(
+        merged[d].evening.startTime,
+        merged[d].evening.endTime
+      );
+    }
+    if (merged[d].dinner?.startTime && merged[d].dinner?.endTime) {
+      merged[d].dinner.label = formatMealTimeRange(
+        merged[d].dinner.startTime,
+        merged[d].dinner.endTime
+      );
+    }
   });
   return merged;
 }

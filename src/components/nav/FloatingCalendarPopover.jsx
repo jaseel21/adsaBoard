@@ -11,8 +11,10 @@ import {
   Calendar as CalendarIcon,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
+import { usePreferences } from '../../store/PreferencesContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
+import { getCalibratedHijriDate } from '../../utils/hijriCalendar';
 import { getMonthCalendarDays } from '../../utils/studentExceptionService';
 
 const MONTH_NAMES_EN = [
@@ -28,28 +30,13 @@ const MONTH_NAMES_ML = [
 const WEEKDAYS_SHORT_EN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const WEEKDAYS_SHORT_ML = ['ഞാ', 'തി', 'ചൊ', 'ബു', 'വ്യാ', 'വെ', 'ശ'];
 
-/**
- * Calculates approximate Hijri Date (Umm al-Qura approximation)
- */
-function getHijriEstimate(dateObj) {
-  try {
-    const formatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    return formatter.format(dateObj);
-  } catch (_) {
-    return '';
-  }
-}
-
 export default function FloatingCalendarPopover({
   isOpen,
   onClose,
   anchorRect,
 }) {
   const { lang, t } = useLanguage();
+  const { preferences } = usePreferences();
   const { feedback } = useFeedback();
   const popoverRef = useRef(null);
   const { todayIST, dayFull, longDate, nowDate } = useWorldTime('Asia/Kolkata');
@@ -131,7 +118,14 @@ export default function FloatingCalendarPopover({
   const monthName = lang === 'ml' ? MONTH_NAMES_ML[viewMonth] : MONTH_NAMES_EN[viewMonth];
   const weekdays = lang === 'ml' ? WEEKDAYS_SHORT_ML : WEEKDAYS_SHORT_EN;
   const calendarCells = getMonthCalendarDays(viewYear, viewMonth);
-  const hijriString = nowDate ? getHijriEstimate(nowDate) : '';
+  const hijriData = nowDate
+    ? getCalibratedHijriDate(nowDate, preferences?.hijriDateOffset || 0)
+    : null;
+  const hijriString = hijriData
+    ? lang === 'ml'
+      ? hijriData.formattedMl
+      : hijriData.formattedEn
+    : '';
 
   // Viewport-aware clamped positioning (zero transform conflict with Framer Motion)
   const style = {};
@@ -281,10 +275,15 @@ export default function FloatingCalendarPopover({
               </span>
             </div>
 
-            {hijriString && (
+            {preferences?.showHijriDate !== false && hijriString && (
               <div className="flex items-center gap-1.5 text-[10px] text-emerald-700/80 dark:text-emerald-300/80 font-medium">
                 <Sparkles className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                 <span>{hijriString}</span>
+                {hijriData?.isSacredMonth && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                    {lang === 'ml' ? 'ഹറാം മാസം' : 'Sacred'}
+                  </span>
+                )}
               </div>
             )}
           </div>
