@@ -548,7 +548,7 @@ export default function LandingPage() {
                 <span className="text-white/40">•</span>
                 <span className="text-[11px] opacity-80 font-mono">
                   {!isTomorrowLocked
-                    ? t('cutoffAtTime', 'Cutoff at {time}').replace('{time}', endTime || '2:00 PM IST')
+                    ? t('cutoffAtTime', 'Cutoff at {time}').replace('{time}', endTime || '11:00 PM IST')
                     : t('nextDaySelectionsClosed', 'Next-day selections closed')}
                 </span>
               </div>

@@ -80,7 +80,7 @@ export default function DateTokenButton({
 
   // Modern Indigo / Violet highlight ring for custom overrides (no amber/gold)
   const exceptionBorderClass = hasException && !isHardDisabled && !isHistorical
-    ? 'ring-2 ring-indigo-400/90 dark:ring-indigo-400 border-indigo-300 shadow-indigo-500/25'
+    ? 'ring-2 ring-indigo-500/90 dark:ring-indigo-400 ring-offset-1 dark:ring-offset-[#0f1715] shadow-sm shadow-indigo-500/20'
     : '';
 
   const handleClick = () => {
@@ -137,15 +137,17 @@ export default function DateTokenButton({
         <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       )}
 
-      {/* Override Tag Pip (Tiny Indigo Indicator dot in top corner) */}
+      {/* Override Tag Pip (Crisp Star Badge in top corner) */}
       {hasException && !isHardDisabled && !isHistorical && (
         <span
-          className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-indigo-300 ring-1 ring-white/50 shadow-xs"
-          title={exceptionLabel || 'Scheduled Override'}
-        />
+          className="absolute top-0.5 left-0.5 px-0.5 rounded bg-indigo-600/90 text-white text-[7px] leading-tight font-black ring-1 ring-white/40 shadow-xs pointer-events-none"
+          title={exceptionLabel || 'Single-Day Override'}
+        >
+          ✦
+        </span>
       )}
 
-      {/* Top Header Row inside Date Cell: Lock/Admin Icons (Day short removed for a clean, focused tile) */}
+      {/* Top Header Row inside Date Cell: Lock/Admin Icons */}
       <div className="w-full flex items-center justify-end text-[8px] sm:text-[9px] leading-none min-h-[9px]">
         {isHistorical ? null : isAdmin && (isLocked || isAdminOverride) ? (
           <span title="Admin Cutoff Bypass Active" className="text-emerald-200">
@@ -159,7 +161,7 @@ export default function DateTokenButton({
       </div>
 
       {/* Centered Crisp Day Number */}
-      <span className="relative z-10 text-xs sm:text-sm md:text-base font-black font-mono leading-none tracking-tight my-auto drop-shadow-xs">
+      <span className="relative z-10 text-xs sm:text-sm font-black font-mono leading-none tracking-tight my-auto drop-shadow-xs">
         {dayNumber}
       </span>
 

@@ -21,7 +21,7 @@ export {
 const TOKENBOARD_DOC_ID = 'g8iJVNn2RQkysjMAvX1h';
 
 /**
- * Format 24h time "HH:mm" or "HH:mm:ss" to friendly 12h time (e.g. "02:00 PM IST")
+ * Format 24h time "HH:mm" or "HH:mm:ss" to friendly 12h time (e.g. "11:00 PM IST")
  */
 export function formatTime12(timeStr, includeTz = true) {
   if (!timeStr) return '';
@@ -37,34 +37,49 @@ export function formatTime12(timeStr, includeTz = true) {
 
 /**
  * Default Token Board Configuration
- * Default updation window: 2:00 PM (14:00) open time to 11:00 PM (23:00) cutoff deadline
+ * 
+ * Business Rules:
+ * - Web is open to login ANY TIME (24/7)
+ * - TODAY: Finalized for kitchen prep (locked for regular students, admin override available)
+ * - TOMORROW: Open all day until the cutoff deadline (default: 11:00 PM / 23:00 IST)
+ * - FUTURE DATES: Always open for advance scheduling and leaves
+ * - Optional: Restrict opening window (disabled by default)
  */
 export const DEFAULT_LOCK_CONFIG = {
   status: false, // legacy boolean
   overrideMode: 'auto', // 'auto' | 'force_unlocked' | 'force_locked'
+  cutoff: {
+    deadlineTime: '23:00', // 11:00 PM IST cutoff deadline
+    timezone: 'Asia/Kolkata',
+    restrictOpenTime: false, // By default FALSE: Open all day until cutoff deadline
+    openTime: '00:00',
+  },
   window: {
-    startTime: '14:00', // 2:00 PM IST board updation window open time
+    startTime: '00:00', // Backwards compatibility: 12:00 AM
     endTime: '23:00',   // 11:00 PM IST cutoff deadline
     timezone: 'Asia/Kolkata',
   },
   schedule: {
     enabled: false,
     days: {
-      su: { startTime: '14:00', endTime: '23:00' },
-      mo: { startTime: '14:00', endTime: '23:00' },
-      tu: { startTime: '14:00', endTime: '23:00' },
-      we: { startTime: '14:00', endTime: '23:00' },
-      th: { startTime: '14:00', endTime: '23:00' },
-      fr: { startTime: '14:00', endTime: '23:00' },
-      sa: { startTime: '14:00', endTime: '23:00' },
+      su: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
+      mo: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
+      tu: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
+      we: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
+      th: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
+      fr: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
+      sa: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00' },
     },
   },
   temporaryOverride: {
     active: false,
-    mode: 'force_unlocked',
+    mode: 'force_unlocked', // 'force_unlocked' | 'force_locked'
     expiresAt: null,
     reason: '',
+    startedAt: null,
   },
+  // Scheduled Calendar Events / Overrides (e.g., Vacation Freeze, Eid Holidays, Exam Period)
+  scheduledEvents: [],
 };
 
 /**
@@ -85,13 +100,27 @@ export function useTokenLockStatus() {
         (doc) => {
           if (doc.exists) {
             const data = doc.data() || {};
+            const cutoffData = data.cutoff || {};
+            const windowData = data.window || {};
+
+            // Ensure cutoff deadline has a robust fallback to 23:00
+            const deadline = cutoffData.deadlineTime || windowData.endTime || '23:00';
+            const restrictOpen = Boolean(cutoffData.restrictOpenTime);
+            const openTime = cutoffData.openTime || (restrictOpen ? (windowData.startTime || '00:00') : '00:00');
+
             setConfig({
               status: Boolean(data.status),
               overrideMode: data.overrideMode || 'auto',
+              cutoff: {
+                deadlineTime: deadline,
+                timezone: cutoffData.timezone || windowData.timezone || 'Asia/Kolkata',
+                restrictOpenTime: restrictOpen,
+                openTime,
+              },
               window: {
-                startTime: data.window?.startTime || DEFAULT_LOCK_CONFIG.window.startTime,
-                endTime: data.window?.endTime || DEFAULT_LOCK_CONFIG.window.endTime,
-                timezone: data.window?.timezone || 'Asia/Kolkata',
+                startTime: openTime,
+                endTime: deadline,
+                timezone: windowData.timezone || 'Asia/Kolkata',
               },
               schedule: {
                 enabled: Boolean(data.schedule?.enabled),
@@ -105,7 +134,9 @@ export function useTokenLockStatus() {
                 mode: data.temporaryOverride?.mode || 'force_unlocked',
                 expiresAt: data.temporaryOverride?.expiresAt || null,
                 reason: data.temporaryOverride?.reason || '',
+                startedAt: data.temporaryOverride?.startedAt || null,
               },
+              scheduledEvents: Array.isArray(data.scheduledEvents) ? data.scheduledEvents : [],
               lastModified: data.lastModified || null,
               modifiedBy: data.modifiedBy || '',
               note: data.note || '',
@@ -128,20 +159,49 @@ export function useTokenLockStatus() {
   const todayDayShort = useMemo(() => getDayOfWeekShort(todayIST), [todayIST]);
   const tomorrowDayShort = useMemo(() => getDayOfWeekShort(tomorrowIST), [tomorrowIST]);
 
-  // Determine active cutoff window for today (considering day-specific schedule)
+  // Check if an active calendar scheduled event matches today's date
+  const activeScheduledEvent = useMemo(() => {
+    if (!config.scheduledEvents || !config.scheduledEvents.length) return null;
+    return config.scheduledEvents.find((evt) => {
+      if (!evt || evt.active === false) return false;
+      if (!evt.startDate || !evt.endDate) return false;
+      return todayIST >= evt.startDate && todayIST <= evt.endDate;
+    }) || null;
+  }, [config.scheduledEvents, todayIST]);
+
+  // Determine active cutoff window for today (considering day-specific schedule and scheduled events)
   const activeWindow = useMemo(() => {
+    let deadline = config.cutoff?.deadlineTime || config.window?.endTime || DEFAULT_LOCK_CONFIG.cutoff.deadlineTime;
+    let openTime = config.cutoff?.openTime || config.window?.startTime || '00:00';
+    let restrictOpen = Boolean(config.cutoff?.restrictOpenTime);
+
+    // Day-specific schedule override
     if (config.schedule?.enabled && config.schedule?.days?.[todayDayShort]) {
       const dayConf = config.schedule.days[todayDayShort];
-      return {
-        startTime: dayConf.startTime || config.window.startTime,
-        endTime: dayConf.endTime || config.window.endTime,
-      };
+      if (dayConf.deadlineTime || dayConf.endTime) {
+        deadline = dayConf.deadlineTime || dayConf.endTime;
+      }
+      if (dayConf.startTime) {
+        openTime = dayConf.startTime;
+      }
+      if (dayConf.restrictOpenTime !== undefined) {
+        restrictOpen = Boolean(dayConf.restrictOpenTime);
+      }
     }
+
+    // Scheduled event custom cutoff
+    if (activeScheduledEvent && activeScheduledEvent.type === 'custom_cutoff' && activeScheduledEvent.customCutoffTime) {
+      deadline = activeScheduledEvent.customCutoffTime;
+    }
+
     return {
-      startTime: config.window?.startTime || DEFAULT_LOCK_CONFIG.window.startTime,
-      endTime: config.window?.endTime || DEFAULT_LOCK_CONFIG.window.endTime,
+      startTime: openTime,
+      endTime: deadline,
+      deadlineTime: deadline,
+      openTime,
+      restrictOpenTime: restrictOpen,
     };
-  }, [config.schedule, config.window, todayDayShort]);
+  }, [config.cutoff, config.window, config.schedule, todayDayShort, activeScheduledEvent]);
 
   // Check if temporary override is active and non-expired
   const temporaryOverrideActive = useMemo(() => {
@@ -158,31 +218,47 @@ export function useTokenLockStatus() {
     return expMs > Date.now();
   }, [config.temporaryOverride]);
 
-  // Effective Mode calculation
-  const effectiveMode = useMemo(() => {
-    if (temporaryOverrideActive) {
-      return config.temporaryOverride.mode || 'auto';
+  // Remaining milliseconds on temporary override if active
+  const temporaryOverrideRemainingMs = useMemo(() => {
+    if (!temporaryOverrideActive) return 0;
+    const temp = config.temporaryOverride;
+    let expMs = null;
+    if (typeof temp.expiresAt.toDate === 'function') {
+      expMs = temp.expiresAt.toDate().getTime();
+    } else if (typeof temp.expiresAt === 'number') {
+      expMs = temp.expiresAt;
+    } else {
+      expMs = new Date(temp.expiresAt).getTime();
     }
+    return Math.max(0, expMs - Date.now());
+  }, [temporaryOverrideActive, config.temporaryOverride]);
+
+  // Effective Operating Mode calculation
+  const effectiveMode = useMemo(() => {
+    // 1. Timed Override takes precedence if currently active
+    if (temporaryOverrideActive) {
+      return config.temporaryOverride.mode || 'force_unlocked';
+    }
+    // 2. Calendar Scheduled Event
+    if (activeScheduledEvent) {
+      if (activeScheduledEvent.type === 'lock') return 'scheduled_locked';
+      if (activeScheduledEvent.type === 'unlock') return 'scheduled_unlocked';
+    }
+    // 3. Master Operating Mode
     if (config.overrideMode === 'force_unlocked' || config.overrideMode === 'force_locked') {
       return config.overrideMode;
     }
     return 'auto';
-  }, [temporaryOverrideActive, config.temporaryOverride, config.overrideMode]);
+  }, [temporaryOverrideActive, config.temporaryOverride, activeScheduledEvent, config.overrideMode]);
 
-  const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '14:00:00'), [activeWindow.startTime]);
+  const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '00:00:00'), [activeWindow.startTime]);
   const endTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.endTime, '23:00:00'), [activeWindow.endTime]);
 
-  // Board updation window open time
-  const windowOpenHms = useMemo(() => {
-    return normalizeTimeToHms(activeWindow.startTime, '14:00:00');
-  }, [activeWindow.startTime]);
-
-  // Is current time within/past the board updation window open time?
-  // 12:00 AM - window open time: false (default Today)
-  // window open time - 12:00 AM: true (default Tomorrow)
+  // Board display flip time: 2:00 PM IST is when today's lunch is done and public boards flip to showing tomorrow's counts
+  const boardFlipTimeHms = useMemo(() => normalizeTimeToHms('14:00', '14:00:00'), []);
   const isPostWindowOpen = useMemo(() => {
-    return isPastBoardWindowOpenTime(timeHms, activeWindow.startTime || '14:00');
-  }, [timeHms, activeWindow.startTime]);
+    return isPastBoardWindowOpenTime(timeHms, '14:00');
+  }, [timeHms]);
 
   const defaultDayOffset = isPostWindowOpen ? 1 : 0;
   const defaultTargetDateIST = defaultDayOffset === 1 ? tomorrowIST : todayIST;
@@ -208,13 +284,19 @@ export function useTokenLockStatus() {
         ? options
         : Boolean(options && (options.isAdmin || options.role === 'admin' || options.role === 'canteen_committee' || options.role === 'central_committee'));
 
-      // Emergency lockdown overrides all dates unless administrative bypass
-      if (effectiveMode === 'force_locked') {
+      // 1. Emergency Lockdown or Scheduled Lock
+      if (effectiveMode === 'force_locked' || effectiveMode === 'scheduled_locked') {
+        const lockReason = effectiveMode === 'scheduled_locked'
+          ? (activeScheduledEvent?.reason || activeScheduledEvent?.title || 'Scheduled Calendar Freeze in effect.')
+          : (config.temporaryOverride?.active && config.temporaryOverride.mode === 'force_locked'
+              ? (config.temporaryOverride.reason || 'Temporary Administrative Freeze in progress.')
+              : 'Emergency Lockdown: Token updates are temporarily frozen by administration.');
+
         if (isAdmin) {
           return {
             isLocked: false,
             isAdminOverride: true,
-            reason: 'Emergency Lockdown active for students • Admin override authority enabled.',
+            reason: `${lockReason} • Admin override authority enabled.`,
             code: 'ADMIN_EMERGENCY_OVERRIDE',
             isTomorrow: targetDateStr === tomorrowIST,
             isToday: targetDateStr === todayIST,
@@ -223,20 +305,26 @@ export function useTokenLockStatus() {
         }
         return {
           isLocked: true,
-          reason: 'Emergency Lockdown: Token updates are temporarily frozen by administration.',
-          code: 'EMERGENCY_LOCK',
+          reason: lockReason,
+          code: effectiveMode === 'scheduled_locked' ? 'SCHEDULED_LOCK' : 'EMERGENCY_LOCK',
           isTomorrow: targetDateStr === tomorrowIST,
           isToday: targetDateStr === todayIST,
           isPast: targetDateStr < todayIST,
         };
       }
 
-      // Force unlocked overrides all cutoff rules
-      if (effectiveMode === 'force_unlocked') {
+      // 2. Force Unlocked or Scheduled Unlock (Bypasses all cutoffs)
+      if (effectiveMode === 'force_unlocked' || effectiveMode === 'scheduled_unlocked') {
+        const unlockReason = effectiveMode === 'scheduled_unlocked'
+          ? (activeScheduledEvent?.reason || activeScheduledEvent?.title || 'Scheduled Unlock active.')
+          : (config.temporaryOverride?.active && config.temporaryOverride.mode === 'force_unlocked'
+              ? (config.temporaryOverride.reason || 'Temporary Extension active.')
+              : 'Admin Override Active: Updates unlocked for all dates.');
+
         return {
           isLocked: false,
           isAdminOverride: true,
-          reason: 'Admin Override Active: Updates unlocked for all dates.',
+          reason: unlockReason,
           code: 'OVERRIDE_UNLOCKED',
           isTomorrow: targetDateStr === tomorrowIST,
           isToday: targetDateStr === todayIST,
@@ -244,7 +332,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 1. Past dates are always closed/read-only
+      // 3. Past dates are always closed/read-only
       if (targetDateStr < todayIST) {
         return {
           isLocked: true,
@@ -257,7 +345,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 2. Today is closed for regular students, but editable by admin!
+      // 4. Today is closed for regular students, but editable by admin!
       if (targetDateStr === todayIST) {
         if (isAdmin) {
           return {
@@ -281,7 +369,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 3. Tomorrow (The cutoff target):
+      // 5. Tomorrow (The cutoff target):
       if (targetDateStr === tomorrowIST) {
         // Anti-tamper check: If clock is unverified and device settings were tampered, lock tomorrow for non-admins
         if (!isAdmin && !isSynced && isDeviceDesynced) {
@@ -297,6 +385,7 @@ export function useTokenLockStatus() {
           };
         }
 
+        // Cutoff Deadline Check: Has the cutoff deadline passed for tomorrow's meals?
         const isPastCutoff = Boolean(timeHms && timeHms > endTimeHms);
         if (isPastCutoff) {
           if (isAdmin) {
@@ -323,32 +412,36 @@ export function useTokenLockStatus() {
           };
         }
 
-        const isBeforeWindow = Boolean(timeHms && timeHms < startTimeHms);
-        if (isBeforeWindow) {
-          if (isAdmin) {
+        // Optional Restricted Opening Window (Only if explicitly enabled by admin)
+        if (activeWindow.restrictOpenTime) {
+          const isBeforeWindow = Boolean(timeHms && timeHms < startTimeHms);
+          if (isBeforeWindow) {
+            if (isAdmin) {
+              return {
+                isLocked: false,
+                isAdminOverride: true,
+                reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)} • Admin override authority enabled.`,
+                code: 'ADMIN_WINDOW_OVERRIDE',
+                isTomorrow: true,
+                isToday: false,
+                isPast: false,
+                isPastCutoff: false,
+              };
+            }
             return {
-              isLocked: false,
-              isAdminOverride: true,
-              reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)} • Admin override authority enabled.`,
-              code: 'ADMIN_WINDOW_OVERRIDE',
+              isLocked: true,
+              isAdminOverride: false,
+              reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)}.`,
+              code: 'BEFORE_WINDOW',
               isTomorrow: true,
               isToday: false,
               isPast: false,
               isPastCutoff: false,
             };
           }
-          return {
-            isLocked: true,
-            isAdminOverride: false,
-            reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)}.`,
-            code: 'BEFORE_WINDOW',
-            isTomorrow: true,
-            isToday: false,
-            isPast: false,
-            isPastCutoff: false,
-          };
         }
 
+        // Tomorrow is OPEN all day until cutoff!
         return {
           isLocked: false,
           isAdminOverride: isAdmin,
@@ -361,7 +454,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 4. Future dates (Day after tomorrow onward): ALWAYS UNLOCKED for advance scheduling!
+      // 6. Future dates (Day after tomorrow onward): ALWAYS UNLOCKED for advance scheduling!
       return {
         isLocked: false,
         isAdminOverride: false,
@@ -372,7 +465,7 @@ export function useTokenLockStatus() {
         isPast: false,
       };
     },
-    [effectiveMode, todayIST, tomorrowIST, timeHms, startTimeHms, endTimeHms, activeWindow, isSynced, isDeviceDesynced]
+    [effectiveMode, todayIST, tomorrowIST, timeHms, startTimeHms, endTimeHms, activeWindow, isSynced, isDeviceDesynced, activeScheduledEvent, config.temporaryOverride]
   );
 
   // Quick state for today and tomorrow
@@ -382,31 +475,44 @@ export function useTokenLockStatus() {
   const tomorrowLockInfo = useMemo(() => getDateLockStatus(tomorrowIST), [getDateLockStatus, tomorrowIST]);
   const isTomorrowLocked = tomorrowLockInfo.isLocked;
 
+  // Updation window for tomorrow: Open whenever tomorrow is not locked
   const isUpdationWindowOpen = useMemo(() => {
-    if (effectiveMode === 'force_unlocked') return true;
-    if (effectiveMode === 'force_locked') return false;
-    return Boolean(isPostWindowOpen && isTimeInWindow);
-  }, [effectiveMode, isPostWindowOpen, isTimeInWindow]);
+    if (effectiveMode === 'force_unlocked' || effectiveMode === 'scheduled_unlocked') return true;
+    if (effectiveMode === 'force_locked' || effectiveMode === 'scheduled_locked') return false;
+    return !isTomorrowLocked;
+  }, [effectiveMode, isTomorrowLocked]);
 
   // Is student portal accessible for login? (Always accessible unless emergency lockdown!)
-  const isPortalAccessible = effectiveMode !== 'force_locked';
+  const isPortalAccessible = effectiveMode !== 'force_locked' && effectiveMode !== 'scheduled_locked';
 
   // Informative status badge
   const statusBadge = useMemo(() => {
     if (effectiveMode === 'force_locked') {
+      if (config.temporaryOverride?.active && config.temporaryOverride.mode === 'force_locked') {
+        return `Timed Freeze Active (${config.temporaryOverride.reason || 'Admin Freeze'})`;
+      }
       return 'Emergency Lockdown Active';
     }
+    if (effectiveMode === 'scheduled_locked') {
+      return `Scheduled Freeze: ${activeScheduledEvent?.title || 'Calendar Override'}`;
+    }
     if (effectiveMode === 'force_unlocked') {
+      if (config.temporaryOverride?.active && config.temporaryOverride.mode === 'force_unlocked') {
+        return `Timed Extension Active (${config.temporaryOverride.reason || 'Admin Extension'})`;
+      }
       return 'Admin Override (All Dates Unlocked)';
     }
+    if (effectiveMode === 'scheduled_unlocked') {
+      return `Scheduled Open: ${activeScheduledEvent?.title || 'Advance Window'}`;
+    }
     if (isTomorrowLocked) {
-      if (timeHms && timeHms < startTimeHms) {
+      if (activeWindow.restrictOpenTime && timeHms && timeHms < startTimeHms) {
         return `Next Day Opens at ${formatTime12(activeWindow.startTime, false)}`;
       }
       return `Next Day Locked (${formatTime12(activeWindow.endTime, false)} Cutoff)`;
     }
     return `Next Day Open until ${formatTime12(activeWindow.endTime, false)}`;
-  }, [effectiveMode, isTomorrowLocked, activeWindow, timeHms, startTimeHms]);
+  }, [effectiveMode, isTomorrowLocked, activeWindow, timeHms, startTimeHms, activeScheduledEvent, config.temporaryOverride]);
 
   // Persistence helper to update configuration in Firestore
   const saveLockConfig = useCallback(async (updates) => {
@@ -447,7 +553,7 @@ export function useTokenLockStatus() {
     // Portal Accessibility
     isPortalAccessible,
     isOpen: isPortalAccessible, // Backward-compatibility alias: students can enter portal
-    isOverride: effectiveMode === 'force_unlocked',
+    isOverride: effectiveMode === 'force_unlocked' || effectiveMode === 'scheduled_unlocked',
     effectiveMode,
     isTimeInWindow,
 
@@ -457,11 +563,17 @@ export function useTokenLockStatus() {
     endTime: formatTime12(activeWindow.endTime),
     rawStartTime: activeWindow.startTime,
     rawEndTime: activeWindow.endTime,
+    cutoffDeadline: formatTime12(activeWindow.endTime),
     currentTime: timeHms,
-    windowOpenHms,
+    boardFlipTimeHms,
     isPostWindowOpen,
     defaultDayOffset,
     defaultTargetDateIST,
+
+    // Timed & Scheduled Overrides Telemetry
+    temporaryOverrideActive,
+    temporaryOverrideRemainingMs,
+    activeScheduledEvent,
 
     // Anti-Tamper & Sync Status
     isSynced,

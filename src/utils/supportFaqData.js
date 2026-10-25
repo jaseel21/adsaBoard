@@ -19,20 +19,20 @@ export const FAQ_ITEMS = [
     questionEn: 'What is the daily cutoff time for meal cancellations and changes?',
     questionMl: 'ഭക്ഷണ ക്രമീകരണങ്ങൾ മാറ്റാനുള്ള പ്രതിദിന കട്ട്-ഓഫ് സമയം എപ്പോഴാണ്?',
     answerEn:
-      'The daily meal cutoff time is strictly 14:00 IST (2:00 PM). All cancellations, attendance toggles, and date exceptions for tomorrow’s meals must be completed before 2:00 PM so that the kitchen procurement team can calculate exact ingredient quantities.',
+      'The daily meal cutoff deadline is strictly 23:00 IST (11:00 PM). The student portal is open 24/7, and all cancellations, attendance toggles, and date exceptions for tomorrow’s meals can be completed anytime until 11:00 PM so that the kitchen procurement team can calculate exact ingredient quantities.',
     answerMl:
-      'പ്രതിദിന കട്ട്-ഓഫ് സമയം ഉച്ചയ്ക്ക് 2:00 മണി (14:00 IST) ആണ്. അടുത്ത ദിവസത്തെ ഭക്ഷണ മാറ്റങ്ങൾ 2 മണിക്ക് മുൻപായി പൂർത്തിയാക്കേണ്ടതാണ്.',
-    tags: ['cutoff', 'time', '2pm', '14:00', 'cancel', 'tomorrow', 'procurement'],
+      'പ്രതിദിന കട്ട്-ഓഫ് അവസാന സമയം രാത്രി 11:00 മണി (23:00 IST) ആണ്. പോർട്ടൽ 24 മണിക്കൂറും തുറന്നിരിക്കുന്നതിനാൽ അടുത്ത ദിവസത്തെ ഭക്ഷണ മാറ്റങ്ങൾ രാത്രി 11 മണിക്ക് മുൻപായി എപ്പോൾ വേണമെങ്കിലും ചെയ്യാവുന്നതാണ്.',
+    tags: ['cutoff', 'time', '11pm', '23:00', 'cancel', 'tomorrow', 'procurement'],
   },
   {
     id: 'faq_after_cutoff',
     category: 'cutoff',
-    questionEn: 'Can I cancel or activate a meal after the 2:00 PM cutoff has passed?',
-    questionMl: 'ഉച്ചയ്ക്ക് 2 മണിക്ക് ശേഷം ഭക്ഷണം ക്യാൻസൽ ചെയ്യാനോ ആക്റ്റീവ് ആക്കാനോ സാധിക്കുമോ?',
+    questionEn: 'Can I cancel or activate a meal after the 11:00 PM cutoff has passed?',
+    questionMl: 'രാത്രി 11 മണിക്ക് ശേഷം ഭക്ഷണം ക്യാൻസൽ ചെയ്യാനോ ആക്റ്റീവ് ആക്കാനോ സാധിക്കുമോ?',
     answerEn:
-      'Once the cutoff window closes at 2:00 PM, the system enters lock mode to freeze kitchen supplies. If you have a genuine medical emergency or travel delay, contact the Canteen Convenor or submit an Urgent Lockout ticket through this Care Concierge.',
+      'Once the cutoff deadline passes at 11:00 PM, tomorrow’s meals enter lock mode to freeze kitchen procurement orders. However, you can still update any subsequent future dates. If you have a genuine medical emergency or travel delay, contact the Canteen Convenor or submit an Urgent Lockout ticket through this Care Concierge.',
     answerMl:
-      '2 മണിക്ക് ശേഷം സിസ്റ്റം ലോക്ക് ആകുന്നതാണ്. അടിയന്തിര മെഡിക്കൽ ആവശ്യങ്ങൾക്ക് കാന്റീൻ കൺവീനറുമായി ബന്ധപ്പെടുകയോ സപ്പോർട്ട് ടിക്കറ്റ് അയക്കുകയോ ചെയ്യുക.',
+      'രാത്രി 11 മണി കഴിഞ്ഞാൽ നാളത്തെ ഭക്ഷണം ലോക്ക് ആകുന്നതാണ്. എന്നാൽ തുടർന്നുള്ള ദിവസങ്ങളിലെ മാറ്റങ്ങൾ എപ്പോഴും വരുത്താം. അടിയന്തിര മെഡിക്കൽ ആവശ്യങ്ങൾക്ക് കാന്റീൻ കൺവീനറുമായി ബന്ധപ്പെടുകയോ സപ്പോർട്ട് ടിക്കറ്റ് അയക്കുകയോ ചെയ്യുക.',
     tags: ['late', 'after cutoff', 'emergency', 'lock', 'freeze'],
   },
   {

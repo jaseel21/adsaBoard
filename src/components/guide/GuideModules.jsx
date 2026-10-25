@@ -48,11 +48,11 @@ export const TimingsAndCutoff = () => {
               <Lock className="w-4 h-4" />
             </span>
             <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
-              Daily Update Window (02:00 PM - 11:00 PM)
+              24/7 Portal &amp; 11:00 PM Cutoff Deadline
             </h4>
           </div>
           <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-            The student portal is unlocked daily from <strong>02:00 PM until 11:00 PM IST</strong> for updates to the following day&apos;s meals. Outside this window, next-day meals are locked.
+            The student portal is accessible <strong>24/7</strong>. Next-day meals can be updated anytime throughout the day until the <strong>11:00 PM IST cutoff deadline</strong>. Today&apos;s meals are finalized for kitchen prep, while future dates remain open for advance scheduling.
           </p>
           <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs border border-amber-300/40">
             <strong>Cutoff at 11:00 PM:</strong> Ensures kitchen staff have the exact raw material and portion calculations for morning procurement.

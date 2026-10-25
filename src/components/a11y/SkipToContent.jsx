@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { ArrowDown, Navigation, Bell, HelpCircle } from 'lucide-react';
@@ -11,6 +12,12 @@ import { ArrowDown, Navigation, Bell, HelpCircle } from 'lucide-react';
 export default function SkipToContent() {
   const { language } = useLanguage();
   const { feedback } = useFeedback();
+  const location = useLocation();
+
+  const isAdminRoute =
+    location.pathname.startsWith('/admin') ||
+    location.pathname === '/student-management' ||
+    location.pathname === '/alogin';
 
   const handleSkipClick = (targetId) => {
     feedback('tick');
@@ -41,12 +48,16 @@ export default function SkipToContent() {
       labelMl: 'അറിയിപ്പുകളിലേക്ക് പോകുക',
       icon: Bell,
     },
-    {
-      id: 'footer-landmark',
-      labelEn: 'Skip to Footer & Care Hub',
-      labelMl: 'ഫൂട്ടറിലേക്ക് പോകുക',
-      icon: HelpCircle,
-    },
+    ...(!isAdminRoute
+      ? [
+          {
+            id: 'footer-landmark',
+            labelEn: 'Skip to Footer & Care Hub',
+            labelMl: 'ഫൂട്ടറിലേക്ക് പോകുക',
+            icon: HelpCircle,
+          },
+        ]
+      : []),
   ];
 
   return (

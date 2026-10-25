@@ -2,291 +2,10 @@ import firebase from '../firebase/config';
 import { addDaysToDate, getDayOfWeekShort } from './studentExceptionService';
 import { getCachedMealSchedule, getCanonicalMealTiming } from './mealScheduleService';
 
-// Verified canonical Alathurpadi Dars canteen schedule (System Baseline)
-export const DEFAULT_WEEKLY_MENU = {
-  su: {
-    dayKey: 'su',
-    dayName: 'Sunday',
-    dayShort: 'Sun',
-    isArchived: false,
-    archiveReason: '',
-    note: 'Sunday Special Canteen Routine',
-    breakfast: {
-      title: 'Porotta & Kadala',
-      items: ['Kerala Porotta', 'Spicy Kadala Curry', 'Hot Tea'],
-      category: 'Veg',
-      timing: '09:00 AM - 09:30 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Rice & Beef/Fish Curry',
-      items: ['Matta Rice', 'Beef Roast / Curry', 'Fried Fish', 'Sambar', 'Lime Pickle'],
-      category: 'Non-Veg',
-      timing: '01:30 PM - 02:15 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Sulaimani & Snacks',
-      items: ['Malabar Sulaimani Tea', 'Parippuvada / Samosa'],
-      category: 'Veg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Steamed Rice & Veg Thoran',
-      items: ['Steamed Rice', 'Payar Thoran', 'Pappadam', 'Morukari'],
-      category: 'Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-  mo: {
-    dayKey: 'mo',
-    dayName: 'Monday',
-    dayShort: 'Mon',
-    isArchived: false,
-    archiveReason: '',
-    note: 'Standard Weekday Routine',
-    breakfast: {
-      title: 'Appam & Veg Curry',
-      items: ['Vellayappam', 'Mixed Vegetable Stew', 'Milk Tea'],
-      category: 'Veg',
-      timing: '07:30 AM - 08:45 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Rice & Chicken/Fish Curry',
-      items: ['Matta Rice', 'Chicken Curry', 'Ayala Fish Curry', 'Cabbage Thoran', 'Pickle'],
-      category: 'Non-Veg',
-      timing: '12:45 PM - 02:00 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Tea & Snacks',
-      items: ['Cardamom Black Tea', 'Uzhunnuvada / Biscuit'],
-      category: 'Veg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Rice & Fish Curry',
-      items: ['Warm Rice', 'Fish Curry', 'Papad'],
-      category: 'Non-Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-  tu: {
-    dayKey: 'tu',
-    dayName: 'Tuesday',
-    dayShort: 'Tue',
-    isArchived: false,
-    archiveReason: '',
-    note: 'Standard Weekday Routine',
-    breakfast: {
-      title: 'Idli & Sambar',
-      items: ['Steamed Idli', 'Vegetable Sambar', 'Coconut Chutney', 'Tea'],
-      category: 'Veg',
-      timing: '07:30 AM - 08:45 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Rice & Fish Curry/Veg',
-      items: ['Matta Rice', 'Fresh Fish Curry', 'Aviyal / Pulissery', 'Pickle'],
-      category: 'Non-Veg',
-      timing: '12:45 PM - 02:00 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Tea & Snacks',
-      items: ['Sulaimani', 'Banana Fritters (Pazhampori)'],
-      category: 'Veg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Rice & Veg Curry',
-      items: ['Rice', 'Sambar', 'Morukari'],
-      category: 'Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-  we: {
-    dayKey: 'we',
-    dayName: 'Wednesday',
-    dayShort: 'Wed',
-    isArchived: false,
-    archiveReason: '',
-    note: 'Mid-week Canteen Special',
-    breakfast: {
-      title: 'Dosa & Chutney',
-      items: ['Crispy Dosa', 'Tomato Chutney', 'Coconut Chutney', 'Tea'],
-      category: 'Veg',
-      timing: '07:30 AM - 08:45 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Rice & Meat Curry',
-      items: ['Matta Rice', 'Kerala Beef / Mutton Curry', 'Fish Fry', 'Beetroot Thoran', 'Pickle'],
-      category: 'Non-Veg',
-      timing: '12:45 PM - 02:00 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Tea & Snacks',
-      items: ['Black Tea', 'Sukhiyan / Parippuvada'],
-      category: 'Veg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Kanji & Payar Thoran',
-      items: ['Puzhukal Rice Kanji', 'Vanpayar Thoran', 'Pappadam', 'Chammanthi'],
-      category: 'Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-  th: {
-    dayKey: 'th',
-    dayName: 'Thursday',
-    dayShort: 'Thu',
-    isArchived: false,
-    archiveReason: '',
-    note: 'Thursday Traditional Menu',
-    breakfast: {
-      title: 'Puttu & Kadala',
-      items: ['Rice Puttu', 'Spicy Kadala Curry', 'Pappadam', 'Black Tea'],
-      category: 'Veg',
-      timing: '07:30 AM - 08:45 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Rice & Fish Curry',
-      items: ['Matta Rice', 'Kottayam Style Fish Curry', 'Aviyal', 'Papad', 'Pickle'],
-      category: 'Non-Veg',
-      timing: '12:45 PM - 02:00 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Tea & Snacks',
-      items: ['Sulaimani', 'Mutta Bajji / Samosa'],
-      category: 'Egg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Rice & Ozhukku Curry',
-      items: ['Steamed Rice', 'Fish / Veg Curry', 'Pickle'],
-      category: 'Non-Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-  fr: {
-    dayKey: 'fr',
-    dayName: 'Friday',
-    dayShort: 'Fri',
-    isArchived: false,
-    archiveReason: '',
-    note: "Jum'ah Mubarak Special Lunch - Service starts after 1:15 PM",
-    breakfast: {
-      title: 'Pathiri & Curry',
-      items: ['Thin Ari Pathiri', 'Chicken Curry / Mutton Gravy', 'Cardamom Tea'],
-      category: 'Non-Veg',
-      timing: '07:30 AM - 08:45 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Special Biriyani / Ghee Rice',
-      items: ['Malabar Dum Biriyani', 'Ghee Rice & Chicken Roast', 'Date Pickle', 'Raita', 'Pappadam'],
-      category: 'Special',
-      timing: '01:15 PM - 02:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Sulaimani & Sweet Snacks',
-      items: ['Sulaimani', 'Pazhampori / Halwa'],
-      category: 'Veg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Chapathi & Veg Kurma',
-      items: ['Wheat Chapathi', 'Vegetable Kurma', 'Tea'],
-      category: 'Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-  sa: {
-    dayKey: 'sa',
-    dayName: 'Saturday',
-    dayShort: 'Sat',
-    isArchived: false,
-    archiveReason: '',
-    note: 'Weekend Menu Schedule',
-    breakfast: {
-      title: 'Porotta & Egg Curry',
-      items: ['Kerala Porotta', 'Egg Roast Curry', 'Hot Tea'],
-      category: 'Egg',
-      timing: '07:30 AM - 08:45 AM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    lunch: {
-      title: 'Rice & Fish Curry',
-      items: ['Matta Rice', 'Fish Curry & Fry', 'Thoran', 'Sambar', 'Pickle'],
-      category: 'Non-Veg',
-      timing: '12:45 PM - 02:00 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    evening: {
-      title: 'Tea & Snacks',
-      items: ['Milk Tea', 'Parippuvada / Biscuits'],
-      category: 'Veg',
-      timing: '04:30 PM - 05:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-    dinner: {
-      title: 'Rice & Fish Curry',
-      items: ['Rice', 'Fish Gravy', 'Morukari'],
-      category: 'Non-Veg',
-      timing: '08:30 PM - 09:30 PM',
-      isAvailable: true,
-      isArchived: false,
-    },
-  },
-};
+// Day key mappings
+export const DAY_KEYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
 
-const DAY_NAMES = {
+export const DAY_NAMES = {
   su: 'Sunday',
   mo: 'Monday',
   tu: 'Tuesday',
@@ -296,7 +15,7 @@ const DAY_NAMES = {
   sa: 'Saturday',
 };
 
-const DAY_SHORTS = {
+export const DAY_SHORTS = {
   su: 'Sun',
   mo: 'Mon',
   tu: 'Tue',
@@ -307,11 +26,12 @@ const DAY_SHORTS = {
 };
 
 /**
- * Creates a completely blank 7-day schedule map with empty meal slots.
+ * Creates a neutral, blank 7-day schedule map with empty meal slots
+ * and dynamically campus-synced meal timings. Never hardcodes dishes.
  */
 export function createEmptyWeeklyMenu() {
   const emptyMenu = {};
-  ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'].forEach((k) => {
+  DAY_KEYS.forEach((k) => {
     emptyMenu[k] = {
       dayKey: k,
       dayName: DAY_NAMES[k],
@@ -324,37 +44,60 @@ export function createEmptyWeeklyMenu() {
         items: [],
         category: '',
         timing: getCanonicalMealTiming(k, 'breakfast'),
+        timeMode: 'clock',
         isAvailable: true,
         isArchived: false,
+        isSpecialMeal: false,
+        specialTitle: '',
+        specialSponsor: '',
+        specialNotes: '',
       },
       lunch: {
         title: '',
         items: [],
         category: '',
         timing: getCanonicalMealTiming(k, 'lunch'),
+        timeMode: 'clock',
         isAvailable: true,
         isArchived: false,
+        isSpecialMeal: false,
+        specialTitle: '',
+        specialSponsor: '',
+        specialNotes: '',
       },
       evening: {
         title: '',
         items: [],
         category: '',
         timing: getCanonicalMealTiming(k, 'evening'),
+        timeMode: 'clock',
         isAvailable: true,
         isArchived: false,
+        isSpecialMeal: false,
+        specialTitle: '',
+        specialSponsor: '',
+        specialNotes: '',
       },
       dinner: {
         title: '',
         items: [],
         category: '',
         timing: getCanonicalMealTiming(k, 'dinner'),
-        isAvailable: false,
+        timeMode: 'clock',
+        isAvailable: true,
         isArchived: false,
+        isSpecialMeal: false,
+        specialTitle: '',
+        specialSponsor: '',
+        specialNotes: '',
       },
     };
   });
   return emptyMenu;
 }
+
+// Canonical structural baseline - completely dynamic with blank dish titles and campus timings
+export const DEFAULT_WEEKLY_MENU = createEmptyWeeklyMenu();
 
 // Curated library of traditional Malabar Dars delicacies for fast autocomplete / preset insertion
 export const DISH_PRESETS = {
@@ -416,27 +159,32 @@ export function subscribeToWeeklyMenu(onUpdate, onError) {
       if (snapshot.exists && snapshot.data()?.days) {
         onUpdate(snapshot.data().days);
       } else {
-        // Unseeded: Seed initial canonical menu into Firestore
+        // Document unseeded: Try to inherit from saved baseline template, or clean skeleton
         try {
+          const tplSnap = await DEFAULT_TEMPLATE_DOC_REF().get();
+          const initialDays = (tplSnap.exists && tplSnap.data()?.days)
+            ? tplSnap.data().days
+            : createEmptyWeeklyMenu();
+
           await docRef.set(
             {
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
               updatedBy: 'system-initial-seed',
-              days: DEFAULT_WEEKLY_MENU,
+              days: initialDays,
             },
             { merge: true }
           );
-          onUpdate(DEFAULT_WEEKLY_MENU);
+          onUpdate(initialDays);
         } catch (err) {
-          console.warn('Failed to seed default menu to Firestore, falling back locally:', err);
-          onUpdate(DEFAULT_WEEKLY_MENU);
+          console.warn('Could not initialize weekly menu from template, using clean skeleton:', err);
+          onUpdate(createEmptyWeeklyMenu());
         }
       }
     },
     (error) => {
       console.error('Error listening to weekly menu:', error);
       if (onError) onError(error);
-      onUpdate(DEFAULT_WEEKLY_MENU);
+      onUpdate(createEmptyWeeklyMenu());
     }
   );
 }
@@ -484,24 +232,24 @@ export function subscribeToDefaultTemplate(onUpdate, onError) {
       if (snapshot.exists && snapshot.data()?.days) {
         onUpdate(snapshot.data().days);
       } else {
-        // Seed initial default template with baseline
         try {
+          const initialDays = createEmptyWeeklyMenu();
           await docRef.set({
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedBy: 'system-seed-defaults',
-            days: DEFAULT_WEEKLY_MENU,
+            days: initialDays,
           });
-          onUpdate(DEFAULT_WEEKLY_MENU);
+          onUpdate(initialDays);
         } catch (err) {
           console.warn('Could not seed default template to Firestore, using memory fallback:', err);
-          onUpdate(DEFAULT_WEEKLY_MENU);
+          onUpdate(createEmptyWeeklyMenu());
         }
       }
     },
     (error) => {
       console.error('Error listening to default template:', error);
       if (onError) onError(error);
-      onUpdate(DEFAULT_WEEKLY_MENU);
+      onUpdate(createEmptyWeeklyMenu());
     }
   );
 }
@@ -525,14 +273,18 @@ export async function saveDefaultTemplate(templateDays, userEmail = 'admin') {
  * Reset active weekly schedule from Firestore custom default template.
  */
 export async function resetWeeklyMenuToDefault(userEmail = 'admin') {
-  let targetDefaults = DEFAULT_WEEKLY_MENU;
+  let targetDefaults = null;
   try {
     const snap = await DEFAULT_TEMPLATE_DOC_REF().get();
     if (snap.exists && snap.data()?.days) {
       targetDefaults = snap.data().days;
     }
   } catch (err) {
-    console.warn('Could not read custom default template, falling back to canonical defaults:', err);
+    console.warn('Could not read custom default template, falling back to clean skeleton:', err);
+  }
+
+  if (!targetDefaults) {
+    targetDefaults = createEmptyWeeklyMenu();
   }
 
   const docRef = MENU_DOC_REF();
@@ -760,17 +512,27 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
   const dynamicLunchTiming = daySched?.lunch?.label || (dow === 'fr' ? '01:15 PM - 02:15 PM' : '12:45 PM - 02:00 PM');
 
   // Helper to ensure dynamic timing fallback and slot status preservation
-  const resolveMealSlot = (routineSlot, overrideSlot, fallbackTiming) => {
+  const dynamicEveningTiming = getCanonicalMealTiming(dow, 'evening') || '04:30 PM - 05:30 PM';
+  const dynamicDinnerTiming = getCanonicalMealTiming(dow, 'dinner') || '08:30 PM - 09:30 PM';
+
+  const resolveMealSlot = (routineSlot, overrideSlot, fallbackTiming, slotKey = '') => {
     const base = routineSlot || {};
     const ovr = overrideSlot || {};
+    const isSpecial = Boolean(ovr.isSpecialMeal !== undefined ? ovr.isSpecialMeal : base.isSpecialMeal);
+
     const merged = {
       ...base,
       ...ovr,
       timing: ovr.timing || base.timing || fallbackTiming,
       timeMode: ovr.timeMode || base.timeMode || 'clock',
-      slotStatus: ovr.slotStatus || base.slotStatus || (ovr.isArchived || base.isArchived ? 'leave' : 'serving'),
+      slotStatus: ovr.slotStatus || base.slotStatus || (ovr.isArchived || base.isArchived ? 'leave' : isSpecial ? 'event' : 'serving'),
       isAvailable: ovr.slotStatus === 'leave' ? false : (ovr.isAvailable !== undefined ? ovr.isAvailable : base.isAvailable !== undefined ? base.isAvailable : true),
       isArchived: Boolean(ovr.slotStatus === 'leave' || ovr.isArchived || base.isArchived),
+      isSpecialMeal: isSpecial,
+      specialTitle: ovr.specialTitle || base.specialTitle || (isSpecial ? (ovr.title || base.title || '') : ''),
+      specialSponsor: ovr.specialSponsor || base.specialSponsor || '',
+      specialNotes: ovr.specialNotes || base.specialNotes || '',
+      specialTiming: ovr.specialTiming || base.specialTiming || '',
       leaveReason: ovr.leaveReason || base.leaveReason || '',
       eventTitle: ovr.eventTitle || base.eventTitle || '',
       eventVenue: ovr.eventVenue || base.eventVenue || '',
@@ -781,10 +543,10 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
     return merged;
   };
 
-  const bfSlot = resolveMealSlot(routineDay.breakfast, override?.breakfast, dynamicBfTiming);
-  const lunchSlot = resolveMealSlot(routineDay.lunch, override?.lunch, dynamicLunchTiming);
-  const eveningSlot = resolveMealSlot(routineDay.evening, override?.evening, '04:30 PM - 05:30 PM');
-  const dinnerSlot = resolveMealSlot(routineDay.dinner, override?.dinner, '08:30 PM - 09:30 PM');
+  const bfSlot = resolveMealSlot(routineDay.breakfast, override?.breakfast, dynamicBfTiming, 'breakfast');
+  const lunchSlot = resolveMealSlot(routineDay.lunch, override?.lunch, dynamicLunchTiming, 'lunch');
+  const eveningSlot = resolveMealSlot(routineDay.evening, override?.evening, dynamicEveningTiming, 'evening');
+  const dinnerSlot = resolveMealSlot(routineDay.dinner, override?.dinner, dynamicDinnerTiming, 'dinner');
 
   if (!override) {
     const isDayClosed = Boolean(routineDay.isArchived || routineDay.isClosed || routineDay.dayStatus === 'leave');

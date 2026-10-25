@@ -73,6 +73,7 @@ import MealFlipCard from './MealFlipCard';
 import TokenButton from './ui/TokenButton';
 import TokenCard from './ui/TokenCard';
 import TokenBoardCalendarPopover from './ui/TokenBoardCalendarPopover';
+import StudentDetailCalendarModal from './ui/StudentDetailCalendarModal';
 import NextMealSpotlight from './NextMealSpotlight';
 import AdvancedExportModal from './export/AdvancedExportModal';
 import UniversalDocumentModal from './export/UniversalDocumentModal';
@@ -761,7 +762,7 @@ export default function StudentDashboard() {
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-emerald-200/90 font-medium">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-[11px]">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{t('cutoffNotice', 'Daily update window: 02:00 PM - 11:00 PM IST')}</span>
+                <span>{t('cutoffNotice', `Next-Day Cutoff: ${portalStatus.endTime || '11:00 PM IST'}`)}</span>
                 <span className="text-white/40">•</span>
                 <strong className={portalStatus.isUpdationWindowOpen ? 'text-emerald-300 font-bold' : 'text-amber-300 font-bold'}>
                   {portalStatus.isUpdationWindowOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Closed')}
@@ -843,6 +844,10 @@ export default function StudentDashboard() {
       {/* ========================================================================= */}
       <NextMealSpotlight
         documents={documents}
+        targetDateStr={targetDateIST}
+        isToday={isToday}
+        isTomorrow={isTomorrow}
+        friendlyTargetDate={friendlyTargetDate}
         lunchOrdersCount={metrics.lunchCount}
         breakfastOrdersCount={metrics.breakfastCount}
         showSpotlightBanner={false}
@@ -1882,395 +1887,18 @@ export default function StudentDashboard() {
 
 
       {/* ========================================================================= */}
-      {/* MODAL: STUDENT DETAILS (Full 7-Day Schedule & Info)                       */}
+      {/* MODAL: STUDENT MONTHLY DINING CALENDAR & DETAILS                           */}
       {/* ========================================================================= */}
-      <AnimatePresence>
-        {detailsDoc && (
-          <div
-            key="dashboard-student-detail-modal"
-            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md"
-            onClick={() => setDetailsDoc(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
-            >
-              {/* Modal Header */}
-              <div
-                className={`p-4 sm:p-5 text-white flex items-center justify-between gap-3 ${
-                  detailsDoc.block
-                    ? 'bg-gradient-to-r from-gray-800 to-gray-900'
-                    : getEffectiveStudentMealStatus(detailsDoc, targetDateIST, effectiveDay, isLunch ? 'lunch' : 'breakfast')
-                    ? 'bg-gradient-to-r from-emerald-600 to-green-600'
-                    : 'bg-gradient-to-r from-rose-600 to-red-600'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-mono font-black text-xl text-white shadow-inner flex-shrink-0">
-                    {detailsDoc.tokenNo}
-                    {Boolean(detailsDoc.block) && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-white/40 flex items-center justify-center shadow-xs">
-                        <Lock className="w-2.5 h-2.5 text-white" />
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-base sm:text-lg font-bold text-white truncate">
-                      {detailsDoc.nameEn || detailsDoc.name || `Student #${detailsDoc.tokenNo}`}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs text-white/80 flex-wrap">
-                      {detailsDoc.nameMl && (
-                        <span className="font-malayalam">{detailsDoc.nameMl}</span>
-                      )}
-                      <span>•</span>
-                      <span>{detailsDoc.batch || t('generalBatch', 'General Batch')}</span>
-                      {(detailsDoc.username || detailsDoc.uname) && (
-                        <>
-                          <span>•</span>
-                          <span className="font-mono">@{detailsDoc.username || detailsDoc.uname}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    feedback('tick');
-                    setDetailsDoc(null);
-                  }}
-                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(90dvh-110px)] pb-safe">
-                {detailsDoc.block ? (
-                  /* ================= BLOCKED STUDENT VIEW: ONLY PERSONAL DETAILS & NOTICE ================= */
-                  <div className="space-y-4">
-                    {/* Admin Blocked Alert */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 flex items-start gap-3.5 shadow-sm">
-                      <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-rose-300/60 dark:border-rose-500/30">
-                        <Ban className="w-6 h-6" />
-                      </div>
-                      <div className="text-xs text-rose-950 dark:text-rose-100 min-w-0 flex-1 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-black text-base sm:text-lg block text-rose-950 dark:text-white">
-                            Token #{detailsDoc.tokenNo} Blocked
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300/60">
-                            Dual-Grid Suspension
-                          </span>
-                        </div>
-                        
-                        <p className="leading-relaxed text-rose-800 dark:text-rose-300 text-xs">
-                          {t(
-                            'studentDualGridBlockedDesc',
-                            'Both Breakfast and Lunch dining privileges are temporarily suspended due to food waste or attendance infraction.'
-                          )}
-                        </p>
-
-                        {detailsDoc.blockReason && (
-                          <div className="p-2.5 rounded-xl bg-white/80 dark:bg-black/30 border border-rose-200 dark:border-rose-500/20 text-xs">
-                            <span className="font-bold text-rose-950 dark:text-rose-200">
-                              {t('blockReasonLabel', 'Reason')}:
-                            </span>{' '}
-                            <span className="italic font-medium text-rose-900 dark:text-rose-200">&ldquo;{detailsDoc.blockReason}&rdquo;</span>
-                          </div>
-                        )}
-
-                        {/* Prominent Fine Payable Notification Card */}
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-xs font-black text-amber-950 dark:text-amber-200">
-                              <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                              <span>Fine Payable Amount</span>
-                            </div>
-                            <span className="font-mono text-lg font-black text-amber-950 dark:text-amber-100 px-2.5 py-0.5 rounded-xl bg-amber-500/20 border border-amber-500/30">
-                              ₹{getStudentFineAmount(detailsDoc)}
-                            </span>
-                          </div>
-
-                          <div className="p-2 rounded-xl bg-white/80 dark:bg-black/40 text-[11px] leading-relaxed text-amber-950 dark:text-amber-200">
-                            <strong>Notice to Student:</strong> Please pay the required fine of <strong>₹{getStudentFineAmount(detailsDoc)}</strong> at the <strong>ADSA Canteen Office</strong> to clear this block and restore both your Breakfast and Lunch meal tokens.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Pending Unblock Status Alert if student already submitted */}
-                    {detailsDoc.pendingUnblockRequest?.status === 'pending' && (
-                      <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-500/30 flex items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-2.5 text-amber-900 dark:text-amber-200 min-w-0">
-                          <Clock className="w-4 h-4 text-amber-600 animate-pulse flex-shrink-0" />
-                          <div className="min-w-0">
-                            <span className="font-bold block truncate">
-                              {t('unblockRequestPending', 'Unblock Request Pending')} (#{detailsDoc.pendingUnblockRequest.ticketNumber})
-                            </span>
-                            <span className="text-[10px] text-amber-700/80 dark:text-amber-400 block truncate">
-                              {t('unblockRequestUnderReview', 'Under review by Central Committee')}
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            feedback('tick');
-                            const code = detailsDoc.pendingUnblockRequest.ticketNumber;
-                            setDetailsDoc(null);
-                            navigate(`/support?tab=tracker&code=${code}`);
-                          }}
-                          className="py-1 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[11px] transition-colors flex-shrink-0"
-                        >
-                          {t('trackUnblockRequest', 'Track Status')}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Action buttons: Login to Portal and Close */}
-                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          const tNo = detailsDoc.tokenNo;
-                          setDetailsDoc(null);
-                          navigate(`/login?token=${tNo}`);
-                        }}
-                        className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs transition-all cursor-pointer shadow-sm text-center flex items-center justify-center gap-1.5"
-                      >
-                        <Unlock className="w-3.5 h-3.5" />
-                        <span>
-                          {detailsDoc.pendingUnblockRequest?.status === 'pending'
-                            ? t('loginToViewPortal', 'Login to Student Portal (View Only)')
-                            : t('loginToRequestUnblock', 'Login to Portal to Request Unblock')}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          setDetailsDoc(null);
-                        }}
-                        className="py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors cursor-pointer"
-                      >
-                        {t('closeNotice', 'Close')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* ================= ACTIVE / UNBLOCKED STUDENT VIEW: FULL SCHEDULES & PREFERENCES ================= */
-                  <>
-                    {/* Single-Day Exception Alert if applicable */}
-                    {(() => {
-                      const activeExc = getActiveStudentException(detailsDoc, targetDateIST);
-                      if (activeExc) {
-                        const bfStatus = activeExc.breakfast !== undefined ? (activeExc.breakfast ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)')) : null;
-                        const luStatus = activeExc.lunch !== undefined ? (activeExc.lunch ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)')) : null;
-                        return (
-                          <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 flex items-start gap-2.5">
-                            <CalendarDays className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
-                            <div className="text-xs text-rose-900 dark:text-rose-200">
-                              <span className="font-bold block">
-                                {t('singleDayExceptionActive', 'Single-Day Exception Active for')} {formatFriendlyDate(targetDateIST)}
-                              </span>
-                              <span className="block mt-0.5">
-                                {bfStatus && <>{t('navBreakfast', 'Breakfast')}: <strong>{bfStatus}</strong> </>}
-                                {luStatus && <>• {t('navLunch', 'Lunch')}: <strong>{luStatus}</strong></>}
-                              </span>
-                              <span className="text-[11px] opacity-75 block mt-1">
-                                {t('regularRoutineResumesTomorrow', 'Regular weekly dining routine automatically resumes tomorrow.')}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                    {/* Breakfast Schedule Grid */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                          <span>{t('navBreakfast') || 'Breakfast Routine'}</span>
-                        </span>
-                        <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                        {daysList.map(({ key, label }) => {
-                          const active = detailsDoc.obj?.breakfast?.[key] === true;
-                          const isCurrentDay = key === effectiveDay;
-                          return (
-                            <div key={key} className="flex flex-col items-center gap-1.5 min-w-0">
-                              {/* Weekday Short Column Header */}
-                              <span
-                                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center select-none ${
-                                  isCurrentDay
-                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
-                                    : 'text-gray-400 dark:text-gray-500'
-                                }`}
-                              >
-                                {label}
-                              </span>
-
-                              {/* Perfect Square Tactile Tile */}
-                              <div
-                                title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}`}
-                                aria-label={`${label}: Breakfast ${active ? 'Active' : 'Off'}`}
-                                className={`
-                                  relative group flex items-center justify-center flex-shrink-0
-                                  w-full aspect-square rounded-xl sm:rounded-2xl select-none font-extrabold
-                                  shadow-sm transition-all duration-150 cursor-default overflow-hidden
-                                  ${
-                                    isCurrentDay
-                                      ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 dark:ring-offset-[#0f1715] z-10'
-                                      : ''
-                                  }
-                                  ${
-                                    active
-                                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
-                                      : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
-                                  }
-                                `}
-                              >
-                                <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
-                                {active ? (
-                                  <Coffee className="w-4 h-4 text-white drop-shadow-xs" />
-                                ) : (
-                                  <X className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
-                                )}
-                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white/70" />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Lunch Schedule Grid */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{t('navLunch') || 'Lunch Routine'}</span>
-                        </span>
-                        <span className="text-[11px] text-gray-400 font-semibold">{t('weeklyOptIn', 'Weekly Routine')}</span>
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                        {daysList.map(({ key, label }) => {
-                          const active = detailsDoc.obj?.lunch?.[key] !== undefined ? Boolean(detailsDoc.obj?.lunch[key]) : true;
-                          const isCurrentDay = key === effectiveDay;
-                          return (
-                            <div key={key} className="flex flex-col items-center gap-1.5 min-w-0">
-                              {/* Weekday Short Column Header */}
-                              <span
-                                className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center select-none ${
-                                  isCurrentDay
-                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
-                                    : 'text-gray-400 dark:text-gray-500'
-                                }`}
-                              >
-                                {label}
-                              </span>
-
-                              {/* Perfect Square Tactile Tile */}
-                              <div
-                                title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}`}
-                                aria-label={`${label}: Lunch ${active ? 'Active' : 'Off'}`}
-                                className={`
-                                  relative group flex items-center justify-center flex-shrink-0
-                                  w-full aspect-square rounded-xl sm:rounded-2xl select-none font-extrabold
-                                  shadow-sm transition-all duration-150 cursor-default overflow-hidden
-                                  ${
-                                    isCurrentDay
-                                      ? 'ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 dark:ring-offset-[#0f1715] z-10'
-                                      : ''
-                                  }
-                                  ${
-                                    active
-                                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40'
-                                      : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40'
-                                  }
-                                `}
-                              >
-                                <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
-                                {active ? (
-                                  <Utensils className="w-4 h-4 text-white drop-shadow-xs" />
-                                ) : (
-                                  <X className="w-3.5 h-3.5 text-white/80" strokeWidth={2.5} />
-                                )}
-                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white/70" />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Dietary Inclusions & Exemptions */}
-                    <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-white/5">
-                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        {t('dietaryPreferencesLabel', 'Dietary Inclusions & Exemptions')}
-                      </span>
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                        {preferencesList.map((pref) => {
-                          const isIncluded =
-                            detailsDoc.obj2 && detailsDoc.obj2[pref.id] !== undefined
-                              ? Boolean(detailsDoc.obj2[pref.id])
-                              : true;
-                          return (
-                            <span
-                              key={pref.id}
-                              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold border transition-colors ${
-                                isIncluded
-                                  ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20'
-                                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/20'
-                              }`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${isIncluded ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                              <span>{lang === 'ml' && pref.labelMl ? pref.labelMl : (pref.labelEn || pref.name)}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Action CTA: Log into Portal */}
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          setDetailsDoc(null);
-                          if (!portalStatus.isOpen) {
-                            setLockedPortalAlertOpen(true);
-                          } else {
-                            navigate(`/login?token=${detailsDoc.tokenNo}`);
-                          }
-                        }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
-                      >
-                        <span>{t('areYouStudent', `Are you Student #${detailsDoc.tokenNo}? Update your Preferences in Portal`).replace('{token}', detailsDoc.tokenNo)}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <StudentDetailCalendarModal
+        isOpen={Boolean(detailsDoc)}
+        onClose={() => setDetailsDoc(null)}
+        student={detailsDoc}
+        targetDateIST={targetDateIST}
+        effectiveDay={effectiveDay}
+        isLunchTarget={isLunch}
+        isAdmin={false}
+        preferencesList={preferencesList}
+      />
 
       {/* ========================================================================= */}
       {/* MODAL: INSPECT REJECTED TOKENS (From 3D Flip Cards Back)                  */}

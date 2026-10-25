@@ -1,6 +1,6 @@
 import React, { useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clock, KeyRound, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, ArrowLeft, Info } from 'lucide-react';
+import { Clock, KeyRound, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, ArrowLeft, Info, Sparkles } from 'lucide-react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
@@ -33,6 +33,8 @@ function Login() {
     startTime,
     endTime,
     effectiveMode,
+    config,
+    activeScheduledEvent,
   } = useTokenLockStatus();
 
   const navigate = useNavigate();
@@ -237,6 +239,39 @@ function Login() {
                 <span className="block mt-0.5 text-[11px] opacity-85">
                   {t('futureDatesUpdateNotice', 'You can sign in now to update any future dates (subsequent days, next week, or schedule leaves).')}
                 </span>
+              </div>
+            </div>
+          )}
+
+          {/* Timed Extension Broadcast Notice */}
+          {config?.temporaryOverride?.active && config.temporaryOverride.mode === 'force_unlocked' && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+              <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <span className="font-bold block">Special Extension Active</span>
+                <span>{config.temporaryOverride.reason || 'Token updates have been temporarily extended.'}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Timed Freeze Broadcast Notice */}
+          {config?.temporaryOverride?.active && config.temporaryOverride.mode === 'force_locked' && (
+            <div className="p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div>
+                <span className="font-bold block">Temporary Freeze in Progress</span>
+                <span>{config.temporaryOverride.reason || 'Token changes are temporarily paused for kitchen inventory.'}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Calendar Scheduled Event Notice */}
+          {activeScheduledEvent && (
+            <div className="p-3.5 rounded-2xl bg-purple-50/90 dark:bg-purple-950/40 border border-purple-300/80 dark:border-purple-500/30 flex items-start gap-2.5 text-xs text-purple-800 dark:text-purple-200 leading-relaxed">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-purple-600 dark:text-purple-400" />
+              <div>
+                <span className="font-bold block">{activeScheduledEvent.title}</span>
+                <span>{activeScheduledEvent.reason || 'Calendar scheduled override active.'}</span>
               </div>
             </div>
           )}

@@ -117,13 +117,14 @@ export default function FloatingClockPopover({
     const [hh, mm] = timeHms.split(':').map(Number);
     const currentMins = hh * 60 + mm;
 
-    const [startH, startM] = (rawStartTime || '14:00').split(':').map(Number);
+    const [startH, startM] = (rawStartTime || '00:00').split(':').map(Number);
     const [endH, endM] = (rawEndTime || '23:00').split(':').map(Number);
 
     const startMins = startH * 60 + (startM || 0);
     const endMins = endH * 60 + (endM || 0);
 
-    if (currentMins < startMins) {
+    // If opening time is explicitly restricted and current time is before open time
+    if (activeWindow?.restrictOpenTime && currentMins < startMins) {
       const diff = startMins - currentMins;
       const h = Math.floor(diff / 60);
       const m = diff % 60;
@@ -152,7 +153,7 @@ export default function FloatingClockPopover({
         text: lang === 'ml' ? 'ഇന്നത്തെ കട്ട് ഓഫ് കഴിഞ്ഞു' : 'Closed • Cutoff deadline passed',
       };
     }
-  }, [timeHms, rawStartTime, rawEndTime, lang]);
+  }, [timeHms, rawStartTime, rawEndTime, activeWindow?.restrictOpenTime, lang]);
 
   if (!isOpen || typeof document === 'undefined') return null;
 

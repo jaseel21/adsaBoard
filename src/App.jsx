@@ -62,6 +62,12 @@ function AppContent() {
   const { sidebarOpen } = useSidebar();
   const { preferences } = usePreferences();
 
+  // Admin and staff control consoles have full-bleed/dock workspaces and do not display public footer
+  const isAdminRoute =
+    location.pathname.startsWith('/admin') ||
+    location.pathname === '/student-management' ||
+    location.pathname === '/alogin';
+
   // Cold-Start Default Gateway Route handling
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -340,7 +346,7 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>
-        <Footer />
+        {!isAdminRoute && <Footer />}
         </main>
       </div>
       {!location.pathname.startsWith('/kitchen') && <BackToTopButton />}

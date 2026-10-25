@@ -7,6 +7,7 @@ import {
   Sparkles,
   Clock,
   ArrowRight,
+  ChevronRight,
   Calendar,
   ChefHat,
   CheckCircle,
@@ -27,6 +28,8 @@ import {
 import {
   getTodayISTDate,
   addDaysToDate,
+  formatFriendlyDate,
+  getDayOfWeekShort,
   getEffectiveStudentMealStatus,
   isPastBoardWindowOpenTime,
 } from '../utils/studentExceptionService';
@@ -55,6 +58,10 @@ const hasDishContent = (slotData) => {
 
 export default function NextMealSpotlight({
   documents = [],
+  targetDateStr = null,
+  isToday: propIsToday = null,
+  isTomorrow: propIsTomorrow = null,
+  friendlyTargetDate = '',
   lunchOrdersCount = 0,
   breakfastOrdersCount = 0,
   showSpotlightBanner = true,
@@ -68,7 +75,7 @@ export default function NextMealSpotlight({
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
   const [overrides, setOverrides] = useState({});
-  const [activeTab, setActiveTab] = useState('auto'); // 'today' | 'tomorrow' | 'auto'
+  const [activeTab, setActiveTab] = useState('auto'); // fallback 'today' | 'tomorrow' | 'auto'
 
   useEffect(() => {
     const unsubscribeMenu = subscribeToWeeklyMenu((data) => {
@@ -86,8 +93,13 @@ export default function NextMealSpotlight({
   const todayDateStr = getTodayISTDate();
   const tomorrowDateStr = addDaysToDate(todayDateStr, 1);
 
+  // If targetDateStr is passed from parent (Token Board date switcher), prioritize it!
+  const isControlledMode = Boolean(targetDateStr);
+  const effectiveTargetDate = targetDateStr || (activeTab === 'tomorrow' ? tomorrowDateStr : todayDateStr);
+  const isShowingToday = propIsToday !== null ? propIsToday : (effectiveTargetDate === todayDateStr);
+  const isShowingTomorrow = propIsTomorrow !== null ? propIsTomorrow : (effectiveTargetDate === tomorrowDateStr);
+
   // Determine current day and tomorrow's day
-  // Defaults: 12 AM to board updation open time (eg. 2 PM) -> Today, open time to 12 AM -> Tomorrow
   const { todayKey, tomorrowKey, isPostCutoff } = useMemo(() => {
     const current = (dayShort || 'fr').toLowerCase();
     const currIdx = DAYS_ORDER.indexOf(current) !== -1 ? DAYS_ORDER.indexOf(current) : 5;
@@ -100,53 +112,44 @@ export default function NextMealSpotlight({
     };
   }, [dayShort, timeHms, openTime]);
 
-  // Compute effective menus incorporating special feasts & date overrides
-  const todayEffectiveData = useMemo(() => {
-    return getEffectiveMenuForDate(todayDateStr, weeklyMenu, overrides);
-  }, [todayDateStr, weeklyMenu, overrides]);
-
-  const tomorrowEffectiveData = useMemo(() => {
-    return getEffectiveMenuForDate(tomorrowDateStr, weeklyMenu, overrides);
-  }, [tomorrowDateStr, weeklyMenu, overrides]);
-
-  const activeSlotMeta = useMemo(() => determineActiveMealSlot(timeHms, todayEffectiveData), [timeHms, todayEffectiveData]);
-
-  const isTodayClosed = Boolean(todayEffectiveData?.isArchived || todayEffectiveData?.isClosed);
-  const isTomorrowClosed = Boolean(tomorrowEffectiveData?.isArchived || tomorrowEffectiveData?.isClosed);
-
-  // Which day to show based on tab
   const displayedDayKey = useMemo(() => {
+    if (isControlledMode) {
+      return getDayOfWeekShort(effectiveTargetDate);
+    }
     if (activeTab === 'today') return todayKey;
     if (activeTab === 'tomorrow') return tomorrowKey;
-    // If today is closed/archived or after 2 PM (14:00) cutoff -> default to tomorrow
-    if (isTodayClosed || isPostCutoff) return tomorrowKey;
+    if (isPostCutoff) return tomorrowKey;
     return todayKey;
-  }, [activeTab, isPostCutoff, todayKey, tomorrowKey, isTodayClosed]);
+  }, [isControlledMode, effectiveTargetDate, activeTab, isPostCutoff, todayKey, tomorrowKey]);
 
-  const displayedDayData = displayedDayKey === tomorrowKey ? tomorrowEffectiveData : todayEffectiveData;
+  // Compute effective menu for active target date
+  const displayedDayData = useMemo(() => {
+    return getEffectiveMenuForDate(effectiveTargetDate, weeklyMenu, overrides);
+  }, [effectiveTargetDate, weeklyMenu, overrides]);
+
+  const activeSlotMeta = useMemo(() => determineActiveMealSlot(timeHms, displayedDayData), [timeHms, displayedDayData]);
   const isDayArchived = Boolean(displayedDayData?.isArchived || displayedDayData?.isClosed);
+  const isTodayClosed = Boolean(displayedDayData?.isArchived || displayedDayData?.isClosed);
+  const isTomorrowClosed = isShowingTomorrow && isDayArchived;
 
-  // Compute accurate day-specific token counts for displayed day (Today vs Tomorrow)
+  // Compute accurate day-specific token counts for active target date
   const { displayedBreakfastCount, displayedLunchCount } = useMemo(() => {
     let b = 0;
     let l = 0;
-    if (Array.isArray(documents) && documents.length > 0 && displayedDayKey) {
-      const todayDateStr = getTodayISTDate();
-      const targetDateStr = displayedDayKey === tomorrowKey ? addDaysToDate(todayDateStr, 1) : todayDateStr;
+    if (Array.isArray(documents) && documents.length > 0 && effectiveTargetDate && displayedDayKey) {
       documents.forEach((doc) => {
         if (!doc.block) {
-          if (getEffectiveStudentMealStatus(doc, targetDateStr, displayedDayKey, 'breakfast')) b++;
-          if (getEffectiveStudentMealStatus(doc, targetDateStr, displayedDayKey, 'lunch')) l++;
+          if (getEffectiveStudentMealStatus(doc, effectiveTargetDate, displayedDayKey, 'breakfast')) b++;
+          if (getEffectiveStudentMealStatus(doc, effectiveTargetDate, displayedDayKey, 'lunch')) l++;
         }
       });
       return { displayedBreakfastCount: b, displayedLunchCount: l };
     }
-    // Fallback if documents array isn't populated yet
     return {
       displayedBreakfastCount: breakfastOrdersCount || 0,
       displayedLunchCount: lunchOrdersCount || 0,
     };
-  }, [documents, displayedDayKey, tomorrowKey, breakfastOrdersCount, lunchOrdersCount]);
+  }, [documents, effectiveTargetDate, displayedDayKey, breakfastOrdersCount, lunchOrdersCount]);
 
   // Identify the spotlighted meal for the displayed day. Returns NULL if all slots are empty or archived.
   const spotlightMeal = useMemo(() => {
@@ -154,7 +157,7 @@ export default function NextMealSpotlight({
 
     const baseOrder = ['breakfast', 'lunch', 'evening', 'dinner'];
 
-    if (displayedDayKey === todayKey) {
+    if (isShowingToday) {
       const candidate = activeSlotMeta.slot || 'breakfast';
 
       // 1. Check if candidate slot has real dish content
@@ -210,11 +213,10 @@ export default function NextMealSpotlight({
         }
       }
 
-      // If absolutely no slots today have dish content, spotlight is null
       return null;
     } else {
-      // Tomorrow highlight: search in priority order for any slot with content
-      const preferenceOrder = ['breakfast', 'lunch', 'evening', 'dinner'];
+      // Future or scheduled day: search in priority order for primary meal
+      const preferenceOrder = ['lunch', 'breakfast', 'dinner', 'evening'];
       for (const s of preferenceOrder) {
         if (hasDishContent(displayedDayData[s])) {
           const slotData = displayedDayData[s];
@@ -225,15 +227,14 @@ export default function NextMealSpotlight({
             category: slotData.category || '',
             timing: slotData.timing || '',
             specialTag: slotData.specialTag || '',
-            statusLabel: "Tomorrow's Highlight",
+            statusLabel: isShowingTomorrow ? "Tomorrow's Highlight" : "Scheduled Meal",
           };
         }
       }
 
-      // Tomorrow is empty or has no dish content
       return null;
     }
-  }, [displayedDayData, displayedDayKey, todayKey, activeSlotMeta, isDayArchived]);
+  }, [displayedDayData, isShowingToday, isShowingTomorrow, activeSlotMeta, isDayArchived]);
 
   // Filter out any slots that are ARCHIVED or UNAVAILABLE - completely hide them from radar!
   const activeSlots = useMemo(() => {
@@ -287,7 +288,7 @@ export default function NextMealSpotlight({
     );
   }, [displayedDayData, isDayArchived, displayedBreakfastCount, displayedLunchCount, t]);
 
-  const isShowingTomorrow = displayedDayKey === tomorrowKey;
+  // isShowingTomorrow is already defined at top of component based on propIsTomorrow or effectiveTargetDate
 
   const getLocalizedStatusLabel = (label) => {
     if (!label) return '';
@@ -326,44 +327,34 @@ export default function NextMealSpotlight({
               )}
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              {isShowingTomorrow
+              {isShowingToday
+                ? `${t('liveScheduleToday', 'Live meal schedule for today')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('today', 'Today')})`
+                : isShowingTomorrow
                 ? `${t('previewingTomorrow', "Previewing tomorrow's dining schedule")} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('tomorrow', 'Tomorrow')})`
-                : `${t('liveScheduleToday', 'Live meal schedule for today')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('today', 'Today')})`}
+                : `${friendlyTargetDate || formatFriendlyDate(effectiveTargetDate)} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || ''})`}
             </p>
           </div>
         </div>
 
-        {/* Today vs Tomorrow Switcher Pill */}
-        <div className="flex items-center p-1 rounded-2xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 w-full sm:w-auto min-w-0">
-          <button
-            onClick={() => {
-              feedback('tick');
-              setActiveTab('today');
-            }}
-            className={`flex-1 sm:flex-none min-w-0 px-2.5 xs:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-center truncate ${
-              !isShowingTomorrow
-                ? 'bg-white dark:bg-[#192420] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            {t('todaysMeals') || "Today's Menu"}
-            {isTodayClosed && ` (${t('closed', 'Closed')})`}
-          </button>
+        {/* Master Contextual Badge & Quick Menu Action (Synced with Token Board Top Switcher) */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          {/* <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-300">
+            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{friendlyTargetDate || formatFriendlyDate(effectiveTargetDate)}</span>
+            {isShowingToday && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
+            )}
+          </div> */}
 
-          <button
-            onClick={() => {
-              feedback('tick');
-              setActiveTab('tomorrow');
-            }}
-            className={`flex-1 sm:flex-none min-w-0 px-2.5 xs:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-center truncate ${
-              isShowingTomorrow
-                ? 'bg-white dark:bg-[#192420] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
+          {/* <button
+            type="button"
+            onClick={() => navigate('/menu')}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1"
+            title="Open Full Campus Menu"
           >
-            {t('tomorrowsMeals') || "Tomorrow's Menu"}
-            {isTomorrowClosed && ` (${t('closed', 'Closed')})`}
-          </button>
+            <span>{t('viewFullMenu', 'Full Menu')}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button> */}
         </div>
       </div>
 
