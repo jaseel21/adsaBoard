@@ -25,6 +25,8 @@ import {
   Ban,
   BarChart3,
   Compass,
+  Database,
+  Power,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -41,6 +43,8 @@ export default function ApexCommandPalette({
   onOpenStaff,
   onOpenLockModal,
   onOpenBlockModal,
+  onOpenGovernance,
+  onOpenBackupVault,
   navigate,
   isLunch = false,
   effectiveMode,
@@ -203,6 +207,28 @@ export default function ApexCommandPalette({
             navigate('/admin/analytics');
             onClose();
           },
+        },
+        {
+          id: 'governance_cockpit',
+          title: 'Master Governance Cockpit',
+          subtitle: 'Global killswitches, institutional maintenance & emergency meal overrides',
+          icon: Power,
+          iconColor: 'text-rose-500',
+          action: () => {
+            if (onOpenGovernance) onOpenGovernance();
+            onClose();
+          },
+        },
+        {
+          id: 'backup_vault',
+          title: 'Cloud Storage & Database Backup Vault',
+          subtitle: 'Point-in-time snapshots, SHA-256 verification & live rehydration hub',
+          icon: Database,
+          iconColor: 'text-teal-400',
+          action: () => {
+            if (onOpenBackupVault) onOpenBackupVault();
+            onClose();
+          },
         }
       );
     }
@@ -268,7 +294,22 @@ export default function ApexCommandPalette({
     });
 
     return list;
-  }, [isLunch, effectiveMode, isCentralCommittee, onToggleMeal, onToggleLock, onOpenDietary, onOpenStaff, onOpenLockModal, onOpenBlockModal, navigate, onClose, t]);
+  }, [
+    isLunch,
+    effectiveMode,
+    isCentralCommittee,
+    onToggleMeal,
+    onToggleLock,
+    onOpenDietary,
+    onOpenStaff,
+    onOpenLockModal,
+    onOpenBlockModal,
+    onOpenGovernance,
+    onOpenBackupVault,
+    navigate,
+    onClose,
+    t,
+  ]);
 
   // Filtered Results
   const { filteredActions, filteredStudents } = useMemo(() => {

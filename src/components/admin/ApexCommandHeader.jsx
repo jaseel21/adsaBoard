@@ -17,12 +17,14 @@ import {
   Bell,
   Ban,
   Compass,
+  Database,
+  Power,
+  BarChart3,
 } from 'lucide-react';
 import { useWorldTime } from '../../utils/time';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { useLanguage } from '../../store/LanguageContext';
-
 
 export default function ApexCommandHeader({
   effectiveMode,
@@ -31,6 +33,8 @@ export default function ApexCommandHeader({
   lockEndTime,
   onOpenLockModal,
   onOpenBlockModal,
+  onOpenGovernanceModal,
+  onOpenBackupVault,
   onToggleLock,
   onOpenStaffModal,
   isCentralCommittee = false,
@@ -249,6 +253,52 @@ export default function ApexCommandHeader({
             >
               <Compass className="w-4 h-4 text-cyan-400" />
             </button>
+
+            {/* Apex Analytics & Intelligence Suite Shortcut */}
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playPop();
+                hapticEngine.lightTap();
+                navigate('/admin/analytics');
+              }}
+              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-500 border border-gray-200/60 dark:border-white/10 transition-colors"
+              title="Apex Intelligence & Dining Analytics Suite (/admin/analytics)"
+            >
+              <BarChart3 className="w-4 h-4 text-emerald-500" />
+            </button>
+
+            {/* Master Governance Cockpit Trigger (Central Committee / Dev) */}
+            {isCentralCommittee && onOpenGovernanceModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  hapticEngine.lightTap();
+                  onOpenGovernanceModal();
+                }}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-500 border border-gray-200/60 dark:border-white/10 transition-colors"
+                title="Master Governance Cockpit: Global Killswitches & Cutoff Matrix"
+              >
+                <Power className="w-4 h-4 text-emerald-500" />
+              </button>
+            )}
+
+            {/* Cloud Storage & Backup Vault Trigger (Central Committee / Dev) */}
+            {isCentralCommittee && onOpenBackupVault && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playPop();
+                  hapticEngine.lightTap();
+                  onOpenBackupVault();
+                }}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-gray-700 dark:text-gray-300 hover:text-teal-400 border border-gray-200/60 dark:border-white/10 transition-colors"
+                title="Cloud Storage & Database Backup Vault (Snapshots & Restore)"
+              >
+                <Database className="w-4 h-4 text-teal-400" />
+              </button>
+            )}
 
             {/* Master Lock Switch Pill (Interactive for Central Committee, Informational for Canteen Committee) */}
             <button

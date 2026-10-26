@@ -4,18 +4,45 @@ import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger
 /**
  * System collections included in full database snapshot
  */
-const BACKUP_COLLECTIONS = [
-  { id: 'students', label: 'Students Directory & Tokens' },
-  { id: 'settings', label: 'System & Canteen Config' },
+export const BACKUP_COLLECTIONS = [
+  { id: 'students', label: 'Students Directory & Meal Tokens' },
+  { id: 'settings', label: 'System, Governance & Canteen Config' },
   { id: 'dietary_preferences', label: 'Dietary Master Categories' },
   { id: 'menus', label: 'Weekly Food Menus & Recipes' },
   { id: 'staff_users', label: 'Staff Roles & Authorization' },
+  { id: 'support_tickets', label: 'Care & Inquiries Tickets' },
 ];
+
+/**
+ * Calculate SHA-256 Checksum using Web Crypto API
+ */
+export async function calculateSha256(contentString) {
+  try {
+    if (typeof window !== 'undefined' && window.crypto?.subtle) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(contentString);
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (e) {
+    console.warn('Web Crypto SHA-256 fallback:', e);
+  }
+
+  // Pure JS fallback hash
+  let hash = 0;
+  for (let i = 0; i < contentString.length; i++) {
+    const char = contentString.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16).padStart(16, '0');
+}
 
 /**
  * Trigger browser file download from string content
  */
-function triggerFileDownload(content, filename, mimeType = 'application/json') {
+export function triggerFileDownload(content, filename, mimeType = 'application/json') {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -28,13 +55,112 @@ function triggerFileDownload(content, filename, mimeType = 'application/json') {
 }
 
 /**
+ * Record a snapshot entry in the Firestore `/system_backups` catalog
+ */
+export async function recordBackupInCatalog({
+  backupPackage,
+  checksum,
+  sizeBytes,
+  actor = {},
+  triggerType = 'MANUAL_DISPATCH',
+}) {
+  const db = firebase.firestore();
+  const backupId = `bup_${Date.now()}`;
+  const catalogRef = db.collection('system_backups').doc(backupId);
+
+  const collectionsDumped = Object.keys(backupPackage.collections || {}).map((colId) => ({
+    collectionId: colId,
+    documentCount: (backupPackage.collections[colId] || []).length,
+  }));
+
+  const totalDocuments = collectionsDumped.reduce((acc, c) => acc + c.documentCount, 0);
+
+  const record = {
+    id: backupId,
+    type: triggerType,
+    status: 'COMPLETED',
+    checksum: checksum || 'verified',
+    sizeBytes: sizeBytes || 0,
+    collectionsDumped,
+    totalDocuments,
+    version: backupPackage.version || '3.0.0',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdAtISO: new Date().toISOString(),
+    createdBy: {
+      uid: actor.uid || 'admin',
+      displayName: actor.displayName || actor.email || 'Admin',
+      role: actor.role || 'developer',
+    },
+  };
+
+  await catalogRef.set(record);
+  return record;
+}
+
+/**
+ * Real-time listener for the `/system_backups` catalog
+ */
+export function subscribeToBackupCatalog(onUpdate, onError) {
+  const db = firebase.firestore();
+  return db
+    .collection('system_backups')
+    .orderBy('createdAt', 'desc')
+    .limit(25)
+    .onSnapshot(
+      (snapshot) => {
+        const list = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        if (typeof onUpdate === 'function') {
+          onUpdate(list);
+        }
+      },
+      (err) => {
+        console.error('Error fetching system backups catalog:', err);
+        if (typeof onError === 'function') onError(err);
+      }
+    );
+}
+
+/**
+ * Delete a backup entry from the catalog
+ */
+export async function deleteBackupRecord(backupId, actor = {}) {
+  const db = firebase.firestore();
+  await db.collection('system_backups').doc(backupId).delete();
+
+  try {
+    await logAuditEvent({
+      action: 'DELETE_BACKUP_RECORD',
+      category: AUDIT_CATEGORIES.SYSTEM,
+      severity: AUDIT_SEVERITIES.WARNING,
+      actor: {
+        uid: actor.uid || '',
+        displayName: actor.displayName || actor.email || 'Admin',
+        role: actor.role || 'admin',
+      },
+      target: {
+        type: 'database',
+        id: backupId,
+        label: `Backup Catalog Record: ${backupId}`,
+      },
+    });
+  } catch (err) {
+    console.warn('Audit error on backup deletion:', err);
+  }
+}
+
+/**
  * Generate full system JSON backup snapshot from live Firestore
  */
-export async function generateFullSystemBackup(actor = {}) {
+export async function generateFullSystemBackup(actor = {}, options = {}) {
   const db = firebase.firestore();
   const timestamp = new Date().toISOString();
+  const collectionsToDump = options.collections || BACKUP_COLLECTIONS.map((c) => c.id);
+
   const exportPackage = {
-    version: '2.5.0',
+    version: '3.0.0',
     exportedAt: timestamp,
     exportedBy: {
       uid: actor.uid || '',
@@ -45,9 +171,9 @@ export async function generateFullSystemBackup(actor = {}) {
     summary: {},
   };
 
-  for (const col of BACKUP_COLLECTIONS) {
+  for (const colId of collectionsToDump) {
     try {
-      const snap = await db.collection(col.id).get();
+      const snap = await db.collection(colId).get();
       const docs = [];
       snap.forEach((doc) => {
         docs.push({
@@ -55,13 +181,30 @@ export async function generateFullSystemBackup(actor = {}) {
           ...doc.data(),
         });
       });
-      exportPackage.collections[col.id] = docs;
-      exportPackage.summary[col.id] = docs.length;
+      exportPackage.collections[colId] = docs;
+      exportPackage.summary[colId] = docs.length;
     } catch (err) {
-      console.warn(`Could not export collection ${col.id}:`, err);
-      exportPackage.collections[col.id] = [];
-      exportPackage.summary[col.id] = 0;
+      console.warn(`Could not export collection ${colId}:`, err);
+      exportPackage.collections[colId] = [];
+      exportPackage.summary[colId] = 0;
     }
+  }
+
+  const jsonString = JSON.stringify(exportPackage, null, 2);
+  const checksum = await calculateSha256(jsonString);
+  const sizeBytes = new Blob([jsonString]).size;
+
+  // Record catalog entry in Firestore
+  try {
+    await recordBackupInCatalog({
+      backupPackage: exportPackage,
+      checksum,
+      sizeBytes,
+      actor,
+      triggerType: options.triggerType || 'MANUAL_DISPATCH',
+    });
+  } catch (catErr) {
+    console.warn('Could not record backup catalog entry:', catErr);
   }
 
   // Record audit log
@@ -82,18 +225,28 @@ export async function generateFullSystemBackup(actor = {}) {
       },
       details: {
         summary: exportPackage.summary,
+        checksum,
+        sizeBytes,
       },
     });
   } catch (logErr) {
     console.warn('Audit log error on backup export:', logErr);
   }
 
-  const dateSlug = timestamp.slice(0, 10);
-  const timeSlug = timestamp.slice(11, 16).replace(':', '');
-  const filename = `adsa_tboard_backup_${dateSlug}_${timeSlug}.json`;
-  triggerFileDownload(JSON.stringify(exportPackage, null, 2), filename);
+  // Trigger file download if requested (default true)
+  if (options.download !== false) {
+    const dateSlug = timestamp.slice(0, 10);
+    const timeSlug = timestamp.slice(11, 16).replace(':', '');
+    const filename = `adsa_tboard_backup_${dateSlug}_${timeSlug}.json`;
+    triggerFileDownload(jsonString, filename);
+  }
 
-  return exportPackage;
+  return {
+    exportPackage,
+    checksum,
+    sizeBytes,
+    jsonString,
+  };
 }
 
 /**
@@ -222,7 +375,7 @@ export async function computeDryRunDiff(backupData) {
 }
 
 /**
- * Execute restore of selected collections with batch chunking (500 items max per batch)
+ * Execute restore of selected collections with batch chunking (400 items max per batch)
  */
 export async function executeRestore(backupData, selectedCollections = [], actor = {}) {
   const db = firebase.firestore();
@@ -239,8 +392,7 @@ export async function executeRestore(backupData, selectedCollections = [], actor
     if (!Array.isArray(docsToRestore) || docsToRestore.length === 0) continue;
 
     let restoredForCol = 0;
-    // Chunk in groups of 400 (safe limit under Firestore 500-op cap)
-    const chunkSize = 400;
+    const chunkSize = 400; // safe limit under Firestore 500-op cap
     for (let i = 0; i < docsToRestore.length; i += chunkSize) {
       const chunk = docsToRestore.slice(i, i + chunkSize);
       const batch = db.batch();

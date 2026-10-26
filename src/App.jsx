@@ -56,6 +56,9 @@ import ExperienceFXProvider from './components/fx/ExperienceFXProvider';
 import { useLivePresenceTracker } from './hooks/useLivePresenceTracker';
 import { useRemoteCommandListener } from './hooks/useRemoteCommandListener';
 import EmergencyAlertBannerModal from './components/admin/sentinel/EmergencyAlertBannerModal';
+import { MasterGovernanceProvider, useMasterGovernance } from './store/MasterGovernanceContext';
+import MasterMaintenanceScreen from './components/admin/governance/MasterMaintenanceScreen';
+import InstitutionalAlertRibbon from './components/admin/governance/InstitutionalAlertRibbon';
 import './App.css';
 
 function AppContent() {
@@ -65,6 +68,11 @@ function AppContent() {
   const navigate = useNavigate();
   const { sidebarOpen } = useSidebar();
   const { preferences } = usePreferences();
+  const {
+    isMaintenanceMode,
+    maintenanceMessage,
+    isStaffExemptFromMaintenance,
+  } = useMasterGovernance();
 
   // Root Live Presence Tracker & Remote Command Listener
   const presence = useLivePresenceTracker();
@@ -103,6 +111,11 @@ function AppContent() {
     return () => clearInterval(interval);
   }, []);
 
+  // Institutional Maintenance Screen interceptor
+  if (isMaintenanceMode && !isStaffExemptFromMaintenance && location.pathname !== '/alogin') {
+    return <MasterMaintenanceScreen message={maintenanceMessage} />;
+  }
+
   return (
     <div className="min-h-screen w-full max-w-full flex flex-col bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
       <SkipToContent />
@@ -112,6 +125,7 @@ function AppContent() {
       <AccessibilityQuickDock />
       <ScrollProgressBar />
       <ScrollRestorationWatcher />
+      <InstitutionalAlertRibbon />
       <Navbar isAdmin={isAdmin} />
       <div className="flex flex-1 w-full relative min-w-0">
         <BrowserLeftSidebar />
@@ -395,20 +409,22 @@ function App() {
       <LanguageProvider>
         <PreferencesProvider>
           <PersonInfo>
-            <NotificationProvider>
-              <DialogProvider>
-                <ExperienceFXProvider>
-                  <SmoothScrollProvider>
-                    <SidebarProvider>
-                      <AppContent />
-                      <NotificationDrawer />
-                      <EmergencyNotificationDialog />
-                      <PwaInstallPrompt />
-                    </SidebarProvider>
-                  </SmoothScrollProvider>
-                </ExperienceFXProvider>
-              </DialogProvider>
-            </NotificationProvider>
+            <MasterGovernanceProvider>
+              <NotificationProvider>
+                <DialogProvider>
+                  <ExperienceFXProvider>
+                    <SmoothScrollProvider>
+                      <SidebarProvider>
+                        <AppContent />
+                        <NotificationDrawer />
+                        <EmergencyNotificationDialog />
+                        <PwaInstallPrompt />
+                      </SidebarProvider>
+                    </SmoothScrollProvider>
+                  </ExperienceFXProvider>
+                </DialogProvider>
+              </NotificationProvider>
+            </MasterGovernanceProvider>
           </PersonInfo>
         </PreferencesProvider>
       </LanguageProvider>

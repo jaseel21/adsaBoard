@@ -55,6 +55,9 @@ import TokenBoardDateRibbon from './ui/TokenBoardDateRibbon';
 import AdminTokenPopover from './ui/AdminTokenPopover';
 import StudentDetailCalendarModal from './ui/StudentDetailCalendarModal';
 import DietaryBreakdownModal from './ui/DietaryBreakdownModal';
+import MasterGovernanceCockpitModal from './admin/governance/MasterGovernanceCockpitModal';
+import BackupVaultModal from './admin/vault/BackupVaultModal';
+import UniversalDataStudio from './admin/studio/UniversalDataStudio';
 import { getCategoryIcon } from './avoiders/dietaryIcons';
 
 import ApexCommandHeader from './admin/ApexCommandHeader';
@@ -150,6 +153,8 @@ export default function Admin() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showDietaryModal, setShowDietaryModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
+  const [showGovernanceModal, setShowGovernanceModal] = useState(false);
+  const [showBackupVaultModal, setShowBackupVaultModal] = useState(false);
   const [popoverStudent, setPopoverStudent] = useState(null);
   const [detailsDoc, setDetailsDoc] = useState(null);
   const [fullDrawerStudent, setFullDrawerStudent] = useState(null);
@@ -364,6 +369,8 @@ export default function Admin() {
         lockEndTime={lockEndTime}
         onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
         onOpenBlockModal={() => setShowBlockModal(true)}
+        onOpenGovernanceModal={isCentralCommittee ? () => setShowGovernanceModal(true) : null}
+        onOpenBackupVault={isCentralCommittee ? () => setShowBackupVaultModal(true) : null}
         onToggleLock={isCentralCommittee ? toggleBoardLock : null}
         onOpenStaffModal={isCentralCommittee ? () => setShowStaffModal(true) : null}
         isCentralCommittee={isCentralCommittee}
@@ -557,8 +564,19 @@ export default function Admin() {
           metrics={metrics}
           onOpenDietaryModal={() => setShowDietaryModal(true)}
         />
+      ) : activeSurface === 'studio' ? (
+        /* Surface 2: Universal Data Studio (High-Velocity Spreadsheet CRUD & Bulk Dispatcher) */
+        <UniversalDataStudio
+          students={documents}
+          preferencesList={preferencesList}
+          allBatches={existingBatchNames}
+          targetDateIST={targetDateIST}
+          effectiveDay={effectiveDay}
+          onStudentSaved={handleStudentSaved}
+          onStudentDeleted={handleStudentDeleted}
+        />
       ) : (
-        /* Surface 2: Tactical Token Matrix Surface */
+        /* Surface 3: Tactical Token Matrix Surface */
         <>
           {/* ================= ADVANCED CONTROLS TOOLBAR: SEARCH, SORT, FILTER & DENSITY ================= */}
           <TokenBoardControls
@@ -945,10 +963,24 @@ export default function Admin() {
         onOpenStaff={isCentralCommittee ? () => setShowStaffModal(true) : null}
         onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
         onOpenBlockModal={() => setShowBlockModal(true)}
+        onOpenGovernance={isCentralCommittee ? () => setShowGovernanceModal(true) : null}
+        onOpenBackupVault={isCentralCommittee ? () => setShowBackupVaultModal(true) : null}
         navigate={navigate}
         isLunch={isLunch}
         effectiveMode={effectiveMode}
         isCentralCommittee={isCentralCommittee}
+      />
+
+      {/* 6.5 Master Institutional Governance Cockpit Modal */}
+      <MasterGovernanceCockpitModal
+        isOpen={showGovernanceModal}
+        onClose={() => setShowGovernanceModal(false)}
+      />
+
+      {/* 6.6 Cloud Storage & Database Backup Vault Modal */}
+      <BackupVaultModal
+        isOpen={showBackupVaultModal}
+        onClose={() => setShowBackupVaultModal(false)}
       />
 
       {/* 7. Floating Ergonomic Glass Dock */}

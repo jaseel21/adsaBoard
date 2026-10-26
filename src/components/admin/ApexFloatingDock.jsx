@@ -5,6 +5,7 @@ import {
   Command,
   LayoutGrid,
   BarChart3,
+  Table2,
   CreditCard,
   Grid3X3,
   Volume2,
@@ -44,6 +45,18 @@ export default function ApexFloatingDock({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const cycleSurface = () => {
+    const sequence = {
+      matrix: 'studio',
+      studio: 'radar',
+      radar: 'matrix',
+    };
+    const nextSurface = sequence[activeSurface] || 'matrix';
+    soundEngine.playPop();
+    hapticEngine.lightTap();
+    if (onChangeSurface) onChangeSurface(nextSurface);
+  };
+
   return (
     <div className="fixed bottom-4 sm:bottom-6 inset-x-0 z-40 flex items-center justify-center pointer-events-none px-4">
       <motion.div
@@ -70,23 +83,28 @@ export default function ApexFloatingDock({
 
         <div className="h-5 w-[1px] bg-gray-200 dark:bg-white/10 mx-0.5" />
 
-        {/* Dual-Surface Quick Switcher */}
+        {/* Tri-Surface Quick Switcher */}
         <button
           type="button"
-          onClick={() => {
-            const nextSurface = activeSurface === 'matrix' ? 'radar' : 'matrix';
-            soundEngine.playPop();
-            hapticEngine.lightTap();
-            if (onChangeSurface) onChangeSurface(nextSurface);
-          }}
+          onClick={cycleSurface}
           className={`p-2 rounded-xl sm:rounded-full transition-all ${
             activeSurface === 'radar'
               ? 'bg-teal-500 text-white shadow-md'
+              : activeSurface === 'studio'
+              ? 'bg-cyan-500 text-white shadow-md'
               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
           }`}
-          title={activeSurface === 'matrix' ? t('switchToOperationsRadar', 'Switch to Operations Radar') : t('switchToTacticalMatrix', 'Switch to Tactical Matrix')}
+          title={
+            activeSurface === 'matrix'
+              ? 'Switch to Data Studio (Spreadsheet CRUD)'
+              : activeSurface === 'studio'
+              ? 'Switch to Operations Radar'
+              : 'Switch to Tactical Matrix'
+          }
         >
-          {activeSurface === 'matrix' ? (
+          {activeSurface === 'studio' ? (
+            <Table2 className="w-4 h-4" />
+          ) : activeSurface === 'radar' ? (
             <BarChart3 className="w-4 h-4" />
           ) : (
             <LayoutGrid className="w-4 h-4" />
