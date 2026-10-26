@@ -4,7 +4,7 @@
  * Provides offline caching, background resilience, app shell caching, and push notification handling.
  */
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.0.1';
 const STATIC_CACHE = `adsa-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `adsa-runtime-${CACHE_VERSION}`;
 const ASSET_CACHE = `adsa-assets-${CACHE_VERSION}`;

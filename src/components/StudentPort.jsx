@@ -65,6 +65,27 @@ import {
   cleanRedundantDateExceptions,
 } from '../utils/studentExceptionService';
 
+// Compare meal routine
+const isRoutineEqual = (a = {}, b = {}) => {
+  const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+  return days.every((d) => Boolean(a[d]) === Boolean(b[d]));
+};
+
+// Compare date exceptions
+const isExceptionsEqual = (a = {}, b = {}) => {
+  const cleanA = cleanPastDateExceptions(a || {});
+  const cleanB = cleanPastDateExceptions(b || {});
+  const keysA = Object.keys(cleanA);
+  const keysB = Object.keys(cleanB);
+  if (keysA.length !== keysB.length) return false;
+  for (const k of keysA) {
+    if (!cleanB[k]) return false;
+    if (Boolean(cleanA[k].breakfast) !== Boolean(cleanB[k].breakfast)) return false;
+    if (Boolean(cleanA[k].lunch) !== Boolean(cleanB[k].lunch)) return false;
+  }
+  return true;
+};
+
 function StudentPort() {
   const { stdata, setStdata, logoutStudent } = useContext(DataOfOne);
   const authContext = useContext(AuthContext);
@@ -167,6 +188,41 @@ function StudentPort() {
     breakfast: stdata?.obj?.breakfast || {},
     dateExceptions: stdata?.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {},
   }));
+
+  // Memoized isDirty flag
+  const isDirty = useMemo(() => {
+    if (!savedBaseline) return false;
+    const lunchChanged = !isRoutineEqual(lunch, savedBaseline.lunch);
+    const breakfastChanged = !isRoutineEqual(breakfast, savedBaseline.breakfast);
+    const exceptionsChanged = !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
+    return lunchChanged || breakfastChanged || exceptionsChanged;
+  }, [lunch, breakfast, dateExceptions, savedBaseline]);
+
+  // Count of individual changed preferences
+  const changedCount = useMemo(() => {
+    if (!savedBaseline) return 0;
+    let count = 0;
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    days.forEach((d) => {
+      if (Boolean(lunch[d]) !== Boolean(savedBaseline.lunch?.[d])) count++;
+      if (Boolean(breakfast[d]) !== Boolean(savedBaseline.breakfast?.[d])) count++;
+    });
+    const cleanCur = cleanPastDateExceptions(dateExceptions || {});
+    const cleanBase = cleanPastDateExceptions(savedBaseline.dateExceptions || {});
+    const allDates = new Set([...Object.keys(cleanCur), ...Object.keys(cleanBase)]);
+    allDates.forEach((d) => {
+      const cur = cleanCur[d];
+      const base = cleanBase[d];
+      if (!cur && base) count++;
+      else if (cur && !base) count++;
+      else if (cur && base) {
+        if (Boolean(cur.breakfast) !== Boolean(base.breakfast) || Boolean(cur.lunch) !== Boolean(base.lunch)) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [lunch, breakfast, dateExceptions, savedBaseline]);
 
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
 
@@ -284,61 +340,6 @@ function StudentPort() {
     }
   }, [stdata, isDirty]);
 
-  // Compare meal routine
-  const isRoutineEqual = (a = {}, b = {}) => {
-    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-    return days.every((d) => Boolean(a[d]) === Boolean(b[d]));
-  };
-
-  // Compare date exceptions
-  const isExceptionsEqual = (a = {}, b = {}) => {
-    const cleanA = cleanPastDateExceptions(a || {});
-    const cleanB = cleanPastDateExceptions(b || {});
-    const keysA = Object.keys(cleanA);
-    const keysB = Object.keys(cleanB);
-    if (keysA.length !== keysB.length) return false;
-    for (const k of keysA) {
-      if (!cleanB[k]) return false;
-      if (Boolean(cleanA[k].breakfast) !== Boolean(cleanB[k].breakfast)) return false;
-      if (Boolean(cleanA[k].lunch) !== Boolean(cleanB[k].lunch)) return false;
-    }
-    return true;
-  };
-
-  // Memoized isDirty flag
-  const isDirty = useMemo(() => {
-    if (!savedBaseline) return false;
-    const lunchChanged = !isRoutineEqual(lunch, savedBaseline.lunch);
-    const breakfastChanged = !isRoutineEqual(breakfast, savedBaseline.breakfast);
-    const exceptionsChanged = !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
-    return lunchChanged || breakfastChanged || exceptionsChanged;
-  }, [lunch, breakfast, dateExceptions, savedBaseline]);
-
-  // Count of individual changed preferences
-  const changedCount = useMemo(() => {
-    if (!savedBaseline) return 0;
-    let count = 0;
-    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-    days.forEach((d) => {
-      if (Boolean(lunch[d]) !== Boolean(savedBaseline.lunch?.[d])) count++;
-      if (Boolean(breakfast[d]) !== Boolean(savedBaseline.breakfast?.[d])) count++;
-    });
-    const cleanCur = cleanPastDateExceptions(dateExceptions || {});
-    const cleanBase = cleanPastDateExceptions(savedBaseline.dateExceptions || {});
-    const allDates = new Set([...Object.keys(cleanCur), ...Object.keys(cleanBase)]);
-    allDates.forEach((d) => {
-      const cur = cleanCur[d];
-      const base = cleanBase[d];
-      if (!cur && base) count++;
-      else if (cur && !base) count++;
-      else if (cur && base) {
-        if (Boolean(cur.breakfast) !== Boolean(base.breakfast) || Boolean(cur.lunch) !== Boolean(base.lunch)) {
-          count++;
-        }
-      }
-    });
-    return count;
-  }, [lunch, breakfast, dateExceptions, savedBaseline]);
 
   // Window beforeunload safety net
   useEffect(() => {
