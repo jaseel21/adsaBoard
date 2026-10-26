@@ -22,7 +22,7 @@ export default function LiveSystemTelemetry() {
   const { t, lang, setLangPref, langPref } = useLanguage();
   const { preferences } = usePreferences();
   const { soundEnabled, setSoundEnabled, feedback } = useFeedback();
-  const { isOnline } = useNetworkStatus();
+  const { isOnline, latencyMs } = useNetworkStatus();
   const { timeParts, timeParts24, nowDate, dayFull } = useWorldTime('Asia/Kolkata');
 
   const is24h = preferences?.clockFormat === '24h';
@@ -117,8 +117,8 @@ export default function LiveSystemTelemetry() {
             )}
             <span>{t('allSystemsOperational', 'All Systems Operational')}</span>
           </span>
-          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-            99.98% SLA
+          <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            {isOnline ? (latencyMs > 0 ? `${latencyMs}ms Live` : 'Live Synced') : 'Offline'}
           </span>
         </div>
 

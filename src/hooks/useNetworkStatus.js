@@ -1,57 +1,60 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { liveSyncManager } from '../utils/liveSyncManager';
 
 /**
  * ADSA T-Board Reactive Network Health Hook
- * Tracks browser online/offline status and provides reconnection transitions.
+ * Powered by LiveSyncManager for multi-tier verification and zero-reload soft reconnection.
  */
 export function useNetworkStatus() {
-  const [isOnline, setIsOnline] = useState(() => {
-    if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
-      return navigator.onLine;
-    }
-    return true;
-  });
-
+  const [syncState, setSyncState] = useState(() => liveSyncManager.getState());
   const [wasOffline, setWasOffline] = useState(false);
-  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectedBannerActive, setReconnectedBannerActive] = useState(false);
   const reconnectTimerRef = useRef(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    let prevOnline = liveSyncManager.getState().isOnline;
 
-    const handleOnline = () => {
-      setIsOnline(true);
-      setReconnecting(true);
+    const unsub = liveSyncManager.subscribe((state) => {
+      setSyncState(state);
 
-      // Flash "Back Online" banner for 3.5 seconds then clear wasOffline
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = setTimeout(() => {
-        setReconnecting(false);
-        setWasOffline(false);
-      }, 3500);
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      setWasOffline(true);
-      setReconnecting(false);
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+      if (!state.isOnline) {
+        setWasOffline(true);
+        setReconnectedBannerActive(false);
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      } else if (state.isOnline && !prevOnline) {
+        // Just transitioned from offline to online!
+        setReconnectedBannerActive(true);
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = setTimeout(() => {
+          setReconnectedBannerActive(false);
+          setWasOffline(false);
+        }, 3500);
+      }
+      prevOnline = state.isOnline;
+    });
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      unsub();
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     };
   }, []);
 
+  const triggerSoftReconnect = useCallback(() => {
+    return liveSyncManager.triggerSoftReconnect();
+  }, []);
+
   return {
-    isOnline,
-    isOffline: !isOnline,
+    isOnline: syncState.isOnline,
+    isOffline: !syncState.isOnline,
+    reconnecting: syncState.isReconnecting || reconnectedBannerActive,
+    isReconnecting: syncState.isReconnecting,
     wasOffline,
-    reconnecting,
+    latencyMs: syncState.latencyMs,
+    lastSyncedAt: syncState.lastSyncedAt,
+    retryCountdown: syncState.retryCountdown,
+    triggerSoftReconnect,
+    checkConnection: triggerSoftReconnect,
   };
 }
+
+export default useNetworkStatus;

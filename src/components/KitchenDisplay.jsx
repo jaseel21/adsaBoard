@@ -35,6 +35,7 @@ import { dialog } from '../utils/dialog';
 import {
   addDaysToDate,
   getEffectiveStudentMealStatus,
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
 } from '../utils/studentExceptionService';
 import { subscribeToPreferences } from '../utils/preferenceService';
@@ -56,12 +57,12 @@ export default function KitchenDisplay() {
   const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
 
   const { timeHms, dayShort, todayIST } = useWorldTime('Asia/Kolkata');
-  const { activeWindow } = useTokenLockStatus();
-  const openTime = activeWindow?.startTime || '14:00';
+  const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
+  const switchTime = rawBoardSwitchTime || '14:00';
 
-  // Day selection mode: defaults to Today before open time (eg. 2 PM), Tomorrow after open time
+  // Day selection mode: defaults to Today before switch time (eg. 2 PM), Tomorrow after switch time
   const [dayMode, setDayMode] = useState('auto'); // 'auto' | 'today' | 'tomorrow'
-  const isPostCutoff = isPastBoardWindowOpenTime(timeHms, openTime);
+  const isPostCutoff = isPastBoardSwitchTime(timeHms, switchTime);
   const isShowingTomorrow = dayMode === 'tomorrow' || (dayMode === 'auto' && isPostCutoff);
 
   const targetDateIST = useMemo(() => {
@@ -461,9 +462,15 @@ export default function KitchenDisplay() {
             {t('totalPortions', 'Total Portions')} ({activeMeal === 'lunch' ? (t('lunch') || 'Lunch') : (t('breakfast') || 'Breakfast')})
           </span>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-black font-mono">
+            <motion.span
+              key={mealMetrics.totalTakingMeal}
+              initial={{ opacity: 0.4, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="text-3xl sm:text-4xl font-black font-mono inline-block"
+            >
               {loading ? '...' : mealMetrics.totalTakingMeal}
-            </span>
+            </motion.span>
             <span className="text-xs text-emerald-100 font-semibold">
               of {mealMetrics.totalEligible} {t('active', 'Active')}
             </span>
@@ -479,9 +486,15 @@ export default function KitchenDisplay() {
             {t('standardRegularPortions', 'Standard / Regular Portions')}
           </span>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-black font-mono text-gray-900 dark:text-white">
+            <motion.span
+              key={mealMetrics.regularCount}
+              initial={{ opacity: 0.4, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="text-3xl sm:text-4xl font-black font-mono text-gray-900 dark:text-white inline-block"
+            >
               {loading ? '...' : mealMetrics.regularCount}
-            </span>
+            </motion.span>
             <span className="text-xs text-gray-500 font-semibold">{t('noRestrictions', 'No restrictions')}</span>
           </div>
           <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
@@ -495,9 +508,15 @@ export default function KitchenDisplay() {
             {t('specialCareDietary', 'Special Care / Dietary')}
           </span>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-black font-mono text-amber-600 dark:text-amber-400">
+            <motion.span
+              key={mealMetrics.specialDietCount}
+              initial={{ opacity: 0.4, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="text-3xl sm:text-4xl font-black font-mono text-amber-600 dark:text-amber-400 inline-block"
+            >
               {loading ? '...' : mealMetrics.specialDietCount}
-            </span>
+            </motion.span>
             <span className="text-xs text-amber-600 font-semibold">{t('specialPlates', 'Special plates')}</span>
           </div>
           <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
@@ -511,9 +530,15 @@ export default function KitchenDisplay() {
             {t('optedOutCancelled', 'Opted Out (Cancelled)')}
           </span>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-black font-mono text-rose-600 dark:text-rose-400">
+            <motion.span
+              key={mealMetrics.totalOptedOut}
+              initial={{ opacity: 0.4, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="text-3xl sm:text-4xl font-black font-mono text-rose-600 dark:text-rose-400 inline-block"
+            >
               {loading ? '...' : mealMetrics.totalOptedOut}
-            </span>
+            </motion.span>
             <span className="text-xs text-rose-500 font-semibold">{t('excluded', 'Excluded')}</span>
           </div>
           <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">

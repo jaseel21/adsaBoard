@@ -49,6 +49,7 @@ import {
   addDaysToDate,
   getDayOfWeekShort,
   formatFriendlyDate,
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
   getRelativeDateMeta,
   getEffectiveStudentMealStatus,
@@ -73,14 +74,14 @@ export default function AdvancedExportModal({
 
   // Authoritative Asia/Kolkata (IST) Clock & Cutoff configuration
   const { timeHms, todayIST: worldTodayIST } = useWorldTime('Asia/Kolkata');
-  const { activeWindow } = useTokenLockStatus();
+  const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
 
   const todayIST = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
   const tomorrowIST = useMemo(() => addDaysToDate(todayIST, 1), [todayIST]);
 
-  // Determine if current IST time is past the kitchen prep cutoff window (default 2:00 PM / 14:00)
-  const windowOpenTime = activeWindow?.startTime || '14:00';
-  const isPostEveningCutoff = Boolean(isPastBoardWindowOpenTime(timeHms, windowOpenTime));
+  // Determine if current IST time is past the dynamic board switch time (default 2:00 PM / 14:00)
+  const boardSwitchTime = rawBoardSwitchTime || '14:00';
+  const isPostEveningCutoff = Boolean(isPastBoardSwitchTime(timeHms, boardSwitchTime));
 
   // Date State: 'auto' | 'today' | 'tomorrow' | 'custom'
   // Defaults to 'auto' (which follows 2:00 PM IST cutoff schedule: Today before 2 PM, Tomorrow after 2 PM)

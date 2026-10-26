@@ -144,12 +144,45 @@ export default function SmoothScrollProvider({ children }) {
       touchMultiplier: 1.0,
       syncTouch: false, // Ensures native iOS / Android swipe inertia without input lag
       autoResize: true,
+      allowNestedScroll: true, // Automatically delegates native wheel/touch events for nested scrollable containers
       prevent: (node) => {
-        // Prevent Lenis from handling elements with data-lenis-prevent or inside modals
-        return (
+        if (!node || !(node instanceof Element)) return false;
+
+        // 1. Explicit Lenis prevent attribute (direct or inherited from ancestor)
+        if (
           node.hasAttribute('data-lenis-prevent') ||
           node.closest('[data-lenis-prevent]') !== null
+        ) {
+          return true;
+        }
+
+        // 2. Modals, Dialogs, Drawers, Sheets, Popovers, and Menus
+        if (
+          node.closest(
+            '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="combobox"], [aria-modal="true"], dialog, [data-modal], [data-dialog], .modal, .dialog'
+          ) !== null
+        ) {
+          return true;
+        }
+
+        // 3. Any fixed or absolute overlay container / modal backdrop
+        // (excluding pointer-events-none background ambient effects)
+        const fixedContainer = node.closest(
+          '[class*="fixed inset-0"], .fixed.inset-0, [class*="fixed top-0"], [class*="fixed bottom-0"]'
         );
+        if (fixedContainer && !fixedContainer.classList.contains('pointer-events-none')) {
+          return true;
+        }
+
+        // 4. Any vertically scrollable container (Tailwind or native overflow classes)
+        const scrollableContainer = node.closest(
+          '[class*="overflow-y-auto"], [class*="overflow-y-scroll"], [class*="overflow-auto"], [class*="overflow-scroll"]'
+        );
+        if (scrollableContainer) {
+          return true;
+        }
+
+        return false;
       },
     }),
     [isBypassed]

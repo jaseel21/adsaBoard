@@ -1,30 +1,54 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Lock, CalendarDays } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import { useExperienceFX } from '../fx/ExperienceFXProvider';
+import { useLongPressPeek } from '../../hooks/useLongPressPeek';
 
 /**
  * Tactile Square Token Button
- * High-performance, tactile matrix button representing a student token.
- * 
- * Rules:
- * - Always shows token number (even when locked).
- * - Emerald Green for Active Serving (ON).
- * - Rose Red for Skipped / Off (including Single-Day Leave overrides).
- * - Charcoal Dark for Administratively Blocked / Locked.
- * - Clicking any token (active, off, or locked) opens details.
+ * Award-winning tactile matrix button with magnetic cursor docking,
+ * left-click particle bursts, right-click glassmorphic context menu,
+ * and mobile progressive long-press with two-stage haptic escalation.
  */
 export default function TokenButton({
   doc,
   isOn,
   onLeave = false,
+  isLunch = false,
   onClick,
   onBlockedClick,
   className = '',
 }) {
   const isBlocked = Boolean(doc.block);
+  const buttonRef = useRef(null);
+
+  const {
+    triggerParticleBurst,
+    openContextMenu,
+    openPeekSheet,
+    setMagneticTarget,
+    setCursorVariant,
+  } = useExperienceFX();
+
+  // Mobile progressive long press peek hook
+  const longPress = useLongPressPeek(
+    ({ rect, data }) => {
+      openPeekSheet(rect, data);
+    },
+    { delay: 380 }
+  );
 
   const handleClick = (e) => {
     e.stopPropagation();
+
+    // Spawn localized spark burst based on meal state
+    triggerParticleBurst(
+      e.clientX,
+      e.clientY,
+      isBlocked ? 'amber' : isOn ? 'emerald' : 'rose',
+      10
+    );
+
     if (onClick) {
       onClick(doc);
     } else if (isBlocked && onBlockedClick) {
@@ -32,13 +56,46 @@ export default function TokenButton({
     }
   };
 
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openContextMenu(e, 'token', { doc, isOn, onLeave, isLunch });
+  };
+
+  const handleMouseEnter = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMagneticTarget({
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        borderRadius: 16,
+      });
+      setCursorVariant('pointer');
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setMagneticTarget(null);
+    setCursorVariant('default');
+  };
+
   return (
     <motion.button
+      ref={buttonRef}
       type="button"
+      data-magnetic="true"
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.92 }}
       transition={{ type: 'spring', stiffness: 500, damping: 28 }}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={(e) => longPress.onTouchStart(e, { doc, isOn, onLeave, isLunch })}
+      onTouchEnd={longPress.onTouchEnd}
+      onTouchMove={longPress.onTouchMove}
       aria-label={`Token ${doc.tokenNo}${isBlocked ? ' (Locked)' : isOn ? ' (Active)' : ' (Off)'}`}
       className={`
         relative group flex items-center justify-center flex-shrink-0
@@ -78,6 +135,26 @@ export default function TokenButton({
           isBlocked ? 'bg-gray-400' : isOn ? 'bg-white/80' : 'bg-white/60'
         }`}
       />
+
+      {/* Mobile Long-Press Progressive Countdown Ring */}
+      {longPress.progress > 0 && longPress.progress < 1 && (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none z-30"
+          viewBox="0 0 100 100"
+        >
+          <circle
+            cx="50"
+            cy="50"
+            r="44"
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.9)"
+            strokeWidth="5"
+            strokeDasharray={2 * Math.PI * 44}
+            strokeDashoffset={2 * Math.PI * 44 * (1 - longPress.progress)}
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
     </motion.button>
   );
 }

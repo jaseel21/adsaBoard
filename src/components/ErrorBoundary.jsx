@@ -31,6 +31,10 @@ export default class ErrorBoundary extends React.Component {
     }
   }
 
+  handleSoftRecover = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
+  };
+
   handleReload = () => {
     window.location.reload();
   };
@@ -75,11 +79,11 @@ export default class ErrorBoundary extends React.Component {
             <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
               <button
                 type="button"
-                onClick={this.handleReload}
+                onClick={this.handleSoftRecover}
                 className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Reload Page</span>
+                <span>Recover View</span>
               </button>
 
               <button
@@ -89,6 +93,16 @@ export default class ErrorBoundary extends React.Component {
               >
                 <Home className="w-3.5 h-3.5" />
                 <span>Return to Home</span>
+              </button>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={this.handleReload}
+                className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline transition-colors"
+              >
+                Force Browser Reload
               </button>
             </div>
           </div>

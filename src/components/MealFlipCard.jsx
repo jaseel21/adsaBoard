@@ -9,10 +9,10 @@ import {
   RotateCcw,
   Sparkles,
   Flame,
-  Users,
   ChevronRight,
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
+import { useExperienceFX } from './fx/ExperienceFXProvider';
 
 /**
  * MealFlipCard - Pro-Motion 3D Flippable Meal Reservation Counter Card
@@ -46,11 +46,24 @@ export default function MealFlipCard({
   const safeTotal = Math.max(totalStudents, 1);
   const participationPct = Math.min(100, Math.round((activeCount / safeTotal) * 100));
   const rejectedPct = Math.min(100, Math.max(0, 100 - participationPct));
+  const { triggerParticleBurst } = useExperienceFX();
+
+  const handleClick = (e) => {
+    if (e && e.clientX) {
+      triggerParticleBurst(
+        e.clientX,
+        e.clientY,
+        isFlipped ? 'emerald' : 'rose',
+        14
+      );
+    }
+    onFlip();
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onFlip();
+      handleClick(e);
     }
   };
 
@@ -62,11 +75,12 @@ export default function MealFlipCard({
       <motion.div
         role="button"
         tabIndex={0}
+        data-magnetic="true"
         aria-label={`${mealName} ${dayLabel}: ${
           isFlipped ? `${rejectedCount} rejected tokens` : `${activeCount} turned on tokens`
         }. Click to flip.`}
         aria-pressed={isFlipped}
-        onClick={onFlip}
+        onClick={handleClick}
         onKeyDown={handleKeyDown}
         whileHover={{ y: -3, scale: 1.015 }}
         whileTap={{ scale: 0.98 }}

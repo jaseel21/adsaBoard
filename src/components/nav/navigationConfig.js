@@ -23,6 +23,7 @@ import {
   BarChart3,
   Ban,
   Settings,
+  Compass,
 } from 'lucide-react';
 import { ROLES, hasRole } from '../../utils/rbac';
 
@@ -382,6 +383,28 @@ export const NAV_ITEMS = [
     badgeTextEn: 'Apex',
     badgeTextMl: 'ഏപെക്സ്',
     keywords: ['analytics', 'statistics', 'reports', 'performance', 'kitchen rations', 'waste', 'അനലിറ്റിക്സ്', 'കണക്കുകൾ'],
+  },
+  {
+    id: 'sentinel_radar',
+    path: '/admin/sentinel',
+    aliases: ['/admin/radar', '/admin/live', '/sentinel'],
+    labelEn: 'Live Fleet Radar',
+    labelMl: 'തത്സമയ യൂസർ റഡാർ',
+    shortLabelEn: 'Live Radar',
+    shortLabelMl: 'റഡാർ',
+    category: NAV_CATEGORIES.ADMIN.id,
+    icon: Compass,
+    descriptionEn: 'Real-time user presence tracking, live activity tracing & remote administrative control',
+    descriptionMl: 'തത്സമയ വിദ്യാർത്ഥി ലൊക്കേഷനും റിമോട്ട് കൺട്രോളും',
+    allowedRoles: [
+      ROLES.CANTEEN_COMMITTEE,
+      ROLES.CENTRAL_COMMITTEE,
+      ROLES.DEVELOPER,
+    ],
+    showInDesktopBar: true,
+    badgeTextEn: 'Live',
+    badgeTextMl: 'തത്സമയം',
+    keywords: ['live', 'radar', 'presence', 'sentinel', 'tracking', 'fleet', 'remote control', 'തത്സമയം', 'റഡാർ'],
   },
   {
     id: 'audit_logs',

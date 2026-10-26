@@ -7,6 +7,7 @@ import {
   getDayOfWeekShort,
   getActiveStudentException,
   getEffectiveStudentMealStatus,
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
   getDefaultBoardDayOffset,
   getRelativeDateMeta,
@@ -34,6 +35,7 @@ export function useTokenBoardController(options = {}) {
     initialMeal = 'breakfast',
     initialViewCategory = 'all',
     initialViewDensity = 'matrix',
+    boardSwitchTime = null,
     windowOpenTime = null,
   } = options;
 
@@ -71,20 +73,20 @@ export function useTokenBoardController(options = {}) {
     isSynced,
     isDeviceDesynced,
     deviceOffsetMinutes,
+    todayIST: worldTodayIST,
   } = useWorldTime('Asia/Kolkata');
 
   // Real-time Token Board Cutoff & Window Configuration
-  const { activeWindow } = useTokenLockStatus();
+  const { activeWindow, rawBoardSwitchTime, boardSwitchTime: statusBoardSwitchTime } = useTokenLockStatus();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const todayIST = useMemo(() => getTodayISTDate(), [longDate]);
+  const todayIST = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
 
-  // Determine target date based on mode and board updation window open time:
-  // 12:00 AM - Window Open Time (e.g. 2:00 PM): Today
-  // Window Open Time (e.g. 2:00 PM) - 12:00 AM: Tomorrow
-  const effectiveOpenTime = windowOpenTime || activeWindow?.startTime || '14:00';
+  // Determine target date based on mode and dynamic board switch time (e.g. 2:00 PM regular / 2:15 PM Friday):
+  // 12:00 AM - Board Switch Time: Today
+  // Board Switch Time - 11:59 PM: Tomorrow
+  const effectiveSwitchTime = boardSwitchTime || windowOpenTime || rawBoardSwitchTime || '14:00';
   const isPostEveningCutoff = Boolean(
-    autoEveningShift && isPastBoardWindowOpenTime(timeHms, effectiveOpenTime)
+    autoEveningShift && isPastBoardSwitchTime(timeHms, effectiveSwitchTime)
   );
 
   const targetDateIST = useMemo(() => {
@@ -695,6 +697,8 @@ export function useTokenBoardController(options = {}) {
     isPastDate: relativeDateMeta.isPast,
     isFutureDate: relativeDateMeta.isFuture,
     isPostEveningCutoff,
+    boardSwitchTime: effectiveSwitchTime,
+    isPastBoardSwitch: isPostEveningCutoff,
 
     // Clock & Anti-Tamper IST
     timeHms,

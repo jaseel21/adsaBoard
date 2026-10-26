@@ -685,7 +685,7 @@ export default function BlockManagementModal({
 
   return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
+      <div data-lenis-prevent className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overscroll-contain">
         {/* Scrim Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -697,11 +697,14 @@ export default function BlockManagementModal({
 
         {/* Modal Window */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          data-lenis-prevent
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ type: 'spring', damping: 28, stiffness: 340 }}
-          className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden z-10"
+          className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden z-10 overscroll-contain"
         >
           {/* Header */}
           <div className="px-5 py-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-gray-50/80 to-white dark:from-[#0a110f] dark:to-[#0c1412] flex-shrink-0">

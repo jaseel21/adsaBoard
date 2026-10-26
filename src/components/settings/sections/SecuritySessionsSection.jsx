@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Clock, Laptop, AlertTriangle, KeyRound, LogOut, Check } from 'lucide-react';
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
 import { dialog } from '../../../utils/dialog';
+import { liveSyncManager } from '../../../utils/liveSyncManager';
 
 export default function SecuritySessionsSection({
   preferences,
@@ -10,6 +12,7 @@ export default function SecuritySessionsSection({
   user,
   stdata,
 }) {
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const { feedback } = useFeedback();
 
@@ -32,9 +35,11 @@ export default function SecuritySessionsSection({
 
     if (confirmed) {
       sessionStorage.clear();
+      liveSyncManager.broadcast('SESSION_PURGE');
+      window.dispatchEvent(new CustomEvent('adsa:session_purged'));
       feedback('pop');
       dialog.toast.info('Sessions Cleared', 'Active tokens cleared from this terminal.');
-      window.location.reload();
+      navigate('/', { replace: true });
     }
   };
 

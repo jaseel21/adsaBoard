@@ -126,12 +126,12 @@ export default function SupplySections({ defaultMeal }) {
     }
   };
 
-  const { activeWindow } = useTokenLockStatus();
+  const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
   const dateController = useDateController({
     initialCustomDate: searchParams.get('date') || '',
     initialDateMode: searchParams.get('date') ? 'custom' : 'auto',
     autoEveningShift: true,
-    windowOpenTime: activeWindow?.startTime || '14:00',
+    boardSwitchTime: rawBoardSwitchTime || '14:00',
   });
 
   const {

@@ -24,6 +24,7 @@ import {
   History,
   Ban,
   BarChart3,
+  Compass,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { soundEngine } from '../../utils/soundEffects';
@@ -111,6 +112,17 @@ export default function ApexCommandPalette({
     }
 
     list.push(
+      {
+        id: 'sentinel_radar',
+        title: 'Apex Sentinel: Live User Radar & Control Console',
+        subtitle: 'Real-time user presence, activity tracing & remote interventions (/admin/sentinel)',
+        icon: Compass,
+        iconColor: 'text-cyan-400',
+        action: () => {
+          navigate('/admin/sentinel');
+          onClose();
+        },
+      },
       {
         id: 'kitchen_kds',
         title: t('openKitchenKds', 'Open Kitchen Live Display System'),
@@ -323,7 +335,7 @@ export default function ApexCommandPalette({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-3 sm:px-4">
+      <div data-lenis-prevent className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-3 sm:px-4 overscroll-contain">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -335,11 +347,14 @@ export default function ApexCommandPalette({
 
         {/* Command Modal Box */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          data-lenis-prevent
           initial={{ opacity: 0, scale: 0.95, y: -16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -16 }}
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 border border-gray-200/80 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col max-h-[80vh]"
+          className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 border border-gray-200/80 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col max-h-[80vh] overscroll-contain"
         >
           {/* Header Search Input */}
           <div className="relative flex items-center px-4 sm:px-5 py-3.5 border-b border-gray-100 dark:border-white/10">

@@ -32,7 +32,8 @@ const DAYS = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
  * Interactive, pro-motion dock housing Breakfast & Lunch 3D flip counter cards.
  * Defaults:
  * - 12:00 AM to board updation window open time (eg. 2:00 PM): Today (offset 0)
- * - Window open time to 12:00 AM (midnight): Tomorrow (offset 1)
+ * - 12:00 AM to board switch time (default 2:00 PM IST): Today (offset 0)
+ * - Board switch time to 12:00 AM (midnight): Tomorrow (offset 1)
  */
 export default function HeroMealCountersDock({
   studentsList = [],
@@ -40,16 +41,19 @@ export default function HeroMealCountersDock({
   dayShort = '',
   dayFull = '',
   loadingData = false,
+  boardSwitchTime = null,
   windowOpenTime = '14:00',
   defaultOffset = null,
 }) {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  // Day Offset: 0 = Today (12 AM to board open time), 1 = Tomorrow (board open time to 12 AM)
+  const effectiveSwitchTime = boardSwitchTime || windowOpenTime || '14:00';
+
+  // Day Offset: 0 = Today (12 AM to board switch time), 1 = Tomorrow (board switch time to 12 AM)
   const [dayOffset, setDayOffset] = React.useState(() => {
     if (typeof defaultOffset === 'number') return defaultOffset;
-    return getDefaultBoardDayOffset(null, windowOpenTime);
+    return getDefaultBoardDayOffset(null, effectiveSwitchTime);
   });
   const [userToggled, setUserToggled] = React.useState(false);
 

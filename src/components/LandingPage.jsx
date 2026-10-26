@@ -80,6 +80,8 @@ export default function LandingPage() {
     endTime,
     isPortalAccessible,
     defaultDayOffset,
+    rawBoardSwitchTime,
+    boardSwitchTime,
   } = useTokenLockStatus();
 
   const { preferences: clientPreferences, setPreference } = usePreferences();
@@ -475,7 +477,8 @@ export default function LandingPage() {
               dayShort={dayShort}
               dayFull={dayFull}
               loadingData={loadingData}
-              windowOpenTime={startTime || '14:00'}
+              boardSwitchTime={rawBoardSwitchTime || '14:00'}
+              windowOpenTime={rawBoardSwitchTime || '14:00'}
               defaultOffset={defaultDayOffset}
             />
           </div>

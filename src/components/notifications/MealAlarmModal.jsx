@@ -67,7 +67,7 @@ export default function MealAlarmModal({ isOpen, onClose }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-auto">
+      <div data-lenis-prevent className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-auto overscroll-contain">
         {/* Scrim backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -79,11 +79,14 @@ export default function MealAlarmModal({ isOpen, onClose }) {
 
         {/* Modal Card / Bottom Sheet on mobile */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          data-lenis-prevent
           initial={{ y: '100%', opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-          className="relative w-full max-w-lg rounded-t-[32px] sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200 dark:border-white/10 p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-5 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-lg rounded-t-[32px] sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200 dark:border-white/10 p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-5 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto overscroll-contain"
         >
           {/* Top handle on mobile */}
           <div className="sm:hidden w-10 h-1 rounded-full bg-gray-300 dark:bg-white/20 mx-auto" />

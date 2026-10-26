@@ -17,6 +17,7 @@ import UniversalMenuStudio from './components/menu/UniversalMenuStudio';
 import DietaryManagement from './components/DietaryManagement';
 import AuditTrail from './components/audit/AuditTrail';
 import ApexAnalyticsDashboard from './components/analytics/ApexAnalyticsDashboard';
+import ApexSentinelDashboard from './components/admin/sentinel/ApexSentinelDashboard';
 import KitchenDisplay from './components/KitchenDisplay';
 import GuidePage from './components/guide/GuidePage';
 import DiningEthicsPage from './components/ethics/DiningEthicsPage';
@@ -44,7 +45,6 @@ import BackToTopButton from './components/scroll/BackToTopButton';
 import ScrollRestorationWatcher from './components/scroll/ScrollRestorationWatcher';
 import SettingsPage from './components/settings/SettingsPage';
 import { PreferencesProvider, usePreferences } from './store/PreferencesContext';
-import OfflineStatusIndicator from './components/ui/OfflineStatusIndicator';
 import PwaInstallPrompt from './components/pwa/PwaInstallPrompt';
 import { checkAndTriggerMealAlarms } from './utils/mealAlarmService';
 import SkipToContent from './components/a11y/SkipToContent';
@@ -52,6 +52,10 @@ import AriaLiveAnnouncer from './components/a11y/AriaLiveAnnouncer';
 import ColorBlindFilterDefs from './components/a11y/ColorBlindFilterDefs';
 import ReadingGuideRuler from './components/a11y/ReadingGuideRuler';
 import AccessibilityQuickDock from './components/a11y/AccessibilityQuickDock';
+import ExperienceFXProvider from './components/fx/ExperienceFXProvider';
+import { useLivePresenceTracker } from './hooks/useLivePresenceTracker';
+import { useRemoteCommandListener } from './hooks/useRemoteCommandListener';
+import EmergencyAlertBannerModal from './components/admin/sentinel/EmergencyAlertBannerModal';
 import './App.css';
 
 function AppContent() {
@@ -61,6 +65,13 @@ function AppContent() {
   const navigate = useNavigate();
   const { sidebarOpen } = useSidebar();
   const { preferences } = usePreferences();
+
+  // Root Live Presence Tracker & Remote Command Listener
+  const presence = useLivePresenceTracker();
+  const { activeAlert, handleDismissAlert } = useRemoteCommandListener({
+    sessionId: presence.sessionId,
+    identity: presence.identity,
+  });
 
   // Admin and staff control consoles have full-bleed/dock workspaces and do not display public footer
   const isAdminRoute =
@@ -101,7 +112,6 @@ function AppContent() {
       <AccessibilityQuickDock />
       <ScrollProgressBar />
       <ScrollRestorationWatcher />
-      <OfflineStatusIndicator />
       <Navbar isAdmin={isAdmin} />
       <div className="flex flex-1 w-full relative min-w-0">
         <BrowserLeftSidebar />
@@ -248,6 +258,26 @@ function AppContent() {
             <Route path="/admin/reports" element={<Navigate to="/admin/analytics" replace />} />
             <Route path="/admin/intelligence" element={<Navigate to="/admin/analytics" replace />} />
 
+            {/* Apex Sentinel: Real-Time Fleet Radar, User Tracing & Remote Control */}
+            <Route
+              path="/admin/sentinel"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <ApexSentinelDashboard />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/radar" element={<Navigate to="/admin/sentinel" replace />} />
+            <Route path="/admin/live" element={<Navigate to="/admin/sentinel" replace />} />
+            <Route path="/sentinel" element={<Navigate to="/admin/sentinel" replace />} />
+            <Route path="/radar" element={<Navigate to="/admin/sentinel" replace />} />
+
             {/* Broadcast Notifications & Announcements (Canteen Sub-Committee, Central, Devs) */}
             <Route
               path="/admin/notifications"
@@ -349,6 +379,11 @@ function AppContent() {
         {!isAdminRoute && <Footer />}
         </main>
       </div>
+      <EmergencyAlertBannerModal
+        isOpen={Boolean(activeAlert)}
+        alertData={activeAlert}
+        onAcknowledge={handleDismissAlert}
+      />
       {!location.pathname.startsWith('/kitchen') && <BackToTopButton />}
     </div>
   );
@@ -362,14 +397,16 @@ function App() {
           <PersonInfo>
             <NotificationProvider>
               <DialogProvider>
-                <SmoothScrollProvider>
-                  <SidebarProvider>
-                    <AppContent />
-                    <NotificationDrawer />
-                    <EmergencyNotificationDialog />
-                    <PwaInstallPrompt />
-                  </SidebarProvider>
-                </SmoothScrollProvider>
+                <ExperienceFXProvider>
+                  <SmoothScrollProvider>
+                    <SidebarProvider>
+                      <AppContent />
+                      <NotificationDrawer />
+                      <EmergencyNotificationDialog />
+                      <PwaInstallPrompt />
+                    </SidebarProvider>
+                  </SmoothScrollProvider>
+                </ExperienceFXProvider>
               </DialogProvider>
             </NotificationProvider>
           </PersonInfo>

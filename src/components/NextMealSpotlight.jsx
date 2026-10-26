@@ -31,6 +31,7 @@ import {
   formatFriendlyDate,
   getDayOfWeekShort,
   getEffectiveStudentMealStatus,
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
 } from '../utils/studentExceptionService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
@@ -70,8 +71,8 @@ export default function NextMealSpotlight({
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const { timeHms, dayShort } = useWorldTime('Asia/Kolkata');
-  const { activeWindow } = useTokenLockStatus();
-  const openTime = activeWindow?.startTime || '14:00';
+  const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
+  const effectiveSwitchTime = rawBoardSwitchTime || '14:00';
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
   const [overrides, setOverrides] = useState({});
@@ -104,13 +105,13 @@ export default function NextMealSpotlight({
     const current = (dayShort || 'fr').toLowerCase();
     const currIdx = DAYS_ORDER.indexOf(current) !== -1 ? DAYS_ORDER.indexOf(current) : 5;
     const nextIdx = (currIdx + 1) % 7;
-    const postCutoff = isPastBoardWindowOpenTime(timeHms, openTime);
+    const postCutoff = isPastBoardSwitchTime(timeHms, effectiveSwitchTime);
     return {
       todayKey: current,
       tomorrowKey: DAYS_ORDER[nextIdx],
       isPostCutoff: postCutoff,
     };
-  }, [dayShort, timeHms, openTime]);
+  }, [dayShort, timeHms, effectiveSwitchTime]);
 
   const displayedDayKey = useMemo(() => {
     if (isControlledMode) {
@@ -303,7 +304,7 @@ export default function NextMealSpotlight({
   };
 
   return (
-    <div className="relative overflow-hidden w-full max-w-full min-w-0 p-4 xs:p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl transition-all duration-300">
+    <div className="spotlight-card relative overflow-hidden w-full max-w-full min-w-0 p-4 xs:p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl transition-all duration-300">
       
       {/* Decorative ambient gradient */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-gradient-to-br from-emerald-500/10 via-amber-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
@@ -557,7 +558,7 @@ export default function NextMealSpotlight({
           }}
           className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
         >
-          <span>{t('viewFullWeeklyMenu') || 'View Full 7-Day Menu'}</span>
+          <span>{t('viewFullMenu') || 'View Full Menu'}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>

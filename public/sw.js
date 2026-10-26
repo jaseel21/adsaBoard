@@ -1,10 +1,10 @@
 /**
  * ADSA T-Board Service Worker
- * Version: 1.0.0
+ * Version: 2.0.0
  * Provides offline caching, background resilience, app shell caching, and push notification handling.
  */
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v2.0.0';
 const STATIC_CACHE = `adsa-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `adsa-runtime-${CACHE_VERSION}`;
 const ASSET_CACHE = `adsa-assets-${CACHE_VERSION}`;
@@ -66,9 +66,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore non-GET requests or Firebase / Firestore API calls (Firestore has internal IndexedDB persistence)
+  // Ignore non-GET requests, reachability ping checks, or Firebase / Firestore API calls (Firestore has internal IndexedDB persistence)
   if (
     request.method !== 'GET' ||
+    url.pathname === '/ping.json' ||
+    url.searchParams.has('_ping') ||
     url.origin.includes('firestore.googleapis.com') ||
     url.origin.includes('identitytoolkit.googleapis.com') ||
     url.origin.includes('securetoken.googleapis.com') ||

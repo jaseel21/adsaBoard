@@ -41,6 +41,29 @@ export function registerServiceWorker() {
     return;
   }
 
+  const isLocalhost =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '[::1]' ||
+    window.location.hostname.endsWith('.local');
+
+  // In local development, proactively unregister any lingering service workers
+  // and clear CacheStorage so HMR and development builds are never served from stale cache!
+  if (isLocalhost || (typeof import.meta !== 'undefined' && import.meta.env?.DEV)) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const reg of registrations) {
+        reg.unregister();
+      }
+    }).catch(() => {});
+
+    if ('caches' in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => caches.delete(key));
+      }).catch(() => {});
+    }
+    return;
+  }
+
   // Delay registration slightly until after initial page load for fast TTI
   window.addEventListener('load', () => {
     navigator.serviceWorker

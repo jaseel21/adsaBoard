@@ -10,6 +10,7 @@ import NotificationBell from '../notifications/NotificationBell';
 import { useScrollHeader } from '../scroll/useScrollHeader';
 import FloatingCalendarPopover from './FloatingCalendarPopover';
 import FloatingClockPopover from './FloatingClockPopover';
+import LiveCloudStatusBadge from './LiveCloudStatusBadge';
 
 export default function MobileTopBar({
   user,
@@ -159,7 +160,10 @@ export default function MobileTopBar({
           </div>
 
           {/* Right Action Island */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Real-time Cloud Telemetry Badge */}
+            <LiveCloudStatusBadge />
+
             {/* Quick Search */}
             <button
               type="button"

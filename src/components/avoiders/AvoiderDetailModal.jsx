@@ -66,7 +66,7 @@ export default function AvoiderDetailModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div data-lenis-prevent className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -81,11 +81,14 @@ export default function AvoiderDetailModal({
 
         {/* Modal Dialog Card */}
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          data-lenis-prevent
           initial={{ scale: 0.95, opacity: 0, y: 10 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 10 }}
           transition={{ duration: 0.18 }}
-          className="relative w-full max-w-md rounded-3xl bg-white dark:bg-[#121c19] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden z-10"
+          className="relative w-full max-w-md rounded-3xl bg-white dark:bg-[#121c19] border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden z-10 overscroll-contain"
         >
           {/* Header Banner */}
           <div className="p-5 sm:p-6 bg-gradient-to-br from-emerald-500/10 via-transparent to-rose-500/10 border-b border-gray-200/80 dark:border-white/10 relative">

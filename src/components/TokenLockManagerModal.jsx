@@ -39,6 +39,14 @@ const PRESETS = [
   { label: 'Early (9:00 PM Cutoff)', end: '21:00' },
 ];
 
+const BOARD_SWITCH_PRESETS = [
+  { label: '01:30 PM (Early)', time: '13:30' },
+  { label: '02:00 PM (Standard)', time: '14:00' },
+  { label: '02:15 PM (Jumu\'ah)', time: '14:15' },
+  { label: '02:30 PM (Late Lunch)', time: '14:30' },
+  { label: '03:00 PM (Afternoon)', time: '15:00' },
+];
+
 const DAYS_META = [
   { key: 'su', label: 'Sun', full: 'Sunday', fullKey: 'daysFull.0' },
   { key: 'mo', label: 'Mon', full: 'Monday', fullKey: 'daysFull.1' },
@@ -66,6 +74,9 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
     activeScheduledEvent,
     saveLockConfig,
     getDateLockStatus,
+    rawBoardSwitchTime,
+    boardSwitchTime,
+    isPastBoardSwitch,
   } = useTokenLockStatus();
 
   // Active navigation tab: 'operating_mode' | 'timed_timer' | 'scheduled_events' | 'simulator'
@@ -76,6 +87,20 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
   const [deadlineInput, setDeadlineInput] = useState(config.cutoff?.deadlineTime || config.window?.endTime || '23:00');
   const [restrictOpenTime, setRestrictOpenTime] = useState(Boolean(config.cutoff?.restrictOpenTime));
   const [startInput, setStartInput] = useState(config.cutoff?.openTime || config.window?.startTime || '00:00');
+
+  // Dedicated Board Today-Tomorrow Display Transition State
+  const [boardSwitchEnabled, setBoardSwitchEnabled] = useState(
+    Boolean(config.boardSwitch?.enabled !== false)
+  );
+  const [boardSwitchTimeInput, setBoardSwitchTimeInput] = useState(
+    config.boardSwitch?.autoShiftTime || '14:00'
+  );
+  const [fridaySpecialEnabled, setFridaySpecialEnabled] = useState(
+    Boolean(config.boardSwitch?.days?.fr?.autoShiftTime)
+  );
+  const [fridaySwitchTimeInput, setFridaySwitchTimeInput] = useState(
+    config.boardSwitch?.days?.fr?.autoShiftTime || '14:15'
+  );
   
   // Day-Specific Schedules
   const [scheduleEnabled, setScheduleEnabled] = useState(Boolean(config.schedule?.enabled));
@@ -123,6 +148,10 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
       setDeadlineInput(config.cutoff?.deadlineTime || config.window?.endTime || '23:00');
       setRestrictOpenTime(Boolean(config.cutoff?.restrictOpenTime));
       setStartInput(config.cutoff?.openTime || config.window?.startTime || '00:00');
+      setBoardSwitchEnabled(config.boardSwitch?.enabled !== false);
+      setBoardSwitchTimeInput(config.boardSwitch?.autoShiftTime || '14:00');
+      setFridaySpecialEnabled(Boolean(config.boardSwitch?.days?.fr?.autoShiftTime));
+      setFridaySwitchTimeInput(config.boardSwitch?.days?.fr?.autoShiftTime || '14:15');
       setScheduleEnabled(Boolean(config.schedule?.enabled));
       setDaySchedules(config.schedule?.days || {});
       setOverrideReason(config.temporaryOverride?.reason || '');
@@ -306,6 +335,15 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
           endTime: deadlineInput,
           timezone: 'Asia/Kolkata',
         },
+        boardSwitch: {
+          enabled: boardSwitchEnabled,
+          autoShiftTime: boardSwitchTimeInput,
+          timezone: 'Asia/Kolkata',
+          days: {
+            ...(config.boardSwitch?.days || {}),
+            ...(fridaySpecialEnabled ? { fr: { autoShiftTime: fridaySwitchTimeInput } } : {}),
+          },
+        },
         schedule: {
           enabled: scheduleEnabled,
           days: daySchedules,
@@ -326,8 +364,8 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
           severity: mode === 'force_locked' ? AUDIT_SEVERITIES.CRITICAL : AUDIT_SEVERITIES.WARNING,
           target: { type: 'system_config', id: 'tokenboard', label: 'Cutoff Rules' },
           changes: {
-            diffSummary: `Cutoff Mode: ${mode.toUpperCase()}, Deadline: ${deadlineInput}, Scheduled Events: ${scheduledEvents.length}`,
-            fieldsChanged: ['overrideMode', 'cutoff', 'window', 'schedule', 'scheduledEvents'],
+            diffSummary: `Cutoff: ${mode.toUpperCase()} (${deadlineInput}), Board Switch: ${boardSwitchEnabled ? boardSwitchTimeInput : 'Disabled'}${fridaySpecialEnabled ? ` (Fri: ${fridaySwitchTimeInput})` : ''}, Events: ${scheduledEvents.length}`,
+            fieldsChanged: ['overrideMode', 'cutoff', 'window', 'boardSwitch', 'schedule', 'scheduledEvents'],
             before: null,
             after: updates,
           },
@@ -361,16 +399,21 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-5 bg-black/70 backdrop-blur-md overflow-y-auto"
+      data-lenis-prevent
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-5 bg-black/70 backdrop-blur-md overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="token-lock-modal-title"
+        data-lenis-prevent
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
         transition={{ type: 'spring', duration: 0.35 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200 dark:border-white/10 shadow-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[92dvh] overflow-y-auto pb-safe"
+        className="w-full max-w-3xl rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c1412] border border-gray-200 dark:border-white/10 shadow-2xl p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[92dvh] overflow-y-auto pb-safe overscroll-contain"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-3">
@@ -379,7 +422,10 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
               <Sliders className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <h2
+                id="token-lock-modal-title"
+                className="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 flex-wrap"
+              >
                 <span>{t('tokenCutoffEngine', 'Token Cutoff & Locking Engine')}</span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   {t('istSynced', 'IST Synced')}
@@ -722,12 +768,156 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* Section 3: Day-of-Week Custom Schedules */}
+            {/* Section 3: Today-Tomorrow Display Transition (Board Auto-Shift) */}
+            <div className="space-y-3 p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5">
+              <div className="flex items-start sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                      3. Today-Tomorrow Display Transition (Board Auto-Shift)
+                    </label>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      Display Engine
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                    Controls when public screens, kitchen displays, and mess sections automatically transition their default date view from Today&apos;s meals to Tomorrow&apos;s meals.
+                  </p>
+                </div>
+                
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={boardSwitchEnabled}
+                    onChange={(e) => setBoardSwitchEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              {/* Decoupling Notice */}
+              <div className="p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-500/20 text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <span className="leading-relaxed">
+                  <strong>Decoupled from Cutoff:</strong> Student editing remains open until <strong>{formatTime12(deadlineInput, false)}</strong>. This setting strictly controls whether boards show Today (Breakfast &amp; Lunch) or Tomorrow (Dinner &amp; Advance Prep) by default.
+                </span>
+              </div>
+
+              {boardSwitchEnabled ? (
+                <div className="space-y-3 pt-1">
+                  {/* Presets Strip */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    <span className="text-[11px] text-gray-400 font-semibold flex-shrink-0">Presets:</span>
+                    {BOARD_SWITCH_PRESETS.map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => {
+                          feedback('tick');
+                          setBoardSwitchTimeInput(p.time);
+                          dialog.toast.info('Switch Time Set', `Board auto-shift time set to ${p.label}`);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex-shrink-0 ${
+                          boardSwitchTimeInput === p.time
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Main Switch Input & Friday Override Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">
+                          Default Auto-Shift Time:
+                        </span>
+                        <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                          {formatTime12(boardSwitchTimeInput, false)}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                        Screens show Today before this time, then advance to Tomorrow.
+                      </span>
+                      <input
+                        type="time"
+                        value={boardSwitchTimeInput}
+                        onChange={(e) => setBoardSwitchTimeInput(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    {/* Friday Jumu'ah Override */}
+                    <div className="p-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">
+                            Friday Jumu&apos;ah Timing
+                          </span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                            Extends Today display for Friday prayers and lunch service.
+                          </span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={fridaySpecialEnabled}
+                            onChange={(e) => setFridaySpecialEnabled(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      {fridaySpecialEnabled && (
+                        <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+                            Friday Shift Time:
+                          </span>
+                          <input
+                            type="time"
+                            value={fridaySwitchTimeInput}
+                            onChange={(e) => setFridaySwitchTimeInput(e.target.value)}
+                            className="px-2.5 py-1 rounded-lg bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold text-gray-900 dark:text-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Live Status Chip */}
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-200/60 dark:border-white/5 text-xs">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">
+                      Live Display Status at <strong className="font-mono text-gray-800 dark:text-gray-200">{currentTime || '--:--'} IST</strong>:
+                    </span>
+                    <span className={`font-bold px-2.5 py-0.5 rounded-full text-[11px] flex items-center gap-1.5 ${
+                      isPastBoardSwitch
+                        ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${isPastBoardSwitch ? 'bg-purple-500' : 'bg-emerald-500'} animate-pulse`} />
+                      {isPastBoardSwitch ? `Showing Tomorrow (Switched at ${formatTime12(boardSwitchTimeInput, false)})` : `Showing Today (Advances at ${formatTime12(boardSwitchTimeInput, false)})`}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+                  Auto-shift is disabled. Public boards will continuously display <strong>Today&apos;s meals</strong> until midnight (11:59 PM).
+                </div>
+              )}
+            </div>
+
+            {/* Section 4: Day-of-Week Custom Schedules */}
             <div className="border border-gray-200/80 dark:border-white/10 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider block">
-                    Day-of-Week Custom Cutoff Schedules
+                    4. Day-of-Week Custom Cutoff Schedules
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
                     Enable custom deadlines for specific days (e.g., earlier Friday cutoff at 9:00 PM)
@@ -773,13 +963,13 @@ export default function TokenLockManagerModal({ isOpen, onClose }) {
               )}
             </div>
 
-            {/* Section 4: Mess Distribution Section Size */}
+            {/* Section 5: Mess Distribution Section Size */}
             <div className="border border-gray-200/80 dark:border-white/10 rounded-2xl p-4 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider block flex items-center gap-1.5">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
-                    Mess Distribution Section Size
+                    5. Mess Distribution Section Size
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
                     Tokens per section column for kitchen manifests &amp; dining distribution

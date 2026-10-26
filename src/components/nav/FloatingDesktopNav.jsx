@@ -22,6 +22,7 @@ import ThemeSwitch from '../ThemeSwitch';
 import NotificationBell from '../notifications/NotificationBell';
 import FloatingCalendarPopover from './FloatingCalendarPopover';
 import FloatingClockPopover from './FloatingClockPopover';
+import LiveCloudStatusBadge from './LiveCloudStatusBadge';
 import { useScrollHeader } from '../scroll/useScrollHeader';
 
 /**
@@ -258,6 +259,9 @@ export default function FloatingDesktopNav({
           icon={Settings}
           tooltip="Settings & Preferences (⌘,)"
         />
+
+        {/* 11. Live Real-Time Cloud Status Badge */}
+        <LiveCloudStatusBadge />
 
         {/* Vertical Divider before Date & Time */}
         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0" />

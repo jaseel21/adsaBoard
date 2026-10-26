@@ -256,31 +256,33 @@ function StudentPort() {
 
   useEffect(() => {
     if (stdata) {
-      const initLunch = stdata.obj?.lunch || {};
-      const initBreakfast = stdata.obj?.breakfast || {};
-      const initExceptions = stdata.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {};
+      // If user is not currently in the middle of uncommitted edits, reactively absorb cloud updates
+      if (!isDirty) {
+        const initLunch = stdata.obj?.lunch || {};
+        const initBreakfast = stdata.obj?.breakfast || {};
+        const initExceptions = stdata.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {};
 
-      setLunch(initLunch);
-      setBreakfast(initBreakfast);
-      if (stdata.obj2) {
-        setDietary(stdata.obj2 || {});
-      }
-      if (stdata.pendingDietaryRequest !== undefined) {
-        setPendingDietaryRequest(stdata.pendingDietaryRequest);
-      }
-      setDateExceptions(initExceptions);
-      if (stdata.templates) {
-        setTemplates(stdata.templates || []);
-      }
+        setLunch(initLunch);
+        setBreakfast(initBreakfast);
+        if (stdata.obj2) {
+          setDietary(stdata.obj2 || {});
+        }
+        if (stdata.pendingDietaryRequest !== undefined) {
+          setPendingDietaryRequest(stdata.pendingDietaryRequest);
+        }
+        setDateExceptions(initExceptions);
+        if (stdata.templates) {
+          setTemplates(stdata.templates || []);
+        }
 
-      setSavedBaseline({
-        lunch: initLunch,
-        breakfast: initBreakfast,
-        dateExceptions: initExceptions,
-      });
+        setSavedBaseline({
+          lunch: initLunch,
+          breakfast: initBreakfast,
+          dateExceptions: initExceptions,
+        });
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stdata?.tokenNo, stdata?.documentId]);
+  }, [stdata, isDirty]);
 
   // Compare meal routine
   const isRoutineEqual = (a = {}, b = {}) => {

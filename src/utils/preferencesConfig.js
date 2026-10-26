@@ -53,6 +53,16 @@ export const DEFAULT_PREFERENCES = {
   soundVolume: 0.8, // 0.0 to 1.0
   hapticsEnabled: true,
   hapticProfile: 'crisp', // 'subtle' | 'crisp' | 'pulse'
+  hapticEscalation: true, // Two-stage progressive haptic escalation
+
+  // Next-Gen Interaction & Visual Effects Suite
+  cursorStyle: 'magnetic_fluid', // 'magnetic_fluid' | 'minimal_dot' | 'system'
+  cursorTrail: true, // Particle stardust trail on fast pointer movement
+  tiltEffect: 'cinematic', // 'cinematic' (12deg) | 'subtle' (5deg) | 'off'
+  clickRippleStyle: 'burst', // 'burst' (particles + ripple) | 'ripple_only' | 'off'
+  contextMenuEnabled: true, // Custom glassmorphic right-click fast menu
+  mobileLongPressPeek: true, // Mobile touch peek-and-pop sheet with fast dock
+  ambientAtmosphere: 'circadian', // 'circadian' (dynamic time-of-day mesh) | 'static' | 'off'
 
   // Student Privacy & Display
   kioskTimeoutMode: 'strict', // 'strict' (90s) | 'extended' (15m) | 'persistent' (24h)

@@ -33,12 +33,16 @@ export function normalizeTimeToHms(timeStr, defaultTime = '14:00:00') {
 }
 
 /**
- * Checks if current time is within or past the board updation window open time.
+ * Checks if current time is within or past the daily Board Today-Tomorrow Switch Time.
  * Standard rule across complete web:
- * - 12:00 AM (00:00:00) to Board Updation Window Open Time (default '14:00:00' / 2:00 PM): Returns false (Today)
- * - Board Updation Window Open Time to 12:00 AM (midnight): Returns true (Tomorrow)
+ * - 12:00 AM (00:00:00) to Board Switch Time (default '14:00:00' / 2:00 PM): Returns false (Today)
+ * - Board Switch Time to 11:59:59 PM (midnight): Returns true (Tomorrow)
+ *
+ * @param {string} timeHms - "HH:mm:ss" or null (auto-resolves current IST time)
+ * @param {string} switchTime - "HH:mm" or "HH:mm:ss" switch boundary (default '14:00')
+ * @returns {boolean} true if past switch time (display Tomorrow), false if before (display Today)
  */
-export function isPastBoardWindowOpenTime(timeHms, openTime = '14:00') {
+export function isPastBoardSwitchTime(timeHms, switchTime = '14:00') {
   let currentHms = timeHms;
   if (!currentHms) {
     try {
@@ -55,30 +59,35 @@ export function isPastBoardWindowOpenTime(timeHms, openTime = '14:00') {
     }
   }
 
-  const normalizedOpen = normalizeTimeToHms(openTime, '14:00:00');
-  // If openTime was explicitly configured as '00:00', treat 2:00 PM (14:00:00) as the switch boundary
-  const effectiveOpen = normalizedOpen === '00:00:00' ? '14:00:00' : normalizedOpen;
-
-  return currentHms >= effectiveOpen;
+  const effectiveSwitchTime = normalizeTimeToHms(switchTime, '14:00:00');
+  return currentHms >= effectiveSwitchTime;
 }
 
 /**
- * Returns the default day offset (0 for Today, 1 for Tomorrow) based on time of day:
- * 12:00 AM - Board Updation Window Open Time (e.g. 2:00 PM): 0 (Today)
- * Board Updation Window Open Time - 12:00 AM: 1 (Tomorrow)
+ * Backward-compatible alias for isPastBoardSwitchTime
+ * @deprecated Use isPastBoardSwitchTime instead
  */
-export function getDefaultBoardDayOffset(timeHms, openTime = '14:00') {
-  return isPastBoardWindowOpenTime(timeHms, openTime) ? 1 : 0;
+export function isPastBoardWindowOpenTime(timeHms, openTime = '14:00') {
+  return isPastBoardSwitchTime(timeHms, openTime);
 }
 
 /**
- * Returns the default target date string ('YYYY-MM-DD') based on time of day:
- * 12:00 AM - Board Updation Window Open Time (e.g. 2:00 PM): Today (IST)
- * Board Updation Window Open Time - 12:00 AM: Tomorrow (IST)
+ * Returns the default day offset (0 for Today, 1 for Tomorrow) based on board switch time:
+ * 12:00 AM - Board Switch Time (default 2:00 PM): 0 (Today)
+ * Board Switch Time - 12:00 AM: 1 (Tomorrow)
  */
-export function getDefaultBoardTargetDate(timeHms, openTime = '14:00', todayIST = null) {
+export function getDefaultBoardDayOffset(timeHms, switchTime = '14:00') {
+  return isPastBoardSwitchTime(timeHms, switchTime) ? 1 : 0;
+}
+
+/**
+ * Returns the default target date string ('YYYY-MM-DD') based on board switch time:
+ * 12:00 AM - Board Switch Time (default 2:00 PM): Today (IST)
+ * Board Switch Time - 12:00 AM: Tomorrow (IST)
+ */
+export function getDefaultBoardTargetDate(timeHms, switchTime = '14:00', todayIST = null) {
   const baseToday = todayIST || getTodayISTDate();
-  const offset = getDefaultBoardDayOffset(timeHms, openTime);
+  const offset = getDefaultBoardDayOffset(timeHms, switchTime);
   return offset === 1 ? addDaysToDate(baseToday, 1) : baseToday;
 }
 

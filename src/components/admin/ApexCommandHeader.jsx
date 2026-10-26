@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Bell,
   Ban,
+  Compass,
 } from 'lucide-react';
 import { useWorldTime } from '../../utils/time';
 import { soundEngine } from '../../utils/soundEffects';
@@ -233,6 +234,20 @@ export default function ApexCommandHeader({
               title="Broadcast Announcements Studio & Ledger"
             >
               <Bell className="w-4 h-4 text-emerald-500" />
+            </button>
+
+            {/* Apex Sentinel Live Radar Shortcut */}
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playPop();
+                hapticEngine.lightTap();
+                navigate('/admin/sentinel');
+              }}
+              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-gray-700 dark:text-gray-300 hover:text-cyan-500 dark:hover:text-cyan-400 border border-gray-200/60 dark:border-white/10 transition-colors"
+              title="Apex Sentinel Live Fleet Radar & Remote Control"
+            >
+              <Compass className="w-4 h-4 text-cyan-400" />
             </button>
 
             {/* Master Lock Switch Pill (Interactive for Central Committee, Informational for Canteen Committee) */}

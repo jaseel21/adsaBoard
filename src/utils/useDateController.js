@@ -6,6 +6,7 @@ import {
   addDaysToDate,
   getDayOfWeekShort,
   getRelativeDateMeta,
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
 } from './studentExceptionService';
 
@@ -17,7 +18,7 @@ import {
  *
  * Capabilities:
  * - Anti-tamper IST clock synchronization (Asia/Kolkata)
- * - 2:00 PM IST kitchen prep cutoff auto-shift (today -> tomorrow)
+ * - Dynamic board display auto-shift (today -> tomorrow, default 2:00 PM IST / 2:15 PM Friday)
  * - dateMode: 'auto' | 'today' | 'tomorrow' | 'custom'
  * - Day-by-day steppers (◀ Prev Day, Next Day ▶)
  * - Direct date selection (calendar picker)
@@ -27,7 +28,8 @@ export function useDateController({
   initialDateMode = 'auto',
   initialCustomDate = '',
   autoEveningShift = true,
-  windowOpenTime = '14:00',
+  boardSwitchTime = null,
+  windowOpenTime = null,
 } = {}) {
   const {
     timeHms,
@@ -39,15 +41,15 @@ export function useDateController({
     todayIST: worldTodayIST,
   } = useWorldTime('Asia/Kolkata');
 
-  const { activeWindow } = useTokenLockStatus();
+  const { activeWindow, rawBoardSwitchTime, boardSwitchTime: statusBoardSwitchTime } = useTokenLockStatus();
 
   // Authoritative IST today string (YYYY-MM-DD)
   const todayIST = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
 
-  // Determine if current IST time is past the evening window open time (e.g. 2:00 PM)
-  const effectiveOpenTime = windowOpenTime || activeWindow?.startTime || '14:00';
+  // Determine if current IST time is past the dynamic board switch time (e.g. 2:00 PM / 14:00)
+  const effectiveSwitchTime = boardSwitchTime || windowOpenTime || rawBoardSwitchTime || '14:00';
   const isPostEveningCutoff = Boolean(
-    autoEveningShift && isPastBoardWindowOpenTime(timeHms, effectiveOpenTime)
+    autoEveningShift && isPastBoardSwitchTime(timeHms, effectiveSwitchTime)
   );
 
   const [dateMode, setDateMode] = useState(initialDateMode); // 'auto' | 'today' | 'tomorrow' | 'custom'
@@ -132,6 +134,8 @@ export function useDateController({
     effectiveDay,
     relativeDateMeta,
     isPostEveningCutoff,
+    boardSwitchTime: effectiveSwitchTime,
+    isPastBoardSwitch: isPostEveningCutoff,
 
     // Relative boolean flags
     isToday: targetDateIST === todayIST,

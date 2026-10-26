@@ -7,12 +7,14 @@ import {
   getDayOfWeekShort,
   formatFriendlyDate,
   normalizeTimeToHms,
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
   getDefaultBoardDayOffset,
   getDefaultBoardTargetDate,
 } from './studentExceptionService';
 
 export {
+  isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
   getDefaultBoardDayOffset,
   getDefaultBoardTargetDate,
@@ -21,7 +23,7 @@ export {
 const TOKENBOARD_DOC_ID = 'g8iJVNn2RQkysjMAvX1h';
 
 /**
- * Format 24h time "HH:mm" or "HH:mm:ss" to friendly 12h time (e.g. "11:00 PM IST")
+ * Format 24h time "HH:mm" or "HH:mm:ss" to friendly 12h time (e.g. "11:00 PM IST" or "02:00 PM IST")
  */
 export function formatTime12(timeStr, includeTz = true) {
   if (!timeStr) return '';
@@ -38,12 +40,19 @@ export function formatTime12(timeStr, includeTz = true) {
 /**
  * Default Token Board Configuration
  * 
- * Business Rules:
- * - Web is open to login ANY TIME (24/7)
- * - TODAY: Finalized for kitchen prep (locked for regular students, admin override available)
- * - TOMORROW: Open all day until the cutoff deadline (default: 11:00 PM / 23:00 IST)
- * - FUTURE DATES: Always open for advance scheduling and leaves
- * - Optional: Restrict opening window (disabled by default)
+ * Business Rules & Separation of Concerns:
+ * 1. Cutoff Deadline Engine (Student Token Updates):
+ *    - Web is open to login ANY TIME (24/7)
+ *    - TODAY: Finalized for kitchen prep (locked for regular students, admin override available)
+ *    - TOMORROW: Open all day until the cutoff deadline (default: 11:00 PM / 23:00 IST)
+ *    - FUTURE DATES: Always open for advance scheduling and leaves
+ *
+ * 2. Board Today-Tomorrow Display Transition Engine (Board Auto-Shift):
+ *    - Controls when public boards, kitchen displays, and hero counters auto-advance
+ *      their default target date from Today to Tomorrow.
+ *    - 12:00 AM to Switch Time: Displays Today (serving Breakfast & Lunch).
+ *    - Switch Time to 11:59 PM: Displays Tomorrow (kitchen preparation & advance planning).
+ *    - Default: 2:00 PM (14:00 IST) on weekdays, 2:15 PM (14:15 IST) on Fridays (Jumu'ah).
  */
 export const DEFAULT_LOCK_CONFIG = {
   status: false, // legacy boolean
@@ -53,6 +62,21 @@ export const DEFAULT_LOCK_CONFIG = {
     timezone: 'Asia/Kolkata',
     restrictOpenTime: false, // By default FALSE: Open all day until cutoff deadline
     openTime: '00:00',
+  },
+  // Dedicated Board Today-Tomorrow Display Transition Engine
+  boardSwitch: {
+    enabled: true,
+    autoShiftTime: '14:00', // 2:00 PM IST default
+    timezone: 'Asia/Kolkata',
+    days: {
+      su: { autoShiftTime: '14:00' },
+      mo: { autoShiftTime: '14:00' },
+      tu: { autoShiftTime: '14:00' },
+      we: { autoShiftTime: '14:00' },
+      th: { autoShiftTime: '14:00' },
+      fr: { autoShiftTime: '14:15' }, // Friday Jumu'ah prayer schedule
+      sa: { autoShiftTime: '14:00' },
+    },
   },
   window: {
     startTime: '00:00', // Backwards compatibility: 12:00 AM
@@ -83,7 +107,7 @@ export const DEFAULT_LOCK_CONFIG = {
 };
 
 /**
- * Upgraded Unified Hook for Token Board Updation Locking & Cutoff Schedules
+ * Upgraded Unified Hook for Token Board Cutoffs & Board Display Auto-Shift Schedules
  */
 export function useTokenLockStatus() {
   const { timeHms, todayIST: worldTodayIST, isSynced, isDeviceDesynced, syncSource } = useWorldTime('Asia/Kolkata');
@@ -102,11 +126,15 @@ export function useTokenLockStatus() {
             const data = doc.data() || {};
             const cutoffData = data.cutoff || {};
             const windowData = data.window || {};
+            const boardSwitchData = data.boardSwitch || {};
 
             // Ensure cutoff deadline has a robust fallback to 23:00
             const deadline = cutoffData.deadlineTime || windowData.endTime || '23:00';
             const restrictOpen = Boolean(cutoffData.restrictOpenTime);
             const openTime = cutoffData.openTime || (restrictOpen ? (windowData.startTime || '00:00') : '00:00');
+
+            // Dynamic Board Switch Setting
+            const autoShiftTime = boardSwitchData.autoShiftTime || '14:00';
 
             setConfig({
               status: Boolean(data.status),
@@ -116,6 +144,15 @@ export function useTokenLockStatus() {
                 timezone: cutoffData.timezone || windowData.timezone || 'Asia/Kolkata',
                 restrictOpenTime: restrictOpen,
                 openTime,
+              },
+              boardSwitch: {
+                enabled: boardSwitchData.enabled !== false,
+                autoShiftTime,
+                timezone: boardSwitchData.timezone || 'Asia/Kolkata',
+                days: {
+                  ...DEFAULT_LOCK_CONFIG.boardSwitch.days,
+                  ...(boardSwitchData.days || {}),
+                },
               },
               window: {
                 startTime: openTime,
@@ -203,6 +240,27 @@ export function useTokenLockStatus() {
     };
   }, [config.cutoff, config.window, config.schedule, todayDayShort, activeScheduledEvent]);
 
+  // Determine active Board Today-Tomorrow Switch Time for today
+  const activeBoardSwitchTime = useMemo(() => {
+    if (config.boardSwitch?.enabled === false) {
+      // If auto-shift is disabled, remain on Today all day (switch at 23:59:59)
+      return '23:59';
+    }
+    if (config.boardSwitch?.days?.[todayDayShort]?.autoShiftTime) {
+      return config.boardSwitch.days[todayDayShort].autoShiftTime;
+    }
+    return config.boardSwitch?.autoShiftTime || '14:00';
+  }, [config.boardSwitch, todayDayShort]);
+
+  // Evaluate whether current IST time is past the dynamic board switch time
+  const isPastBoardSwitch = useMemo(() => {
+    return isPastBoardSwitchTime(timeHms, activeBoardSwitchTime);
+  }, [timeHms, activeBoardSwitchTime]);
+
+  const defaultDayOffset = isPastBoardSwitch ? 1 : 0;
+  const defaultTargetDateIST = defaultDayOffset === 1 ? tomorrowIST : todayIST;
+  const boardSwitchTimeHms = useMemo(() => normalizeTimeToHms(activeBoardSwitchTime, '14:00:00'), [activeBoardSwitchTime]);
+
   // Check if temporary override is active and non-expired
   const temporaryOverrideActive = useMemo(() => {
     const temp = config.temporaryOverride;
@@ -253,15 +311,6 @@ export function useTokenLockStatus() {
 
   const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '00:00:00'), [activeWindow.startTime]);
   const endTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.endTime, '23:00:00'), [activeWindow.endTime]);
-
-  // Board display flip time: 2:00 PM IST is when today's lunch is done and public boards flip to showing tomorrow's counts
-  const boardFlipTimeHms = useMemo(() => normalizeTimeToHms('14:00', '14:00:00'), []);
-  const isPostWindowOpen = useMemo(() => {
-    return isPastBoardWindowOpenTime(timeHms, '14:00');
-  }, [timeHms]);
-
-  const defaultDayOffset = isPostWindowOpen ? 1 : 0;
-  const defaultTargetDateIST = defaultDayOffset === 1 ? tomorrowIST : todayIST;
 
   // Is current time before today's cutoff deadline for tomorrow's meals?
   const isTimeInWindow = useMemo(() => {
@@ -332,7 +381,7 @@ export function useTokenLockStatus() {
         };
       }
 
-      // 3. Past dates are always closed/read-only
+      // 3. Past dates are always closed/read-only (immutable historical ledger)
       if (targetDateStr < todayIST) {
         return {
           isLocked: true,
@@ -557,7 +606,7 @@ export function useTokenLockStatus() {
     effectiveMode,
     isTimeInWindow,
 
-    // Active Window Details & Board Updation Defaults
+    // Cutoff Deadline Window Details
     activeWindow,
     startTime: formatTime12(activeWindow.startTime),
     endTime: formatTime12(activeWindow.endTime),
@@ -565,10 +614,20 @@ export function useTokenLockStatus() {
     rawEndTime: activeWindow.endTime,
     cutoffDeadline: formatTime12(activeWindow.endTime),
     currentTime: timeHms,
-    boardFlipTimeHms,
-    isPostWindowOpen,
+
+    // Dedicated Board Today-Tomorrow Display Transition Details
+    boardSwitch: config.boardSwitch,
+    boardSwitchTime: formatTime12(activeBoardSwitchTime),
+    rawBoardSwitchTime: activeBoardSwitchTime,
+    isPastBoardSwitch,
+    isPastBoardSwitchTime: isPastBoardSwitch,
+    boardSwitchTimeHms,
     defaultDayOffset,
     defaultTargetDateIST,
+
+    // Backward-Compatibility Aliases
+    boardFlipTimeHms: boardSwitchTimeHms,
+    isPostWindowOpen: isPastBoardSwitch,
 
     // Timed & Scheduled Overrides Telemetry
     temporaryOverrideActive,

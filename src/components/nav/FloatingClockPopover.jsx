@@ -383,9 +383,9 @@ export default function FloatingClockPopover({
                 {mealRadar.isServing ? (lang === 'ml' ? 'വിതരണം നടക്കുന്നു' : 'Serving Now') : (lang === 'ml' ? 'വരുന്നത്' : 'Upcoming')}
               </span>
             </div>
-            <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-1 pl-3.5">
+            {/* <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mt-1 pl-3.5">
               {lang === 'ml' ? mealRadar.countdownTextMl : mealRadar.countdownTextEn}
-            </p>
+            </p> */}
           </div>
 
           {/* Dynamic Meal Schedule Cards */}
