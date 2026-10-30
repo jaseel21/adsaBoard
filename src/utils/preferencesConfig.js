@@ -74,6 +74,22 @@ export const DEFAULT_PREFERENCES = {
 };
 
 /**
+ * Resolves standard inactivity timeout and warning thresholds for public kiosks and personal devices.
+ *
+ * @param {string} mode - 'strict' | 'extended' | 'persistent'
+ * @returns {{ timeoutMs: number, warningMs: number, enabled: boolean }}
+ */
+export function getKioskTimeoutConfig(mode = 'strict') {
+  if (mode === 'persistent') {
+    return { timeoutMs: 86400000, warningMs: 60000, enabled: false }; // 24h (disabled)
+  }
+  if (mode === 'extended') {
+    return { timeoutMs: 900000, warningMs: 30000, enabled: true }; // 15 mins
+  }
+  return { timeoutMs: 90000, warningMs: 15000, enabled: true }; // 90s strict
+}
+
+/**
  * Settings Navigation Sections Registry
  */
 export const SETTINGS_SECTIONS = [

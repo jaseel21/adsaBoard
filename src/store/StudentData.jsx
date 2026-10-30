@@ -121,8 +121,10 @@ export function PersonInfo({ children }) {
       try {
         if (data) {
           sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          localStorage.setItem('adsa_last_activity_timestamp', String(Date.now()));
         } else {
           sessionStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem('adsa_last_activity_timestamp');
         }
       } catch (e) {
         console.warn('Failed to update student session storage:', e);
@@ -137,7 +139,10 @@ export function PersonInfo({ children }) {
     }
     setStdata(null);
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem(STORAGE_KEY);
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('adsa_last_activity_timestamp');
+      } catch (_) {}
     }
   }, [setStdata]);
 

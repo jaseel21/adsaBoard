@@ -13,6 +13,7 @@ import DateTokenButton from '../../DateTokenButton';
 import {
   calculateEffectiveDateMeals,
   formatFriendlyDate,
+  getDayOfWeekShort,
 } from '../../../../utils/studentExceptionService';
 
 const MONTH_NAMES = [
@@ -141,19 +142,47 @@ export default function MonthlyGridView({
 
             <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
               {dayHeaders.map(({ key, label }) => {
-                // Find all active/actionable dates in this month for this weekday
-                const matchingDays = calendarDays.filter(
-                  (d) => !d.isBlank && d.dayOfWeek === key && !d.isPast && !d.isBeyondMax
-                );
+                // Universal Status Calculation (strictly future-only: date >= todayIST, past days ignored)
+                const routineVal = isLunch
+                  ? (student?.obj?.lunch?.[key] !== undefined ? Boolean(student.obj.lunch[key]) : true)
+                  : (student?.obj?.breakfast?.[key] !== undefined ? Boolean(student.obj.breakfast[key]) : true);
 
-                const onCount = matchingDays.filter((d) => {
-                  const eff = calculateEffectiveDateMeals(student, d.dateStr);
-                  return isLunch ? eff.lunch : eff.breakfast;
-                }).length;
-                const totalCount = matchingDays.length;
+                let hasUpcomingDivergence = false;
+                const exceptions = student?.dateExceptions || {};
 
-                const isAllOn = totalCount > 0 && onCount === totalCount;
-                const isAllOff = totalCount > 0 && onCount === 0;
+                // Scan all upcoming exceptions for this day of week
+                for (const dateStr of Object.keys(exceptions)) {
+                  if (dateStr >= todayIST && getDayOfWeekShort(dateStr) === key) {
+                    const exc = exceptions[dateStr];
+                    const excVal = isLunch ? exc.lunch : exc.breakfast;
+                    if (excVal !== undefined && Boolean(excVal) !== routineVal) {
+                      hasUpcomingDivergence = true;
+                      break;
+                    }
+                  }
+                }
+
+                // Check if today or tomorrow falls on this day and is locked to a diverging state
+                if (!hasUpcomingDivergence && !isAdmin) {
+                  const checkDates = [todayIST, tomorrowIST].filter(Boolean);
+                  for (const d of checkDates) {
+                    if (getDayOfWeekShort(d) === key) {
+                      const lockInfo = getDateLockStatus(d, { isAdmin });
+                      if (lockInfo.isLocked) {
+                        const eff = calculateEffectiveDateMeals(student, d);
+                        const effVal = isLunch ? eff.lunch : eff.breakfast;
+                        if (effVal !== routineVal) {
+                          hasUpcomingDivergence = true;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }
+
+                const isAllOn = !hasUpcomingDivergence && routineVal;
+                const isAllOff = !hasUpcomingDivergence && !routineVal;
+                const isMixed = hasUpcomingDivergence;
 
                 // Tri-state transition:
                 // If all ON -> targetState is false (turn all OFF)
@@ -162,10 +191,10 @@ export default function MonthlyGridView({
 
                 // Tooltip text
                 const titleText = isAllOn
-                  ? `${label}: All ${totalCount} dates in month are ON (Click to turn all OFF)`
+                  ? `${label}: All upcoming ${label}s across calendar are ON (Click to turn all OFF)`
                   : isAllOff
-                  ? `${label}: All ${totalCount} dates in month are OFF (Click to turn all ON)`
-                  : `${label}: Mixed (${onCount}/${totalCount} ON) — Click to turn all ON`;
+                  ? `${label}: All upcoming ${label}s across calendar are OFF (Click to turn all ON)`
+                  : `${label}: Mixed (some upcoming dates ON/OFF) — Click to turn all ON`;
 
                 let bgClass = '';
                 if (isAllOn) {
@@ -195,7 +224,7 @@ export default function MonthlyGridView({
                     ) : isAllOff ? (
                       <span className="w-1.5 h-1.5 rounded-full border border-white/80" />
                     ) : (
-                      <span className="w-2.5 h-0.5 rounded-full bg-white/90 shadow-xs" title={`${onCount}/${totalCount} ON`} />
+                      <span className="w-2.5 h-0.5 rounded-full bg-white/90 shadow-xs" title="Mixed upcoming dates" />
                     )}
                   </button>
                 );

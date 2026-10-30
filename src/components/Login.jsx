@@ -128,6 +128,11 @@ function Login() {
         ...sData,
       };
 
+      // Explicitly initialize fresh activity timestamp in storage so all listeners start now
+      try {
+        localStorage.setItem('adsa_last_activity_timestamp', String(Date.now()));
+      } catch (_) {}
+
       setStdata(studentData);
       feedback('success');
       if (studentData.block) {
@@ -139,7 +144,7 @@ function Login() {
         );
       }
       const returnUrl = location.state?.from;
-      navigate(returnUrl || '/student');
+      navigate((returnUrl && returnUrl !== '/login') ? returnUrl : '/student');
     } catch (error) {
       console.error('Login error:', error);
       feedback('warning');

@@ -56,6 +56,7 @@ const MONTH_NAMES = [
 export default function DateGridMatrix({
   student,
   onSaveExceptions,
+  onUpdateRoutine,
   onSaveTemplates,
   editable = true,
   isAdmin = false,
@@ -290,46 +291,77 @@ export default function DateGridMatrix({
     handleSingleClickToggle(dateStr, mealType);
   };
 
-  // ================= 3. WEEKDAY TOKEN TILE TOGGLE IN CALENDAR HEADER =================
+  // ================= 3. UNIVERSAL WEEKDAY MASTER TOGGLE =================
   const handleToggleWeekdayMeal = (dayKey, mealType, targetState) => {
     feedback('tick');
     const isLunch = mealType === 'lunch';
     const targetVal = typeof targetState === 'boolean' ? targetState : true;
 
+    // 1. Universal recurring baseline update
+    const currentRoutine = student?.obj || { lunch: {}, breakfast: {} };
+    const currentMealRoutine = currentRoutine[mealType] || {};
+    const nextMealRoutine = {
+      ...currentMealRoutine,
+      [dayKey]: targetVal ? 1 : 0,
+    };
+    const nextRoutine = {
+      ...currentRoutine,
+      [mealType]: nextMealRoutine,
+    };
+
+    // 2. Synchronize all upcoming date exceptions for this weekday across the entire calendar
     const updated = { ...(student?.dateExceptions || {}) };
-    let affected = 0;
     let lockedSkipped = 0;
 
-    calendarDays.forEach((day) => {
-      if (day.isBlank || day.isPast || day.isBeyondMax) return;
-      if (day.dayOfWeek !== dayKey) return;
+    Object.keys(updated).forEach((dateStr) => {
+      // Past days are immutable and never modified
+      if (dateStr < todayIST) return;
 
-      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
-      if (!isAdmin && lockInfo.isLocked) {
-        lockedSkipped++;
-        return;
+      if (getDayOfWeekShort(dateStr) === dayKey) {
+        const lockInfo = getDateLockStatus(dateStr, { isAdmin });
+        if (!isAdmin && lockInfo.isLocked) {
+          lockedSkipped++;
+          return;
+        }
+
+        // Apply universal state to this meal
+        const curExc = updated[dateStr];
+        const newBf = isLunch
+          ? (curExc.breakfast !== undefined ? curExc.breakfast : Boolean(nextRoutine.breakfast?.[dayKey]))
+          : targetVal;
+        const newLu = isLunch
+          ? targetVal
+          : (curExc.lunch !== undefined ? curExc.lunch : Boolean(nextRoutine.lunch?.[dayKey]));
+
+        const routineBf = nextRoutine.breakfast?.[dayKey] !== undefined ? Boolean(nextRoutine.breakfast[dayKey]) : true;
+        const routineLu = nextRoutine.lunch?.[dayKey] !== undefined ? Boolean(nextRoutine.lunch[dayKey]) : true;
+
+        // If the date exception now matches the updated baseline routine for both meals, delete it
+        if (newBf === routineBf && newLu === routineLu) {
+          delete updated[dateStr];
+        } else {
+          updated[dateStr] = {
+            ...curExc,
+            breakfast: newBf,
+            lunch: newLu,
+            updatedAt: new Date().toISOString(),
+          };
+        }
       }
-
-      const curMeals = calculateEffectiveDateMeals(student, day.dateStr);
-      const newBf = isLunch ? curMeals.breakfast : targetVal;
-      const newLu = isLunch ? targetVal : curMeals.lunch;
-
-      updated[day.dateStr] = {
-        breakfast: newBf,
-        lunch: newLu,
-        label: `${dayKey.toUpperCase()} Schedule`,
-        updatedAt: new Date().toISOString(),
-      };
-      affected++;
     });
+
+    if (onUpdateRoutine) {
+      onUpdateRoutine(nextRoutine);
+    }
 
     if (onSaveExceptions) {
       onSaveExceptions(updated);
     }
 
+    const dayName = dayKey.toUpperCase();
     dialog.toast.success(
-      `${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
-      `Turned ${targetVal ? 'ON' : 'OFF'} for all ${dayKey.toUpperCase()}s (${affected} dates).${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved safely)` : ''}`
+      `Universal ${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
+      `Turned ${targetVal ? 'ON' : 'OFF'} for all upcoming ${dayName}s across the calendar.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved safely)` : ''}`
     );
   };
 

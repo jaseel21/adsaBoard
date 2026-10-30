@@ -38,7 +38,6 @@ import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { usePreferences } from '../store/PreferencesContext';
 import { useFeedback } from '../utils/useFeedback';
-import { useIdleTimer } from '../utils/useIdleTimer';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
@@ -98,18 +97,6 @@ function StudentPort() {
   const { feedback } = useFeedback();
   const { preferences } = usePreferences();
 
-  // Public Kiosk Inactivity Protection: Dynamic timeout based on preferences (strict 90s, extended 15m, persistent disabled)
-  const kioskMode = preferences?.kioskTimeoutMode || 'strict';
-  const kioskTimeoutConfig = useMemo(() => {
-    if (kioskMode === 'persistent') {
-      return { timeoutMs: 86400000, warningMs: 60000, enabled: false };
-    }
-    if (kioskMode === 'extended') {
-      return { timeoutMs: 900000, warningMs: 30000, enabled: true };
-    }
-    return { timeoutMs: 90000, warningMs: 15000, enabled: true };
-  }, [kioskMode]);
-
   // Live real-time unblock and lock status subscription
   const [unblockDocStatus, setUnblockDocStatus] = useState(null);
   const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
@@ -145,20 +132,6 @@ function StudentPort() {
     getDateLockStatus,
   } = useTokenLockStatus();
 
-  // Public Kiosk Inactivity Protection: Auto-logout
-  const handleKioskTimeout = () => {
-    feedback('warning');
-    if (logoutStudent) logoutStudent();
-    navigate('/', { replace: true });
-  };
-
-  const { isWarning, remainingSeconds, resetTimer } = useIdleTimer({
-    timeoutMs: kioskTimeoutConfig.timeoutMs,
-    warningMs: kioskTimeoutConfig.warningMs,
-    onTimeout: handleKioskTimeout,
-    enabled: Boolean(stdata?.tokenNo && kioskTimeoutConfig.enabled),
-  });
-
   // Dynamic Dietary Preferences & Self-Service Change Requests
   const [preferencesList, setPreferencesList] = useState([]);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
@@ -184,19 +157,28 @@ function StudentPort() {
 
   // Baseline snapshot for dirty checking
   const [savedBaseline, setSavedBaseline] = useState(() => ({
+    lunch: stdata?.obj?.lunch || {},
+    breakfast: stdata?.obj?.breakfast || {},
     dateExceptions: stdata?.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {},
   }));
 
   // Memoized isDirty flag
   const isDirty = useMemo(() => {
     if (!savedBaseline) return false;
-    return !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
-  }, [dateExceptions, savedBaseline]);
+    const routineChanged = !isRoutineEqual(lunch, savedBaseline.lunch) || !isRoutineEqual(breakfast, savedBaseline.breakfast);
+    const exceptionsChanged = !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
+    return routineChanged || exceptionsChanged;
+  }, [lunch, breakfast, dateExceptions, savedBaseline]);
 
   // Count of individual changed preferences
   const changedCount = useMemo(() => {
     if (!savedBaseline) return 0;
     let count = 0;
+    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
+    days.forEach((d) => {
+      if (Boolean(lunch[d]) !== Boolean(savedBaseline.lunch?.[d])) count++;
+      if (Boolean(breakfast[d]) !== Boolean(savedBaseline.breakfast?.[d])) count++;
+    });
     const cleanCur = cleanPastDateExceptions(dateExceptions || {});
     const cleanBase = cleanPastDateExceptions(savedBaseline.dateExceptions || {});
     const allDates = new Set([...Object.keys(cleanCur), ...Object.keys(cleanBase)]);
@@ -212,7 +194,7 @@ function StudentPort() {
       }
     });
     return count;
-  }, [dateExceptions, savedBaseline]);
+  }, [lunch, breakfast, dateExceptions, savedBaseline]);
 
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
 
@@ -322,6 +304,8 @@ function StudentPort() {
         }
 
         setSavedBaseline({
+          lunch: initLunch,
+          breakfast: initBreakfast,
           dateExceptions: initExceptions,
         });
       }
@@ -386,6 +370,8 @@ function StudentPort() {
   const handleDiscard = () => {
     feedback('pop');
     if (savedBaseline) {
+      if (savedBaseline.lunch) setLunch(savedBaseline.lunch);
+      if (savedBaseline.breakfast) setBreakfast(savedBaseline.breakfast);
       setDateExceptions(savedBaseline.dateExceptions || {});
       dialog.toast.info('Changes Discarded', 'Reverted back to your saved dining schedule.');
     }
@@ -998,6 +984,11 @@ function StudentPort() {
               if (isBlocked && !isAdmin) return;
               setDateExceptions(updated);
             }}
+            onUpdateRoutine={(newRoutine) => {
+              if (isBlocked && !isAdmin) return;
+              if (newRoutine.lunch) setLunch(newRoutine.lunch);
+              if (newRoutine.breakfast) setBreakfast(newRoutine.breakfast);
+            }}
             onSaveTemplates={handleSaveTemplates}
             editable={isAdmin || !isBlocked}
             isAdmin={isAdmin}
@@ -1350,51 +1341,6 @@ function StudentPort() {
           </div>
         </motion.div>
       </div>
-
-      {/* Public Kiosk Auto-Logout Modal Warning */}
-      <AnimatePresence>
-        {isWarning && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 10 }}
-              className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#0f1715] border border-amber-300 dark:border-amber-500/30 p-6 shadow-2xl text-center space-y-4"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
-                <Clock className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                  {t('publicComputerSafety', 'Still here? (Public Computer Safety)')}
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {t('publicComputerWarning', 'To protect your token on this public computer, your session will automatically log out in:')}
-                </p>
-                <div className="text-3xl font-mono font-black text-amber-500 mt-2">
-                  {remainingSeconds}s
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={resetTimer}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold text-xs shadow-md"
-                >
-                  {t('stayLoggedIn', 'Stay Logged In')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleKioskTimeout}
-                  className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 font-bold text-xs"
-                >
-                  {t('exitNow', 'Exit Now')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Modal: Request Dietary Preference Change */}
       <DietaryChangeRequestModal

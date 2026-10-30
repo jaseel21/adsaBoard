@@ -1053,6 +1053,10 @@ export default function StudentDrawer({
                               templates: studentTemplates,
                             }}
                             onSaveExceptions={(updated) => setDateExceptions(updated)}
+                            onUpdateRoutine={(newRoutine) => {
+                              if (newRoutine.lunch) setLunch(newRoutine.lunch);
+                              if (newRoutine.breakfast) setBreakfast(newRoutine.breakfast);
+                            }}
                             onSaveTemplates={(updatedTemplates) => setStudentTemplates(updatedTemplates)}
                             editable={true}
                             isAdmin={true}
