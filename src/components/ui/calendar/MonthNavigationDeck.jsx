@@ -60,7 +60,7 @@ export default function MonthNavigationDeck({
           ref={triggerRef}
           type="button"
           onClick={toggleJump}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm tracking-tight transition-all active:scale-98 ${
+          className={`flex items-center justify-center gap-1 min-w-[130px] sm:min-w-[155px] px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm tracking-tight transition-all active:scale-98 select-none ${
             isJumpOpen
               ? 'bg-white dark:bg-white/15 text-emerald-600 dark:text-emerald-400 shadow-xs ring-1 ring-emerald-500/30'
               : 'hover:bg-white/80 dark:hover:bg-white/10 text-gray-900 dark:text-white'
@@ -69,9 +69,9 @@ export default function MonthNavigationDeck({
           aria-haspopup="dialog"
           aria-expanded={isJumpOpen}
         >
-          <span>{monthLabel} {currentYear}</span>
+          <span className="truncate">{monthLabel} {currentYear}</span>
           <ChevronDown
-            className={`w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+            className={`w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-transform duration-200 flex-shrink-0 ${
               isJumpOpen ? 'rotate-180 text-emerald-500' : ''
             }`}
           />
@@ -90,18 +90,17 @@ export default function MonthNavigationDeck({
 
       <div className="w-[1px] h-4 bg-gray-200 dark:bg-white/10 mx-0.5" />
 
-      {/* Smart Contextual "Today" Button */}
+      {/* Smart Contextual "Today" Button with stable dimensions */}
       <button
         type="button"
         onClick={onJumpToToday}
-        className={`px-2.5 py-1 text-xs font-black rounded-xl transition-all active:scale-95 flex items-center gap-1 ${
+        className={`px-2.5 py-1 text-xs font-black rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1 min-w-[62px] select-none ${
           !isViewingCurrentMonth
-            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs shadow-emerald-600/30 ring-1 ring-emerald-400/40 animate-pulse'
+            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs shadow-emerald-600/30'
             : 'bg-transparent text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-white/10'
         }`}
         title={isViewingCurrentMonth ? 'Currently viewing today' : 'Return to Current Month'}
       >
-        {!isViewingCurrentMonth && <Sparkles className="w-3 h-3 flex-shrink-0" />}
         <span>{t('todayBtn', 'Today')}</span>
       </button>
 

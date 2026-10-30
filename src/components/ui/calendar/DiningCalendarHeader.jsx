@@ -1,11 +1,9 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { CalendarDays, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Coffee, Utensils, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../../../store/LanguageContext';
 import MonthNavigationDeck from './MonthNavigationDeck';
-import CalendarMetricsPill from './CalendarMetricsPill';
 import CalendarActionDeck from './CalendarActionDeck';
-import CalendarViewFilterHub from './CalendarViewFilterHub';
 
 export default function DiningCalendarHeader({
   currentYear,
@@ -17,56 +15,37 @@ export default function DiningCalendarHeader({
   sortedExceptionDates = [],
   activeView,
   setActiveView,
-  mealFilter,
+  mealFilter = 'both',
   setMealFilter,
   onPrevMonth,
   onNextMonth,
   onJumpToToday,
   onSelectMonthYear,
+  onOpenSchedulePattern,
   onOpenRangeLeave,
   onTurnWeekendOff,
   onOpenTemplates,
   onClearExceptions,
+  isSelectMode = false,
+  onToggleSelectMode,
+  onOpenHistory,
   className = '',
 }) {
   const { t } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const exceptionsCount = sortedExceptionDates.length;
-  const hasTemplates = (student?.templates?.length > 0) || (stats.scheduledCount > 0);
+  const hasTemplates = (student?.templates?.length > 0) || (stats?.scheduledCount > 0);
 
   return (
     <div
-      className={`relative p-3.5 sm:p-4 rounded-3xl bg-white/90 dark:bg-[#0c1412]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-2xl space-y-3 transition-all ${className}`}
+      className={`p-3 sm:p-3.5 rounded-3xl bg-white/90 dark:bg-[#0c1412]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-2xl transition-all space-y-3 ${className}`}
     >
-      {/* ================= ROW 1: BRAND IDENTITY + MONTH NAV DECK ================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ================= TOP ROW: SINGLE CLEAN UNIFIED ROW ================= */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 flex-nowrap">
         
-        {/* Left: Brand Icon + Title + Live Metrics Pill */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-xs border border-emerald-500/20">
-            <CalendarDays className="w-4 h-4" />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm sm:text-base font-black text-gray-900 dark:text-white tracking-tight leading-none">
-                {t('monthlyDiningManifest', 'Monthly Dining Calendar')}
-              </h2>
-              
-              {/* Dynamic Interactive Metrics Chip */}
-              <CalendarMetricsPill
-                stats={stats}
-                monthOverridesCount={stats.monthOverridesCount}
-              />
-            </div>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium hidden xs:block mt-0.5">
-              Live student dining schedule & token management
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Fluid Month Stepper & Fast Selector Deck */}
-        <div className="self-start sm:self-auto flex-shrink-0">
+        {/* Left: Fluid Month Navigation Stepper (Stable Width) */}
+        <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
           <MonthNavigationDeck
             currentYear={currentYear}
             currentMonth={currentMonth}
@@ -75,40 +54,107 @@ export default function DiningCalendarHeader({
             onNextMonth={onNextMonth}
             onJumpToToday={onJumpToToday}
             onSelectMonthYear={onSelectMonthYear}
-            isFullyPastMonth={stats.isFullyPastMonth}
+            isFullyPastMonth={stats?.isFullyPastMonth}
           />
+        </div>
+
+        {/* Center: Meal Segmented Selector (Both Meals | Breakfast | Lunch) */}
+        <div className="inline-flex p-0.5 rounded-xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 shadow-xs backdrop-blur-md flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setMealFilter && setMealFilter('both')}
+            className={`px-3 py-1 text-xs font-black rounded-lg transition-colors select-none cursor-pointer ${
+              mealFilter === 'both'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+            }`}
+          >
+            Both Meals
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMealFilter && setMealFilter('breakfast')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors select-none flex items-center gap-1 cursor-pointer ${
+              mealFilter === 'breakfast'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+            }`}
+          >
+            <Coffee className="w-3 h-3" />
+            <span>Breakfast</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMealFilter && setMealFilter('lunch')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors select-none flex items-center gap-1 cursor-pointer ${
+              mealFilter === 'lunch'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+            }`}
+          >
+            <Utensils className="w-3 h-3" />
+            <span>Lunch</span>
+          </button>
+        </div>
+
+        {/* Right: Tools & Actions Expand/Collapse Trigger */}
+        <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-end">
+          <button
+            type="button"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            aria-expanded={isExpanded}
+            className={`w-full sm:w-auto px-3 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 select-none cursor-pointer shadow-xs ${
+              isExpanded || isSelectMode
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/25 ring-2 ring-emerald-500/30'
+                : 'bg-white dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border-gray-200/80 dark:border-white/10'
+            }`}
+            title="Expand tools, schedule patterns, and views"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{t('toolsAndActions', 'Tools & Actions')}</span>
+            {exceptionsCount > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                isExpanded ? 'rotate-180 text-white' : 'text-gray-400'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
-      {/* Subtle Divider */}
-      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gray-200/60 dark:via-white/5 to-transparent" />
-
-      {/* ================= ROW 2: ACTION CONTROLS & VIEW/FILTER HUB ================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        
-        {/* Left / Bottom-Left: Quick Scheduling Actions */}
-        <CalendarActionDeck
-          editable={editable}
-          isFullyPastMonth={stats.isFullyPastMonth}
-          onOpenRangeLeave={onOpenRangeLeave}
-          onTurnWeekendOff={onTurnWeekendOff}
-          onOpenTemplates={onOpenTemplates}
-          onClearExceptions={onClearExceptions}
-          exceptionsCount={exceptionsCount}
-          hasTemplates={hasTemplates}
-        />
-
-        {/* Right / Bottom-Right: Unified View Switch & Meal Focus Hub */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-          <CalendarViewFilterHub
-            activeView={activeView}
-            setActiveView={setActiveView}
-            mealFilter={mealFilter}
-            setMealFilter={setMealFilter}
-            showMealFilter={true}
-          />
-        </div>
-      </div>
+      {/* ================= INLINE COLLAPSIBLE TOOLS DRAWER ================= */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden pt-2 border-t border-gray-100 dark:border-white/5"
+          >
+            <CalendarActionDeck
+              editable={editable}
+              isFullyPastMonth={stats?.isFullyPastMonth}
+              onOpenSchedulePattern={onOpenSchedulePattern}
+              onOpenRangeLeave={onOpenRangeLeave}
+              onTurnWeekendOff={onTurnWeekendOff}
+              onOpenTemplates={onOpenTemplates}
+              onClearExceptions={onClearExceptions}
+              exceptionsCount={exceptionsCount}
+              hasTemplates={hasTemplates}
+              isSelectMode={isSelectMode}
+              onToggleSelectMode={onToggleSelectMode}
+              activeView={activeView}
+              setActiveView={setActiveView}
+              onClose={() => setIsExpanded(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

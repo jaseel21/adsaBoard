@@ -975,7 +975,7 @@ export default function StudentDrawer({
                     </div>
                   </div>
 
-                  {/* Upcoming Single-Date Overrides & Leaves */}
+                  {/* Complete Dining Calendar & Date Schedule */}
                   <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-500/20 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -984,12 +984,12 @@ export default function StudentDrawer({
                         </div>
                         <div>
                           <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                            Single-Date Dining Overrides & Leaves
+                            Complete Dining Calendar & Schedule
                           </h4>
                           <p className="text-[11px] text-gray-500">
                             {Object.keys(dateExceptions).length > 0
-                              ? `${Object.keys(dateExceptions).length} date override(s) scheduled for this student`
-                              : 'No date overrides scheduled. Following regular weekly routine.'}
+                              ? `${Object.keys(dateExceptions).length} custom scheduled date(s) active for this student`
+                              : 'Standard routine active. Click below to inspect calendar or apply patterns.'}
                           </p>
                         </div>
                       </div>
@@ -1003,7 +1003,7 @@ export default function StudentDrawer({
                         className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs shadow-md shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 active:scale-95 transition-all flex items-center gap-2 self-start sm:self-center"
                       >
                         <LayoutGrid className="w-4 h-4" />
-                        <span>Manage Date Grid</span>
+                        <span>Open Dining Calendar</span>
                       </button>
                     </div>
 
@@ -1018,15 +1018,15 @@ export default function StudentDrawer({
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="text-base font-black text-gray-900 dark:text-white">
-                                  Date Overrides — Token #{tokenNo} ({nameEn || 'Student'})
+                                  Complete Dining Calendar — Token #{tokenNo} ({nameEn || 'Student'})
                                 </h3>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                   <ShieldCheck className="w-3 h-3" />
-                                  Admin Override Mode
+                                  Admin Full Authority Mode
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500 mt-0.5">
-                                Click any date in the calendar grid to turn breakfast/lunch ON or OFF with administrative cutoff bypass.
+                                Set meal active/leave states across Monthly, Weekly, Daily, or Yearly views, apply patterns, or select multiple dates with admin bypass.
                               </p>
                             </div>
                             <button

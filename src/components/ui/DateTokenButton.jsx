@@ -78,11 +78,6 @@ export default function DateTokenButton({
     bgClass = 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald cursor-pointer';
   }
 
-  // Modern Indigo / Violet highlight ring for custom overrides (no amber/gold)
-  const exceptionBorderClass = hasException && !isHardDisabled && !isHistorical
-    ? 'ring-2 ring-indigo-500/90 dark:ring-indigo-400 ring-offset-1 dark:ring-offset-[#0f1715] shadow-sm shadow-indigo-500/20'
-    : '';
-
   const handleClick = () => {
     if (isHardDisabled) return;
     if (isHistorical) {
@@ -111,8 +106,8 @@ export default function DateTokenButton({
           ? `LOCKED: ${lockReason || 'Cutoff passed'}. Bf: ${breakfast ? 'ON' : 'OFF'}, Lunch: ${lunch ? 'ON' : 'OFF'}`
           : isAdmin && (isLocked || isAdminOverride)
           ? `ADMIN OVERRIDE: Cutoff bypassed. Bf: ${breakfast ? 'ON' : 'OFF'}, Lunch: ${lunch ? 'ON' : 'OFF'}`
-          : `Bf: ${breakfast ? 'ON' : 'OFF'} • Lunch: ${lunch ? 'ON' : 'OFF'} (Click to manage)`
-      }${hasException ? ` • [Override: ${exceptionLabel || 'Custom'}]` : ''}`}
+          : `Bf: ${breakfast ? 'ON' : 'OFF'} • Lunch: ${lunch ? 'ON' : 'OFF'} (Click to toggle)`
+      }`}
       aria-label={`${dateStr}, ${dayOfWeek}. ${
         isHardDisabled
           ? 'Out of calendar range.'
@@ -120,14 +115,13 @@ export default function DateTokenButton({
           ? `Archived: Breakfast ${breakfast ? 'Served' : 'Off'}, Lunch ${lunch ? 'Served' : 'Off'}.`
           : effectiveLocked
           ? `Locked (${lockReason || 'Cutoff passed'}): Breakfast ${breakfast ? 'Active' : 'Off'}, Lunch ${lunch ? 'Active' : 'Off'}.`
-          : `Breakfast is ${breakfast ? 'Active' : 'Off'}, Lunch is ${lunch ? 'Active' : 'Off'}.${hasException ? ` Override: ${exceptionLabel || 'Custom'}.` : ''} Press Enter to manage.`
+          : `Breakfast is ${breakfast ? 'Active' : 'Off'}, Lunch is ${lunch ? 'Active' : 'Off'}. Press Enter to toggle.`
       }`}
       className={`
         relative group flex flex-col items-center justify-between p-1 sm:p-1.5
         w-full aspect-square rounded-xl sm:rounded-2xl select-none font-black font-mono
         shadow-sm transition-all duration-150 focus-visible:ring-4 focus-visible:ring-emerald-400 focus-visible:outline-none focus-visible:z-20 overflow-hidden
         ${bgClass}
-        ${exceptionBorderClass}
         ${isToday ? 'ring-2 ring-emerald-400 dark:ring-emerald-300 ring-offset-2 dark:ring-offset-[#0f1715] z-10' : ''}
         ${isTomorrow && !isToday ? 'ring-2 ring-sky-400/80 ring-offset-1 dark:ring-offset-[#0f1715]' : ''}
       `}
@@ -135,16 +129,6 @@ export default function DateTokenButton({
       {/* Subtle glass reflection on hover */}
       {!isHardDisabled && (
         <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      )}
-
-      {/* Override Tag Pip (Crisp Star Badge in top corner) */}
-      {hasException && !isHardDisabled && !isHistorical && (
-        <span
-          className="absolute top-0.5 left-0.5 px-0.5 rounded bg-indigo-600/90 text-white text-[7px] leading-tight font-black ring-1 ring-white/40 shadow-xs pointer-events-none"
-          title={exceptionLabel || 'Single-Day Override'}
-        >
-          ✦
-        </span>
       )}
 
       {/* Top Header Row inside Date Cell: Lock/Admin Icons */}

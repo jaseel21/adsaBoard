@@ -184,29 +184,19 @@ function StudentPort() {
 
   // Baseline snapshot for dirty checking
   const [savedBaseline, setSavedBaseline] = useState(() => ({
-    lunch: stdata?.obj?.lunch || {},
-    breakfast: stdata?.obj?.breakfast || {},
     dateExceptions: stdata?.dateExceptions ? cleanPastDateExceptions(stdata.dateExceptions) : {},
   }));
 
   // Memoized isDirty flag
   const isDirty = useMemo(() => {
     if (!savedBaseline) return false;
-    const lunchChanged = !isRoutineEqual(lunch, savedBaseline.lunch);
-    const breakfastChanged = !isRoutineEqual(breakfast, savedBaseline.breakfast);
-    const exceptionsChanged = !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
-    return lunchChanged || breakfastChanged || exceptionsChanged;
-  }, [lunch, breakfast, dateExceptions, savedBaseline]);
+    return !isExceptionsEqual(dateExceptions, savedBaseline.dateExceptions);
+  }, [dateExceptions, savedBaseline]);
 
   // Count of individual changed preferences
   const changedCount = useMemo(() => {
     if (!savedBaseline) return 0;
     let count = 0;
-    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-    days.forEach((d) => {
-      if (Boolean(lunch[d]) !== Boolean(savedBaseline.lunch?.[d])) count++;
-      if (Boolean(breakfast[d]) !== Boolean(savedBaseline.breakfast?.[d])) count++;
-    });
     const cleanCur = cleanPastDateExceptions(dateExceptions || {});
     const cleanBase = cleanPastDateExceptions(savedBaseline.dateExceptions || {});
     const allDates = new Set([...Object.keys(cleanCur), ...Object.keys(cleanBase)]);
@@ -222,7 +212,7 @@ function StudentPort() {
       }
     });
     return count;
-  }, [lunch, breakfast, dateExceptions, savedBaseline]);
+  }, [dateExceptions, savedBaseline]);
 
   const maxExceptionDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]);
 
@@ -332,8 +322,6 @@ function StudentPort() {
         }
 
         setSavedBaseline({
-          lunch: initLunch,
-          breakfast: initBreakfast,
           dateExceptions: initExceptions,
         });
       }
@@ -369,247 +357,6 @@ function StudentPort() {
     [stdata, lunch, breakfast, dietary, dateExceptions, templates]
   );
 
-  // Map each weekly dayKey ('su'..'sa') to its immediate upcoming occurrence and lock context
-  const upcomingDateMap = useMemo(() => {
-    const days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
-    const [y, m, d] = todayIST.split('-').map(Number);
-    const todayObj = new Date(Date.UTC(y, m - 1, d));
-    const todayDayIdx = todayObj.getUTCDay(); // 0=su..6=sa
-
-    const map = {};
-    days.forEach((key, targetIdx) => {
-      let daysAhead = (targetIdx - todayDayIdx + 7) % 7;
-      const immediateDate = addDaysToDate(todayIST, daysAhead);
-      const nextWeekDate = addDaysToDate(immediateDate, 7);
-      const isTomorrow = immediateDate === tomorrowIST;
-      const isToday = immediateDate === todayIST;
-      const isLocked = (isTomorrow && isTomorrowLocked) || (isToday && isTodayLocked);
-
-      map[key] = {
-        immediateDate,
-        nextWeekDate,
-        isTomorrow,
-        isToday,
-        isLocked,
-      };
-    });
-    return map;
-  }, [todayIST, tomorrowIST, isTomorrowLocked, isTodayLocked]);
-
-  // Detect active date overrides on the immediate upcoming occurrence for each day of the week
-  const dayOverridesMap = useMemo(() => {
-    const map = {};
-    Object.keys(upcomingDateMap).forEach((dayKey) => {
-      const { immediateDate } = upcomingDateMap[dayKey];
-      const exc = dateExceptions?.[immediateDate];
-      if (exc) {
-        map[dayKey] = {
-          date: immediateDate,
-          exception: exc,
-          hasBfOverride: exc.breakfast !== undefined,
-          hasLunchOverride: exc.lunch !== undefined,
-          isBfOff: exc.breakfast === false,
-          isLunchOff: exc.lunch === false,
-          isAllOff: exc.breakfast === false && exc.lunch === false,
-          isAllOn: exc.breakfast === true && exc.lunch === true,
-          label: exc.label || 'Leave / Override',
-        };
-      }
-    });
-    return map;
-  }, [upcomingDateMap, dateExceptions]);
-
-  // Quick 1-click helper to remove a conflicting date override
-  const handleClearOverrideForDate = (targetDate) => {
-    feedback('tick');
-    setDateExceptions((prev) => {
-      const updated = { ...prev };
-      delete updated[targetDate];
-      return updated;
-    });
-    dialog.toast.success(
-      'Override Cleared',
-      `Date override for ${formatFriendlyDate(targetDate, true)} was removed. Your regular weekly routine will apply.`
-    );
-  };
-
-  // SCENARIO 2 RESOLUTION: Check and prompt user if turning a day ON conflicts with an active override
-  const checkAndResolveOverrideConflict = async (dayKey, mealKey, mealName) => {
-    const overrideInfo = dayOverridesMap[dayKey];
-    if (!overrideInfo) return true;
-
-    const isMealOffInOverride = mealKey === 'lunch' ? overrideInfo.isLunchOff : overrideInfo.isBfOff;
-    if (!isMealOffInOverride) return true;
-
-    const dayLabel = daysList.find((d) => d.key === dayKey)?.label || dayKey;
-    const dateFormatted = formatFriendlyDate(overrideInfo.date, true);
-
-    const shouldClear = await dialog.confirm({
-      title: t('overrideConflictTitle', 'Active Override Conflict Detected'),
-      message: `${t('overrideConflictNotice', `You previously scheduled an override for upcoming ${dayLabel}, ${dateFormatted} (${overrideInfo.label}): meals are set to OFF. Turning ON ${dayLabel} in your weekly routine will NOT provide meals on ${dateFormatted} unless this override is cleared.`)
-        .replace('{day}', dayLabel)
-        .replace('{date}', dateFormatted)
-        .replace('{label}', overrideInfo.label || 'Leave')
-        .replace('{status}', 'OFF')}\n\nWould you like to clear this override and enable food on ${dateFormatted}?`,
-      confirmText: t('removeOverrideAndEnableFood', 'Clear Override & Enable Food (Recommended)'),
-      cancelText: t('keepOverride', 'Keep Override (No Food on this date)'),
-      confirmColor: 'emerald',
-      icon: 'question',
-    });
-
-    if (shouldClear) {
-      setDateExceptions((prev) => {
-        const updated = { ...prev };
-        if (updated[overrideInfo.date]) {
-          const otherMealKey = mealKey === 'lunch' ? 'breakfast' : 'lunch';
-          if (updated[overrideInfo.date][otherMealKey] !== undefined && updated[overrideInfo.date][otherMealKey] === false) {
-            updated[overrideInfo.date] = {
-              ...updated[overrideInfo.date],
-              [mealKey]: true,
-            };
-          } else {
-            delete updated[overrideInfo.date];
-          }
-        }
-        return updated;
-      });
-      dialog.toast.success(
-        'Override Cleared',
-        `${mealName} is now enabled for ${dateFormatted}.`
-      );
-    }
-
-    return true;
-  };
-
-  // SCENARIO 1 RESOLUTION: Intercept locked days (Tomorrow past cutoff or Today past window open)
-  const checkLockedDayWarning = async (dayKey, mealKey, mealName, willTurnOn) => {
-    const dayInfo = upcomingDateMap[dayKey];
-    if (!dayInfo?.isLocked) return true;
-
-    const lockTargetDate = dayInfo.immediateDate;
-    const lockDateLabel = dayInfo.isTomorrow ? 'Tomorrow' : 'Today';
-    const effectiveMeals = calculateEffectiveDateMeals(studentForMatrix, lockTargetDate);
-    const currentStatusStr = (mealKey === 'lunch' ? effectiveMeals.lunch : effectiveMeals.breakfast) ? 'ON' : 'OFF';
-    const dayLabel = daysList.find((d) => d.key === dayKey)?.label || dayKey;
-    const cutoffTime = dayInfo.isTomorrow ? endTime : startTime;
-    const nextDateFormatted = formatFriendlyDate(dayInfo.nextWeekDate, true);
-    const targetDateFormatted = formatFriendlyDate(lockTargetDate, true);
-
-    const dialogTitle = dayInfo.isTomorrow
-      ? (t('tomorrowIsLockedTitle') || 'Tomorrow is Locked')
-      : (t('todayIsLockedTitle') || 'Today is Locked');
-
-    const dialogMessage = dayInfo.isTomorrow
-      ? (t('tomorrowLockedRoutineNotice', `Tomorrow (${dayLabel}, ${targetDateFormatted}) is locked for kitchen prep past cutoff (${cutoffTime}). Routine updates to ${dayLabel} will take effect starting next week (${nextDateFormatted}). Tomorrow's meals will remain: ${currentStatusStr}.`))
-          .replace('{day}', dayLabel)
-          .replace('{date}', targetDateFormatted)
-          .replace('{cutoff}', cutoffTime)
-          .replace('{nextDate}', nextDateFormatted)
-          .replace('{status}', currentStatusStr)
-      : (t('todayLockedRoutineNotice', `Today (${dayLabel}, ${targetDateFormatted}) is locked for food service. Routine updates to ${dayLabel} will take effect starting next week (${nextDateFormatted}). Today's meals will remain: ${currentStatusStr}.`))
-          .replace('{day}', dayLabel)
-          .replace('{date}', targetDateFormatted)
-          .replace('{nextDate}', nextDateFormatted)
-          .replace('{status}', currentStatusStr);
-
-    const proceed = await dialog.confirm({
-      title: dialogTitle,
-      message: `${dialogMessage}\n\nTurning ${mealName} ${willTurnOn ? 'ON' : 'OFF'} in your weekly routine will apply starting next week (${nextDateFormatted}). Do you want to continue?`,
-      confirmText: t('updateRoutineAnyway', 'Apply from Next Week'),
-      cancelText: t('cancel', 'Cancel'),
-      confirmColor: 'amber',
-      icon: 'warning',
-    });
-
-    return proceed;
-  };
-
-  // Weekly Lunch Toggles
-  const toggleLunchDay = async (dayKey) => {
-    const isCurrentlyOn = Boolean(lunch[dayKey]);
-    const willTurnOn = !isCurrentlyOn;
-
-    // Check Scenario 1: Locked day warning
-    const canProceedLock = await checkLockedDayWarning(dayKey, 'lunch', t('navLunch') || 'Lunch', willTurnOn);
-    if (!canProceedLock) return;
-
-    // Check Scenario 2: Active override conflict
-    if (willTurnOn) {
-      await checkAndResolveOverrideConflict(dayKey, 'lunch', t('navLunch') || 'Lunch');
-    }
-
-    feedback('pop');
-    setLunch((prev) => ({
-      ...prev,
-      [dayKey]: !prev[dayKey],
-    }));
-  };
-
-  const selectAllLunch = async (val) => {
-    if (!val && isTomorrowLocked) {
-      const confirmed = await dialog.confirm({
-        title: t('tomorrowIsLockedTitle') || 'Tomorrow is Locked',
-        message: `Tomorrow (${formatFriendlyDate(tomorrowIST, true)}) is locked past cutoff (${endTime}). Deselecting all will turn off future weeks, but tomorrow's meals will remain preserved as already locked.\n\nDo you want to continue?`,
-        confirmText: t('updateRoutineAnyway', 'Apply from Next Week'),
-        cancelText: t('cancel', 'Cancel'),
-        confirmColor: 'amber',
-        icon: 'warning',
-      });
-      if (!confirmed) return;
-    }
-    feedback('tick');
-    const updated = {};
-    daysList.forEach(({ key }) => {
-      updated[key] = val;
-    });
-    setLunch(updated);
-  };
-
-  // Weekly Breakfast Toggles
-  const toggleBreakfastDay = async (dayKey) => {
-    const isCurrentlyOn = Boolean(breakfast[dayKey]);
-    const willTurnOn = !isCurrentlyOn;
-
-    // Check Scenario 1: Locked day warning
-    const canProceedLock = await checkLockedDayWarning(dayKey, 'breakfast', t('navBreakfast') || 'Breakfast', willTurnOn);
-    if (!canProceedLock) return;
-
-    // Check Scenario 2: Active override conflict
-    if (willTurnOn) {
-      await checkAndResolveOverrideConflict(dayKey, 'breakfast', t('navBreakfast') || 'Breakfast');
-    }
-
-    feedback('pop');
-    setBreakfast((prev) => ({
-      ...prev,
-      [dayKey]: !prev[dayKey],
-    }));
-  };
-
-  const selectAllBreakfast = async (val) => {
-    if (!val && isTomorrowLocked) {
-      const confirmed = await dialog.confirm({
-        title: t('tomorrowIsLockedTitle') || 'Tomorrow is Locked',
-        message: `Tomorrow (${formatFriendlyDate(tomorrowIST, true)}) is locked past cutoff (${endTime}). Deselecting all will turn off future weeks, but tomorrow's meals will remain preserved as already locked.\n\nDo you want to continue?`,
-        confirmText: t('updateRoutineAnyway', 'Apply from Next Week'),
-        cancelText: t('cancel', 'Cancel'),
-        confirmColor: 'amber',
-        icon: 'warning',
-      });
-      if (!confirmed) return;
-    }
-    feedback('tick');
-    const updated = {};
-    daysList.forEach(({ key }) => {
-      updated[key] = val;
-    });
-    setBreakfast(updated);
-  };
-
-  const allLunchSelected = daysList.every(({ key }) => Boolean(lunch[key]));
-  const allBreakfastSelected = daysList.every(({ key }) => Boolean(breakfast[key]));
-
   // Custom Template Persistence
   const handleSaveTemplates = async (updatedTemplates) => {
     if (isBlocked) {
@@ -639,10 +386,8 @@ function StudentPort() {
   const handleDiscard = () => {
     feedback('pop');
     if (savedBaseline) {
-      setLunch(savedBaseline.lunch || {});
-      setBreakfast(savedBaseline.breakfast || {});
       setDateExceptions(savedBaseline.dateExceptions || {});
-      dialog.toast.info('Changes Discarded', 'Reverted back to your saved preferences.');
+      dialog.toast.info('Changes Discarded', 'Reverted back to your saved dining schedule.');
     }
   };
 
@@ -1224,280 +969,13 @@ function StudentPort() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
-        {/* ================= SECTION 1: WEEKLY DINING ROUTINE ================= */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                {t('weeklyDiningRoutine', 'Weekly Dining Routine')}
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('weeklyRoutineSubtitle', 'Your standard 7-day schedule for breakfast and lunch. Changes here apply as your recurring weekly pattern.')}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Breakfast Card */}
-            <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
-                    <Coffee className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                      {t('navBreakfast') || 'Breakfast'}
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-                      {t('morningMealSchedule', 'Morning meal schedule')}
-                    </p>
-                  </div>
-                </div>
-
-                {isBlocked ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 select-none">
-                    <Ban className="w-3 h-3 text-rose-500" />
-                    <span>{t('dualGridSuspension', 'Dual-Grid Suspended')}</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => selectAllBreakfast(!allBreakfastSelected)}
-                    className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                  >
-                    {allBreakfastSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {daysList.map(({ key, label }) => {
-                  const active = Boolean(breakfast[key]);
-                  const dayInfo = upcomingDateMap[key];
-                  const overrideInfo = dayOverridesMap[key];
-                  const isLockedDay = Boolean(dayInfo?.isLocked);
-                  const hasOverride = Boolean(overrideInfo && overrideInfo.isBfOff);
-
-                  return (
-                    <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
-                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center flex items-center justify-center gap-0.5">
-                        {label}
-                        {isLockedDay && (
-                          <span
-                            title={dayInfo?.isTomorrow ? `Tomorrow is locked past ${endTime}. Edits apply starting next week.` : `Today is locked. Edits apply starting next week.`}
-                            className="inline-flex items-center text-amber-500"
-                          >
-                            <Lock className="w-2.5 h-2.5" />
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isBlocked) {
-                            dialog.toast.warning(
-                              t('tokenLockedBadge', 'Account Blocked'),
-                              `Dual-Grid Suspension: Breakfast is paused. Please settle the ₹${fineDue} fine at ADSA Canteen Office.`
-                            );
-                            return;
-                          }
-                          toggleBreakfastDay(key);
-                        }}
-                        disabled={isBlocked}
-                        title={`${label}: Breakfast is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Suspended)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
-                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform font-mono shadow-sm ${
-                          isBlocked
-                            ? active
-                              ? 'bg-emerald-600/60 text-white/80 cursor-not-allowed border border-emerald-500/20'
-                              : 'bg-rose-600/60 text-white/80 cursor-not-allowed border border-rose-500/20'
-                            : active
-                              ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald active:scale-90 cursor-pointer'
-                              : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red active:scale-90 cursor-pointer'
-                        } ${isLockedDay ? 'ring-1 ring-amber-400/60 ring-offset-1' : ''}`}
-                      >
-                        {active ? <Check className="w-4 h-4" /> : <X className="w-3.5 h-3.5" />}
-                      </button>
-
-                      {/* Locked status pill */}
-                      {isLockedDay && (
-                        <span
-                          className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 truncate max-w-full text-center"
-                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : 'Today is locked for food service'}
-                        >
-                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today Locked')}
-                        </span>
-                      )}
-
-                      {/* Active override warning badge with 1-click clear */}
-                      {!isLockedDay && hasOverride && (
-                        <div className="flex items-center gap-0.5 max-w-full">
-                          <span
-                            className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 truncate"
-                            title={`Active Override for ${formatFriendlyDate(overrideInfo.date, true)}: Breakfast is OFF (${overrideInfo.label})`}
-                          >
-                            OFF
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleClearOverrideForDate(overrideInfo.date);
-                            }}
-                            className="text-[8.5px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline px-0.5"
-                            title="Clear date override and enable food"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Lunch Card */}
-            <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-                    <Utensils className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                      {t('navLunch') || 'Lunch'}
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-                      {t('afternoonMealSchedule', 'Afternoon meal schedule')}
-                    </p>
-                  </div>
-                </div>
-
-                {isBlocked ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 select-none">
-                    <Ban className="w-3 h-3 text-rose-500" />
-                    <span>{t('dualGridSuspension', 'Dual-Grid Suspended')}</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => selectAllLunch(!allLunchSelected)}
-                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-                  >
-                    {allLunchSelected ? (t('deselectAll') || 'Deselect All') : (t('selectAll') || 'Select All')}
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {daysList.map(({ key, label }) => {
-                  const active = Boolean(lunch[key]);
-                  const dayInfo = upcomingDateMap[key];
-                  const overrideInfo = dayOverridesMap[key];
-                  const isLockedDay = Boolean(dayInfo?.isLocked);
-                  const hasOverride = Boolean(overrideInfo && overrideInfo.isLunchOff);
-
-                  return (
-                    <div key={key} className="flex flex-col items-center gap-1 sm:gap-1.5 min-w-0">
-                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 dark:text-gray-400 truncate w-full text-center flex items-center justify-center gap-0.5">
-                        {label}
-                        {isLockedDay && (
-                          <span
-                            title={dayInfo?.isTomorrow ? `Tomorrow is locked past ${endTime}. Edits apply starting next week.` : `Today is locked. Edits apply starting next week.`}
-                            className="inline-flex items-center text-amber-500"
-                          >
-                            <Lock className="w-2.5 h-2.5" />
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isBlocked) {
-                            dialog.toast.warning(
-                              t('tokenLockedBadge', 'Account Blocked'),
-                              `Dual-Grid Suspension: Lunch is paused. Please settle the ₹${fineDue} fine at ADSA Canteen Office.`
-                            );
-                            return;
-                          }
-                          toggleLunchDay(key);
-                        }}
-                        disabled={isBlocked}
-                        title={`${label}: Lunch is ${active ? 'ON' : 'OFF'}${isBlocked ? ' (Suspended)' : isLockedDay ? ' (Locked for upcoming day)' : ' (Click to toggle)'}`}
-                        className={`w-full max-w-[42px] h-10 sm:h-12 rounded-xl flex items-center justify-center text-xs font-bold transition-all transform font-mono shadow-sm ${
-                          isBlocked
-                            ? active
-                              ? 'bg-emerald-600/60 text-white/80 cursor-not-allowed border border-emerald-500/20'
-                              : 'bg-rose-600/60 text-white/80 cursor-not-allowed border border-rose-500/20'
-                            : active
-                              ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-emerald-500/25 border border-emerald-400/40 hover:shadow-glow-emerald active:scale-90 cursor-pointer'
-                              : 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/25 border border-rose-400/40 hover:shadow-glow-red active:scale-90 cursor-pointer'
-                        } ${isLockedDay ? 'ring-1 ring-amber-400/60 ring-offset-1' : ''}`}
-                      >
-                        {active ? <Check className="w-4 h-4" /> : <X className="w-3.5 h-3.5" />}
-                      </button>
-
-                      {/* Locked status pill */}
-                      {isLockedDay && (
-                        <span
-                          className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 truncate max-w-full text-center"
-                          title={dayInfo?.isTomorrow ? `Tomorrow locked past ${endTime}` : 'Today is locked for food service'}
-                        >
-                          {dayInfo?.isTomorrow ? t('lockedTomorrowBadge', 'Locked') : t('lockedTodayBadge', 'Today Locked')}
-                        </span>
-                      )}
-
-                      {/* Active override warning badge with 1-click clear */}
-                      {!isLockedDay && hasOverride && (
-                        <div className="flex items-center gap-0.5 max-w-full">
-                          <span
-                            className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 truncate"
-                            title={`Active Override for ${formatFriendlyDate(overrideInfo.date, true)}: Lunch is OFF (${overrideInfo.label})`}
-                          >
-                            OFF
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleClearOverrideForDate(overrideInfo.date);
-                            }}
-                            className="text-[8.5px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline px-0.5"
-                            title="Clear date override and enable food"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {isBlocked && (
-            <div className="p-3 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-500/20 flex items-center justify-between gap-2 text-xs text-rose-800 dark:text-rose-300">
-              <div className="flex items-center gap-2">
-                <Ban className="w-4 h-4 flex-shrink-0 text-rose-600 dark:text-rose-400" />
-                <span>{t('routineLockedDesc', 'Weekly dining schedule cannot be changed while account is suspended.')}</span>
-              </div>
-              <span className="font-mono font-bold text-rose-950 dark:text-white px-2 py-0.5 rounded-lg bg-rose-500/15">
-                Fine Due: ₹{fineDue}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* ================= SECTION 2: MONTHLY DINING CALENDAR & DATE OVERRIDES ================= */}
+        {/* ================= SECTION 1: UNIFIED DINING CALENDAR & MEAL SCHEDULE ================= */}
         <div className="space-y-4">
           {isBlocked && (
             <div className="p-3 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-500/20 flex items-center justify-between gap-2 text-xs text-rose-800 dark:text-rose-300">
               <div className="flex items-center gap-2">
                 <Ban className="w-4 h-4 flex-shrink-0 text-rose-600 dark:text-rose-400" />
-                <span>{t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')}</span>
+                <span>{t('calendarLockedNotice', 'Calendar dining schedule and templates are locked while account is suspended.')}</span>
               </div>
               <span className="font-mono font-bold text-rose-950 dark:text-white px-2 py-0.5 rounded-lg bg-rose-500/15">
                 Fine Due: ₹{fineDue}
@@ -1526,8 +1004,7 @@ function StudentPort() {
           />
         </div>
 
-
-        {/* ================= SECTION 3: DIETARY PREFERENCES (INTERACTIVE CHANGE REQUEST) ================= */}
+        {/* ================= SECTION 2: DIETARY PREFERENCES ================= */}
         <div className="p-6 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-md space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">

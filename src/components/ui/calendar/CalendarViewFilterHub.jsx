@@ -1,11 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutGrid, List, Coffee, Utensils } from 'lucide-react';
+import {
+  LayoutGrid,
+  CalendarDays,
+  Clock,
+  Layers,
+  List,
+  Coffee,
+  Utensils,
+} from 'lucide-react';
 import { useFeedback } from '../../../utils/useFeedback';
 import { useLanguage } from '../../../store/LanguageContext';
 
 export default function CalendarViewFilterHub({
-  activeView,
+  activeView, // 'month' | 'grid' | 'week' | 'day' | 'year' | 'list'
   setActiveView,
   mealFilter,
   setMealFilter,
@@ -24,10 +32,20 @@ export default function CalendarViewFilterHub({
     setMealFilter(filter);
   };
 
+  const isMonthlyOrGrid = activeView === 'month' || activeView === 'grid';
+
+  const viewOptions = [
+    { key: 'month', label: t('viewMonth', 'Month'), icon: LayoutGrid, title: 'Monthly Grid View (Default)' },
+    { key: 'week', label: t('viewWeek', 'Week'), icon: CalendarDays, title: 'Weekly 7-Day View' },
+    { key: 'day', label: t('viewDay', 'Day'), icon: Clock, title: 'Daily Deep Focus View' },
+    { key: 'year', label: t('viewYear', 'Year'), icon: Layers, title: '12-Month Academic Year Horizon' },
+    { key: 'list', label: t('viewList', 'List'), icon: List, title: 'Scheduled List View' },
+  ];
+
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      {/* 1. Meal Filter Tabs (Both | Breakfast | Lunch) */}
-      {showMealFilter && activeView === 'grid' && (
+      {/* 1. Meal Filter Tabs (Both | Breakfast | Lunch) - Available when in Month view */}
+      {showMealFilter && isMonthlyOrGrid && (
         <div className="inline-flex p-0.5 rounded-xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 shadow-xs backdrop-blur-md">
           {/* Both Meals */}
           <button
@@ -67,7 +85,7 @@ export default function CalendarViewFilterHub({
                 className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-emerald-500/30"
               />
             )}
-            <Coffee className="w-3 h-3 text-emerald-500" />
+            <Coffee className="w-3 h-3 text-teal-500" />
             <span className="hidden sm:inline">{t('navBreakfast', 'Breakfast')}</span>
             <span className="sm:hidden">Bf</span>
           </button>
@@ -96,49 +114,36 @@ export default function CalendarViewFilterHub({
         </div>
       )}
 
-      {/* 2. View Switcher (Grid vs List) */}
+      {/* 2. Multi-View Switcher (Month, Week, Day, Year, List) */}
       <div className="inline-flex p-0.5 rounded-xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 shadow-xs backdrop-blur-md">
-        <button
-          type="button"
-          onClick={() => handleViewChange('grid')}
-          className={`relative p-1.5 rounded-lg text-xs font-extrabold transition-colors select-none ${
-            activeView === 'grid'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
-          }`}
-          title={t('calendarGridView', 'Calendar Grid View')}
-          aria-label={t('calendarGridView', 'Calendar Grid View')}
-        >
-          {activeView === 'grid' && (
-            <motion.div
-              layoutId="activeViewPill"
-              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-              className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/60 dark:border-white/10"
-            />
-          )}
-          <LayoutGrid className="w-3.5 h-3.5" />
-        </button>
+        {viewOptions.map(({ key, label, icon: Icon, title }) => {
+          const isActive = (key === 'month' && isMonthlyOrGrid) || activeView === key;
 
-        <button
-          type="button"
-          onClick={() => handleViewChange('list')}
-          className={`relative p-1.5 rounded-lg text-xs font-extrabold transition-colors select-none ${
-            activeView === 'list'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
-          }`}
-          title={t('scheduledOverridesList', 'Scheduled Overrides List')}
-          aria-label={t('scheduledOverridesList', 'Scheduled Overrides List')}
-        >
-          {activeView === 'list' && (
-            <motion.div
-              layoutId="activeViewPill"
-              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-              className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/60 dark:border-white/10"
-            />
-          )}
-          <List className="w-3.5 h-3.5" />
-        </button>
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleViewChange(key)}
+              className={`relative px-2 py-1 rounded-lg text-xs font-black transition-colors select-none flex items-center gap-1 ${
+                isActive
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
+              }`}
+              title={title}
+              aria-label={title}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeViewPill"
+                  transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                  className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/60 dark:border-white/10"
+                />
+              )}
+              <Icon className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

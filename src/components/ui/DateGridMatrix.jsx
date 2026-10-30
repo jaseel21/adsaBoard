@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
-  ChevronRight,
   Calendar,
   Sparkles,
   Layers,
@@ -29,8 +27,13 @@ import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
 import { dialog } from '../../utils/dialog';
 import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
-import DateTokenButton from './DateTokenButton';
 import DiningCalendarHeader from './calendar/DiningCalendarHeader';
+import SchedulePatternModal from './calendar/SchedulePatternModal';
+import MultiDateActionBar from './calendar/MultiDateActionBar';
+import MonthlyGridView from './calendar/views/MonthlyGridView';
+import WeeklyStripView from './calendar/views/WeeklyStripView';
+import DailyFocusView from './calendar/views/DailyFocusView';
+import YearlyOverviewView from './calendar/views/YearlyOverviewView';
 import StudentTemplateModal from './StudentTemplateModal';
 import DateTurnModal from './DateTurnModal';
 import DateHistoryDetailModal from './DateHistoryDetailModal';
@@ -42,6 +45,7 @@ import {
   applyDateRangeException,
   removeDateException,
   formatFriendlyDate,
+  getDayOfWeekShort,
 } from '../../utils/studentExceptionService';
 
 const MONTH_NAMES = [
@@ -63,9 +67,8 @@ export default function DateGridMatrix({
   const { getDateLockStatus, isTomorrowLocked, tomorrowIST, todayIST, endTime } = useTokenLockStatus();
   const maxDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]); // Full 1-year academic calendar
 
-  // Mobile meal segmented filter: 'both' | 'breakfast' | 'lunch' (responsive for < lg viewports)
+  // Meal segmented filter in month view: 'both' | 'breakfast' | 'lunch'
   const [mobileMealTab, setMobileMealTab] = useState('both');
-  const [activeMeal, setActiveMeal] = useState('breakfast');
 
   // Initial month view from today's IST date
   const [currentYear, setCurrentYear] = useState(() => {
@@ -77,9 +80,16 @@ export default function DateGridMatrix({
     return m - 1; // 0-indexed
   });
 
-  // Active view: 'grid' or 'list'
-  const [activeView, setActiveView] = useState('grid');
+  // Active view: 'month' (default) | 'week' | 'day' | 'year' | 'list' (supports legacy 'grid' alias)
+  const [activeView, setActiveView] = useState('month');
   const [activeListTab, setActiveListTab] = useState('upcoming'); // 'upcoming' | 'history'
+
+  // Schedule Pattern Modal state (new core routine replacement)
+  const [showPatternModal, setShowPatternModal] = useState(false);
+
+  // Multi-Date Selection Mode state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
 
   // Template modal state
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -132,7 +142,7 @@ export default function DateGridMatrix({
     return getMonthCalendarDays(currentYear, currentMonth);
   }, [currentYear, currentMonth]);
 
-  // Dynamic counts for the currently viewed month + overall scheduled count
+  // Dynamic counts for currently viewed month
   const stats = useMemo(() => {
     const monthStats = calculateMonthStats(student, currentYear, currentMonth);
     const dateExceptions = student?.dateExceptions || {};
@@ -155,9 +165,9 @@ export default function DateGridMatrix({
     };
   }, [student, currentYear, currentMonth]);
 
-  // Student standard weekly routine baseline summary
+  // Student baseline summary
   const routineSummary = useMemo(() => {
-    if (!student?.obj) return 'Standard Daily Dining Rotation';
+    if (!student?.obj) return '7-Day Dining Schedule Active';
     const dayLabels = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const activeDays = [];
@@ -168,9 +178,9 @@ export default function DateGridMatrix({
       else if (lu) activeDays.push(`${dayNames[idx]} (Lunch)`);
       else if (bf) activeDays.push(`${dayNames[idx]} (Bf)`);
     });
-    if (activeDays.length === 7) return 'Standard Routine: All 7 Days Active (Breakfast & Lunch)';
-    if (activeDays.length === 0) return 'Standard Routine: All Days Inactive';
-    return `Standard Routine: ${activeDays.join(' • ')}`;
+    if (activeDays.length === 7) return 'Standard Schedule: All 7 Days Active (Breakfast & Lunch)';
+    if (activeDays.length === 0) return 'Schedule: All Days Inactive';
+    return `Schedule: ${activeDays.join(' • ')}`;
   }, [student?.obj]);
 
   // Click handler to inspect past day's historical ledger record
@@ -181,17 +191,6 @@ export default function DateGridMatrix({
     setSelectedHistoryMeals(meals);
     setShowHistoryModal(true);
   };
-
-  // Day of week column headers
-  const dayHeaders = useMemo(() => [
-    { key: 'su', label: t('days.su', 'Sun') },
-    { key: 'mo', label: t('days.mo', 'Mon') },
-    { key: 'tu', label: t('days.tu', 'Tue') },
-    { key: 'we', label: t('days.we', 'Wed') },
-    { key: 'th', label: t('days.th', 'Thu') },
-    { key: 'fr', label: t('days.fr', 'Fri') },
-    { key: 'sa', label: t('days.sa', 'Sat') },
-  ], [t]);
 
   // Active date overrides list for upcoming dates
   const activeExceptionsList = useMemo(() => {
@@ -205,20 +204,20 @@ export default function DateGridMatrix({
         const isLuOn = val.lunch !== undefined ? Boolean(val.lunch) : true;
         return {
           dateKey,
-          label: val.label || (isBfOn === false && isLuOn === false ? 'Full Day Leave' : !isBfOn ? 'Bf OFF' : !isLuOn ? 'Lunch OFF' : 'Override'),
+          label: val.label || (isBfOn === false && isLuOn === false ? 'Full Day Leave' : !isBfOn ? 'Bf OFF' : !isLuOn ? 'Lunch OFF' : 'Scheduled'),
           isBfOn,
           isLuOn,
         };
       });
   }, [student?.dateExceptions, todayIST]);
 
-  // ================= 1. SINGLE CLICK TO TURN ON AND OFF =================
+  // ================= 1. SINGLE CLICK TO TOGGLE MEAL =================
   const handleSingleClickToggle = (dateStr, mealType) => {
     if (!editable) {
       feedback('warning');
       dialog.toast.info(
         t('tokenLockedBadge', 'Token Locked'),
-        t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')
+        'Calendar changes are locked while account is suspended.'
       );
       return;
     }
@@ -227,7 +226,7 @@ export default function DateGridMatrix({
       feedback('warning');
       dialog.toast.info(
         t('tokenLockedBadge', 'Token Locked'),
-        t('calendarLockedNotice', 'Calendar date overrides and templates are locked while account is suspended.')
+        'Calendar changes are locked while account is suspended.'
       );
       return;
     }
@@ -247,7 +246,7 @@ export default function DateGridMatrix({
 
     feedback('pop');
 
-    const targetMeal = mealType || activeMeal || 'breakfast';
+    const targetMeal = mealType === 'both' ? 'both' : (mealType || 'breakfast');
     const meals = calculateEffectiveDateMeals(student, dateStr);
     const existing = student?.dateExceptions || {};
 
@@ -256,66 +255,254 @@ export default function DateGridMatrix({
 
     if (targetMeal === 'lunch') {
       nextLunch = !meals.lunch;
-    } else {
+    } else if (targetMeal === 'breakfast') {
       nextBreakfast = !meals.breakfast;
+    } else {
+      // both: if either is on, turn both off (leave); if both off, turn both on
+      const willTurnOff = meals.breakfast || meals.lunch;
+      nextBreakfast = !willTurnOff;
+      nextLunch = !willTurnOff;
     }
 
-    // Check if the new state matches normal weekly routine
-    const isRoutineBf = meals.routineBreakfast;
-    const isRoutineLunch = meals.routineLunch;
-
-    let updated = { ...existing };
-    if (nextBreakfast === isRoutineBf && nextLunch === isRoutineLunch) {
-      // Reverted to standard routine: clean up exception key
-      delete updated[dateStr];
-    } else {
-      // Store new exception
-      updated[dateStr] = {
+    const updated = {
+      ...existing,
+      [dateStr]: {
         breakfast: nextBreakfast,
         lunch: nextLunch,
-        label: targetMeal === 'lunch'
-          ? (nextLunch ? 'Lunch ON' : 'Lunch OFF')
-          : (nextBreakfast ? 'Breakfast ON' : 'Breakfast OFF'),
-      };
-    }
+        label: !nextBreakfast && !nextLunch
+          ? 'Leave (Both OFF)'
+          : nextBreakfast && nextLunch
+          ? 'Active (Both ON)'
+          : nextBreakfast
+          ? 'Breakfast ON'
+          : 'Lunch ON',
+        updatedAt: new Date().toISOString(),
+      },
+    };
 
     if (onSaveExceptions) {
       onSaveExceptions(updated);
     }
   };
 
-  // Turn all upcoming dates ON / OFF for breakfast
-  const handleTurnAllBf = (turnOn) => {
-    feedback('pop');
-    const updated = { ...(student?.dateExceptions || {}) };
-    for (let i = 0; i <= 30; i++) {
-      const d = addDaysToDate(todayIST, i);
-      if (!isAdmin && getDateLockStatus(d, { isAdmin }).isLocked) continue;
-      const meals = calculateEffectiveDateMeals(student, d);
-      updated[d] = {
-        breakfast: turnOn,
-        lunch: meals.lunch,
-        label: turnOn ? 'Breakfast ON' : 'Breakfast OFF',
-      };
-    }
-    if (onSaveExceptions) onSaveExceptions(updated);
+  // ================= 2. 1-CLICK MEAL TOGGLE IN PARALLEL CALENDAR =================
+  const handleToggleMealDate = (dateStr, mealType) => {
+    handleSingleClickToggle(dateStr, mealType);
   };
 
-  // Turn all upcoming dates ON / OFF for lunch
-  const handleTurnAllLunch = (turnOn) => {
-    feedback('pop');
+  // ================= 3. WEEKDAY TOKEN TILE TOGGLE IN CALENDAR HEADER =================
+  const handleToggleWeekdayMeal = (dayKey, mealType, targetState) => {
+    feedback('tick');
+    const isLunch = mealType === 'lunch';
+    const targetVal = typeof targetState === 'boolean' ? targetState : true;
+
     const updated = { ...(student?.dateExceptions || {}) };
-    for (let i = 0; i <= 30; i++) {
-      const d = addDaysToDate(todayIST, i);
-      if (!isAdmin && getDateLockStatus(d, { isAdmin }).isLocked) continue;
-      const meals = calculateEffectiveDateMeals(student, d);
-      updated[d] = {
-        breakfast: meals.breakfast,
-        lunch: turnOn,
-        label: turnOn ? 'Lunch ON' : 'Lunch OFF',
+    let affected = 0;
+    let lockedSkipped = 0;
+
+    calendarDays.forEach((day) => {
+      if (day.isBlank || day.isPast || day.isBeyondMax) return;
+      if (day.dayOfWeek !== dayKey) return;
+
+      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
+      if (!isAdmin && lockInfo.isLocked) {
+        lockedSkipped++;
+        return;
+      }
+
+      const curMeals = calculateEffectiveDateMeals(student, day.dateStr);
+      const newBf = isLunch ? curMeals.breakfast : targetVal;
+      const newLu = isLunch ? targetVal : curMeals.lunch;
+
+      updated[day.dateStr] = {
+        breakfast: newBf,
+        lunch: newLu,
+        label: `${dayKey.toUpperCase()} Schedule`,
+        updatedAt: new Date().toISOString(),
       };
+      affected++;
+    });
+
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
     }
-    if (onSaveExceptions) onSaveExceptions(updated);
+
+    dialog.toast.success(
+      `${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
+      `Turned ${targetVal ? 'ON' : 'OFF'} for all ${dayKey.toUpperCase()}s (${affected} dates).${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved safely)` : ''}`
+    );
+  };
+
+  // ================= 4. TURN ALL DATES IN MONTH FOR SINGLE MEAL =================
+  const handleTurnAllMeal = (mealType, boolVal) => {
+    feedback('success');
+    const isLunch = mealType === 'lunch';
+    const updated = { ...(student?.dateExceptions || {}) };
+    let affected = 0;
+    let lockedSkipped = 0;
+
+    calendarDays.forEach((day) => {
+      if (day.isBlank || day.isPast || day.isBeyondMax) return;
+
+      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
+      if (!isAdmin && lockInfo.isLocked) {
+        lockedSkipped++;
+        return;
+      }
+
+      const curMeals = calculateEffectiveDateMeals(student, day.dateStr);
+      const newBf = isLunch ? curMeals.breakfast : boolVal;
+      const newLu = isLunch ? boolVal : curMeals.lunch;
+
+      updated[day.dateStr] = {
+        breakfast: newBf,
+        lunch: newLu,
+        label: `All ${isLunch ? 'Lunch' : 'Breakfast'} ${boolVal ? 'ON' : 'OFF'}`,
+        updatedAt: new Date().toISOString(),
+      };
+      affected++;
+    });
+
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
+    }
+
+    dialog.toast.success(
+      `${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
+      `Turned ${boolVal ? 'ON' : 'OFF'} for all ${affected} upcoming dates in month.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved)` : ''}`
+    );
+  };
+
+  // ================= 5. DAY-OF-WEEK COLUMN BULK ACTION =================
+  const handleApplyColumnAction = (dayKey, settings) => {
+    feedback('success');
+    const updated = { ...(student?.dateExceptions || {}) };
+    let affected = 0;
+    let lockedSkipped = 0;
+
+    calendarDays.forEach((day) => {
+      if (day.isBlank || day.isPast || day.isBeyondMax) return;
+      if (day.dayOfWeek !== dayKey) return;
+
+      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
+      if (!isAdmin && lockInfo.isLocked) {
+        lockedSkipped++;
+        return;
+      }
+
+      const curMeals = calculateEffectiveDateMeals(student, day.dateStr);
+      const newBf = settings.breakfast !== undefined ? settings.breakfast : curMeals.breakfast;
+      const newLu = settings.lunch !== undefined ? settings.lunch : curMeals.lunch;
+
+      updated[day.dateStr] = {
+        breakfast: newBf,
+        lunch: newLu,
+        label: settings.label || 'Column Schedule',
+        updatedAt: new Date().toISOString(),
+      };
+      affected++;
+    });
+
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
+    }
+
+    dialog.toast.success(
+      'Column Updated',
+      `Updated ${affected} date(s) in this month.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved safely)` : ''}`
+    );
+  };
+
+  // ================= 3. MULTI-DATE SELECTION ACTIONS =================
+  const handleToggleDateSelect = (dateStr) => {
+    feedback('tick');
+    setSelectedDates((prev) => {
+      if (prev.includes(dateStr)) {
+        return prev.filter((d) => d !== dateStr);
+      }
+      return [...prev, dateStr];
+    });
+  };
+
+  const handleClearSelection = () => {
+    feedback('pop');
+    setSelectedDates([]);
+    setIsSelectMode(false);
+  };
+
+  const handleSelectAllMonth = () => {
+    feedback('tick');
+    const bookable = calendarDays
+      .filter((d) => !d.isBlank && !d.isPast && !d.isBeyondMax)
+      .map((d) => d.dateStr);
+    setSelectedDates(bookable);
+  };
+
+  const handleSelectWeekdays = () => {
+    feedback('tick');
+    const weekdays = calendarDays
+      .filter((d) => !d.isBlank && !d.isPast && !d.isBeyondMax && d.dayOfWeek !== 'fr' && d.dayOfWeek !== 'sa')
+      .map((d) => d.dateStr);
+    setSelectedDates(weekdays);
+  };
+
+  const handleSelectWeekends = () => {
+    feedback('tick');
+    const weekends = calendarDays
+      .filter((d) => !d.isBlank && !d.isPast && !d.isBeyondMax && (d.dayOfWeek === 'fr' || d.dayOfWeek === 'sa'))
+      .map((d) => d.dateStr);
+    setSelectedDates(weekends);
+  };
+
+  const handleApplyBatchMealState = (settings) => {
+    if (selectedDates.length === 0) return;
+    feedback('success');
+
+    const updated = { ...(student?.dateExceptions || {}) };
+    let affected = 0;
+    let lockedSkipped = 0;
+
+    selectedDates.forEach((dateStr) => {
+      const lockInfo = getDateLockStatus(dateStr, { isAdmin });
+      if (!isAdmin && lockInfo.isLocked) {
+        lockedSkipped++;
+        return;
+      }
+
+      const curMeals = calculateEffectiveDateMeals(student, dateStr);
+      const newBf = settings.breakfast !== undefined ? settings.breakfast : curMeals.breakfast;
+      const newLu = settings.lunch !== undefined ? settings.lunch : curMeals.lunch;
+
+      updated[dateStr] = {
+        breakfast: newBf,
+        lunch: newLu,
+        label: settings.label || 'Batch Selection',
+        updatedAt: new Date().toISOString(),
+      };
+      affected++;
+    });
+
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
+    }
+
+    dialog.toast.success(
+      'Batch Update Applied',
+      `Applied to ${affected} selected dates.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved safely)` : ''}`
+    );
+    setSelectedDates([]);
+    setIsSelectMode(false);
+  };
+
+  // ================= 4. SCHEDULE PATTERN HANDLER =================
+  const handleApplySchedulePattern = (updatedExceptions, meta) => {
+    if (onSaveExceptions) {
+      onSaveExceptions(updatedExceptions);
+    }
+    dialog.toast.success(
+      'Schedule Pattern Applied',
+      `Applied to ${meta.appliedDatesCount} dates.${meta.lockedCount > 0 ? ` (${meta.lockedCount} locked dates kept safe)` : ''}`
+    );
   };
 
   // 1-Tap Toggle Tomorrow Leave Preset
@@ -335,13 +522,12 @@ export default function DateGridMatrix({
     if (onSaveExceptions) onSaveExceptions(updated);
   };
 
-  // ================= 2. WEEKEND RULE =================
-  // Rule: Friday - breakfast and lunch, Saturday breakfast
+  // Quick Weekend Leave
   const handleQuickTurnWeekendOff = (allMonth = false) => {
     feedback('pop');
     const [y, m, d] = todayIST.split('-').map(Number);
     const todayObj = new Date(y, m - 1, d);
-    const dayOfWeek = todayObj.getDay(); // 0 is Sunday, 5 is Friday, 6 is Saturday
+    const dayOfWeek = todayObj.getDay();
 
     const updated = { ...(student?.dateExceptions || {}) };
     const iterations = allMonth ? 5 : 1;
@@ -354,7 +540,6 @@ export default function DateGridMatrix({
       const satDate = addDaysToDate(todayIST, daysUntilFriday + 1);
 
       if (friDate <= maxDate && (isAdmin || !getDateLockStatus(friDate, { isAdmin }).isLocked)) {
-        // Friday: breakfast and lunch OFF
         updated[friDate] = {
           breakfast: false,
           lunch: false,
@@ -362,7 +547,6 @@ export default function DateGridMatrix({
         };
       }
       if (satDate <= maxDate && (isAdmin || !getDateLockStatus(satDate, { isAdmin }).isLocked)) {
-        // Saturday: breakfast OFF (Saturday lunch remains active as per routine)
         const currentSatLunch = student?.obj?.lunch?.sa !== undefined ? Boolean(student.obj.lunch.sa) : true;
         updated[satDate] = {
           breakfast: false,
@@ -377,41 +561,7 @@ export default function DateGridMatrix({
     }
   };
 
-  // Turn all upcoming dates ON for the active meal (skips locked dates for non-admins)
-  const handleTurnAllActiveMealOn = () => {
-    feedback('pop');
-    const updated = { ...(student?.dateExceptions || {}) };
-    for (let i = 0; i <= 30; i++) {
-      const d = addDaysToDate(todayIST, i);
-      if (!isAdmin && getDateLockStatus(d, { isAdmin }).isLocked) continue;
-      const meals = calculateEffectiveDateMeals(student, d);
-      updated[d] = {
-        breakfast: activeMeal === 'breakfast' ? true : meals.breakfast,
-        lunch: activeMeal === 'lunch' ? true : meals.lunch,
-        label: `${activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'} ON`,
-      };
-    }
-    if (onSaveExceptions) onSaveExceptions(updated);
-  };
-
-  // Turn all upcoming dates OFF for the active meal (skips locked dates for non-admins)
-  const handleTurnAllActiveMealOff = () => {
-    feedback('pop');
-    const updated = { ...(student?.dateExceptions || {}) };
-    for (let i = 0; i <= 30; i++) {
-      const d = addDaysToDate(todayIST, i);
-      if (!isAdmin && getDateLockStatus(d, { isAdmin }).isLocked) continue;
-      const meals = calculateEffectiveDateMeals(student, d);
-      updated[d] = {
-        breakfast: activeMeal === 'breakfast' ? false : meals.breakfast,
-        lunch: activeMeal === 'lunch' ? false : meals.lunch,
-        label: `${activeMeal === 'lunch' ? 'Lunch' : 'Breakfast'} OFF`,
-      };
-    }
-    if (onSaveExceptions) onSaveExceptions(updated);
-  };
-
-  // Reset exceptions while preserving locked dates
+  // Reset all scheduled dates while preserving locked dates
   const handleClearAllExceptions = () => {
     feedback('warning');
     if (isAdmin) {
@@ -422,10 +572,7 @@ export default function DateGridMatrix({
     const preserved = {};
     Object.keys(existing).forEach((d) => {
       if (getDateLockStatus(d).isLocked) {
-        const meals = calculateEffectiveDateMeals(student, d);
-        if (meals.breakfast !== meals.routineBreakfast || meals.lunch !== meals.routineLunch) {
-          preserved[d] = existing[d];
-        }
+        preserved[d] = existing[d];
       }
     });
     if (onSaveExceptions) onSaveExceptions(preserved);
@@ -449,7 +596,7 @@ export default function DateGridMatrix({
     return Object.keys(exc).sort();
   }, [student?.dateExceptions]);
 
-  // Multi-day Range Override handler
+  // Multi-day Range Leave handler
   const handleApplyDateRange = (startDate, endDate, mealSettings) => {
     feedback('success');
     const existing = student?.dateExceptions || {};
@@ -459,23 +606,15 @@ export default function DateGridMatrix({
     }
   };
 
-  // Single Exception handler from Modal
-  const handleSaveSingleException = (dateStr, mealSettings) => {
+  // Single Day handler from Modal
+  const handleSaveSingleDay = (dateStr, mealSettings) => {
     feedback('success');
-    const meals = calculateEffectiveDateMeals(student, dateStr);
-    const isRoutineBf = meals.routineBreakfast;
-    const isRoutineLunch = meals.routineLunch;
-
     let updated = { ...(student?.dateExceptions || {}) };
-    if (mealSettings.breakfast === isRoutineBf && mealSettings.lunch === isRoutineLunch) {
-      delete updated[dateStr];
-    } else {
-      updated[dateStr] = {
-        breakfast: mealSettings.breakfast,
-        lunch: mealSettings.lunch,
-        label: mealSettings.label || (activeMeal === 'lunch' ? 'Lunch Override' : 'Breakfast Override'),
-      };
-    }
+    updated[dateStr] = {
+      breakfast: mealSettings.breakfast,
+      lunch: mealSettings.lunch,
+      label: mealSettings.label || 'Scheduled Day',
+    };
     if (onSaveExceptions) {
       onSaveExceptions(updated);
     }
@@ -489,195 +628,12 @@ export default function DateGridMatrix({
     }
   };
 
-  const renderMealCard = (mealType) => {
-    const isLunch = mealType === 'lunch';
-    const mealTitle = isLunch
-      ? t('lunchCalendarTitle') || 'Lunch Calendar'
-      : t('breakfastCalendarTitle') || 'Breakfast Calendar';
-    const activeDaysCount = isLunch ? stats.activeLunchDays : stats.activeBreakfastDays;
-
-    return (
-      <div
-        key={mealType}
-        className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 p-3.5 sm:p-5 shadow-sm backdrop-blur-xl space-y-3.5 flex flex-col justify-between"
-      >
-        <div className="space-y-3.5">
-          {/* Card Header: Meal Icon, Title, Live Attendance Badge, Fast Actions */}
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-gray-100 dark:border-white/5">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  isLunch
-                    ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-teal-100 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400'
-                }`}
-              >
-                {isLunch ? <Utensils className="w-4 h-4" /> : <Coffee className="w-4 h-4" />}
-              </div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                  {mealTitle}
-                </h3>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                    isLunch
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
-                      : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20'
-                  }`}
-                >
-                  {activeDaysCount} ON
-                </span>
-              </div>
-            </div>
-
-            {editable && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => (isLunch ? handleTurnAllLunch(true) : handleTurnAllBf(true))}
-                  className={`text-[11px] font-bold hover:underline px-1.5 py-0.5 rounded-md transition-colors cursor-pointer ${
-                    isLunch
-                      ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-                      : 'text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40'
-                  }`}
-                  title={`Turn ${isLunch ? 'Lunch' : 'Breakfast'} ON for all upcoming dates in month`}
-                >
-                  {t('selectAll') || 'Select All'}
-                </button>
-                <span className="text-gray-300 dark:text-gray-600 text-xs">•</span>
-                <button
-                  type="button"
-                  onClick={() => (isLunch ? handleTurnAllLunch(false) : handleTurnAllBf(false))}
-                  className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline px-1.5 py-0.5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                  title={`Turn ${isLunch ? 'Lunch' : 'Breakfast'} OFF for all upcoming dates in month`}
-                >
-                  {t('deselectAll') || 'Deselect All'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Day of Week Column Headers */}
-          <div role="row" className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
-            {dayHeaders.map((dh) => (
-              <span
-                key={dh.key}
-                role="columnheader"
-                aria-label={dh.label}
-                className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"
-              >
-                {dh.label}
-              </span>
-            ))}
-          </div>
-
-          {/* 7-Column Token Cells Grid */}
-          <div
-            role="grid"
-            aria-label={`${MONTH_NAMES[currentMonth]} ${currentYear} Dining Calendar Grid`}
-            className="grid grid-cols-7 gap-1 sm:gap-1.5"
-          >
-            {calendarDays.map((day) => {
-              if (day.isBlank) {
-                return (
-                  <div
-                    key={day.key}
-                    role="gridcell"
-                    aria-hidden="true"
-                    className="w-full aspect-square rounded-xl sm:rounded-2xl bg-gray-50/30 dark:bg-white/[0.01] pointer-events-none"
-                  />
-                );
-              }
-
-              const meals = calculateEffectiveDateMeals(student, day.dateStr);
-              const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
-
-              return (
-                <DateTokenButton
-                  key={day.key}
-                  dateStr={day.dateStr}
-                  dayNumber={day.dayNumber}
-                  dayOfWeek={day.dayOfWeek}
-                  isToday={day.isToday}
-                  isTomorrow={day.dateStr === tomorrowIST}
-                  isPast={day.isPast}
-                  isBeyondMax={day.isBeyondMax}
-                  isBookable={day.isBookable}
-                  isLocked={lockInfo.isLocked}
-                  isAdmin={isAdmin}
-                  isAdminOverride={lockInfo.isAdminOverride}
-                  lockReason={lockInfo.reason}
-                  breakfast={meals.breakfast}
-                  lunch={meals.lunch}
-                  activeMeal={mealType}
-                  showDualPills={false}
-                  hasException={meals.hasException}
-                  exceptionLabel={meals.label}
-                  onClick={(d) => handleSingleClickToggle(d, mealType)}
-                  onHistoryClick={handleHistoryClick}
-                  onLockedClick={(d, reason) => {
-                    if (!isAdmin) {
-                      feedback('warning');
-                      const title =
-                        d === todayIST
-                          ? "Today's Meals are Locked"
-                          : d === tomorrowIST
-                          ? "Tomorrow's Meals are Locked"
-                          : 'Date is Locked';
-                      dialog.toast.warning(title, reason || 'Updates for this date are closed.');
-                    }
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Interactive Legend */}
-        <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-[10px] font-medium text-gray-400 dark:text-gray-500">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>ON</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500" />
-              <span>OFF</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full ring-2 ring-indigo-400 bg-indigo-500/20" />
-              <span>{t('customOverride', 'Override')}</span>
-            </span>
-            {isAdmin ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
-                <ShieldCheck className="w-2.5 h-2.5" />
-                <span>Admin Override Active</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <Lock className="w-2.5 h-2.5 text-gray-400" />
-                <span>{t('lockedCutoff', 'Locked')}</span>
-              </span>
-            )}
-          </div>
-          <span
-            className={`font-semibold text-[10px] inline-flex items-center gap-1 ${
-              isLunch
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : 'text-teal-600 dark:text-teal-400'
-            }`}
-          >
-            <span>{isLunch ? '🍽️' : '☕'} 1-Click toggle</span>
-          </span>
-        </div>
-      </div>
-    );
-  };
+  const isMonthlyView = activeView === 'month' || activeView === 'grid';
 
   return (
     <div className={`space-y-4 ${className}`}>
       
-      {/* ================= NEXT-LEVEL ADAPTIVE HEADER & COMMAND BAR ================= */}
+      {/* ================= COMPREHENSIVE CALENDAR COMMAND HEADER ================= */}
       <DiningCalendarHeader
         currentYear={currentYear}
         currentMonth={currentMonth}
@@ -694,6 +650,10 @@ export default function DateGridMatrix({
         onNextMonth={handleNextMonth}
         onJumpToToday={handleJumpToToday}
         onSelectMonthYear={handleSelectMonthYear}
+        onOpenSchedulePattern={() => {
+          feedback('tick');
+          setShowPatternModal(true);
+        }}
         onOpenRangeLeave={() => {
           feedback('tick');
           setSelectedModalDate(todayIST);
@@ -705,6 +665,12 @@ export default function DateGridMatrix({
           setShowTemplateModal(true);
         }}
         onClearExceptions={handleClearAllExceptions}
+        isSelectMode={isSelectMode}
+        onToggleSelectMode={() => {
+          feedback('tick');
+          setIsSelectMode((prev) => !prev);
+          if (isSelectMode) setSelectedDates([]);
+        }}
       />
 
       {/* ================= ARCHIVED MONTH BANNER ================= */}
@@ -716,13 +682,10 @@ export default function DateGridMatrix({
             </div>
             <div>
               <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">
-                {t('archivedLedgerTitle', 'Archived Dining Ledger for')} {t(`monthsFull.${currentMonth}`, MONTH_NAMES[currentMonth])} {currentYear}
+                Archived Dining Ledger for {MONTH_NAMES[currentMonth]} {currentYear}
               </h4>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('archivedLedgerDesc', 'All {totalDays} days in this month are finalized and locked for mess billing integrity. Attended: {breakfasts} Breakfasts, {lunches} Lunches.')
-                  .replace('{totalDays}', stats.totalDays)
-                  .replace('{breakfasts}', stats.pastBreakfastsTaken)
-                  .replace('{lunches}', stats.pastLunchesTaken)}
+                All {stats.totalDays} days in this month are finalized and locked for mess billing integrity. Attended: {stats.pastBreakfastsTaken} Breakfasts, {stats.pastLunchesTaken} Lunches.
               </p>
             </div>
           </div>
@@ -731,7 +694,7 @@ export default function DateGridMatrix({
             onClick={handleJumpToToday}
             className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all self-start sm:self-center flex-shrink-0"
           >
-            {t('backToCurrentMonth', 'Back to Current Month')}
+            Back to Current Month
           </button>
         </div>
       )}
@@ -742,7 +705,7 @@ export default function DateGridMatrix({
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span className="font-bold">
-              {t('adminOverrideActiveBadge', 'Admin Override Active')}: {t('adminCutoffNotice', 'Cutoff passed for students • Admin override active')}
+              Admin Override Active: Cutoffs bypassed for today and tomorrow.
             </span>
           </div>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-emerald-500/15 font-bold uppercase tracking-wider shrink-0">
@@ -751,118 +714,98 @@ export default function DateGridMatrix({
         </div>
       )}
 
-      {/* ================= ACTIVE OVERRIDES STRIP ================= */}
-      <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-[#0c1412]/90 border border-gray-200/80 dark:border-white/10 shadow-xs space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5 text-purple-500" />
-            <span>{t('activeDateOverrides', 'Active Date Overrides')} ({activeExceptionsList.length})</span>
-          </span>
-          {activeExceptionsList.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClearAllExceptions}
-              className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>{t('resetRoutinePreset', 'Reset All')}</span>
-            </button>
-          )}
-        </div>
+      {/* ================= VIEW DISPATCHER ================= */}
+      {isMonthlyView && (
+        <MonthlyGridView
+          currentYear={currentYear}
+          currentMonth={currentMonth}
+          calendarDays={calendarDays}
+          student={student}
+          stats={stats}
+          editable={editable}
+          isAdmin={isAdmin}
+          mealFilter={mobileMealTab}
+          todayIST={todayIST}
+          tomorrowIST={tomorrowIST}
+          getDateLockStatus={getDateLockStatus}
+          onToggleMealDate={handleToggleMealDate}
+          onToggleWeekdayMeal={handleToggleWeekdayMeal}
+          onTurnAllMeal={handleTurnAllMeal}
+          onHistoryClick={handleHistoryClick}
+          onLockedClick={(d, reason) => {
+            if (!isAdmin) {
+              feedback('warning');
+              const title =
+                d === todayIST
+                  ? "Today's Meals are Locked"
+                  : d === tomorrowIST
+                  ? "Tomorrow's Meals are Locked"
+                  : 'Date is Locked';
+              dialog.toast.warning(title, reason || 'Updates for this date are closed.');
+            }
+          }}
+          isSelectMode={isSelectMode}
+          selectedDates={selectedDates}
+          onToggleDateSelect={handleToggleDateSelect}
+        />
+      )}
 
-        {activeExceptionsList.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {activeExceptionsList.map((item) => (
-              <div
-                key={item.dateKey}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200/80 dark:border-white/10 text-xs shadow-xs"
-              >
-                <span className="font-bold text-gray-800 dark:text-gray-100 font-mono">
-                  {formatFriendlyDate(item.dateKey)}
-                </span>
-                <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                  !item.isBfOn && !item.isLuOn
-                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                    : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20'
-                }`}>
-                  {item.label}
-                </span>
-                {editable && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSingleException(item.dateKey)}
-                    className="p-0.5 rounded-md hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-rose-500 transition-colors cursor-pointer"
-                    title={t('clearOverride', 'Clear Override')}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-gray-400 dark:text-gray-500 italic">
-            {t('noActiveOverrides', 'Following standard weekly routine (No date overrides)')}
-          </p>
-        )}
-      </div>
+      {activeView === 'week' && (
+        <WeeklyStripView
+          student={student}
+          todayIST={todayIST}
+          tomorrowIST={tomorrowIST}
+          editable={editable}
+          isAdmin={isAdmin}
+          getDateLockStatus={getDateLockStatus}
+          onSingleClickToggle={handleSingleClickToggle}
+          onSaveDayState={handleSaveSingleDay}
+        />
+      )}
 
-      {/* ================= STUDENT BASELINE ROUTINE BENCHMARK ================= */}
-      <div className="p-2.5 sm:p-3 rounded-2xl bg-gray-50/90 dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-            <Layers className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <span className="font-extrabold text-gray-800 dark:text-gray-200 block truncate">
-              {routineSummary}
-            </span>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
-              Student baseline weekly rotation • Calendar displays effective attendance
-            </span>
-          </div>
-        </div>
+      {activeView === 'day' && (
+        <DailyFocusView
+          student={student}
+          todayIST={todayIST}
+          tomorrowIST={tomorrowIST}
+          editable={editable}
+          isAdmin={isAdmin}
+          getDateLockStatus={getDateLockStatus}
+          onSingleClickToggle={handleSingleClickToggle}
+          onSaveDayState={handleSaveSingleDay}
+          endTime={endTime}
+          isTomorrowLocked={isTomorrowLocked}
+        />
+      )}
 
-        {/* Quick Tomorrow Toggle shortcut */}
-        {editable && !stats.isFullyPastMonth && (
-          <button
-            type="button"
-            onClick={handleToggleTomorrowPreset}
-            className="px-2.5 py-1 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-[11px] font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto shrink-0"
-          >
-            <Zap className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-            <span>{t('tomorrowLeavePreset', 'Tomorrow OFF (Leave)')}</span>
-          </button>
-        )}
-      </div>
+      {activeView === 'year' && (
+        <YearlyOverviewView
+          currentYear={currentYear}
+          student={student}
+          todayIST={todayIST}
+          onSelectMonth={(mIdx, y) => {
+            setCurrentMonth(mIdx);
+            setCurrentYear(y);
+            setActiveView('month');
+          }}
+          onOpenRangeLeave={() => {
+            feedback('tick');
+            setSelectedModalDate(todayIST);
+            setShowTurnModal(true);
+          }}
+        />
+      )}
 
-      {/* ================= VIEW 1: DUAL PARALLEL OR FOCUSED MEAL GRIDS ================= */}
-      {activeView === 'grid' ? (
-        <div
-          className={`grid gap-4 sm:gap-6 ${
-            mobileMealTab === 'both'
-              ? 'grid-cols-1 lg:grid-cols-2'
-              : 'grid-cols-1 max-w-2xl mx-auto'
-          }`}
-        >
-          {/* 1. Breakfast Calendar Grid */}
-          {(mobileMealTab === 'both' || mobileMealTab === 'breakfast') &&
-            renderMealCard('breakfast')}
-
-          {/* 2. Lunch Calendar Grid */}
-          {(mobileMealTab === 'both' || mobileMealTab === 'lunch') &&
-            renderMealCard('lunch')}
-        </div>
-      ) : (
-        /* ================= VIEW 2: SCHEDULED OVERRIDES LIST ================= */
+      {activeView === 'list' && (
+        /* List View (Scheduled Overrides & Past History) */
         <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 p-4 sm:p-6 shadow-sm backdrop-blur-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h4 className="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-emerald-500" />
-              <span>{t('dateOverridesAndLedger', 'Date Overrides & Dining Ledger')}</span>
+              <span>Scheduled Custom Days & Dining Ledger</span>
             </h4>
 
-            {/* List View Tabs: Upcoming vs Past History */}
+            {/* List View Tabs */}
             <div className="flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 text-xs font-bold self-start sm:self-center">
               <button
                 type="button"
@@ -876,7 +819,7 @@ export default function DateGridMatrix({
                     : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                {t('upcomingOverridesTab', 'Upcoming Overrides')} ({sortedExceptionDates.filter((d) => d >= todayIST).length})
+                Upcoming Days ({sortedExceptionDates.filter((d) => d >= todayIST).length})
               </button>
               <button
                 type="button"
@@ -890,13 +833,12 @@ export default function DateGridMatrix({
                     : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                {t('pastLeavesLedgerTab', 'Past Leaves & Ledger')} ({sortedExceptionDates.filter((d) => d < todayIST).length})
+                Past Leaves & Ledger ({sortedExceptionDates.filter((d) => d < todayIST).length})
               </button>
             </div>
           </div>
 
           {activeListTab === 'upcoming' ? (
-            /* Tab A: Upcoming Overrides */
             (() => {
               const upcomingDates = sortedExceptionDates.filter((d) => d >= todayIST);
               if (upcomingDates.length === 0) {
@@ -904,10 +846,10 @@ export default function DateGridMatrix({
                   <div className="p-8 text-center rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
                     <Calendar className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                     <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                      {t('noUpcomingOverrides', 'No upcoming date exceptions scheduled.')}
+                      No custom upcoming leaves or meal changes scheduled.
                     </p>
                     <p className="text-[11px] text-gray-400 mt-0.5">
-                      {t('standardWeeklyRoutineApplies', 'Your standard weekly dining routine will apply every day. Click any day in Grid View to toggle.')}
+                      Your standard dining rotation will apply every day. Click any day in Month View to toggle.
                     </p>
                   </div>
                 );
@@ -931,7 +873,7 @@ export default function DateGridMatrix({
                             </span>
                             {dateKey === todayIST && (
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600">
-                                {t('today', 'Today')}
+                                Today
                               </span>
                             )}
                           </div>
@@ -939,37 +881,19 @@ export default function DateGridMatrix({
                             {dateKey} {exc?.label ? `• ${exc.label}` : ''}
                           </span>
                           <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                feedback('pop');
-                                const updated = {
-                                  ...(student?.dateExceptions || {}),
-                                  [dateKey]: { ...exc, breakfast: !isBfOn },
-                                };
-                                if (onSaveExceptions) onSaveExceptions(updated);
-                              }}
-                              className={`px-2 py-0.5 rounded-md transition-colors inline-flex items-center gap-1 ${
+                            <span
+                              className={`px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
                                 isBfOn
-                                  ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                  ? 'bg-teal-100 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
                                   : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
                               }`}
                             >
                               <Coffee className="w-3 h-3" />
                               <span>Bf: {isBfOn ? 'ON' : 'OFF'}</span>
-                            </button>
+                            </span>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                feedback('pop');
-                                const updated = {
-                                  ...(student?.dateExceptions || {}),
-                                  [dateKey]: { ...exc, lunch: !isLuOn },
-                                };
-                                if (onSaveExceptions) onSaveExceptions(updated);
-                              }}
-                              className={`px-2 py-0.5 rounded-md transition-colors inline-flex items-center gap-1 ${
+                            <span
+                              className={`px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
                                 isLuOn
                                   ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
                                   : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
@@ -977,24 +901,11 @@ export default function DateGridMatrix({
                             >
                               <Utensils className="w-3 h-3" />
                               <span>Lunch: {isLuOn ? 'ON' : 'OFF'}</span>
-                            </button>
+                            </span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              feedback('tick');
-                              setSelectedModalDate(dateKey);
-                              setShowTurnModal(true);
-                            }}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
-                            title="Edit override settings & reason"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                          </button>
-
                           <button
                             type="button"
                             onClick={() => {
@@ -1003,7 +914,7 @@ export default function DateGridMatrix({
                               if (onSaveExceptions) onSaveExceptions(updated);
                             }}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                            title="Remove override"
+                            title="Remove custom day setting"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1015,7 +926,6 @@ export default function DateGridMatrix({
               );
             })()
           ) : (
-            /* Tab B: Past Leaves & History Ledger */
             (() => {
               const pastDates = sortedExceptionDates.filter((d) => d < todayIST).reverse();
               if (pastDates.length === 0) {
@@ -1023,10 +933,10 @@ export default function DateGridMatrix({
                   <div className="p-8 text-center rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
                     <ShieldCheck className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                     <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                      {t('noCustomPastOverrides', 'No custom past overrides recorded.')}
+                      No custom past leaves recorded.
                     </p>
                     <p className="text-[11px] text-gray-400 mt-0.5">
-                      {t('standardWeeklyRoutineFollowed', 'Standard weekly routine was followed for past dates. Click any past day in Grid View to inspect individual records.')}
+                      Standard dining schedule was recorded for past dates.
                     </p>
                   </div>
                 );
@@ -1048,29 +958,28 @@ export default function DateGridMatrix({
                             <span className="text-xs font-black text-gray-900 dark:text-white">
                               {formatFriendlyDate(dateKey, true)}
                             </span>
-                            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400 font-mono">
-                              {t('archived', 'Archived')}
-                            </span>
                           </div>
                           <span className="text-[10px] text-gray-400 block font-mono">
                             {dateKey} {exc?.label ? `• ${exc.label}` : ''}
                           </span>
                           <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold">
-                            <span className={`px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
-                              isBfOn
-                                ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
-                            }`}>
-                              <Coffee className="w-3 h-3" />
-                              <span>Bf: {isBfOn ? 'ON' : 'OFF'}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-md ${
+                                isBfOn
+                                  ? 'bg-teal-100 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
+                                  : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                              }`}
+                            >
+                              Bf: {isBfOn ? 'Taken' : 'Leave'}
                             </span>
-                            <span className={`px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
-                              isLuOn
-                                ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
-                            }`}>
-                              <Utensils className="w-3 h-3" />
-                              <span>Lunch: {isLuOn ? 'ON' : 'OFF'}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-md ${
+                                isLuOn
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                              }`}
+                            >
+                              Lunch: {isLuOn ? 'Taken' : 'Leave'}
                             </span>
                           </div>
                         </div>
@@ -1078,11 +987,9 @@ export default function DateGridMatrix({
                         <button
                           type="button"
                           onClick={() => handleHistoryClick(dateKey)}
-                          className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-emerald-500 hover:text-white dark:bg-white/5 dark:hover:bg-emerald-600 text-gray-600 dark:text-gray-300 text-[10px] font-bold transition-all shadow-xs flex items-center gap-1 flex-shrink-0"
-                          title={t('inspectHistoricalBreakdown', 'Inspect historical breakdown')}
+                          className="px-2 py-1 rounded-lg text-xs font-bold text-gray-500 hover:text-emerald-600 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                         >
-                          <Clock className="w-3 h-3" />
-                          <span>{t('view', 'View')}</span>
+                          Details
                         </button>
                       </div>
                     );
@@ -1094,52 +1001,68 @@ export default function DateGridMatrix({
         </div>
       )}
 
-      {/* ================= MULTI-DAY RANGE & SINGLE DATE TURN MODAL ================= */}
-      <AnimatePresence>
-        {showTurnModal && (
-          <DateTurnModal
-            isOpen={showTurnModal}
-            onClose={() => setShowTurnModal(false)}
-            dateStr={selectedModalDate || todayIST}
-            student={student}
-            onSaveException={handleSaveSingleException}
-            onRemoveException={handleRemoveSingleException}
-            onApplyRange={handleApplyDateRange}
-            isAdmin={isAdmin}
-          />
-        )}
-      </AnimatePresence>
+      {/* ================= FLOATING MULTI-DATE BATCH ACTION BAR ================= */}
+      <MultiDateActionBar
+        selectedDates={selectedDates}
+        onClearSelection={handleClearSelection}
+        onSelectAllMonth={handleSelectAllMonth}
+        onSelectWeekdays={handleSelectWeekdays}
+        onSelectWeekends={handleSelectWeekends}
+        onApplyMealState={handleApplyBatchMealState}
+        totalMonthDaysCount={calendarDays.filter((d) => !d.isBlank && !d.isPast && !d.isBeyondMax).length}
+      />
 
-      {/* ================= STUDENT TEMPLATES MODAL (REQUIREMENT 3) ================= */}
-      <AnimatePresence>
-        {showTemplateModal && (
-          <StudentTemplateModal
-            isOpen={showTemplateModal}
-            onClose={() => setShowTemplateModal(false)}
-            student={student}
-            isAdmin={isAdmin}
-            onApplyTemplate={(newExceptions, message) => {
-              if (onSaveExceptions) onSaveExceptions(newExceptions);
-            }}
-            onSaveCustomTemplate={handleSaveCustomTemplate}
-            onDeleteCustomTemplate={handleDeleteCustomTemplate}
-          />
-        )}
-      </AnimatePresence>
+      {/* ================= MODAL 1: SCHEDULE PATTERN APPLICATOR ================= */}
+      <SchedulePatternModal
+        isOpen={showPatternModal}
+        onClose={() => setShowPatternModal(false)}
+        student={student}
+        currentYear={currentYear}
+        currentMonth={currentMonth}
+        onApplySchedulePattern={handleApplySchedulePattern}
+        isAdmin={isAdmin}
+      />
 
-      {/* ================= HISTORICAL RECORD DETAILS MODAL ================= */}
-      <AnimatePresence>
-        {showHistoryModal && (
-          <DateHistoryDetailModal
-            isOpen={showHistoryModal}
-            onClose={() => setShowHistoryModal(false)}
-            dateStr={selectedHistoryDate}
-            meals={selectedHistoryMeals}
-            student={student}
-          />
-        )}
-      </AnimatePresence>
+      {/* ================= MODAL 2: RANGE LEAVE / DATE TURN MODAL ================= */}
+      <DateTurnModal
+        isOpen={showTurnModal}
+        onClose={() => {
+          setShowTurnModal(false);
+          setSelectedModalDate(null);
+        }}
+        dateStr={selectedModalDate || todayIST}
+        student={student}
+        onSaveException={handleSaveSingleDay}
+        onRemoveException={handleRemoveSingleException}
+        onApplyRange={handleApplyDateRange}
+        isAdmin={isAdmin}
+      />
+
+      {/* ================= MODAL 3: STUDENT TEMPLATES MODAL ================= */}
+      <StudentTemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        student={student}
+        onApplyTemplate={(updatedExceptions, templateName) => {
+          if (onSaveExceptions) onSaveExceptions(updatedExceptions);
+          dialog.toast.success('Template Applied', templateName || 'Schedule template applied.');
+        }}
+        onSaveCustomTemplate={handleSaveCustomTemplate}
+        onDeleteCustomTemplate={handleDeleteCustomTemplate}
+        isAdmin={isAdmin}
+      />
+
+      {/* ================= MODAL 4: HISTORICAL RECORD DETAIL MODAL ================= */}
+      <DateHistoryDetailModal
+        isOpen={showHistoryModal}
+        onClose={() => {
+          setShowHistoryModal(false);
+          setSelectedHistoryDate(null);
+          setSelectedHistoryMeals(null);
+        }}
+        dateStr={selectedHistoryDate}
+        meals={selectedHistoryMeals}
+      />
     </div>
   );
 }
-
