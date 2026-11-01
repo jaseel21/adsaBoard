@@ -407,11 +407,11 @@ export async function updateStudentFineAmount({
       target: {
         type: 'student',
         id: studentId,
-        label: `Token #${tokenNo || existingData.tokenNo || studentId}`,
+        label: `Token ${tokenNo || existingData.tokenNo || studentId}`,
         tokenNo: Number(tokenNo || existingData.tokenNo),
       },
       changes: {
-        diffSummary: `Updated fine for Token #${tokenNo || existingData.tokenNo}: ₹${previousFine ?? 'Standard'} -> ₹${amount} (${reason.trim() || 'Admin adjustment'})`,
+        diffSummary: `Updated fine for Token ${tokenNo || existingData.tokenNo}: ₹${previousFine ?? 'Standard'} -> ₹${amount} (${reason.trim() || 'Admin adjustment'})`,
         before: { fineAmount: previousFine },
         after: { fineAmount: amount, reason: reason.trim() },
       },

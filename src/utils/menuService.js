@@ -498,11 +498,13 @@ export async function deleteDateOverrides(datesArray) {
 /**
  * Resolves the effective menu for any specific calendar date, merging overrides on top of weekly routine.
  * Defaults meal timings to the universal dynamic meal schedule unless manually customized.
+ * Automatically falls back to the baseline default template if the live weekly routine has empty meal slots.
  */
-export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = {}) {
+export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = {}, defaultTemplate = null) {
   const dow = getDayOfWeekShort(dateStr);
-  const defDay = DEFAULT_WEEKLY_MENU[dow] || {};
+  const defDay = (defaultTemplate && defaultTemplate[dow]) ? defaultTemplate[dow] : (DEFAULT_WEEKLY_MENU[dow] || {});
   const routineDay = (weeklyMenu && weeklyMenu[dow]) ? weeklyMenu[dow] : defDay;
+  const tplDay = (defaultTemplate && defaultTemplate[dow]) ? defaultTemplate[dow] : defDay;
   const override = overrides ? overrides[dateStr] : null;
 
   // Retrieve dynamic universal schedule
@@ -515,8 +517,20 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
   const dynamicEveningTiming = getCanonicalMealTiming(dow, 'evening') || '04:30 PM - 05:30 PM';
   const dynamicDinnerTiming = getCanonicalMealTiming(dow, 'dinner') || '08:30 PM - 09:30 PM';
 
-  const resolveMealSlot = (routineSlot, overrideSlot, fallbackTiming, slotKey = '') => {
-    const base = routineSlot || {};
+  const resolveMealSlot = (routineSlot, overrideSlot, fallbackTiming, tplSlot = null, slotKey = '') => {
+    let base = routineSlot || {};
+    // If routineSlot is completely empty of food (no title & no items), fallback to baseline template slot
+    if (tplSlot && (!base.title?.trim() && (!Array.isArray(base.items) || base.items.length === 0))) {
+      base = {
+        ...tplSlot,
+        ...base,
+        title: base.title?.trim() || tplSlot.title || '',
+        items: (Array.isArray(base.items) && base.items.length > 0) ? base.items : (tplSlot.items || []),
+        category: base.category || tplSlot.category || '',
+        timing: base.timing || tplSlot.timing || fallbackTiming,
+      };
+    }
+
     const ovr = overrideSlot || {};
     const isSpecial = Boolean(ovr.isSpecialMeal !== undefined ? ovr.isSpecialMeal : base.isSpecialMeal);
 
@@ -543,10 +557,10 @@ export function getEffectiveMenuForDate(dateStr, weeklyMenu = null, overrides = 
     return merged;
   };
 
-  const bfSlot = resolveMealSlot(routineDay.breakfast, override?.breakfast, dynamicBfTiming, 'breakfast');
-  const lunchSlot = resolveMealSlot(routineDay.lunch, override?.lunch, dynamicLunchTiming, 'lunch');
-  const eveningSlot = resolveMealSlot(routineDay.evening, override?.evening, dynamicEveningTiming, 'evening');
-  const dinnerSlot = resolveMealSlot(routineDay.dinner, override?.dinner, dynamicDinnerTiming, 'dinner');
+  const bfSlot = resolveMealSlot(routineDay.breakfast, override?.breakfast, dynamicBfTiming, tplDay?.breakfast, 'breakfast');
+  const lunchSlot = resolveMealSlot(routineDay.lunch, override?.lunch, dynamicLunchTiming, tplDay?.lunch, 'lunch');
+  const eveningSlot = resolveMealSlot(routineDay.evening, override?.evening, dynamicEveningTiming, tplDay?.evening, 'evening');
+  const dinnerSlot = resolveMealSlot(routineDay.dinner, override?.dinner, dynamicDinnerTiming, tplDay?.dinner, 'dinner');
 
   if (!override) {
     const isDayClosed = Boolean(routineDay.isArchived || routineDay.isClosed || routineDay.dayStatus === 'leave');
@@ -818,4 +832,183 @@ export async function bulkUpdateMealAcrossDays(dayKeysArray, slotKey, mealData, 
     updatedBy: userEmail,
   }, { merge: true });
 }
+
+/**
+ * Auto-fills any unconfigured/empty days or slots in the Live Weekly Menu from the Baseline Template.
+ * Does not overwrite slots that already have dishes defined.
+ */
+export async function fillEmptyDaysFromBaseline(userEmail = 'admin') {
+  const tplSnap = await DEFAULT_TEMPLATE_DOC_REF().get();
+  const baselineDays = tplSnap.exists && tplSnap.data()?.days ? tplSnap.data().days : { ...DEFAULT_WEEKLY_MENU };
+
+  const menuSnap = await MENU_DOC_REF().get();
+  const currentDays = menuSnap.exists && menuSnap.data()?.days ? menuSnap.data().days : { ...createEmptyWeeklyMenu() };
+
+  const updatedDays = { ...currentDays };
+  let filledCount = 0;
+
+  DAY_KEYS.forEach((dKey) => {
+    const liveDay = updatedDays[dKey] || { dayKey: dKey, dayName: DAY_NAMES[dKey], dayShort: DAY_SHORTS[dKey] };
+    const baseDay = baselineDays[dKey] || {};
+
+    const slots = ['breakfast', 'lunch', 'evening', 'dinner'];
+    slots.forEach((s) => {
+      const liveSlot = liveDay[s];
+      const baseSlot = baseDay[s];
+
+      // If live slot has no title and no items, but baseSlot has something, inherit from baseline
+      const isLiveSlotEmpty = !liveSlot?.title?.trim() && (!Array.isArray(liveSlot?.items) || liveSlot.items.length === 0);
+      const isBaseSlotHasFood = Boolean(baseSlot?.title?.trim() || (Array.isArray(baseSlot?.items) && baseSlot.items.length > 0));
+
+      if (isLiveSlotEmpty && isBaseSlotHasFood) {
+        liveDay[s] = {
+          ...baseSlot,
+          timing: baseSlot.timing || getCanonicalMealTiming(dKey, s),
+          timeMode: baseSlot.timeMode || 'clock',
+        };
+        filledCount += 1;
+      }
+    });
+
+    updatedDays[dKey] = liveDay;
+  });
+
+  if (filledCount > 0) {
+    await saveWeeklyMenu(updatedDays, userEmail);
+  }
+  return { updatedDays, filledCount };
+}
+
+/**
+ * Synchronizes specific or all days from Baseline Template to Live Working Menu.
+ * Overwrites the target days with baseline configuration.
+ */
+export async function syncWeeklyMenuFromBaseline(userEmail = 'admin', targetDayKeys = null) {
+  const tplSnap = await DEFAULT_TEMPLATE_DOC_REF().get();
+  const baselineDays = tplSnap.exists && tplSnap.data()?.days ? tplSnap.data().days : { ...DEFAULT_WEEKLY_MENU };
+
+  const menuSnap = await MENU_DOC_REF().get();
+  const currentDays = menuSnap.exists && menuSnap.data()?.days ? menuSnap.data().days : { ...createEmptyWeeklyMenu() };
+
+  const keysToSync = Array.isArray(targetDayKeys) && targetDayKeys.length > 0 ? targetDayKeys : DAY_KEYS;
+  const updatedDays = { ...currentDays };
+
+  keysToSync.forEach((dKey) => {
+    if (baselineDays[dKey]) {
+      updatedDays[dKey] = JSON.parse(JSON.stringify(baselineDays[dKey]));
+    }
+  });
+
+  await saveWeeklyMenu(updatedDays, userEmail);
+  return updatedDays;
+}
+
+/**
+ * Universal Direct Apply Engine:
+ * Applies a dish preset directly to:
+ * - 'live' schedule across 1 or more days (e.g. ['mo', 'we', 'fr'])
+ * - 'baseline' template across 1 or more days
+ * - 'date' override across 1 or more calendar dates (e.g. ['2026-11-05', '2026-11-06'])
+ */
+export async function applyPresetToTarget({
+  preset,
+  targetType = 'live', // 'live' | 'baseline' | 'date'
+  targetKeys = [],     // array of dayKeys (e.g. ['mo', 'tu']) or dateKeys (e.g. ['2026-11-05'])
+  slotKey = 'breakfast',
+  userEmail = 'admin',
+}) {
+  if (!preset || !targetKeys || targetKeys.length === 0 || !slotKey) {
+    throw new Error('Preset, targetKeys array, and slotKey are strictly required.');
+  }
+
+  const mealPatch = {
+    title: preset.title?.trim() || '',
+    category: preset.category || 'Veg',
+    items: Array.isArray(preset.items) ? [...preset.items] : [preset.title?.trim() || ''],
+    ...(preset.timing ? { timing: preset.timing.trim() } : {}),
+    ...(preset.timeMode ? { timeMode: preset.timeMode } : {}),
+    isAvailable: true,
+    isArchived: false,
+    slotStatus: 'serving',
+  };
+
+  if (targetType === 'live') {
+    const menuSnap = await MENU_DOC_REF().get();
+    const currentDays = menuSnap.exists && menuSnap.data()?.days ? menuSnap.data().days : { ...DEFAULT_WEEKLY_MENU };
+    const updatedDays = { ...currentDays };
+
+    targetKeys.forEach((dKey) => {
+      const dayObj = updatedDays[dKey] || { dayKey: dKey, dayName: DAY_NAMES[dKey], dayShort: DAY_SHORTS[dKey] };
+      const currentSlot = dayObj[slotKey] || {};
+      dayObj[slotKey] = {
+        ...currentSlot,
+        ...mealPatch,
+        timing: preset.timing || currentSlot.timing || getCanonicalMealTiming(dKey, slotKey),
+      };
+      updatedDays[dKey] = dayObj;
+    });
+
+    await saveWeeklyMenu(updatedDays, userEmail);
+    return { targetType, count: targetKeys.length };
+  }
+
+  if (targetType === 'baseline') {
+    const tplSnap = await DEFAULT_TEMPLATE_DOC_REF().get();
+    const currentDays = tplSnap.exists && tplSnap.data()?.days ? tplSnap.data().days : { ...DEFAULT_WEEKLY_MENU };
+    const updatedDays = { ...currentDays };
+
+    targetKeys.forEach((dKey) => {
+      const dayObj = updatedDays[dKey] || { dayKey: dKey, dayName: DAY_NAMES[dKey], dayShort: DAY_SHORTS[dKey] };
+      const currentSlot = dayObj[slotKey] || {};
+      dayObj[slotKey] = {
+        ...currentSlot,
+        ...mealPatch,
+        timing: preset.timing || currentSlot.timing || getCanonicalMealTiming(dKey, slotKey),
+      };
+      updatedDays[dKey] = dayObj;
+    });
+
+    await saveDefaultTemplate(updatedDays, userEmail);
+    return { targetType, count: targetKeys.length };
+  }
+
+  if (targetType === 'date') {
+    // For date overrides, patch each date document
+    const batch = firebase.firestore().batch();
+    const colRef = OVERRIDES_COL_REF();
+
+    for (const dateKey of targetKeys) {
+      const docRef = colRef.doc(dateKey);
+      const snap = await docRef.get();
+      const existing = snap.exists ? snap.data() : {};
+      const currentSlot = existing[slotKey] || {};
+      const dow = getDayOfWeekShort(dateKey);
+
+      const updatedSlot = {
+        ...currentSlot,
+        ...mealPatch,
+        timing: preset.timing || currentSlot.timing || getCanonicalMealTiming(dow, slotKey),
+      };
+
+      batch.set(
+        docRef,
+        {
+          ...existing,
+          date: dateKey,
+          dateStr: dateKey,
+          [slotKey]: updatedSlot,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: userEmail,
+        },
+        { merge: true }
+      );
+    }
+
+    await batch.commit();
+    return { targetType, count: targetKeys.length };
+  }
+
+  throw new Error(`Unknown targetType: ${targetType}`);
+}
+
 

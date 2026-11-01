@@ -27,7 +27,9 @@ import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
 import { dialog } from '../../utils/dialog';
 import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
+import { useAcademicYear } from '../../utils/academicYearService';
 import DiningCalendarHeader from './calendar/DiningCalendarHeader';
+import WeekdayRoutineDeck from './calendar/WeekdayRoutineDeck';
 import SchedulePatternModal from './calendar/SchedulePatternModal';
 import MultiDateActionBar from './calendar/MultiDateActionBar';
 import MonthlyGridView from './calendar/views/MonthlyGridView';
@@ -37,6 +39,7 @@ import YearlyOverviewView from './calendar/views/YearlyOverviewView';
 import StudentTemplateModal from './StudentTemplateModal';
 import DateTurnModal from './DateTurnModal';
 import DateHistoryDetailModal from './DateHistoryDetailModal';
+import { subscribeToBoardServiceSchedule, getMealSupplyStatus } from '../../utils/boardServiceSchedule';
 import {
   addDaysToDate,
   getMonthCalendarDays,
@@ -65,11 +68,37 @@ export default function DateGridMatrix({
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  const { getDateLockStatus, isTomorrowLocked, tomorrowIST, todayIST, endTime } = useTokenLockStatus();
-  const maxDate = useMemo(() => addDaysToDate(todayIST, 365), [todayIST]); // Full 1-year academic calendar
+  const {
+    getDateLockStatus,
+    isTomorrowLocked,
+    isTomorrowBreakfastLocked,
+    isTomorrowLunchLocked,
+    tomorrowIST,
+    todayIST,
+    endTime,
+    breakfastCutoffDeadline,
+    lunchCutoffDeadline,
+  } = useTokenLockStatus();
+
+  const { academicYear, startDate: acadStartDate, endDate: acadEndDate } = useAcademicYear();
+  const minDate = useMemo(() => acadStartDate || todayIST, [acadStartDate, todayIST]);
+  const maxDate = useMemo(() => acadEndDate || addDaysToDate(todayIST, 365), [acadEndDate, todayIST]);
+
+  const [startAcadYear, startAcadMonth] = (acadStartDate || '2000-01-01').split('-').map(Number);
+  const [endAcadYear, endAcadMonth] = (acadEndDate || '2099-12-31').split('-').map(Number);
 
   // Meal segmented filter in month view: 'both' | 'breakfast' | 'lunch'
   const [mobileMealTab, setMobileMealTab] = useState('both');
+
+  // Real-time board food supply schedule (canteen level)
+  const [boardServiceSchedule, setBoardServiceSchedule] = useState({});
+
+  React.useEffect(() => {
+    const unsub = subscribeToBoardServiceSchedule((schedule) => {
+      setBoardServiceSchedule(schedule || {});
+    });
+    return () => unsub();
+  }, []);
 
   // Initial month view from today's IST date
   const [currentYear, setCurrentYear] = useState(() => {
@@ -79,6 +108,14 @@ export default function DateGridMatrix({
   const [currentMonth, setCurrentMonth] = useState(() => {
     const [, m] = todayIST.split('-').map(Number);
     return m - 1; // 0-indexed
+  });
+
+  // Week anchor date for 'week' view
+  const [weekAnchorDate, setWeekAnchorDate] = useState(todayIST);
+
+  // Day anchor date for 'day' view
+  const [dayAnchorDate, setDayAnchorDate] = useState(() => {
+    return isTomorrowLocked ? todayIST : tomorrowIST;
   });
 
   // Active view: 'month' (default) | 'week' | 'day' | 'year' | 'list' (supports legacy 'grid' alias)
@@ -104,8 +141,20 @@ export default function DateGridMatrix({
   const [selectedHistoryDate, setSelectedHistoryDate] = useState(null);
   const [selectedHistoryMeals, setSelectedHistoryMeals] = useState(null);
 
-  // Month navigation
+  // Boundary checks for month navigation bounded by academic year
+  const canGoPrevMonth = useMemo(() => {
+    if (!acadStartDate) return true;
+    return currentYear > startAcadYear || (currentYear === startAcadYear && currentMonth > (startAcadMonth - 1));
+  }, [currentYear, currentMonth, startAcadYear, startAcadMonth, acadStartDate]);
+
+  const canGoNextMonth = useMemo(() => {
+    if (!acadEndDate) return true;
+    return currentYear < endAcadYear || (currentYear === endAcadYear && currentMonth < (endAcadMonth - 1));
+  }, [currentYear, currentMonth, endAcadYear, endAcadMonth, acadEndDate]);
+
+  // Month navigation bounded by academic year
   const handlePrevMonth = () => {
+    if (!canGoPrevMonth) return;
     feedback('tick');
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -116,6 +165,7 @@ export default function DateGridMatrix({
   };
 
   const handleNextMonth = () => {
+    if (!canGoNextMonth) return;
     feedback('tick');
     if (currentMonth === 11) {
       setCurrentMonth(0);
@@ -136,6 +186,55 @@ export default function DateGridMatrix({
     feedback('tick');
     setCurrentMonth(monthIndex);
     setCurrentYear(year);
+  };
+
+  // Week view navigation handlers
+  const handlePrevWeek = () => {
+    feedback('tick');
+    setWeekAnchorDate((prev) => addDaysToDate(prev, -7));
+  };
+
+  const handleNextWeek = () => {
+    feedback('tick');
+    setWeekAnchorDate((prev) => addDaysToDate(prev, 7));
+  };
+
+  const handleJumpToCurrentWeek = () => {
+    feedback('tick');
+    setWeekAnchorDate(todayIST);
+  };
+
+  // Day view navigation handlers
+  const handlePrevDay = () => {
+    feedback('tick');
+    setDayAnchorDate((prev) => addDaysToDate(prev, -1));
+  };
+
+  const handleNextDay = () => {
+    feedback('tick');
+    setDayAnchorDate((prev) => addDaysToDate(prev, 1));
+  };
+
+  const handleJumpToTodayDay = () => {
+    feedback('tick');
+    setDayAnchorDate(todayIST);
+  };
+
+  // Year view navigation handlers
+  const handlePrevYear = () => {
+    feedback('tick');
+    setCurrentYear((y) => y - 1);
+  };
+
+  const handleNextYear = () => {
+    feedback('tick');
+    setCurrentYear((y) => y + 1);
+  };
+
+  const handleJumpToCurrentYear = () => {
+    feedback('tick');
+    const [y] = todayIST.split('-').map(Number);
+    setCurrentYear(y);
   };
 
   // Calendar days array for current month
@@ -232,22 +331,8 @@ export default function DateGridMatrix({
       return;
     }
 
-    const lockInfo = getDateLockStatus(dateStr, { isAdmin });
-    if (!isAdmin && lockInfo.isLocked) {
-      feedback('warning');
-      const title =
-        dateStr === todayIST
-          ? "Today's Meals are Locked"
-          : dateStr === tomorrowIST
-          ? "Tomorrow's Meals are Locked"
-          : 'Date is Locked';
-      dialog.toast.warning(title, lockInfo.reason || 'Updates for this date are closed.');
-      return;
-    }
-
-    feedback('pop');
-
     const targetMeal = mealType === 'both' ? 'both' : (mealType || 'breakfast');
+    const lockInfo = getDateLockStatus(dateStr, { isAdmin, mealType: targetMeal });
     const meals = calculateEffectiveDateMeals(student, dateStr);
     const existing = student?.dateExceptions || {};
 
@@ -255,14 +340,53 @@ export default function DateGridMatrix({
     let nextLunch = meals.lunch;
 
     if (targetMeal === 'lunch') {
+      if (!isAdmin && lockInfo.isLunchLocked) {
+        feedback('warning');
+        dialog.toast.warning(
+          dateStr === tomorrowIST ? "Tomorrow's Lunch is Locked" : "Date is Locked",
+          lockInfo.reason || 'Lunch cutoff has passed.'
+        );
+        return;
+      }
+      feedback('pop');
       nextLunch = !meals.lunch;
     } else if (targetMeal === 'breakfast') {
+      if (!isAdmin && lockInfo.isBreakfastLocked) {
+        feedback('warning');
+        dialog.toast.warning(
+          dateStr === tomorrowIST ? "Tomorrow's Breakfast is Locked" : "Date is Locked",
+          lockInfo.reason || 'Breakfast cutoff has passed.'
+        );
+        return;
+      }
+      feedback('pop');
       nextBreakfast = !meals.breakfast;
     } else {
-      // both: if either is on, turn both off (leave); if both off, turn both on
+      // both
+      if (!isAdmin && lockInfo.isBothLocked) {
+        feedback('warning');
+        const title =
+          dateStr === todayIST
+            ? "Today's Meals are Locked"
+            : dateStr === tomorrowIST
+            ? "Tomorrow's Meals are Locked"
+            : 'Date is Locked';
+        dialog.toast.warning(title, lockInfo.reason || 'Updates for this date are closed.');
+        return;
+      }
+
+      feedback('pop');
       const willTurnOff = meals.breakfast || meals.lunch;
-      nextBreakfast = !willTurnOff;
-      nextLunch = !willTurnOff;
+      if (!isAdmin && lockInfo.isBreakfastLocked) {
+        nextLunch = !willTurnOff;
+        dialog.toast.info('Toggled Lunch Only', `Tomorrow's breakfast cutoff passed; toggled lunch only.`);
+      } else if (!isAdmin && lockInfo.isLunchLocked) {
+        nextBreakfast = !willTurnOff;
+        dialog.toast.info('Toggled Breakfast Only', `Tomorrow's lunch cutoff passed; toggled breakfast only.`);
+      } else {
+        nextBreakfast = !willTurnOff;
+        nextLunch = !willTurnOff;
+      }
     }
 
     const updated = {
@@ -318,7 +442,7 @@ export default function DateGridMatrix({
       if (dateStr < todayIST) return;
 
       if (getDayOfWeekShort(dateStr) === dayKey) {
-        const lockInfo = getDateLockStatus(dateStr, { isAdmin });
+        const lockInfo = getDateLockStatus(dateStr, { isAdmin, mealType });
         if (!isAdmin && lockInfo.isLocked) {
           lockedSkipped++;
           return;
@@ -365,6 +489,89 @@ export default function DateGridMatrix({
     );
   };
 
+  // ================= 3B. MONTH-ONLY DAY COLUMN TOGGLE (WITH EXCEPTION CLEANUP) =================
+  const handleToggleMonthWeekday = (dayKey, mealType, targetState) => {
+    if (!editable || (student?.block && !isAdmin)) {
+      feedback('warning');
+      dialog.toast.warning(
+        t('tokenLockedBadge', 'Token Locked'),
+        'Calendar changes are locked while account is suspended.'
+      );
+      return;
+    }
+
+    feedback('tick');
+    const isLunch = mealType === 'lunch';
+    const targetVal = typeof targetState === 'boolean' ? targetState : true;
+
+    // Filter all valid upcoming dates for this day of week in the currently viewed month
+    const applicableDays = calendarDays.filter(
+      (day) => !day.isBlank && !day.isPast && !day.isBeyondMax && day.dayOfWeek === dayKey
+    );
+
+    if (applicableDays.length === 0) {
+      dialog.toast.info('No Upcoming Dates', `All ${dayKey.toUpperCase()}s in this month are in the past.`);
+      return;
+    }
+
+    const updated = { ...(student?.dateExceptions || {}) };
+    let affected = 0;
+    let lockedSkipped = 0;
+
+    // Baseline routine values for this student
+    const baselineBf = student?.obj?.breakfast?.[dayKey] !== undefined
+      ? Boolean(student.obj.breakfast[dayKey])
+      : true;
+    const baselineLu = student?.obj?.lunch?.[dayKey] !== undefined
+      ? Boolean(student.obj.lunch[dayKey])
+      : true;
+
+    applicableDays.forEach((day) => {
+      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin, mealType });
+      if (!isAdmin && lockInfo.isLocked) {
+        lockedSkipped++;
+        return;
+      }
+
+      const curMeals = calculateEffectiveDateMeals(student, day.dateStr);
+      const newBf = isLunch ? curMeals.breakfast : targetVal;
+      const newLu = isLunch ? targetVal : curMeals.lunch;
+
+      // Automated Redundant Exception Cleanup:
+      // If updating this date results in both meals matching the student's recurring baseline routine,
+      // prune the redundant exception to keep Firestore storage minimal and clean!
+      if (newBf === baselineBf && newLu === baselineLu) {
+        delete updated[day.dateStr];
+      } else {
+        updated[day.dateStr] = {
+          ...(updated[day.dateStr] || {}),
+          breakfast: newBf,
+          lunch: newLu,
+          label: !newBf && !newLu
+            ? 'Leave (Both OFF)'
+            : newBf && newLu
+            ? 'Active (Both ON)'
+            : newBf
+            ? 'Breakfast ON'
+            : 'Lunch ON',
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      affected++;
+    });
+
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
+    }
+
+    const dayName = dayKey.toUpperCase();
+    const monthName = MONTH_NAMES[currentMonth];
+    dialog.toast.success(
+      `${monthName} ${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
+      `Turned ${targetVal ? 'ON' : 'OFF'} for all ${affected} upcoming ${dayName}s in ${monthName}.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved safely)` : ''}`
+    );
+  };
+
   // ================= 4. TURN ALL DATES IN MONTH FOR SINGLE MEAL =================
   const handleTurnAllMeal = (mealType, boolVal) => {
     feedback('success');
@@ -376,7 +583,7 @@ export default function DateGridMatrix({
     calendarDays.forEach((day) => {
       if (day.isBlank || day.isPast || day.isBeyondMax) return;
 
-      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
+      const lockInfo = getDateLockStatus(day.dateStr, { isAdmin, mealType });
       if (!isAdmin && lockInfo.isLocked) {
         lockedSkipped++;
         return;
@@ -402,6 +609,46 @@ export default function DateGridMatrix({
     dialog.toast.success(
       `${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
       `Turned ${boolVal ? 'ON' : 'OFF'} for all ${affected} upcoming dates in month.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved)` : ''}`
+    );
+  };
+
+  // ================= 4b. TURN ALL DATES IN WEEK FOR SINGLE MEAL =================
+  const handleTurnAllWeek = (weekDays, mealType, boolVal) => {
+    feedback('success');
+    const isLunch = mealType === 'lunch';
+    const updated = { ...(student?.dateExceptions || {}) };
+    let affected = 0;
+    let lockedSkipped = 0;
+
+    weekDays.forEach((dateStr) => {
+      if (dateStr < todayIST) return; // skip past dates
+
+      const lockInfo = getDateLockStatus(dateStr, { isAdmin, mealType });
+      if (!isAdmin && lockInfo.isLocked) {
+        lockedSkipped++;
+        return;
+      }
+
+      const curMeals = calculateEffectiveDateMeals(student, dateStr);
+      const newBf = isLunch ? curMeals.breakfast : boolVal;
+      const newLu = isLunch ? boolVal : curMeals.lunch;
+
+      updated[dateStr] = {
+        breakfast: newBf,
+        lunch: newLu,
+        label: `Week ${isLunch ? 'Lunch' : 'Breakfast'} ${boolVal ? 'ON' : 'OFF'}`,
+        updatedAt: new Date().toISOString(),
+      };
+      affected++;
+    });
+
+    if (onSaveExceptions) {
+      onSaveExceptions(updated);
+    }
+
+    dialog.toast.success(
+      `${isLunch ? 'Lunch' : 'Breakfast'} Updated`,
+      `Turned ${boolVal ? 'ON' : 'OFF'} for ${affected} dates this week.${lockedSkipped > 0 ? ` (${lockedSkipped} locked dates preserved)` : ''}`
     );
   };
 
@@ -540,15 +787,33 @@ export default function DateGridMatrix({
   // 1-Tap Toggle Tomorrow Leave Preset
   const handleToggleTomorrowPreset = () => {
     feedback('pop');
+    const lockInfo = getDateLockStatus(tomorrowIST, { isAdmin });
+    if (!isAdmin && lockInfo.isBothLocked) {
+      dialog.toast.warning("Tomorrow's Meals are Locked", lockInfo.reason || 'Updates for tomorrow are closed.');
+      return;
+    }
+
     const tomorrowMeals = calculateEffectiveDateMeals(student, tomorrowIST);
     const willTurnOff = tomorrowMeals.breakfast || tomorrowMeals.lunch;
     const existing = student?.dateExceptions || {};
+
+    let nextBf = !willTurnOff;
+    let nextLu = !willTurnOff;
+
+    if (!isAdmin && lockInfo.isBreakfastLocked) {
+      nextBf = tomorrowMeals.breakfast; // Keep breakfast as is
+      dialog.toast.info('Toggled Lunch Only', `Tomorrow's breakfast cutoff has passed; toggled lunch only.`);
+    } else if (!isAdmin && lockInfo.isLunchLocked) {
+      nextLu = tomorrowMeals.lunch; // Keep lunch as is
+      dialog.toast.info('Toggled Breakfast Only', `Tomorrow's lunch cutoff has passed; toggled breakfast only.`);
+    }
+
     const updated = {
       ...existing,
       [tomorrowIST]: {
-        breakfast: !willTurnOff,
-        lunch: !willTurnOff,
-        label: willTurnOff ? 'Leave / Tomorrow OFF' : 'Tomorrow Active ON',
+        breakfast: nextBf,
+        lunch: nextLu,
+        label: !nextBf && !nextLu ? 'Leave / Tomorrow OFF' : (nextBf && nextLu ? 'Tomorrow Active ON' : (nextBf ? 'Tomorrow Breakfast ON' : 'Tomorrow Lunch ON')),
       },
     };
     if (onSaveExceptions) onSaveExceptions(updated);
@@ -665,7 +930,19 @@ export default function DateGridMatrix({
   return (
     <div className={`space-y-4 ${className}`}>
       
-      {/* ================= COMPREHENSIVE CALENDAR COMMAND HEADER ================= */}
+      {/* ================= TIER 1 & 2: SECTION TITLES & WEEKDAY ROUTINE ================= */}
+      <WeekdayRoutineDeck
+        student={student}
+        mealFilter={mobileMealTab}
+        todayIST={todayIST}
+        tomorrowIST={tomorrowIST}
+        editable={editable}
+        isAdmin={isAdmin}
+        getDateLockStatus={getDateLockStatus}
+        onToggleWeekdayMeal={handleToggleWeekdayMeal}
+      />
+
+      {/* ================= TIER 3: CONTROLS / ACTIONS / TOOLS CARD ================= */}
       <DiningCalendarHeader
         currentYear={currentYear}
         currentMonth={currentMonth}
@@ -682,6 +959,17 @@ export default function DateGridMatrix({
         onNextMonth={handleNextMonth}
         onJumpToToday={handleJumpToToday}
         onSelectMonthYear={handleSelectMonthYear}
+        weekAnchorDate={weekAnchorDate}
+        onPrevWeek={handlePrevWeek}
+        onNextWeek={handleNextWeek}
+        onJumpToCurrentWeek={handleJumpToCurrentWeek}
+        dayAnchorDate={dayAnchorDate}
+        onPrevDay={handlePrevDay}
+        onNextDay={handleNextDay}
+        onJumpToTodayDay={handleJumpToTodayDay}
+        onPrevYear={handlePrevYear}
+        onNextYear={handleNextYear}
+        onJumpToCurrentYear={handleJumpToCurrentYear}
         onOpenSchedulePattern={() => {
           feedback('tick');
           setShowPatternModal(true);
@@ -707,7 +995,7 @@ export default function DateGridMatrix({
 
       {/* ================= ARCHIVED MONTH BANNER ================= */}
       {stats.isFullyPastMonth && (
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/20 text-emerald-950 dark:text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 border border-emerald-500/20 text-emerald-950 dark:text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
               <ShieldCheck className="w-4 h-4" />
@@ -746,7 +1034,7 @@ export default function DateGridMatrix({
         </div>
       )}
 
-      {/* ================= VIEW DISPATCHER ================= */}
+      {/* ================= VIEW DISPATCHER (TIER 4: CALENDAR) ================= */}
       {isMonthlyView && (
         <MonthlyGridView
           currentYear={currentYear}
@@ -759,9 +1047,11 @@ export default function DateGridMatrix({
           mealFilter={mobileMealTab}
           todayIST={todayIST}
           tomorrowIST={tomorrowIST}
+          boardServiceSchedule={boardServiceSchedule}
           getDateLockStatus={getDateLockStatus}
           onToggleMealDate={handleToggleMealDate}
           onToggleWeekdayMeal={handleToggleWeekdayMeal}
+          onToggleMonthWeekday={handleToggleMonthWeekday}
           onTurnAllMeal={handleTurnAllMeal}
           onHistoryClick={handleHistoryClick}
           onLockedClick={(d, reason) => {
@@ -789,9 +1079,13 @@ export default function DateGridMatrix({
           tomorrowIST={tomorrowIST}
           editable={editable}
           isAdmin={isAdmin}
+          boardServiceSchedule={boardServiceSchedule}
           getDateLockStatus={getDateLockStatus}
           onSingleClickToggle={handleSingleClickToggle}
           onSaveDayState={handleSaveSingleDay}
+          onTurnAllWeek={handleTurnAllWeek}
+          weekAnchorDate={weekAnchorDate}
+          setWeekAnchorDate={setWeekAnchorDate}
         />
       )}
 
@@ -802,11 +1096,14 @@ export default function DateGridMatrix({
           tomorrowIST={tomorrowIST}
           editable={editable}
           isAdmin={isAdmin}
+          boardServiceSchedule={boardServiceSchedule}
           getDateLockStatus={getDateLockStatus}
           onSingleClickToggle={handleSingleClickToggle}
           onSaveDayState={handleSaveSingleDay}
           endTime={endTime}
           isTomorrowLocked={isTomorrowLocked}
+          focusedDate={dayAnchorDate}
+          setFocusedDate={setDayAnchorDate}
         />
       )}
 
@@ -1068,6 +1365,7 @@ export default function DateGridMatrix({
         onRemoveException={handleRemoveSingleException}
         onApplyRange={handleApplyDateRange}
         isAdmin={isAdmin}
+        boardServiceSchedule={boardServiceSchedule}
       />
 
       {/* ================= MODAL 3: STUDENT TEMPLATES MODAL ================= */}

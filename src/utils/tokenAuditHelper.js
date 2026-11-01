@@ -325,7 +325,7 @@ export function extractTokenDeltas(log) {
   if (log.action === 'TOKEN_TOGGLE') {
     const tokenNo = log.target?.tokenNo || log.actor?.tokenNo;
     const name = log.target?.label || log.actor?.displayName || 'Student';
-    const summary = log.changes?.diffSummary || `Student Token #${tokenNo} updated weekly schedule and exceptions`;
+    const summary = log.changes?.diffSummary || `Student Token ${tokenNo} updated weekly schedule and exceptions`;
 
     results.push({
       type: 'legacy_routine_save',

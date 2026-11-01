@@ -9,18 +9,19 @@ import {
   isPastBoardSwitchTime,
   isPastBoardWindowOpenTime,
 } from './studentExceptionService';
+import { useAcademicYear, clampDateToAcademicYear } from './academicYearService';
 
 /**
  * useDateController
  *
  * Lightweight, high-precision date management controller for public and administrative views.
- * Provides complete feature-parity with useTokenBoardController without heavy student document queries.
+ * Strictly bounded by the institutional Academic Year [startDate, endDate].
  *
  * Capabilities:
  * - Anti-tamper IST clock synchronization (Asia/Kolkata)
  * - Dynamic board display auto-shift (today -> tomorrow, default 2:00 PM IST / 2:15 PM Friday)
- * - dateMode: 'auto' | 'today' | 'tomorrow' | 'custom'
- * - Day-by-day steppers (◀ Prev Day, Next Day ▶)
+ * - Strict clamping within active Academic Year bounds
+ * - Bounded day-by-day steppers (◀ Prev Day disabled at startDate, Next Day ▶ disabled at endDate)
  * - Direct date selection (calendar picker)
  * - Full compliance with TokenBoardDateRibbon & TokenBoardCalendarPopover
  */
@@ -42,6 +43,7 @@ export function useDateController({
   } = useWorldTime('Asia/Kolkata');
 
   const { activeWindow, rawBoardSwitchTime, boardSwitchTime: statusBoardSwitchTime } = useTokenLockStatus();
+  const { academicYear, startDate: acadStartDate, endDate: acadEndDate, clampDate } = useAcademicYear();
 
   // Authoritative IST today string (YYYY-MM-DD)
   const todayIST = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
@@ -55,8 +57,8 @@ export function useDateController({
   const [dateMode, setDateMode] = useState(initialDateMode); // 'auto' | 'today' | 'tomorrow' | 'custom'
   const [customDate, setCustomDate] = useState(initialCustomDate);
 
-  // Compute reactive targetDateIST
-  const targetDateIST = useMemo(() => {
+  // Compute raw target date before bounding
+  const rawTargetDate = useMemo(() => {
     if (dateMode === 'today') {
       return todayIST;
     }
@@ -67,13 +69,23 @@ export function useDateController({
       return customDate;
     }
     // 'auto' mode:
-    // If past window open time (e.g. 2:00 PM), advance to tomorrow by default
-    // Otherwise before open time, show today by default
     if (isPostEveningCutoff) {
       return addDaysToDate(todayIST, 1);
     }
     return todayIST;
   }, [dateMode, customDate, todayIST, isPostEveningCutoff]);
+
+  // Compute reactive targetDateIST strictly clamped within active Academic Year
+  const targetDateIST = useMemo(() => {
+    if (!academicYear) return rawTargetDate;
+    if (acadStartDate && rawTargetDate < acadStartDate) {
+      return acadStartDate;
+    }
+    if (acadEndDate && rawTargetDate > acadEndDate) {
+      return acadEndDate;
+    }
+    return rawTargetDate;
+  }, [rawTargetDate, academicYear, acadStartDate, acadEndDate]);
 
   // Effective 2-letter lowercase day for schedule resolution ('su'..'sa')
   const effectiveDay = useMemo(() => {
@@ -84,6 +96,17 @@ export function useDateController({
   const relativeDateMeta = useMemo(() => {
     return getRelativeDateMeta(targetDateIST, todayIST);
   }, [targetDateIST, todayIST]);
+
+  // Boundary checks for steppers
+  const canStepBackward = useMemo(() => {
+    if (!acadStartDate) return true;
+    return targetDateIST > acadStartDate;
+  }, [targetDateIST, acadStartDate]);
+
+  const canStepForward = useMemo(() => {
+    if (!acadEndDate) return true;
+    return targetDateIST < acadEndDate;
+  }, [targetDateIST, acadEndDate]);
 
   const setDateToToday = useCallback(() => {
     setDateMode('today');
@@ -97,10 +120,11 @@ export function useDateController({
 
   const setDateToCustom = useCallback((dateStr) => {
     if (dateStr) {
+      const clamped = clampDateToAcademicYear(dateStr, academicYear);
       setDateMode('custom');
-      setCustomDate(dateStr);
+      setCustomDate(clamped);
     }
-  }, []);
+  }, [academicYear]);
 
   const setDateToAuto = useCallback(() => {
     setDateMode('auto');
@@ -111,19 +135,22 @@ export function useDateController({
     (days) => {
       if (!days || isNaN(days)) return;
       const nextDate = addDaysToDate(targetDateIST, days);
+      const boundedDate = clampDateToAcademicYear(nextDate, academicYear);
       setDateMode('custom');
-      setCustomDate(nextDate);
+      setCustomDate(boundedDate);
     },
-    [targetDateIST]
+    [targetDateIST, academicYear]
   );
 
   const stepDateBackward = useCallback(() => {
+    if (!canStepBackward) return;
     shiftDate(-1);
-  }, [shiftDate]);
+  }, [canStepBackward, shiftDate]);
 
   const stepDateForward = useCallback(() => {
+    if (!canStepForward) return;
     shiftDate(1);
-  }, [shiftDate]);
+  }, [canStepForward, shiftDate]);
 
   return {
     // Primary reactive date states
@@ -136,6 +163,15 @@ export function useDateController({
     isPostEveningCutoff,
     boardSwitchTime: effectiveSwitchTime,
     isPastBoardSwitch: isPostEveningCutoff,
+
+    // Academic Year Boundaries
+    academicYear,
+    academicYearStartDate: acadStartDate,
+    academicYearEndDate: acadEndDate,
+    canStepBackward,
+    canStepForward,
+    isAtAcademicYearStart: Boolean(acadStartDate && targetDateIST === acadStartDate),
+    isAtAcademicYearEnd: Boolean(acadEndDate && targetDateIST === acadEndDate),
 
     // Relative boolean flags
     isToday: targetDateIST === todayIST,

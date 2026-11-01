@@ -88,8 +88,8 @@ export async function submitUnblockRequest({
   const isoNow = new Date().toISOString();
 
   const reasonMeta = UNBLOCK_REASONS[reasonCategory] || UNBLOCK_REASONS.other;
-  const subject = `Token #${tokenNo} Unblock Request (${student.name || 'Student'}) - ${reasonMeta.labelEn}`;
-  const description = `Unblock requested by Student #${tokenNo} (${student.name || 'Student'}).\nReason: ${reasonMeta.labelEn}\nNotes: ${reasonNote.trim() || 'No additional note provided.'}`;
+  const subject = `Token ${tokenNo} Unblock Request (${student.name || 'Student'}) - ${reasonMeta.labelEn}`;
+  const description = `Unblock requested by Student ${tokenNo} (${student.name || 'Student'}).\nReason: ${reasonMeta.labelEn}\nNotes: ${reasonNote.trim() || 'No additional note provided.'}`;
 
   const ticketPayload = {
     ticketNumber,
@@ -112,7 +112,7 @@ export async function submitUnblockRequest({
       isAnonymous: false,
       tokenNumber: tokenNo,
       studentId: studentDocId,
-      name: student.name || `Student #${tokenNo}`,
+      name: student.name || `Student ${tokenNo}`,
       batch: student.batch || '',
       phone: phone.trim() || student.phone || '',
     },
@@ -122,7 +122,7 @@ export async function submitUnblockRequest({
       {
         id: `msg_${Date.now()}`,
         senderType: 'student',
-        senderName: student.name || `Student #${tokenNo}`,
+        senderName: student.name || `Student ${tokenNo}`,
         message: description,
         timestamp: isoNow,
         isInternal: false,
@@ -169,13 +169,13 @@ export async function submitUnblockRequest({
     severity: AUDIT_SEVERITIES.WARNING,
     actor: {
       uid: `token-${tokenNo}`,
-      name: student.name || `Token #${tokenNo}`,
+      name: student.name || `Token ${tokenNo}`,
       role: 'student',
     },
     target: {
       type: 'student_token',
       id: studentDocId,
-      name: `Token #${tokenNo}`,
+      name: `Token ${tokenNo}`,
     },
     metadata: {
       ticketNumber,
@@ -258,7 +258,7 @@ export async function approveUnblockRequest({
     appendTicketMessage(ticketId, {
       senderType: 'staff',
       senderName: reviewerName,
-      message: `Token #${tokenNo || targetStudentDoc?.data()?.tokenNo || ''} has been verified and successfully unblocked in the central registry. ${
+      message: `Token ${tokenNo || targetStudentDoc?.data()?.tokenNo || ''} has been verified and successfully unblocked in the central registry. ${
         resolutionNote ? `Note: "${resolutionNote}"` : 'All dining privileges and switches are now fully active.'
       }`,
       isInternal: false,
@@ -279,7 +279,7 @@ export async function approveUnblockRequest({
     target: {
       type: 'student_token',
       id: targetStudentDoc ? targetStudentDoc.id : studentId,
-      name: `Token #${tokenNo || targetStudentDoc?.data()?.tokenNo}`,
+      name: `Token ${tokenNo || targetStudentDoc?.data()?.tokenNo}`,
     },
     metadata: {
       ticketId,
@@ -333,7 +333,7 @@ export async function cancelUnblockRequest({
   if (ticketId) {
     appendTicketMessage(ticketId, {
       senderType: 'student',
-      senderName: targetStudentDoc?.data()?.name || `Student #${tokenNo}`,
+      senderName: targetStudentDoc?.data()?.name || `Student ${tokenNo}`,
       message: `Unblock request cancelled/withdrawn: ${reason}`,
       isInternal: false,
     }).catch(() => {});

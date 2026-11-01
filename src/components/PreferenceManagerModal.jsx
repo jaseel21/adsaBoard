@@ -246,7 +246,7 @@ export default function PreferenceManagerModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      English Name (e.g. Egg)
+                      {language === 'ml' ? 'ഇംഗ്ലീഷ് പേര്' : 'English Name'}
                     </label>
                     <input
                       type="text"
@@ -260,7 +260,7 @@ export default function PreferenceManagerModal({
 
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Malayalam Name (മലയാളം)
+                      {language === 'ml' ? 'മലയാളം പേര്' : 'Malayalam Name'}
                     </label>
                     <input
                       type="text"

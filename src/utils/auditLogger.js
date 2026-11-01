@@ -159,7 +159,7 @@ export async function logAuditEvent({
           resolvedActor = {
             uid: `student-${studentToken}`,
             email: `token${studentToken}@student`,
-            displayName: `Student Token #${studentToken}`,
+            displayName: `Student Token ${studentToken}`,
             role: 'student',
             tokenNo: Number(studentToken),
           };

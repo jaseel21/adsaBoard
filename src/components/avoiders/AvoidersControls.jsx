@@ -196,7 +196,7 @@ export default function AvoidersControls({
               title="Roster Table View"
             >
               <List className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden md:inline">{t('viewTable', 'Roster')}</span>
+              <span className="hidden md:inline">{t('viewRoster', 'Roster')}</span>
             </button>
 
             {/* Touch Bento Cards */}

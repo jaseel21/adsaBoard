@@ -198,10 +198,10 @@ export default function AvoidersMatrixView({
                         title={
                           student
                             ? `${student.nameEn || student.name || ''} (${student.batch || 'General'}) • Avoids: ${avoided.map((p) => p.labelEn).join(', ') || 'None'}`
-                            : `Token #${tokenNo}`
+                            : `Token ${tokenNo}`
                         }
                       >
-                        <span>#{tokenNo}</span>
+                        <span>{tokenNo}</span>
                         {/* Sub-label under token: Batch in Meal mode, or Avoidance icon count in Section/Batch mode */}
                         {categorization === 'meal' ? (
                           student && (

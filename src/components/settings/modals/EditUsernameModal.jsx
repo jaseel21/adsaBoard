@@ -134,13 +134,13 @@ export default function EditUsernameModal({
           severity: AUDIT_SEVERITIES.INFO,
           actor: {
             uid: `student_${studentData.tokenNo}`,
-            displayName: studentData.name || `Student #${studentData.tokenNo}`,
+            displayName: studentData.name || `Student ${studentData.tokenNo}`,
             role: 'student',
           },
           target: {
             type: 'student',
             id: currentDocId,
-            label: `@${candidate} (Token #${studentData.tokenNo})`,
+            label: `@${candidate} (Token ${studentData.tokenNo})`,
           },
           metadata: {
             previousUsername: currentUsername || null,
@@ -197,8 +197,8 @@ export default function EditUsernameModal({
               </h3>
               <span className="text-[11px] text-gray-400 font-medium">
                 {language === 'ml'
-                  ? `ടോക്കൺ #${studentData?.tokenNo} • ലോഗിൻ യൂസർനെയിം`
-                  : `Token #${studentData?.tokenNo} • Quick Login Handle`}
+                  ? `ടോക്കൺ ${studentData?.tokenNo} • ലോഗിൻ യൂസർനെയിം`
+                  : `Token ${studentData?.tokenNo} • Quick Login Handle`}
               </span>
             </div>
           </div>

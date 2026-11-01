@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Utensils, Sliders, RefreshCw, Smartphone, Eye, Volume2, ShieldCheck, Check } from 'lucide-react';
+import { Utensils, Sliders, RefreshCw, Smartphone, Eye, Volume2, ShieldCheck, Check, Calendar, GraduationCap, Clock } from 'lucide-react';
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
 import { dialog } from '../../../utils/dialog';
+import { useAcademicYear } from '../../../utils/academicYearService';
 import {
   subscribeToCanteenConfig,
   updateSectionChunkSize,
@@ -17,6 +18,7 @@ export default function CanteenOpsSection({
 }) {
   const { language } = useLanguage();
   const { feedback } = useFeedback();
+  const { academicYear, isLoading: isYearLoading } = useAcademicYear();
 
   const [canteenConfig, setCanteenConfig] = useState(getCachedCanteenConfig);
   const [chunkSizeInput, setChunkSizeInput] = useState(canteenConfig.sectionChunkSize || 25);
@@ -131,7 +133,58 @@ export default function CanteenOpsSection({
         </div>
       </div>
 
-      {/* 2. Cook Station KDS Controls */}
+      {/* 2. Institutional Academic Year Cycle Overview */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-white/80 dark:bg-[#0c1412]/80 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold text-gray-800 dark:text-gray-200">
+                {language === 'ml' ? 'അക്കാദമിക് വർഷ വിൻഡോ' : 'Academic Year Operational Boundary'}
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                {academicYear.isDefault ? 'Auto-Seeded' : 'Custom Configured'}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 max-w-lg">
+              {language === 'ml'
+                ? 'ടോക്കൺ കലണ്ടറുകൾ, ഡയറ്ററി മാറ്റങ്ങൾ, മെനു മാട്രിക്സ് എന്നിവ ഈ അക്കാദമിക് വർഷത്തിനുള്ളിൽ മാത്രമേ പ്രവർത്തിക്കൂ.'
+                : 'All token boards, dietary calendars, and scheduling matrices are strictly bounded within this institutional cycle.'}
+            </p>
+          </div>
+
+          <div className="text-right">
+            <span className="text-sm font-extrabold text-gray-900 dark:text-white block font-mono">
+              {academicYear.title || 'Academic Year'}
+            </span>
+            <span className="text-[10px] text-gray-400 block font-mono">
+              {academicYear.startDate} ➔ {academicYear.endDate}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-2xl bg-gray-50/70 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-800 dark:text-gray-200">
+                {academicYear.startDate} to {academicYear.endDate}
+              </p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                {academicYear.cycle || 'June 01 – May 31 Annual Cycle'}
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 flex items-center gap-1">
+            <Check className="w-3.5 h-3.5" />
+            {language === 'ml' ? 'ആക്ടീവ് സൈക്കിൾ' : 'Active Cycle'}
+          </span>
+        </div>
+      </div>
+
+      {/* 3. Cook Station KDS Controls */}
       <div className="p-4 sm:p-5 rounded-3xl bg-white/80 dark:bg-[#0c1412]/80 backdrop-blur-xl border border-gray-200/80 dark:border-white/10 shadow-xs space-y-4">
         <div>
           <label className="text-xs font-extrabold text-gray-800 dark:text-gray-200 block mb-1">

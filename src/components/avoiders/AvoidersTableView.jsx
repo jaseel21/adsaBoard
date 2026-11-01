@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown, User, UtensilsCrossed, ExternalLink, Check, Grid3X3, Layers } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
+import { getBatchTheme } from '../../utils/batchTheme';
 import { getCategoryIcon } from './dietaryIcons';
 
 export default function AvoidersTableView({
@@ -63,7 +64,7 @@ export default function AvoidersTableView({
           {/* Table Header */}
           <thead>
             <tr className="bg-gray-50/90 dark:bg-white/5 border-b border-gray-200/80 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold uppercase tracking-wider text-[11px]">
-              {/* Token # */}
+              {/* Token Number */}
               <th
                 onClick={() => handleHeaderClick('tokenNo')}
                 className="py-3.5 px-4 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 select-none whitespace-nowrap"
@@ -128,9 +129,10 @@ export default function AvoidersTableView({
           <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-medium">
             {students.map((student) => {
               const tokenNo = Number(student.tokenNo) || 0;
-              const stNameEn = student.nameEn || student.name || `Token #${tokenNo}`;
+              const stNameEn = student.nameEn || student.name || `Token ${tokenNo}`;
               const stNameMl = student.nameMl || '';
               const batch = student.batch || 'General';
+              const batchTheme = getBatchTheme(batch);
 
               const sectionSize = sectionChunkSize || 25;
               const sectionIndex = Math.floor((tokenNo - 1) / sectionSize) + 1;
@@ -151,8 +153,8 @@ export default function AvoidersTableView({
                 >
                   {/* Token Pill */}
                   <td className="py-3 px-4 whitespace-nowrap">
-                    <span className="inline-block px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-xs font-black border border-emerald-500/20">
-                      #{tokenNo}
+                    <span className={`inline-block px-2.5 py-1 rounded-xl ${batchTheme.bg} ${batchTheme.text} font-mono text-xs font-black border ${batchTheme.border}`}>
+                      {tokenNo}
                     </span>
                   </td>
 
@@ -175,7 +177,7 @@ export default function AvoidersTableView({
 
                   {/* Batch Badge */}
                   <td className="py-3 px-4 whitespace-nowrap">
-                    <span className="inline-block px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-[11px] font-semibold">
+                    <span className={`inline-block px-2 py-0.5 rounded-lg text-[11px] font-bold ${batchTheme.bg} ${batchTheme.text} border ${batchTheme.border}`}>
                       {batch}
                     </span>
                   </td>

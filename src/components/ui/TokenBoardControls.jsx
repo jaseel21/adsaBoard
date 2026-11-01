@@ -14,6 +14,7 @@ import {
   Sparkles,
   Utensils,
   Coffee,
+  CheckSquare,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
@@ -26,6 +27,7 @@ export default function TokenBoardControls({
   controller,
   showDensityToggle = true,
   showMealToggle = true,
+  allowSelectMode = false,
   className = '',
 }) {
   const { t, lang } = useLanguage();
@@ -54,6 +56,9 @@ export default function TokenBoardControls({
     metrics,
     isLunch,
     toggleMeal,
+    isSelectMode,
+    selectedCount,
+    toggleSelectMode,
   } = controller;
 
   return (
@@ -111,7 +116,7 @@ export default function TokenBoardControls({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('searchTokensPlaceholder', 'Search token #, English name, മലയാളം, phone, batch...')}
+            placeholder={t('searchTokensPlaceholder', 'Search token, English name, മലയാളം, phone, batch...')}
             className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs sm:text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
           />
           {searchQuery && (
@@ -196,6 +201,31 @@ export default function TokenBoardControls({
             </button>
           </div>
 
+          {/* Multi-Select Mode Toggle (For Admin / Authorized Staff) */}
+          {allowSelectMode && toggleSelectMode && (
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                toggleSelectMode();
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
+                isSelectMode
+                  ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm shadow-emerald-500/25 ring-2 ring-emerald-400/30'
+                  : 'bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border-gray-200/80 dark:border-white/10'
+              }`}
+              title="Toggle Multi-Select Mode (S)"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span>{isSelectMode ? t('exitSelectMode', 'Selecting...') : t('selectMode', 'Select')}</span>
+              {isSelectMode && selectedCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-white text-emerald-700 text-[10px] font-black">
+                  {selectedCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Density Toggle (Matrix buttons vs Rich Cards) */}
           {showDensityToggle && (
             <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-semibold shrink-0">
@@ -250,8 +280,8 @@ export default function TokenBoardControls({
             aria-label="Sort tokens"
             className="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           >
-            <option value="token_asc">{t('sortTokenAsc', 'Token # (1 → 200)')}</option>
-            <option value="token_desc">{t('sortTokenDesc', 'Token # (200 → 1)')}</option>
+            <option value="token_asc">{t('sortTokenAsc', 'Token (1 → 200)')}</option>
+            <option value="token_desc">{t('sortTokenDesc', 'Token (200 → 1)')}</option>
             <option value="name_asc">{t('sortNameAsc', 'Name: English (A → Z)')}</option>
             <option value="name_ml">{t('sortNameMl', 'Name: Malayalam (അ → ഹ)')}</option>
             <option value="status_active">{t('sortActiveFirst', 'Active Meals First (ON)')}</option>
@@ -399,7 +429,7 @@ export default function TokenBoardControls({
             )}
 
             {batchFilter !== 'all' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-300 dark:border-blue-500/30 text-blue-800 dark:text-blue-300 font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-500/30 text-teal-800 dark:text-teal-300 font-semibold">
                 <span>{t('batch', 'Batch')}: {batchFilter}</span>
                 <button type="button" onClick={() => setBatchFilter('all')} className="hover:text-rose-500">
                   <X className="w-3 h-3" />

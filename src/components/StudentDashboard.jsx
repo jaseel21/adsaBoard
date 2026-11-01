@@ -46,6 +46,7 @@ import {
   UtensilsCrossed,
   Ban,
   Receipt,
+  PowerOff,
 } from 'lucide-react';
 
 import { useLanguage } from '../store/LanguageContext';
@@ -69,9 +70,12 @@ import {
 } from '../utils/publicDocumentExporter';
 import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentHubService';
 
+import BoardNoticeBanner from './board/BoardNoticeBanner';
 import MealFlipCard from './MealFlipCard';
+import MealSupplyNoticeCard from './board/MealSupplyNoticeCard';
 import TokenButton from './ui/TokenButton';
 import TokenCard from './ui/TokenCard';
+import { getMealSupplyStatus } from '../utils/boardServiceSchedule';
 import TokenBoardCalendarPopover from './ui/TokenBoardCalendarPopover';
 import StudentDetailCalendarModal from './ui/StudentDetailCalendarModal';
 import NextMealSpotlight from './NextMealSpotlight';
@@ -531,22 +535,24 @@ export default function StudentDashboard() {
         >
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-black text-sm text-white shadow-sm flex-shrink-0 ${
-                studentPersonalMealStatus.isBlocked
-                  ? 'bg-gray-800'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-black text-sm shadow-sm flex-shrink-0 ${
+                !controller.isBoardSupplyActive
+                  ? 'bg-gradient-to-b from-gray-200 to-gray-300 dark:from-[#1b2622] dark:to-[#121c18] text-gray-500 dark:text-gray-400 border border-gray-300/80 dark:border-white/10 shadow-inner'
+                  : studentPersonalMealStatus.isBlocked
+                  ? 'bg-gray-800 text-white'
                   : studentPersonalMealStatus.isOn
-                  ? 'bg-gradient-to-br from-emerald-500 to-green-600'
-                  : 'bg-gradient-to-br from-rose-500 to-red-600'
+                  ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white'
+                  : 'bg-gradient-to-br from-rose-500 to-red-600 text-white'
               }`}
             >
-              #{stdata.tokenNo}
+              {stdata.tokenNo}
             </div>
             <div className="min-w-0">
               <div className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
-                <span>{stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`}</span>
+                <span>{stdata.nameEn || stdata.name || `Student ${stdata.tokenNo}`}</span>
                 {stdata.nameMl && (
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-normal font-malayalam">
-                    ({stdata.nameMl})
+                    {stdata.nameMl}
                   </span>
                 )}
               </div>
@@ -554,20 +560,24 @@ export default function StudentDashboard() {
                 {isLunch ? t('navLunch', 'Lunch') : t('navBreakfast', 'Breakfast')} on {friendlyTargetDate}:{' '}
                 <strong
                   className={
-                    studentPersonalMealStatus.isBlocked
+                    !controller.isBoardSupplyActive
+                      ? 'text-gray-500 dark:text-gray-400'
+                      : studentPersonalMealStatus.isBlocked
                       ? 'text-gray-500 dark:text-gray-400'
                       : studentPersonalMealStatus.isOn
                       ? 'text-emerald-600 dark:text-emerald-400'
                       : 'text-rose-600 dark:text-rose-400'
                   }
                 >
-                  {studentPersonalMealStatus.isBlocked
+                  {!controller.isBoardSupplyActive
+                    ? (lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Food Supply')
+                    : studentPersonalMealStatus.isBlocked
                     ? t('locked', 'Locked')
                     : studentPersonalMealStatus.isOn
                     ? t('takingMealOn', 'Taking Meal (ON)')
                     : t('skippedMealOff', 'Skipped (OFF)')}
                 </strong>
-                {studentPersonalMealStatus.hasExc && (
+                {controller.isBoardSupplyActive && studentPersonalMealStatus.hasExc && (
                   <span className="ml-1.5 text-[10px] text-rose-500 dark:text-rose-400 font-bold">
                     • {t('singleDayLeaveActive', '1-Day Leave Active')}
                   </span>
@@ -655,9 +665,17 @@ export default function StudentDashboard() {
                         <span>{relativeDateMeta?.relativeLabel || t('pastRecord', 'Past Record')}</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/30 text-blue-200 border border-blue-400/30 text-[10px] font-bold shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-500/30 text-teal-200 border border-teal-400/30 text-[10px] font-bold shrink-0">
                         <Clock className="w-2.5 h-2.5" />
                         <span>{relativeDateMeta?.relativeLabel || t('scheduledDate', 'Scheduled Date')}</span>
+                      </span>
+                    )}
+
+                    {/* Event Notice Badge */}
+                    {controller.activeNoticeForDate && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400/25 border border-amber-300/40 text-amber-200 text-[10px] font-black shrink-0 animate-pulse">
+                        <span>✨</span>
+                        <span>{controller.activeNoticeForDate.badgeText || controller.activeNoticeForDate.badgeTextEn || 'Notice'}</span>
                       </span>
                     )}
                   </div>
@@ -762,10 +780,16 @@ export default function StudentDashboard() {
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-emerald-200/90 font-medium">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-[11px]">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{t('cutoffNotice', `Next-Day Cutoff: ${portalStatus.endTime || '11:00 PM IST'}`)}</span>
+                <span>
+                  {portalStatus.breakfastCutoffDeadline && portalStatus.lunchCutoffDeadline && portalStatus.breakfastCutoffDeadline !== portalStatus.lunchCutoffDeadline
+                    ? `Cutoffs: Bf ${portalStatus.breakfastCutoffDeadline} • Lu ${portalStatus.lunchCutoffDeadline}`
+                    : t('cutoffNotice', `Next-Day Cutoff: ${portalStatus.endTime || '11:00 PM IST'}`)}
+                </span>
                 <span className="text-white/40">•</span>
                 <strong className={portalStatus.isUpdationWindowOpen ? 'text-emerald-300 font-bold' : 'text-amber-300 font-bold'}>
-                  {portalStatus.isUpdationWindowOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Closed')}
+                  {portalStatus.isTomorrowPartiallyLocked
+                    ? (portalStatus.isTomorrowBreakfastLocked ? 'Lunch Open' : 'Breakfast Open')
+                    : (portalStatus.isUpdationWindowOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Closed'))}
                 </strong>
               </span>
             </div>
@@ -792,47 +816,69 @@ export default function StudentDashboard() {
               </button>
             </div>
 
-            {/* The 2 Distinct Flipping Cards Grid */}
+            {/* The 2 Distinct Flipping Cards Grid (or Greyed / Shadowed Notice Cards) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
-              {/* BREAKFAST FLIP CARD */}
-              <MealFlipCard
-                mealType="breakfast"
-                activeCount={loading ? 0 : heroMealMetrics.breakfastActive}
-                rejectedCount={loading ? 0 : heroMealMetrics.breakfastRejected}
-                totalStudents={heroMealMetrics.totalStudents}
-                isFlipped={isBreakfastFlipped}
-                onFlip={() => {
-                  feedback('pop');
-                  setIsBreakfastFlipped((prev) => !prev);
-                }}
-                targetDateStr={friendlyTargetDate}
-                dayLabel={dayLabel}
-                rejectedTokens={heroMealMetrics.breakfastRejectedTokens}
-                onOpenTokensModal={(m) => {
-                  feedback('tick');
-                  setInspectedMeal(m);
-                }}
-              />
+              {/* BREAKFAST FLIP CARD OR NOTICE */}
+              {controller.isBreakfastSupplyActive ? (
+                <MealFlipCard
+                  mealType="breakfast"
+                  activeCount={loading ? 0 : heroMealMetrics.breakfastActive}
+                  rejectedCount={loading ? 0 : heroMealMetrics.breakfastRejected}
+                  totalStudents={heroMealMetrics.totalStudents}
+                  isFlipped={isBreakfastFlipped}
+                  onFlip={() => {
+                    feedback('pop');
+                    setIsBreakfastFlipped((prev) => !prev);
+                  }}
+                  targetDateStr={friendlyTargetDate}
+                  dayLabel={dayLabel}
+                  rejectedTokens={heroMealMetrics.breakfastRejectedTokens}
+                  onOpenTokensModal={(m) => {
+                    feedback('tick');
+                    setInspectedMeal(m);
+                  }}
+                />
+              ) : (
+                <MealSupplyNoticeCard
+                  mealType="breakfast"
+                  supplyStatus={getMealSupplyStatus(controller.boardServiceSchedule, targetDateIST, 'breakfast')}
+                  targetDateStr={friendlyTargetDate}
+                  dayLabel={dayLabel}
+                  lang={lang}
+                  t={t}
+                />
+              )}
 
-              {/* LUNCH FLIP CARD */}
-              <MealFlipCard
-                mealType="lunch"
-                activeCount={loading ? 0 : heroMealMetrics.lunchActive}
-                rejectedCount={loading ? 0 : heroMealMetrics.lunchRejected}
-                totalStudents={heroMealMetrics.totalStudents}
-                isFlipped={isLunchFlipped}
-                onFlip={() => {
-                  feedback('pop');
-                  setIsLunchFlipped((prev) => !prev);
-                }}
-                targetDateStr={friendlyTargetDate}
-                dayLabel={dayLabel}
-                rejectedTokens={heroMealMetrics.lunchRejectedTokens}
-                onOpenTokensModal={(m) => {
-                  feedback('tick');
-                  setInspectedMeal(m);
-                }}
-              />
+              {/* LUNCH FLIP CARD OR NOTICE */}
+              {controller.isLunchSupplyActive ? (
+                <MealFlipCard
+                  mealType="lunch"
+                  activeCount={loading ? 0 : heroMealMetrics.lunchActive}
+                  rejectedCount={loading ? 0 : heroMealMetrics.lunchRejected}
+                  totalStudents={heroMealMetrics.totalStudents}
+                  isFlipped={isLunchFlipped}
+                  onFlip={() => {
+                    feedback('pop');
+                    setIsLunchFlipped((prev) => !prev);
+                  }}
+                  targetDateStr={friendlyTargetDate}
+                  dayLabel={dayLabel}
+                  rejectedTokens={heroMealMetrics.lunchRejectedTokens}
+                  onOpenTokensModal={(m) => {
+                    feedback('tick');
+                    setInspectedMeal(m);
+                  }}
+                />
+              ) : (
+                <MealSupplyNoticeCard
+                  mealType="lunch"
+                  supplyStatus={getMealSupplyStatus(controller.boardServiceSchedule, targetDateIST, 'lunch')}
+                  targetDateStr={friendlyTargetDate}
+                  dayLabel={dayLabel}
+                  lang={lang}
+                  t={t}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -857,6 +903,12 @@ export default function StudentDashboard() {
       {/* 5. LIVE EMBEDDED TOKEN BOARD (Search, Collapsible Filters & Matrix)       */}
       {/* ========================================================================= */}
       <section className="space-y-4">
+        {/* Board Notice & Event Banner (Monthly Dars Leave, Nikah Ceremony, Temporary Close) */}
+        <BoardNoticeBanner
+          notice={controller.activeNoticeForDate}
+          targetDateIST={targetDateIST}
+          isAdmin={false}
+        />
         
         {/* Controls Toolbar: Meal Switch, Search, Category, Density & Filter Drawer */}
         <div className="p-4 sm:p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-3">
@@ -880,6 +932,12 @@ export default function StudentDashboard() {
               >
                 <Coffee className="w-3.5 h-3.5" />
                 <span>{t('navBreakfast', 'Breakfast')}</span>
+                {!controller.isBreakfastSupplyActive && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-300/80 dark:border-white/10 text-[9px] font-black uppercase shadow-inner">
+                    <PowerOff className="w-2 h-2 text-gray-500 dark:text-gray-400" />
+                    <span>{lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Supply'}</span>
+                  </span>
+                )}
               </button>
 
               <button
@@ -896,6 +954,12 @@ export default function StudentDashboard() {
               >
                 <Utensils className="w-3.5 h-3.5" />
                 <span>{t('navLunch', 'Lunch')}</span>
+                {!controller.isLunchSupplyActive && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-300/80 dark:border-white/10 text-[9px] font-black uppercase shadow-inner">
+                    <PowerOff className="w-2 h-2 text-gray-500 dark:text-gray-400" />
+                    <span>{lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Supply'}</span>
+                  </span>
+                )}
               </button>
             </div>
 
@@ -906,7 +970,7 @@ export default function StudentDashboard() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('searchTokensPlaceholder', 'Search token #, name, batch...')}
+                placeholder={t('searchTokensPlaceholder', 'Search token, name, batch...')}
                 className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs sm:text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
               />
               {searchQuery && (
@@ -1140,8 +1204,8 @@ export default function StudentDashboard() {
                       aria-label="Sort tokens"
                       className="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-50 dark:bg-[#121c19] border border-gray-200/80 dark:border-white/10 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                     >
-                      <option value="token_asc">{t('sortTokenAsc', 'Token # (1 → 200)')}</option>
-                      <option value="token_desc">{t('sortTokenDesc', 'Token # (200 → 1)')}</option>
+                      <option value="token_asc">{t('sortTokenAsc', 'Token (1 → 200)')}</option>
+                      <option value="token_desc">{t('sortTokenDesc', 'Token (200 → 1)')}</option>
                       <option value="name_asc">{t('sortNameAsc', 'Name: English (A → Z)')}</option>
                       <option value="name_ml">{t('sortNameMl', 'Name: Malayalam (അ → ഹ)')}</option>
                       <option value="status_active">{t('sortActiveFirst', 'Serving First (ON)')}</option>
@@ -1214,6 +1278,32 @@ export default function StudentDashboard() {
         {/* The Token Grid Container: Matches Master Board Spacing & Sizing */}
         <div className="rounded-3xl p-4 sm:p-6 bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/70 dark:border-white/10 shadow-sm backdrop-blur-xl min-h-[300px]">
           
+          {/* Canteen Food Supply Suspended Callout: Greyed / Shadowed Out */}
+          {!controller.isBoardSupplyActive && (
+            <div className="mb-4 p-4 rounded-2xl bg-gray-100/90 dark:bg-white/[0.04] border border-gray-300/80 dark:border-white/10 shadow-inner flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400 border border-gray-300/60 dark:border-white/10 shadow-inner shrink-0">
+                  <PowerOff className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      {lang === 'ml' ? 'ഭക്ഷണ വിതരണം ഇല്ല' : 'Food Supply Suspended'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400 text-[10px] font-bold shadow-inner">
+                      0 {lang === 'ml' ? 'പ്ലേറ്റ്' : 'Plates'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-0.5">
+                    {lang === 'ml'
+                      ? `${controller.currentMealSupplyStatus.noteMl || 'ഈ സമയത്ത് കാന്റീൻ പ്രവർത്തനം ഉണ്ടായിരിക്കുന്നതല്ല'}. സാധാരണ ഓർഡറുകൾ താത്കാലികമായി ഒഴിവാക്കിയിരിക്കുന്നു.`
+                      : `${controller.currentMealSupplyStatus.noteEn || 'Canteen food supply is suspended for this meal'}. Normal meal preparation count is 0.`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-gray-400">
               <RotateCw className="w-8 h-8 animate-spin text-emerald-500" />
@@ -1343,6 +1433,7 @@ export default function StudentDashboard() {
                                   onLeave={hasDateExc}
                                   isBlocked={isBlocked}
                                   isLunch={isLunch}
+                                  isSupplyOff={!controller.isBoardSupplyActive}
                                   onClick={handleOpenDetails}
                                 />
                               );
@@ -1366,6 +1457,7 @@ export default function StudentDashboard() {
                                   doc={doc}
                                   isOn={isOn}
                                   onLeave={hasDateExc}
+                                  isSupplyOff={!controller.isBoardSupplyActive}
                                   onClick={handleOpenDetails}
                                 />
                               );
@@ -1428,6 +1520,7 @@ export default function StudentDashboard() {
                               onLeave={hasDateExc}
                               isBlocked={isBlocked}
                               isLunch={isLunch}
+                              isSupplyOff={!controller.isBoardSupplyActive}
                               onClick={handleOpenDetails}
                             />
                           );
@@ -1451,6 +1544,7 @@ export default function StudentDashboard() {
                               doc={doc}
                               isOn={isOn}
                               onLeave={hasDateExc}
+                              isSupplyOff={!controller.isBoardSupplyActive}
                               onClick={handleOpenDetails}
                             />
                           );
@@ -1587,6 +1681,7 @@ export default function StudentDashboard() {
                                   onLeave={hasDateExc}
                                   isBlocked={isBlocked}
                                   isLunch={isLunch}
+                                  isSupplyOff={!controller.isBoardSupplyActive}
                                   onClick={handleOpenDetails}
                                 />
                               );
@@ -1610,6 +1705,7 @@ export default function StudentDashboard() {
                                   doc={doc}
                                   isOn={isOn}
                                   onLeave={hasDateExc}
+                                  isSupplyOff={!controller.isBoardSupplyActive}
                                   onClick={handleOpenDetails}
                                 />
                               );
@@ -1645,6 +1741,7 @@ export default function StudentDashboard() {
                     onLeave={hasDateExc}
                     isBlocked={isBlocked}
                     isLunch={isLunch}
+                    isSupplyOff={!controller.isBoardSupplyActive}
                     onClick={handleOpenDetails}
                   />
                 );
@@ -1670,6 +1767,7 @@ export default function StudentDashboard() {
                     doc={doc}
                     isOn={isOn}
                     onLeave={hasDateExc}
+                    isSupplyOff={!controller.isBoardSupplyActive}
                     onClick={handleOpenDetails}
                   />
                 );
@@ -1896,7 +1994,7 @@ export default function StudentDashboard() {
         targetDateIST={targetDateIST}
         effectiveDay={effectiveDay}
         isLunchTarget={isLunch}
-        isAdmin={false}
+        isAdmin={Boolean(user)}
         preferencesList={preferencesList}
       />
 
@@ -1966,7 +2064,7 @@ export default function StudentDashboard() {
                           key={tokenNum}
                           className="flex items-center justify-center p-2 rounded-xl font-mono font-extrabold text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 shadow-xs"
                         >
-                          #{tokenNum}
+                          {tokenNum}
                         </div>
                       ))}
                     </div>

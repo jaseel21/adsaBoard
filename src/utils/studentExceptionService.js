@@ -5,6 +5,7 @@
  */
 
 import { getSyncedISTDateString } from './time';
+import { getCachedAcademicYear } from './academicYearService';
 
 /**
  * Get current date in IST formatted as YYYY-MM-DD
@@ -167,7 +168,9 @@ export function getQuickDateOptions() {
  */
 export function validateExceptionDate(dateStr) {
   const today = getTodayISTDate();
-  const maxDate = addDaysToDate(today, 365); // Full 1-year academic calendar horizon
+  const acadYear = getCachedAcademicYear();
+  const maxDate = acadYear?.endDate || addDaysToDate(today, 365);
+  const minDate = acadYear?.startDate || today;
 
   if (!dateStr) {
     return { valid: false, error: 'Please select a date.' };
@@ -176,7 +179,10 @@ export function validateExceptionDate(dateStr) {
     return { valid: false, error: 'Cannot set an exception for a past date.' };
   }
   if (dateStr > maxDate) {
-    return { valid: false, error: 'Exceptions can be scheduled up to 1 year ahead.' };
+    return { valid: false, error: `Exceptions can only be scheduled within ${acadYear?.nameEn || 'the academic year'} (until ${maxDate}).` };
+  }
+  if (dateStr < minDate) {
+    return { valid: false, error: `Date is before the academic year start (${minDate}).` };
   }
 
   return { valid: true };
@@ -477,7 +483,9 @@ export function getRelativeDateMeta(targetDate, baseToday = null) {
  */
 export function getMonthCalendarDays(year, month) {
   const todayIST = getTodayISTDate();
-  const maxDate = addDaysToDate(todayIST, 365); // 1-year academic horizon
+  const acadYear = getCachedAcademicYear();
+  const minDate = acadYear?.startDate || todayIST;
+  const maxDate = acadYear?.endDate || addDaysToDate(todayIST, 365);
 
   const firstDayObj = new Date(Date.UTC(year, month, 1));
   const startDayOfWeek = firstDayObj.getUTCDay(); // 0 is Sunday, 6 is Saturday
@@ -505,7 +513,9 @@ export function getMonthCalendarDays(year, month) {
     const dayOfWeek = dayMap[dateObj.getUTCDay()] || 'su';
     const isToday = dateStr === todayIST;
     const isPast = dateStr < todayIST;
+    const isBeforeStart = dateStr < minDate;
     const isBeyondMax = dateStr > maxDate;
+    const isOutsideAcademicYear = isBeforeStart || isBeyondMax;
 
     days.push({
       isBlank: false,
@@ -515,8 +525,10 @@ export function getMonthCalendarDays(year, month) {
       dayOfWeek,
       isToday,
       isPast,
+      isBeforeStart,
       isBeyondMax,
-      isBookable: !isPast && !isBeyondMax,
+      isOutsideAcademicYear,
+      isBookable: !isPast && !isOutsideAcademicYear,
     });
   }
 
@@ -652,7 +664,9 @@ export function calculateMonthStats(student, year, month) {
  */
 export function applyDateRangeException(existingExceptions = {}, startDate, endDate, mealSettings) {
   const todayIST = getTodayISTDate();
-  const maxDate = addDaysToDate(todayIST, 365); // Full 1-year academic horizon
+  const acadYear = getCachedAcademicYear();
+  const minDate = acadYear?.startDate || todayIST;
+  const maxDate = acadYear?.endDate || addDaysToDate(todayIST, 365);
 
   const [startY, startM, startD] = startDate.split('-').map(Number);
   const [endY, endM, endD] = endDate.split('-').map(Number);
@@ -669,8 +683,8 @@ export function applyDateRangeException(existingExceptions = {}, startDate, endD
     const d = String(currentObj.getDate()).padStart(2, '0');
     const dateStr = `${y}-${m}-${d}`;
 
-    // Only apply if date is today or upcoming within the horizon
-    if (dateStr >= todayIST && dateStr <= maxDate) {
+    // Only apply if date is today or upcoming and strictly within academic year
+    if (dateStr >= todayIST && dateStr >= minDate && dateStr <= maxDate) {
       result[dateStr] = {
         breakfast: Boolean(mealSettings.breakfast),
         lunch: Boolean(mealSettings.lunch),

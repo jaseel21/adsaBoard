@@ -175,7 +175,7 @@ const DietaryAvoidersPage = () => {
         sectionIndex: i + 1,
         name: `Section ${i + 1}`,
         shortName: `Sec ${i + 1}`,
-        range: `#${startToken} – #${endToken}`,
+        range: `${startToken} – ${endToken}`,
         students: sectionStudents,
       });
     }
@@ -275,7 +275,7 @@ const DietaryAvoidersPage = () => {
           if (!isBreakfastActive && !isLunchActive) return false;
         }
 
-        // 4. Search Query (Token #, English Name, Malayalam Name, Username, Phone, Batch, or Food item keyword)
+        // 4. Search Query (Token, English Name, Malayalam Name, Username, Phone, Batch, or Food item keyword)
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
           const tokenStr = String(student.tokenNo || '');
@@ -284,7 +284,7 @@ const DietaryAvoidersPage = () => {
           const uname = (student.uname || student.username || '').toLowerCase();
           const batch = (student.batch || '').toLowerCase();
           const phone = (student.phone || student.mobile || '').toLowerCase();
-          const room = (student.room || student.roomNo || '').toLowerCase();
+          const email = (student.email || '').toLowerCase();
 
           // Check if search matches any food item that this student avoids
           const matchesAvoidedFood = avoided.some(
@@ -301,7 +301,7 @@ const DietaryAvoidersPage = () => {
             uname.includes(q) ||
             batch.includes(q) ||
             phone.includes(q) ||
-            room.includes(q) ||
+            email.includes(q) ||
             matchesAvoidedFood;
 
           if (!matches) return false;
@@ -378,7 +378,7 @@ const DietaryAvoidersPage = () => {
 
   // 1-Click Copy All Filtered Avoiders Tokens to Clipboard
   const handleCopyAllFilteredTokens = () => {
-    const tokens = filteredStudents.map((s) => `#${s.tokenNo}`);
+    const tokens = filteredStudents.map((s) => `${s.tokenNo}`);
     const summary = `ADSA Mess • Avoiders List (${tokens.length} students):\n${tokens.join(', ')}`;
     navigator.clipboard.writeText(summary);
   };
@@ -401,7 +401,7 @@ const DietaryAvoidersPage = () => {
       const row = {};
       preferences.forEach((p) => {
         const list = filteredRejectionsByPref[p.id] || [];
-        row[p.id] = index < list.length ? `#${list[index]}` : '-';
+        row[p.id] = index < list.length ? `${list[index]}` : '-';
       });
       return row;
     });

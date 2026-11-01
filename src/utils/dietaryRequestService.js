@@ -101,7 +101,7 @@ export async function submitDietaryChangeRequest({
   const requestPayload = {
     tokenNo,
     studentId,
-    studentName: student.name || `Student #${tokenNo}`,
+    studentName: student.name || `Student ${tokenNo}`,
     batch: student.batch || '',
     phone: student.phone || '',
     currentDietary: currentDietary || {},
@@ -149,13 +149,13 @@ export async function submitDietaryChangeRequest({
     severity: urgency === 'urgent' ? AUDIT_SEVERITIES.WARNING : AUDIT_SEVERITIES.INFO,
     actor: {
       uid: `token-${tokenNo}`,
-      name: student.name || `Student #${tokenNo}`,
+      name: student.name || `Student ${tokenNo}`,
       role: 'student',
     },
     target: {
       type: 'dietary_request',
       id: requestRef.id,
-      name: `Token #${tokenNo} Dietary Change Request`,
+      name: `Token ${tokenNo} Dietary Change Request`,
     },
     metadata: {
       tokenNo,
@@ -199,7 +199,7 @@ export async function cancelDietaryChangeRequest(requestId, studentId, studentTo
     severity: AUDIT_SEVERITIES.INFO,
     actor: {
       uid: `token-${studentTokenNo || 'unknown'}`,
-      name: `Student #${studentTokenNo || 'unknown'}`,
+      name: `Student ${studentTokenNo || 'unknown'}`,
       role: 'student',
     },
     target: {
@@ -268,7 +268,7 @@ export async function approveDietaryChangeRequest(requestId, adminActor = {}) {
     target: {
       type: 'student',
       id: reqData.studentId,
-      name: `Token #${reqData.tokenNo} (${reqData.studentName})`,
+      name: `Token ${reqData.tokenNo} (${reqData.studentName})`,
     },
     metadata: {
       requestId,
@@ -336,7 +336,7 @@ export async function rejectDietaryChangeRequest(requestId, adminActor = {}, rej
     target: {
       type: 'student',
       id: reqData.studentId,
-      name: `Token #${reqData.tokenNo}`,
+      name: `Token ${reqData.tokenNo}`,
     },
     metadata: {
       requestId,

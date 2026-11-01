@@ -166,7 +166,7 @@ export default function CareTracker({ initialCode = '' }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder={t('trackingInputPlaceholder', 'Enter Reference Code (e.g. CARE-2026-1042) or Token #')}
+              placeholder={t('trackingInputPlaceholder', 'Enter Reference Code (e.g. CARE-2026-1042) or Token Number')}
               className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs sm:text-sm font-mono font-semibold text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
             />
           </div>
@@ -243,7 +243,7 @@ export default function CareTracker({ initialCode = '' }) {
               </span>
               {activeTicket.student?.tokenNumber && (
                 <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-300">
-                  Token #{activeTicket.student.tokenNumber}
+                  Token {activeTicket.student.tokenNumber}
                 </span>
               )}
             </div>

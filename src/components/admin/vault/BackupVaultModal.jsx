@@ -246,9 +246,9 @@ export default function BackupVaultModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-lg font-black tracking-wide flex items-center gap-2">
-                Cloud Storage & Backup Vault
+                Database Backup & Restore
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/20 tracking-wider">
-                  Sovereign Archive
+                  Admin
                 </span>
               </h2>
               <p className="text-xs text-white/80 font-medium">

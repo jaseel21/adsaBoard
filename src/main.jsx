@@ -6,17 +6,19 @@ import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import Context from "./store/AuthContext.jsx"
 import { registerServiceWorker } from './utils/pwaManager'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // Initialize PWA Service Worker
 registerServiceWorker()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-    <Context>
-
-    <App />
-    </Context>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Context>
+          <App />
+        </Context>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 )

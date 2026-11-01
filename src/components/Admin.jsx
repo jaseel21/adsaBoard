@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo } from 'react';
+import React, { useEffect, useState, useContext, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,6 +20,7 @@ import {
   Layers,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   Printer,
   RotateCcw,
@@ -34,6 +35,7 @@ import {
   Edit,
   Receipt,
   Ban,
+  Power,
 } from 'lucide-react';
 import { dialog } from '../utils/dialog';
 import firebase from '../firebase/config';
@@ -68,6 +70,10 @@ import ApexCommandPalette from './admin/ApexCommandPalette';
 import ApexFloatingDock from './admin/ApexFloatingDock';
 import TactileKeycap from './admin/keycaps/TactileKeycap';
 import DossierCardKeycap from './admin/keycaps/DossierCardKeycap';
+
+import BoardNoticeBanner from './board/BoardNoticeBanner';
+import BoardNoticeManagerModal from './board/BoardNoticeManagerModal';
+import BoardSupplySwitchModal from './board/BoardSupplySwitchModal';
 
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import {
@@ -155,10 +161,32 @@ export default function Admin() {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [showGovernanceModal, setShowGovernanceModal] = useState(false);
   const [showBackupVaultModal, setShowBackupVaultModal] = useState(false);
+  const [showNoticeManagerModal, setShowNoticeManagerModal] = useState(false);
+  const [showSupplySwitchModal, setShowSupplySwitchModal] = useState(false);
+  const [editingNoticeForManager, setEditingNoticeForManager] = useState(null);
+  const lastSelectedDocRef = useRef(null);
   const [popoverStudent, setPopoverStudent] = useState(null);
   const [detailsDoc, setDetailsDoc] = useState(null);
   const [fullDrawerStudent, setFullDrawerStudent] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Keyboard shortcut for Select Mode ('s') and Escape to clear selection
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger if typing in an input or textarea
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (e.key === 's' || e.key === 'S') {
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          controller.toggleSelectMode();
+        }
+      } else if (e.key === 'Escape' && controller.selectedCount > 0) {
+        controller.clearSelection();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [controller]);
 
   const daysList = [
     { key: 'su', label: t('days')?.su || 'Sun' },
@@ -170,9 +198,12 @@ export default function Admin() {
     { key: 'sa', label: t('days')?.sa || 'Sat' },
   ];
 
-  // Deep Link Support: Check for `?token=...` in URL
+  // Deep Link Support: Check for `?token=...` or `?supplySwitch=true` in URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    if (params.get('supplySwitch') === 'true' || params.get('modal') === 'supply_switch') {
+      setShowSupplySwitchModal(true);
+    }
     const tokenParam = params.get('token');
     if (tokenParam && documents.length > 0) {
       const match = documents.find((s) => String(s.tokenNo) === String(tokenParam));
@@ -255,8 +286,19 @@ export default function Admin() {
     }
   };
 
-  // When a token button is clicked: Open Quick 2-Action Popover with Audio-Haptic Feedback
-  const handleTokenClick = (doc) => {
+  // When a token button is clicked: If in multi-select mode, toggle selection or range; otherwise open Quick 2-Action Popover
+  const handleTokenClick = (doc, e) => {
+    if (controller.isSelectMode) {
+      soundEngine.playSoftChime();
+      hapticEngine.lightTap();
+      if (e?.shiftKey && lastSelectedDocRef.current) {
+        controller.selectTokenRange(lastSelectedDocRef.current, doc);
+      } else {
+        controller.toggleTokenSelection(doc);
+      }
+      lastSelectedDocRef.current = doc;
+      return;
+    }
     soundEngine.playMechanicalClick();
     hapticEngine.lightTap();
     setPopoverStudent(doc);
@@ -282,6 +324,8 @@ export default function Admin() {
 
   // High-Performance Unified Token Renderer matching standard design language
   const renderTokenItems = (studentList) => {
+    const isSupplyOff = !controller.isBoardSupplyActive;
+
     if (viewDensity === 'cards') {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
@@ -296,6 +340,7 @@ export default function Admin() {
               effectiveDay,
               isLunch ? 'lunch' : 'breakfast'
             );
+            const isSelected = controller.isTokenSelected(doc);
             return (
               <DossierCardKeycap
                 key={doc.id || doc.tokenNo}
@@ -304,7 +349,10 @@ export default function Admin() {
                 onLeave={hasDateExc}
                 isBlocked={isBlocked}
                 isLunch={isLunch}
+                isSupplyOff={isSupplyOff}
                 onClick={handleTokenClick}
+                isSelectMode={controller.isSelectMode}
+                isSelected={isSelected}
               />
             );
           })}
@@ -326,6 +374,7 @@ export default function Admin() {
             effectiveDay,
             isLunch ? 'lunch' : 'breakfast'
           );
+          const isSelected = controller.isTokenSelected(doc);
           return (
             <TactileKeycap
               key={doc.id || doc.tokenNo}
@@ -333,7 +382,10 @@ export default function Admin() {
               isOn={isOn}
               onLeave={hasDateExc}
               isBlocked={isBlocked}
-              onClick={() => handleTokenClick(doc)}
+              isSupplyOff={isSupplyOff}
+              onClick={(e) => handleTokenClick(doc, e)}
+              isSelectMode={controller.isSelectMode}
+              isSelected={isSelected}
             />
           );
         })}
@@ -361,25 +413,45 @@ export default function Admin() {
   return (
     <div className="w-full max-w-full min-w-0 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6 overflow-x-hidden">
       
+      {/* ================= BREADCRUMB NAVIGATION ================= */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+        <button
+          type="button"
+          onClick={() => {
+            soundEngine.playPop();
+            hapticEngine.lightTap();
+            navigate('/admin');
+          }}
+          className="inline-flex items-center gap-1 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+          <span>{t('adminDashboard', 'Dashboard')}</span>
+        </button>
+        <span className="text-gray-300 dark:text-gray-600">/</span>
+        <span className="text-gray-900 dark:text-white font-bold">{t('tokenBoard', 'Token Board')}</span>
+      </nav>
+
       {/* ================= 1. APEX COMMAND CONSOLE HEADER ================= */}
       <ApexCommandHeader
         effectiveMode={effectiveMode}
         isTomorrowLocked={isTomorrowLocked}
         lockStartTime={lockStartTime}
         lockEndTime={lockEndTime}
-        onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
+        onOpenLockModal={() => setShowLockManagerModal(true)}
         onOpenBlockModal={() => setShowBlockModal(true)}
         onOpenGovernanceModal={isCentralCommittee ? () => setShowGovernanceModal(true) : null}
         onOpenBackupVault={isCentralCommittee ? () => setShowBackupVaultModal(true) : null}
         onToggleLock={isCentralCommittee ? toggleBoardLock : null}
         onOpenStaffModal={isCentralCommittee ? () => setShowStaffModal(true) : null}
+        onOpenNoticeManager={() => setShowNoticeManagerModal(true)}
+        onOpenBulkModal={() => setActiveSurface('studio')}
         isCentralCommittee={isCentralCommittee}
         roleBadge={roleBadge}
         user={user}
       />
 
-      {/* ================= 2. OPERATIONAL QUICK NAV & SHIFT CONTROL STRIP ================= */}
-      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl w-full max-w-full min-w-0 overflow-hidden">
+      {/* ================= 2. MEAL SHIFT & DIETARY QUICK DOCK ================= */}
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-2.5 sm:p-3.5 rounded-2xl sm:rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl w-full max-w-full min-w-0 overflow-hidden">
         {/* Meal Shift Segmented Toggle */}
         <div className="flex w-full sm:w-auto p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 relative">
           <button
@@ -389,7 +461,7 @@ export default function Admin() {
               hapticEngine.lightTap();
               toggleMeal('breakfast');
             }}
-            className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
+            className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
               !isLunch
                 ? 'text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -416,7 +488,7 @@ export default function Admin() {
               hapticEngine.lightTap();
               toggleMeal('lunch');
             }}
-            className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
+            className={`flex-1 sm:flex-none relative flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all ${
               isLunch
                 ? 'text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -437,64 +509,8 @@ export default function Admin() {
           </button>
         </div>
 
-        {/* Action Navigation Buttons */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto min-w-0">
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop();
-              hapticEngine.lightTap();
-              navigate('/');
-            }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors shrink-0"
-            title={t('publicHomeView') || 'Public Home View'}
-          >
-            <Home className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('navHome') || 'Home'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop();
-              hapticEngine.lightTap();
-              navigate('/student-management');
-            }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md transition-all shrink-0"
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>{t('navStudentMgmt') || 'Students'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop();
-              hapticEngine.lightTap();
-              navigate('/admin/menu');
-            }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors shrink-0"
-          >
-            <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{t('navMenu') || 'Food Menu'}</span>
-          </button>
-
-          {/* Kitchen Display System (KDS) Button for Cooks & Admins */}
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop();
-              hapticEngine.lightTap();
-              navigate('/kitchen');
-            }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors shrink-0"
-            title={t('kitchenLiveDisplayTitle') || 'Open Kitchen Live Production Display'}
-          >
-            <ChefHat className="w-3.5 h-3.5 text-amber-500" />
-            <span>{t('kitchen', 'Kitchen')}</span>
-          </button>
-
-          {/* Dietary Breakdown Summary Trigger */}
+        {/* Dietary Distribution Breakdown Trigger */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => {
@@ -502,25 +518,11 @@ export default function Admin() {
               hapticEngine.lightTap();
               setShowDietaryModal(true);
             }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-teal-50 dark:hover:bg-teal-950/30 hover:text-teal-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors shrink-0"
-            title={t('dietaryDistributionTitle') || 'Kitchen Dietary Distribution Breakdown'}
+            className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/25 font-bold text-xs transition-colors shrink-0 cursor-pointer"
+            title={t('dietaryDistributionTitle', 'Kitchen Dietary Distribution Breakdown')}
           >
             <UtensilsCrossed className="w-3.5 h-3.5 text-teal-500" />
-            <span>{t('navDietary') || 'Dietary'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playPop();
-              hapticEngine.lightTap();
-              navigate('/admin/audit-logs');
-            }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 text-gray-800 dark:text-gray-200 font-bold text-xs transition-colors shrink-0"
-            title="Audit Trail & System Logs"
-          >
-            <Activity className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="hidden sm:inline">{t('navAuditLogs') || 'Audit Log'}</span>
+            <span>{t('navDietary', 'Dietary Preferences')}</span>
           </button>
         </div>
       </div>
@@ -550,6 +552,46 @@ export default function Admin() {
       <TokenBoardDateRibbon
         controller={controller}
         showCalendarPicker={true}
+      >
+        {/* Board Food Supply Switch Trigger */}
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setShowSupplySwitchModal(true);
+          }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer shadow-xs ${
+            controller.isBoardSupplyActive
+              ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+              : 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-700 dark:text-rose-300 border-rose-500/40 animate-pulse'
+          }`}
+          title={
+            controller.isBoardSupplyActive
+              ? (lang === 'ml' ? 'ഭക്ഷണ വിതരണം സജീവം. മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക.' : 'Canteen Food Supply is ON. Click to configure/turn OFF.')
+              : (lang === 'ml' ? 'ഭക്ഷണ വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു. മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക.' : 'Canteen Food Supply is OFF. Click to restore or edit.')
+          }
+        >
+          <Power className="w-3.5 h-3.5" />
+          <span>
+            {controller.isBoardSupplyActive
+              ? (lang === 'ml' ? 'ഭക്ഷണ വിതരണം: സജീവം' : 'Food Supply: ON')
+              : (lang === 'ml' ? 'ഭക്ഷണ വിതരണം: ഇല്ല' : 'Food Supply: OFF')}
+          </span>
+        </button>
+      </TokenBoardDateRibbon>
+
+      {/* ================= BOARD NOTICE & EVENT HERO BANNER ================= */}
+      <BoardNoticeBanner
+        notice={controller.activeNoticeForDate}
+        targetDateIST={targetDateIST}
+        isAdmin={true}
+        onOpenNoticeManager={(n) => {
+          setEditingNoticeForManager(n);
+          setShowNoticeManagerModal(true);
+        }}
+        onOpenSupplySwitch={() => {
+          setShowSupplySwitchModal(true);
+        }}
       />
 
       {/* Surface 1: Operations Visual Radar Surface */}
@@ -582,6 +624,7 @@ export default function Admin() {
           <TokenBoardControls
             controller={controller}
             showDensityToggle={true}
+            allowSelectMode={true}
           />
 
       {/* Live Activity Radar Ticker */}
@@ -921,17 +964,25 @@ export default function Admin() {
         onDeleted={handleStudentDeleted}
       />
 
-      {/* 3. Token Board Cutoff Lock Manager Modal */}
+      {/* 3. Institutional Time, Schedule & Operations Hub */}
       <TokenLockManagerModal
         isOpen={showLockManagerModal}
         onClose={() => setShowLockManagerModal(false)}
+        onOpenBlockModal={() => {
+          setShowLockManagerModal(false);
+          setShowBlockModal(true);
+        }}
       />
 
-      {/* 3.5 Dedicated Canteen Block & Fine Registry Modal */}
+      {/* 3.5 Dedicated Canteen Block & Disciplinary Registry Modal */}
       <BlockManagementModal
         isOpen={showBlockModal}
         onClose={() => setShowBlockModal(false)}
         allStudents={documents}
+        onOpenTimeModal={() => {
+          setShowBlockModal(false);
+          setShowLockManagerModal(true);
+        }}
       />
 
       {/* 4. Kitchen Dietary Distribution Modal */}
@@ -961,7 +1012,7 @@ export default function Admin() {
         onToggleLock={isCentralCommittee ? toggleBoardLock : null}
         onOpenDietary={() => setShowDietaryModal(true)}
         onOpenStaff={isCentralCommittee ? () => setShowStaffModal(true) : null}
-        onOpenLockModal={isCentralCommittee ? () => setShowLockManagerModal(true) : null}
+        onOpenLockModal={() => setShowLockManagerModal(true)}
         onOpenBlockModal={() => setShowBlockModal(true)}
         onOpenGovernance={isCentralCommittee ? () => setShowGovernanceModal(true) : null}
         onOpenBackupVault={isCentralCommittee ? () => setShowBackupVaultModal(true) : null}
@@ -981,6 +1032,33 @@ export default function Admin() {
       <BackupVaultModal
         isOpen={showBackupVaultModal}
         onClose={() => setShowBackupVaultModal(false)}
+      />
+
+      {/* 6.7 Board Food Supply Switch Modal (Turn Canteen Supply ON/OFF for Day/Meal) */}
+      <BoardSupplySwitchModal
+        isOpen={showSupplySwitchModal}
+        onClose={() => setShowSupplySwitchModal(false)}
+        targetDateIST={targetDateIST}
+        isLunch={isLunch}
+        boardServiceSchedule={controller.boardServiceSchedule}
+      />
+
+      {/* 6.9 Board Notice Notes Studio Modal (Monthly Dars Leave, Nikah, Temporary Close) */}
+      <BoardNoticeManagerModal
+        isOpen={showNoticeManagerModal}
+        onClose={() => {
+          setShowNoticeManagerModal(false);
+          setEditingNoticeForManager(null);
+        }}
+        allStudents={documents}
+        allBatches={existingBatchNames}
+        notices={controller.boardNotices}
+        targetDateIST={targetDateIST}
+        editingNotice={editingNoticeForManager}
+        onCompleted={() => {
+          setShowNoticeManagerModal(false);
+          setEditingNoticeForManager(null);
+        }}
       />
 
       {/* 7. Floating Ergonomic Glass Dock */}

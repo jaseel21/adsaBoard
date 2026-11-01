@@ -14,12 +14,8 @@ import {
   Moon,
   AlertCircle,
   HelpCircle,
-  Bell,
-  Ban,
-  Compass,
-  Database,
-  Power,
-  BarChart3,
+  LayoutDashboard,
+  Command,
 } from 'lucide-react';
 import { useWorldTime } from '../../utils/time';
 import { soundEngine } from '../../utils/soundEffects';
@@ -37,6 +33,8 @@ export default function ApexCommandHeader({
   onOpenBackupVault,
   onToggleLock,
   onOpenStaffModal,
+  onOpenNoticeManager,
+  onOpenBulkModal,
   isCentralCommittee = false,
   roleBadge,
   user,
@@ -105,10 +103,10 @@ export default function ApexCommandHeader({
           <div className="space-y-0.5 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg sm:text-xl font-black tracking-tight text-gray-900 dark:text-white">
-                ADSA Apex Command
+                ADSA Admin
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                {t('masterBoard', 'Master Board')}
+                {t('tokenBoard', 'Token Board')}
               </span>
               {roleBadge && (
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${roleBadge.badgeClass}`}>
@@ -118,7 +116,7 @@ export default function ApexCommandHeader({
             </div>
 
             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap">
-              <span>{t('liveDiningSystem', 'Alathurpadi Dars Institutional Dining Intelligence')}</span>
+              <span>{t('liveDiningSystem', 'Alathurpadi Dars Canteen System')}</span>
               <span className="hidden sm:inline text-gray-300 dark:text-gray-600">•</span>
               <span className="hidden sm:inline font-medium text-emerald-600 dark:text-emerald-400">
                 {atmosphericPhase.label}
@@ -177,172 +175,164 @@ export default function ApexCommandHeader({
           </div>
 
           {/* Action Trigger Buttons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Staff Roles Modal Trigger (Central Committee only) */}
-            {isCentralCommittee && onOpenStaffModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playPop();
-                  hapticEngine.lightTap();
-                  onOpenStaffModal();
-                }}
-                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-                title="Manage Staff Roles & Access Delegation"
-              >
-                <Users className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Cutoff Window Editor Trigger (Central Committee only) */}
-            {isCentralCommittee && onOpenLockModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playPop();
-                  hapticEngine.lightTap();
-                  onOpenLockModal();
-                }}
-                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-                title="Configure Cutoff Window & Board Lock Schedules"
-              >
-                <Sliders className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Block & Fine Registry Console Trigger */}
-            {onOpenBlockModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playPop();
-                  hapticEngine.lightTap();
-                  onOpenBlockModal();
-                }}
-                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-gray-700 dark:text-gray-300 hover:text-rose-600 dark:hover:text-rose-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-                title="Block & Fine Registry / Food Waste Penalties"
-              >
-                <Ban className="w-4 h-4 text-rose-500" />
-              </button>
-            )}
-
-            {/* Notifications & Broadcast Studio Shortcut */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Quick Switch to Super Admin Executive Command Dashboard */}
             <button
               type="button"
               onClick={() => {
                 soundEngine.playPop();
                 hapticEngine.lightTap();
-                navigate('/admin/notifications');
+                navigate('/admin');
               }}
-              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-              title="Broadcast Announcements Studio & Ledger"
+              className="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 flex items-center gap-1.5 font-bold text-xs transition-all shadow-xs"
+              title="Return to Admin Dashboard"
             >
-              <Bell className="w-4 h-4 text-emerald-500" />
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t('adminDashboard', 'Dashboard')}</span>
             </button>
 
-            {/* Apex Sentinel Live Radar Shortcut */}
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playPop();
-                hapticEngine.lightTap();
-                navigate('/admin/sentinel');
-              }}
-              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-gray-700 dark:text-gray-300 hover:text-cyan-500 dark:hover:text-cyan-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-              title="Apex Sentinel Live Fleet Radar & Remote Control"
-            >
-              <Compass className="w-4 h-4 text-cyan-400" />
-            </button>
-
-            {/* Apex Analytics & Intelligence Suite Shortcut */}
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playPop();
-                hapticEngine.lightTap();
-                navigate('/admin/analytics');
-              }}
-              className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-500 border border-gray-200/60 dark:border-white/10 transition-colors"
-              title="Apex Intelligence & Dining Analytics Suite (/admin/analytics)"
-            >
-              <BarChart3 className="w-4 h-4 text-emerald-500" />
-            </button>
-
-            {/* Master Governance Cockpit Trigger (Central Committee / Dev) */}
-            {isCentralCommittee && onOpenGovernanceModal && (
+            {/* Board Notice & Event Studio Trigger */}
+            {onOpenNoticeManager && (
               <button
                 type="button"
                 onClick={() => {
                   soundEngine.playPop();
                   hapticEngine.lightTap();
-                  onOpenGovernanceModal();
+                  onOpenNoticeManager();
                 }}
-                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-gray-700 dark:text-gray-300 hover:text-emerald-500 border border-gray-200/60 dark:border-white/10 transition-colors"
-                title="Master Governance Cockpit: Global Killswitches & Cutoff Matrix"
+                className="px-2.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/25 flex items-center gap-1.5 font-bold text-xs transition-all shadow-xs cursor-pointer"
+                title="Board Notices & Events (Monthly Dars Leave, Nikah, Temporary Close)"
               >
-                <Power className="w-4 h-4 text-emerald-500" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden md:inline">{t('notices', 'Notices')}</span>
               </button>
             )}
 
-            {/* Cloud Storage & Backup Vault Trigger (Central Committee / Dev) */}
-            {isCentralCommittee && onOpenBackupVault && (
+            {/* Board Bulk Action Studio Trigger */}
+            {onOpenBulkModal && (
               <button
                 type="button"
                 onClick={() => {
                   soundEngine.playPop();
                   hapticEngine.lightTap();
-                  onOpenBackupVault();
+                  onOpenBulkModal();
                 }}
-                className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-gray-700 dark:text-gray-300 hover:text-teal-400 border border-gray-200/60 dark:border-white/10 transition-colors"
-                title="Cloud Storage & Database Backup Vault (Snapshots & Restore)"
+                className="px-2.5 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/25 flex items-center gap-1.5 font-bold text-xs transition-all shadow-xs cursor-pointer"
+                title="Board Bulk Action Studio (Turn ON/OFF, Mark Leaves in Batch)"
               >
-                <Database className="w-4 h-4 text-teal-400" />
+                <Sliders className="w-3.5 h-3.5 text-blue-500" />
+                <span className="hidden md:inline">{t('bulkActions', 'Bulk Actions')}</span>
               </button>
             )}
 
-            {/* Master Lock Switch Pill (Interactive for Central Committee, Informational for Canteen Committee) */}
+            {/* Global Command Palette Trigger */}
             <button
               type="button"
-              disabled={!isCentralCommittee || !onToggleLock}
               onClick={() => {
-                if (isCentralCommittee && onToggleLock) {
-                  soundEngine.playMechanicalClick();
-                  hapticEngine.mediumTick();
-                  onToggleLock();
-                }
+                soundEngine.playPop();
+                hapticEngine.lightTap();
+                window.dispatchEvent(new CustomEvent('apex:open-command-palette'));
               }}
-              className={`px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs shadow-md transition-all ${
-                !isCentralCommittee ? 'cursor-default opacity-90' : 'transform active:scale-95 cursor-pointer'
-              } ${
+              className="px-2.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-white/10 flex items-center gap-1 text-xs font-semibold transition-colors"
+              title="Open Command Palette (⌘K)"
+            >
+              <Command className="w-3.5 h-3.5 text-gray-500" />
+              <span className="hidden md:inline font-mono text-[10px] text-gray-400">⌘K</span>
+            </button>
+
+            {/* Unified Master Board Status & Settings Controller */}
+            <div
+              className={`inline-flex items-center rounded-xl p-0.5 border shadow-md transition-all shrink-0 ${
                 effectiveMode === 'force_unlocked'
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25'
+                  ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/30'
                   : effectiveMode === 'force_locked'
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/25'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/25'
+                  ? 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/30'
+                  : !isTomorrowLocked
+                  ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/30'
+                  : 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/30'
               }`}
-              title={
-                isCentralCommittee
-                  ? 'Toggle Master Board Lock / Override'
-                  : 'Board cutoff schedule enforced by Central Committee'
-              }
             >
-              {effectiveMode === 'force_unlocked' ? (
-                <>
-                  <Unlock className="w-3.5 h-3.5" />
-                  <span>{t('unlocked', '24/7 Open')}</span>
-                </>
-              ) : effectiveMode === 'force_locked' ? (
-                <>
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>{t('frozen', 'Frozen')}</span>
-                </>
-              ) : (
-                <>
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{!isTomorrowLocked ? (t('open') || 'Open') : (t('locked') || 'Cutoff')}</span>
-                </>
+              {/* Primary Board Status Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isCentralCommittee && onToggleLock) {
+                    soundEngine.playMechanicalClick();
+                    hapticEngine.mediumTick();
+                    onToggleLock();
+                  } else if (onOpenLockModal) {
+                    soundEngine.playPop();
+                    hapticEngine.lightTap();
+                    onOpenLockModal();
+                  }
+                }}
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg flex items-center gap-1.5 font-bold text-xs transition-all cursor-pointer ${
+                  effectiveMode === 'force_unlocked'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                    : effectiveMode === 'force_locked'
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                    : !isTomorrowLocked
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
+                }`}
+                title={
+                  isCentralCommittee
+                    ? 'Board Status: Click to quick-toggle Open / Frozen'
+                    : 'Board Status: Click to view Cutoff Schedule'
+                }
+              >
+                {effectiveMode === 'force_unlocked' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>{t('unlocked', 'Board: Open')}</span>
+                  </>
+                ) : effectiveMode === 'force_locked' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>{t('frozen', 'Board: Frozen')}</span>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        !isTomorrowLocked ? 'bg-white animate-pulse' : 'bg-white/80'
+                      }`}
+                    />
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>
+                      {!isTomorrowLocked ? t('boardOpen', 'Board: Open') : t('boardCutoff', 'Board: Cutoff')}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              {/* Integrated Board Cutoff & Locking Engine Trigger */}
+              {onOpenLockModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEngine.playPop();
+                    hapticEngine.lightTap();
+                    onOpenLockModal();
+                  }}
+                  className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg flex items-center gap-1.5 font-bold text-xs transition-all cursor-pointer ${
+                    effectiveMode === 'force_unlocked'
+                      ? 'text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/20 active:scale-95'
+                      : effectiveMode === 'force_locked'
+                      ? 'text-rose-800 dark:text-rose-200 hover:bg-rose-500/20 active:scale-95'
+                      : !isTomorrowLocked
+                      ? 'text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/20 active:scale-95'
+                      : 'text-amber-800 dark:text-amber-200 hover:bg-amber-500/20 active:scale-95'
+                  }`}
+                  title="Configure Cutoff Window & Board Lock Schedules"
+                >
+                  <Sliders className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Cutoff &amp; Lock Schedules</span>
+                </button>
               )}
-            </button>
+            </div>
           </div>
         </div>
       </div>

@@ -230,7 +230,7 @@ export default function AvoidersGroupedView({
                             >
                               <div className="flex items-center justify-between gap-1">
                                 <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
-                                  #{tokenNo}
+                                  {tokenNo}
                                 </span>
                                 <span className="text-[9px] font-semibold text-gray-400">
                                   {batch}

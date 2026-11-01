@@ -18,7 +18,7 @@ function Login() {
 
   useSEO({
     title: 'Student Sign-In Portal',
-    description: 'Secure student sign-in to view and update meal preferences, request single-day leaves, and manage canteen tokens.',
+    description: 'Secure student sign-in to view and update meal preferences, schedule date leaves, and manage canteen tokens.',
     keywords: 'student login, dars canteen login, token login, student portal signin',
   });
 
@@ -27,6 +27,7 @@ function Login() {
   const {
     isPortalAccessible,
     isTomorrowLocked,
+    isTomorrowPartiallyLocked,
     tomorrowLockInfo,
     statusBadge,
     currentTime,
@@ -235,12 +236,16 @@ function Login() {
           )}
 
           {/* Next-Day Cutoff Informational Notice (Non-blocking) */}
-          {isPortalAccessible && isTomorrowLocked && effectiveMode === 'auto' && (
+          {isPortalAccessible && (isTomorrowLocked || isTomorrowPartiallyLocked) && effectiveMode === 'auto' && (
             <div className="p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
               <div>
-                <span className="font-bold block">{t('nextDayCutoffActive', 'Next-Day Cutoff Active')}</span>
-                {tomorrowLockInfo.reason || `Tomorrow's meal updates are closed (cutoff was ${endTime}).`}
+                <span className="font-bold block">
+                  {isTomorrowPartiallyLocked
+                    ? t('partialCutoffActive', 'Partial Cutoff Active')
+                    : t('nextDayCutoffActive', 'Next-Day Cutoff Active')}
+                </span>
+                {tomorrowLockInfo?.reason || `Tomorrow's meal updates are closed (cutoff was ${endTime}).`}
                 <span className="block mt-0.5 text-[11px] opacity-85">
                   {t('futureDatesUpdateNotice', 'You can sign in now to update any future dates (subsequent days, next week, or schedule leaves).')}
                 </span>

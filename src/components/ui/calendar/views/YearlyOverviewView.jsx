@@ -1,22 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Sparkles,
-  Plane,
-  Clock,
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useLanguage } from '../../../../store/LanguageContext';
 import { useFeedback } from '../../../../utils/useFeedback';
 import {
   calculateMonthStats,
   formatFriendlyDate,
 } from '../../../../utils/studentExceptionService';
+import { useAcademicYear, getAcademicYearMonths } from '../../../../utils/academicYearService';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -34,32 +25,57 @@ export default function YearlyOverviewView({
   const { feedback } = useFeedback();
 
   const [activeYear, setActiveYear] = useState(currentYear);
+  const { academicYear } = useAcademicYear();
 
   const [todayY, todayM] = (todayIST || '').split('-').map(Number);
 
-  // Compute month stats for all 12 months in activeYear
+  // Compute month stats for all months in the active academic year cycle
   const yearStats = useMemo(() => {
     let totalActiveLunches = 0;
     let totalActiveBreakfasts = 0;
     let totalLeaves = 0;
 
-    const months = MONTH_NAMES.map((name, idx) => {
-      const stats = calculateMonthStats(student, activeYear, idx);
-      totalActiveLunches += stats.activeLunchDays;
-      totalActiveBreakfasts += stats.activeBreakfastDays;
-      totalLeaves += (stats.pastLeavesCount || 0) + (stats.monthOverridesCount || 0);
+    const acadMonths = academicYear ? getAcademicYearMonths(academicYear) : [];
 
-      const isCurrentMonth = todayY === activeYear && todayM === idx + 1;
-      const isPastMonth = stats.isFullyPastMonth;
+    const months = acadMonths.length > 0
+      ? acadMonths.map((mObj) => {
+          const stats = calculateMonthStats(student, mObj.year, mObj.monthIndex);
+          totalActiveLunches += stats.activeLunchDays;
+          totalActiveBreakfasts += stats.activeBreakfastDays;
+          totalLeaves += (stats.pastLeavesCount || 0) + (stats.monthOverridesCount || 0);
 
-      return {
-        monthIndex: idx,
-        name,
-        stats,
-        isCurrentMonth,
-        isPastMonth,
-      };
-    });
+          const isCurrentMonth = todayY === mObj.year && todayM === mObj.monthIndex + 1;
+          const isPastMonth = stats.isFullyPastMonth;
+
+          return {
+            year: mObj.year,
+            monthIndex: mObj.monthIndex,
+            name: mObj.monthName,
+            label: mObj.label,
+            stats,
+            isCurrentMonth,
+            isPastMonth,
+          };
+        })
+      : MONTH_NAMES.map((name, idx) => {
+          const stats = calculateMonthStats(student, activeYear, idx);
+          totalActiveLunches += stats.activeLunchDays;
+          totalActiveBreakfasts += stats.activeBreakfastDays;
+          totalLeaves += (stats.pastLeavesCount || 0) + (stats.monthOverridesCount || 0);
+
+          const isCurrentMonth = todayY === activeYear && todayM === idx + 1;
+          const isPastMonth = stats.isFullyPastMonth;
+
+          return {
+            year: activeYear,
+            monthIndex: idx,
+            name,
+            label: `${name} ${activeYear}`,
+            stats,
+            isCurrentMonth,
+            isPastMonth,
+          };
+        });
 
     return {
       months,
@@ -67,90 +83,26 @@ export default function YearlyOverviewView({
       totalActiveBreakfasts,
       totalLeaves,
     };
-  }, [student, activeYear, todayY, todayM]);
+  }, [student, activeYear, todayY, todayM, academicYear]);
 
   return (
     <div className="space-y-4">
-      {/* Year Bar & Summary Header */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-xs">
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-              Academic Year Dining Horizon
-            </span>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white">
-                Year {activeYear}
-              </h3>
-              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                {yearStats.totalActiveLunches} Lunches • {yearStats.totalActiveBreakfasts} Breakfasts
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Year Stepper & Vacation Action */}
-        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-          <button
-            type="button"
-            onClick={() => {
-              feedback('tick');
-              onOpenRangeLeave();
-            }}
-            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plane className="w-3.5 h-3.5" />
-            <span>Schedule Vacation / Break</span>
-          </button>
-
-          <div className="inline-flex items-center rounded-xl bg-gray-100 dark:bg-white/5 p-1 border border-gray-200/60 dark:border-white/10">
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setActiveYear((y) => y - 1);
-              }}
-              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
-              title="Previous Year"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="font-mono font-bold text-xs px-2.5 text-gray-900 dark:text-white">
-              {activeYear}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setActiveYear((y) => y + 1);
-              }}
-              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
-              title="Next Year"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 12-Month Mini Cards Grid */}
+      {/* 12-Month Mini Cards Grid (Year navigation handled by master dynamic switcher) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-        {yearStats.months.map(({ monthIndex, name, stats, isCurrentMonth, isPastMonth }) => {
+        {yearStats.months.map((m) => {
+          const { monthIndex, name, label, stats, isCurrentMonth, isPastMonth, year: mYear } = m;
           const totalPlannedMeals = stats.activeBreakfastDays + stats.activeLunchDays;
           const maxPossibleMeals = stats.totalDays * 2;
           const attendancePercent = Math.round((totalPlannedMeals / maxPossibleMeals) * 100) || 0;
 
           return (
             <motion.div
-              key={name}
+              key={`${mYear || activeYear}-${monthIndex}`}
               whileHover={{ y: -3 }}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               onClick={() => {
                 feedback('tick');
-                onSelectMonth(monthIndex, activeYear);
+                onSelectMonth(monthIndex, mYear || activeYear);
               }}
               className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs select-none flex flex-col justify-between space-y-3 ${
                 isCurrentMonth
@@ -162,7 +114,7 @@ export default function YearlyOverviewView({
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                    {name}
+                    {label || name}
                   </h4>
                   {isCurrentMonth && (
                     <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500 text-white">

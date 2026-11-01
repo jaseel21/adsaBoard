@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ChevronLeft,
-  ChevronRight,
   Coffee,
   Utensils,
   Check,
@@ -10,9 +8,9 @@ import {
   Lock,
   Sparkles,
   Plane,
-  Calendar,
   Clock,
   ShieldCheck,
+  PowerOff,
 } from 'lucide-react';
 import { useLanguage } from '../../../../store/LanguageContext';
 import { useFeedback } from '../../../../utils/useFeedback';
@@ -22,6 +20,7 @@ import {
   formatFriendlyDate,
   calculateEffectiveDateMeals,
 } from '../../../../utils/studentExceptionService';
+import { getMealSupplyStatus } from '../../../../utils/boardServiceSchedule';
 
 export default function WeeklyStripView({
   student,
@@ -29,15 +28,21 @@ export default function WeeklyStripView({
   tomorrowIST,
   editable = true,
   isAdmin = false,
+  boardServiceSchedule = {},
   getDateLockStatus,
   onSingleClickToggle,
   onSaveDayState, // (dateStr, { breakfast, lunch, label })
+  onTurnAllWeek, // (weekDays, mealType, boolVal) => void
+  weekAnchorDate: externalWeekAnchorDate,
+  setWeekAnchorDate: externalSetWeekAnchorDate,
 }) {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
 
-  // Selected week anchor date (defaults to todayIST)
-  const [weekAnchorDate, setWeekAnchorDate] = useState(todayIST);
+  // Selected week anchor date (defaults to todayIST or external)
+  const [internalWeekAnchorDate, setInternalWeekAnchorDate] = useState(todayIST);
+  const weekAnchorDate = externalWeekAnchorDate || internalWeekAnchorDate;
+  const setWeekAnchorDate = externalSetWeekAnchorDate || setInternalWeekAnchorDate;
 
   // Compute the 7 dates of the selected week (Sunday to Saturday)
   const weekDays = useMemo(() => {
@@ -54,80 +59,72 @@ export default function WeeklyStripView({
     return days;
   }, [weekAnchorDate]);
 
-  const handlePrevWeek = () => {
-    feedback('tick');
-    setWeekAnchorDate((prev) => addDaysToDate(prev, -7));
-  };
-
-  const handleNextWeek = () => {
-    feedback('tick');
-    setWeekAnchorDate((prev) => addDaysToDate(prev, 7));
-  };
-
-  const handleJumpToCurrentWeek = () => {
-    feedback('tick');
-    setWeekAnchorDate(todayIST);
-  };
-
-  const startFormatted = formatFriendlyDate(weekDays[0], false);
-  const endFormatted = formatFriendlyDate(weekDays[6], false);
-
-  const isCurrentWeek = weekDays.includes(todayIST);
-
   return (
     <div className="space-y-4">
-      {/* Week Stepper Bar */}
-      <div className="p-3 sm:p-4 rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <Calendar className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-              Weekly Meal Planner
+      {/* Week Bulk Actions Card (Date navigation handled by master dynamic switcher) */}
+      {editable && onTurnAllWeek && (
+        <div className="p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm flex items-center justify-between gap-3 flex-wrap">
+          {/* <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">
+              Week Bulk Actions
             </span>
-            <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white">
-              {startFormatted} — {endFormatted}
-            </h4>
+          </div> */}
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-bold">
+              <Coffee className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-gray-500 dark:text-gray-400">Breakfast:</span>
+              <button
+                type="button"
+                onClick={() => { feedback('pop'); onTurnAllWeek(weekDays, 'breakfast', true); }}
+                className="px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:underline transition-colors cursor-pointer font-bold"
+              >
+                All ON
+              </button>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+              <button
+                type="button"
+                onClick={() => { feedback('pop'); onTurnAllWeek(weekDays, 'breakfast', false); }}
+                className="px-2 py-0.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:underline transition-colors cursor-pointer font-bold"
+              >
+                All OFF
+              </button>
+            </div>
+
+            <span className="text-gray-200 dark:text-gray-700 hidden sm:inline">|</span>
+
+            <div className="flex items-center gap-1.5 text-xs font-bold">
+              <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-gray-500 dark:text-gray-400">Lunch:</span>
+              <button
+                type="button"
+                onClick={() => { feedback('pop'); onTurnAllWeek(weekDays, 'lunch', true); }}
+                className="px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:underline transition-colors cursor-pointer font-bold"
+              >
+                All ON
+              </button>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+              <button
+                type="button"
+                onClick={() => { feedback('pop'); onTurnAllWeek(weekDays, 'lunch', false); }}
+                className="px-2 py-0.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:underline transition-colors cursor-pointer font-bold"
+              >
+                All OFF
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Navigation Buttons */}
-        <div className="flex items-center gap-1.5 self-end sm:self-auto">
-          <button
-            type="button"
-            onClick={handlePrevWeek}
-            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
-            title="Previous Week"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {!isCurrentWeek && (
-            <button
-              type="button"
-              onClick={handleJumpToCurrentWeek}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
-            >
-              This Week
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleNextWeek}
-            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
-            title="Next Week"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* 7 Days Grid */}
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
         {weekDays.map((dateStr) => {
           const meals = calculateEffectiveDateMeals(student, dateStr);
+          const bfSupply = getMealSupplyStatus(boardServiceSchedule, dateStr, 'breakfast');
+          const lunchSupply = getMealSupplyStatus(boardServiceSchedule, dateStr, 'lunch');
+          const isBfSupplyOff = !bfSupply.isSupplying;
+          const isLunchSupplyOff = !lunchSupply.isSupplying;
           const lockInfo = getDateLockStatus(dateStr, { isAdmin });
           const isDateLocked = isAdmin ? false : lockInfo.isLocked;
           const isToday = dateStr === todayIST;
@@ -143,7 +140,7 @@ export default function WeeklyStripView({
                 isToday
                   ? 'bg-emerald-500/10 border-emerald-500/40 ring-1 ring-emerald-500/30'
                   : isTomorrow
-                  ? 'bg-sky-500/10 border-sky-500/30'
+                  ? 'bg-teal-500/10 border-teal-500/30'
                   : 'bg-white/90 dark:bg-[#0f1715]/90 border-gray-200/80 dark:border-white/10'
               }`}
             >
@@ -158,7 +155,7 @@ export default function WeeklyStripView({
                       Today
                     </span>
                   ) : isTomorrow ? (
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-sky-500 text-white">
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-teal-600 text-white">
                       Tomorrow
                     </span>
                   ) : isDateLocked ? (
@@ -176,66 +173,94 @@ export default function WeeklyStripView({
               {/* Breakfast Slot Card */}
               <div
                 onClick={() => {
+                  if (isBfSupplyOff) return;
                   if (editable && !isDateLocked && !isPast) {
                     onSingleClickToggle(dateStr, 'breakfast');
                   }
                 }}
                 className={`p-2 rounded-xl border text-left select-none transition-all ${
-                  isPast || isDateLocked ? 'cursor-default' : 'cursor-pointer hover:shadow-xs'
+                  isBfSupplyOff
+                    ? 'bg-gray-100 dark:bg-[#1b2622] border-gray-300/80 dark:border-white/10 text-gray-500 dark:text-gray-400 shadow-inner cursor-not-allowed'
+                    : isPast || isDateLocked
+                    ? 'cursor-default'
+                    : 'cursor-pointer hover:shadow-xs'
                 } ${
-                  meals.breakfast
-                    ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-300 dark:border-teal-500/30 text-teal-950 dark:text-teal-100'
-                    : 'bg-rose-50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-200 opacity-80'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold">
-                    <Coffee className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>Breakfast</span>
-                  </div>
-                  <span
-                    className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${
-                      meals.breakfast ? 'bg-teal-500 text-white' : 'bg-rose-500 text-white'
-                    }`}
-                  >
-                    {meals.breakfast ? 'ON' : 'OFF'}
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-1">
-                  7:30 – 8:30 AM
-                </span>
-              </div>
-
-              {/* Lunch Slot Card */}
-              <div
-                onClick={() => {
-                  if (editable && !isDateLocked && !isPast) {
-                    onSingleClickToggle(dateStr, 'lunch');
-                  }
-                }}
-                className={`p-2 rounded-xl border text-left select-none transition-all ${
-                  isPast || isDateLocked ? 'cursor-default' : 'cursor-pointer hover:shadow-xs'
-                } ${
-                  meals.lunch
+                  isBfSupplyOff
+                    ? ''
+                    : meals.breakfast
                     ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/30 text-emerald-950 dark:text-emerald-100'
                     : 'bg-rose-50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-200 opacity-80'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold">
-                    <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Coffee className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <span>Breakfast</span>
+                  </div>
+                  {isBfSupplyOff ? (
+                    <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 shadow-inner flex items-center gap-0.5">
+                      <PowerOff className="w-2 h-2 text-gray-500" />
+                      <span>No Supply</span>
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${
+                        meals.breakfast ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                      }`}
+                    >
+                      {meals.breakfast ? 'ON' : 'OFF'}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-1 truncate">
+                  {isBfSupplyOff ? (bfSupply.reasonObj?.labelEn || 'No Food Supply') : '7:30 – 8:30 AM'}
+                </span>
+              </div>
+
+              {/* Lunch Slot Card */}
+              <div
+                onClick={() => {
+                  if (isLunchSupplyOff) return;
+                  if (editable && !isDateLocked && !isPast) {
+                    onSingleClickToggle(dateStr, 'lunch');
+                  }
+                }}
+                className={`p-2 rounded-xl border text-left select-none transition-all ${
+                  isLunchSupplyOff
+                    ? 'bg-gray-100 dark:bg-[#1b2622] border-gray-300/80 dark:border-white/10 text-gray-500 dark:text-gray-400 shadow-inner cursor-not-allowed'
+                    : isPast || isDateLocked
+                    ? 'cursor-default'
+                    : 'cursor-pointer hover:shadow-xs'
+                } ${
+                  isLunchSupplyOff
+                    ? ''
+                    : meals.lunch
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/30 text-emerald-950 dark:text-emerald-100'
+                    : 'bg-rose-50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-200 opacity-80'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold">
+                    <Utensils className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                     <span>Lunch</span>
                   </div>
-                  <span
-                    className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${
-                      meals.lunch ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
-                    }`}
-                  >
-                    {meals.lunch ? 'ON' : 'OFF'}
-                  </span>
+                  {isLunchSupplyOff ? (
+                    <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 shadow-inner flex items-center gap-0.5">
+                      <PowerOff className="w-2 h-2 text-gray-500" />
+                      <span>No Supply</span>
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${
+                        meals.lunch ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                      }`}
+                    >
+                      {meals.lunch ? 'ON' : 'OFF'}
+                    </span>
+                  )}
                 </div>
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-1">
-                  12:30 – 1:45 PM
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-1 truncate">
+                  {isLunchSupplyOff ? (lunchSupply.reasonObj?.labelEn || 'No Food Supply') : '12:30 – 1:45 PM'}
                 </span>
               </div>
 

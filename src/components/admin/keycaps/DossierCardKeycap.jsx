@@ -12,24 +12,38 @@ export default function DossierCardKeycap({
   onLeave,
   isBlocked,
   isLunch,
+  isSupplyOff = false,
   onClick,
   dimmed = false,
+  isSelectMode = false,
+  isSelected = false,
 }) {
-  const handleClick = (studentDoc) => {
+  const handleClick = (studentDoc, e) => {
     soundEngine.playMechanicalClick();
     hapticEngine.lightTap();
-    if (onClick) onClick(studentDoc);
+    if (onClick) onClick(studentDoc, e);
   };
 
   return (
-    <div className={`transition-opacity duration-200 ${dimmed ? 'opacity-20' : 'opacity-100'}`}>
+    <div
+      className={`transition-all duration-200 ${
+        dimmed ? 'opacity-20' : 'opacity-100'
+      } ${
+        isSelected
+          ? 'ring-2 sm:ring-4 ring-emerald-400 rounded-2xl shadow-xl scale-[1.02]'
+          : ''
+      }`}
+    >
       <TokenCard
         doc={doc}
         isOn={isOn}
         onLeave={onLeave}
         isBlocked={isBlocked}
         isLunch={isLunch}
+        isSupplyOff={isSupplyOff}
         onClick={handleClick}
+        isSelectMode={isSelectMode}
+        isSelected={isSelected}
       />
     </div>
   );

@@ -41,6 +41,7 @@ import {
   getEffectiveMenuForDate,
 } from '../../utils/menuService';
 import { getCanonicalMealTiming } from '../../utils/mealScheduleService';
+import { useAcademicYear, clampDateToAcademicYear } from '../../utils/academicYearService';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -71,8 +72,8 @@ export default function MenuCalendarMatrix({
   const { feedback } = useFeedback();
   const todayIST = getTodayISTDate();
 
-  // Active view: 'month' | 'week' | 'day' | 'year' | 'list'
-  const [activeView, setActiveView] = useState('month');
+  // Active view: 'month' | 'week' | 'day' | 'year' | 'list' (Defaults to week view)
+  const [activeView, setActiveView] = useState('week');
 
   // Currently inspected date
   const [selectedDate, setSelectedDate] = useState(() => propSelectedDate || todayIST);
@@ -161,47 +162,46 @@ export default function MenuCalendarMatrix({
     return DAY_KEYS.map((_, i) => addDaysToDate(sundayStr, i));
   }, [selectedDate]);
 
+  const { academicYear, startDate: acadStartDate, endDate: acadEndDate } = useAcademicYear();
+
+  // Clamp date setter bounded to academic year
+  const setClampedDate = (newDate) => {
+    const clamped = clampDateToAcademicYear(newDate, academicYear);
+    setSelectedDate(clamped);
+    const [y, m] = clamped.split('-').map(Number);
+    setCurrentYear(y);
+    setCurrentMonth(m - 1);
+  };
+
   const handlePrevWeek = () => {
     feedback('tick');
     const prev = addDaysToDate(selectedDate, -7);
-    setSelectedDate(prev);
-    const [y, m] = prev.split('-').map(Number);
-    setCurrentYear(y);
-    setCurrentMonth(m - 1);
+    setClampedDate(prev);
   };
 
   const handleNextWeek = () => {
     feedback('tick');
     const next = addDaysToDate(selectedDate, 7);
-    setSelectedDate(next);
-    const [y, m] = next.split('-').map(Number);
-    setCurrentYear(y);
-    setCurrentMonth(m - 1);
+    setClampedDate(next);
   };
 
   // Day View: Prev / Next Day
   const handlePrevDay = () => {
     feedback('tick');
     const prev = addDaysToDate(selectedDate, -1);
-    setSelectedDate(prev);
-    const [y, m] = prev.split('-').map(Number);
-    setCurrentYear(y);
-    setCurrentMonth(m - 1);
+    setClampedDate(prev);
   };
 
   const handleNextDay = () => {
     feedback('tick');
     const next = addDaysToDate(selectedDate, 1);
-    setSelectedDate(next);
-    const [y, m] = next.split('-').map(Number);
-    setCurrentYear(y);
-    setCurrentMonth(m - 1);
+    setClampedDate(next);
   };
 
   // Single Day deep data for Day View
   const selectedDayData = useMemo(() => {
-    return getEffectiveMenuForDate(selectedDate, weeklyMenu, overrides);
-  }, [selectedDate, weeklyMenu, overrides]);
+    return getEffectiveMenuForDate(selectedDate, weeklyMenu, overrides, defaultTemplate);
+  }, [selectedDate, weeklyMenu, overrides, defaultTemplate]);
 
   // Overrides list for List View
   const filteredOverridesList = useMemo(() => {
@@ -498,7 +498,7 @@ export default function MenuCalendarMatrix({
 
               const { dateStr, dayNumber, isToday, isPast } = cell;
               const isSelected = selectedDate === dateStr;
-              const effective = getEffectiveMenuForDate(dateStr, weeklyMenu, overrides);
+              const effective = getEffectiveMenuForDate(dateStr, weeklyMenu, overrides, defaultTemplate);
               const ovr = overrides[dateStr];
               const isClosed = Boolean(effective.isClosed || effective.isArchived || effective.dayStatus === 'leave');
               const isFeast = Boolean(ovr?.occasion || effective.occasion || effective.dayStatus === 'event');
@@ -602,100 +602,240 @@ export default function MenuCalendarMatrix({
         </div>
       )}
 
-      {/* 3. VIEW 2: WEEKLY SCHEDULE TIMELINE */}
+      {/* 3. VIEW 2: WEEKLY SCHEDULE TIMELINE (VERTICALLY PARALLEL DESIGN) */}
       {activeView === 'week' && (
-        <div className="bg-white/80 dark:bg-[#0f1715]/90 rounded-3xl p-4 sm:p-6 shadow-sm border border-gray-200/80 dark:border-white/10 backdrop-blur-xl space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+        <div className="space-y-4">
+          {/* Week Timeline Summary Banner */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 backdrop-blur-xl shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <Columns className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                  Weekly Dining Timeline (Sunday – Saturday)
+                </span>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Vertically parallel day schedule with all meals and full dishes displayed. Click any meal or day to open in Studio Canvas.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+              <button
+                type="button"
+                onClick={handlePrevWeek}
+                className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Prev Week</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleJumpToToday}
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 text-xs font-black"
+              >
+                Current Week
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextWeek}
+                className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-1"
+              >
+                <span>Next Week</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Vertically Parallel Day Rows */}
+          <div className="space-y-4">
             {weekDates.map((dateStr) => {
               const dow = getDayOfWeekShort(dateStr);
-              const effective = getEffectiveMenuForDate(dateStr, weeklyMenu, overrides);
+              const effective = getEffectiveMenuForDate(dateStr, weeklyMenu, overrides, defaultTemplate);
               const ovr = overrides[dateStr];
               const isToday = dateStr === todayIST;
+              const isTomorrow = dateStr === addDaysToDate(todayIST, 1);
               const isSelected = selectedDate === dateStr;
               const isClosed = Boolean(effective.isClosed || effective.isArchived || effective.dayStatus === 'leave');
+              const isFeast = Boolean(effective.occasion || effective.dayStatus === 'event');
 
               return (
                 <div
                   key={dateStr}
-                  onClick={() => handleDateClick(dateStr)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                  className={`p-4 sm:p-5 rounded-3xl border transition-all space-y-4 backdrop-blur-xl ${
                     isSelected
-                      ? 'border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/20 dark:bg-purple-950/20'
+                      ? 'border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/15 dark:bg-purple-950/15 shadow-md'
                       : isToday
-                      ? 'border-emerald-500 ring-1 ring-emerald-500/30 bg-emerald-50/10 dark:bg-emerald-950/10'
-                      : 'border-gray-200/80 dark:border-white/10 bg-white/50 dark:bg-[#121c19]/50 hover:border-gray-300'
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-white/95 dark:bg-[#0f1715]/95 shadow-md'
+                      : 'border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-[#0f1715]/90 shadow-xs'
                   }`}
                 >
-                  {/* Column Header */}
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
-                    <div>
-                      <span className="text-xs font-black uppercase text-gray-500 block">
-                        {DAY_SHORTS[dow]}
+                  {/* Row Header: Day Name + Date + Status Badges + Edit Button */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/10">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
+                        {DAY_NAMES[dow]}
                       </span>
-                      <span className="text-sm font-black text-gray-900 dark:text-white">
-                        {formatFriendlyDate(dateStr, false)}
+                      <span className="text-xs font-bold text-gray-500 dark:text-gray-400 font-mono">
+                        ({formatFriendlyDate(dateStr)})
                       </span>
+
+                      {/* Relative & Operational Badges */}
+                      {isToday && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white flex items-center gap-1 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          <span>Today</span>
+                        </span>
+                      )}
+
+                      {isTomorrow && !isToday && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-600 text-white shadow-xs">
+                          Tomorrow
+                        </span>
+                      )}
+
+                      {isClosed && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-rose-500" />
+                          <span>{effective.closureReason || 'Canteen Closed'}</span>
+                        </span>
+                      )}
+
+                      {isFeast && !isClosed && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-purple-500" />
+                          <span>{effective.occasion || 'Special Feast'}</span>
+                        </span>
+                      )}
+
+                      {ovr && !isFeast && !isClosed && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                          Custom Override
+                        </span>
+                      )}
+
+                      {!ovr && !isClosed && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400">
+                          Routine Baseline
+                        </span>
+                      )}
                     </div>
-                    {ovr ? (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
-                        Custom
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400">
-                        Routine
-                      </span>
-                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDateClick(dateStr)}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 font-bold text-xs flex items-center gap-1.5 transition-colors self-end sm:self-auto"
+                      title="Open full day editor in canvas"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Open in Studio Canvas</span>
+                    </button>
                   </div>
 
-                  {/* Day Status Notice */}
-                  {isClosed && (
-                    <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-900/50">
-                      Canteen Closed
-                    </div>
-                  )}
-
-                  {effective.occasion && !isClosed && (
-                    <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[10px] font-black border border-purple-200 dark:border-purple-900/50 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-purple-500 shrink-0" />
-                      <span className="truncate">{effective.occasion}</span>
-                    </div>
-                  )}
-
-                  {/* 4 Slots Overview in Column */}
-                  <div className="space-y-2 flex-1">
+                  {/* 4 Parallel Meal Columns */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {SLOT_CONFIGS.map((slot) => {
                       const slotData = effective[slot.key] || {};
-                      const isArchived = Boolean(slotData.isArchived || slotData.slotStatus === 'leave');
+                      const isArchived = Boolean(slotData.isArchived || slotData.slotStatus === 'leave' || isClosed);
                       const isSpecialMeal = Boolean(slotData.isSpecialMeal);
                       const Icon = slot.icon;
+                      const hasItems = Array.isArray(slotData.items) && slotData.items.length > 0;
 
                       return (
                         <div
                           key={slot.key}
-                          className={`p-2 rounded-xl border text-xs space-y-1 transition-colors ${
+                          onClick={() => handleDateClick(dateStr)}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 group shadow-xs hover:shadow-md ${
                             isArchived
-                              ? 'bg-rose-50/30 dark:bg-rose-950/10 border-rose-200/50 dark:border-rose-900/20 opacity-50'
+                              ? 'bg-rose-50/20 dark:bg-rose-950/10 border-rose-200/50 dark:border-rose-900/20 opacity-60'
                               : isSpecialMeal
-                              ? 'bg-purple-50/40 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/40'
-                              : 'bg-gray-50/70 dark:bg-white/5 border-gray-100 dark:border-white/5'
+                              ? 'bg-purple-50/40 dark:bg-purple-950/20 border-purple-300 dark:border-purple-800/60 ring-1 ring-purple-400/30'
+                              : 'bg-white/80 dark:bg-[#121c19]/80 border-gray-200/80 dark:border-white/10 hover:border-purple-400 dark:hover:border-purple-600'
                           }`}
                         >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="font-bold text-[10px] text-gray-500 uppercase flex items-center gap-1">
-                              <Icon className="w-2.5 h-2.5 text-emerald-500" />
-                              <span>{slot.label}</span>
-                            </span>
-                            <span className="text-[9px] font-mono text-gray-400">
-                              {slotData.timing || getCanonicalMealTiming(dow, slot.key)}
-                            </span>
+                          <div className="space-y-2">
+                            {/* Slot Header: Icon + Name + Timing */}
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className="font-black text-xs uppercase text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                <Icon className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>{slot.label}</span>
+                              </span>
+
+                              <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-lg">
+                                {slotData.timing || getCanonicalMealTiming(dow, slot.key)}
+                              </span>
+                            </div>
+
+                            {/* Category & Special Tags */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {slotData.category && (
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                                    slotData.category === 'Veg'
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300'
+                                      : slotData.category === 'Non-Veg'
+                                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300'
+                                      : slotData.category === 'Egg'
+                                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300'
+                                      : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300'
+                                  }`}
+                                >
+                                  {slotData.category}
+                                </span>
+                              )}
+
+                              {isSpecialMeal && (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300 inline-flex items-center gap-1">
+                                  <Sparkles className="w-2.5 h-2.5 text-purple-500" />
+                                  <span>Special Feast</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Main Dish Title */}
+                            <div>
+                              {isArchived ? (
+                                <span className="text-rose-500 font-bold text-xs italic">
+                                  {slotData.leaveReason || 'Leave / Off'}
+                                </span>
+                              ) : (
+                                <h5 className="font-black text-sm text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-snug break-words">
+                                  {slotData.title || (hasItems ? slotData.items[0] : 'Standard Routine')}
+                                </h5>
+                              )}
+                            </div>
+
+                            {/* Full List of Accompaniments / Dishes (Never Hidden) */}
+                            {hasItems && !isArchived && (
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {slotData.items.map((it, i) => (
+                                  <span
+                                    key={i}
+                                    className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 text-[11px] font-medium"
+                                  >
+                                    {it}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Special Notes / Sponsor */}
+                            {isSpecialMeal && slotData.specialSponsor && (
+                              <p className="text-[10px] text-purple-700 dark:text-purple-300 font-medium italic">
+                                Sponsor: {slotData.specialSponsor}
+                              </p>
+                            )}
                           </div>
 
-                          <div className="font-extrabold text-[11px] text-gray-900 dark:text-white truncate">
-                            {isArchived ? (
-                              <span className="text-rose-500 font-semibold italic">Leave / Off</span>
-                            ) : (
-                              slotData.title || (Array.isArray(slotData.items) ? slotData.items[0] : '—')
-                            )}
+                          {/* Interactive Card Footer */}
+                          <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400">
+                            <span className="group-hover:text-purple-600 dark:group-hover:text-purple-400 font-medium transition-colors">
+                              Click to edit in Studio →
+                            </span>
+                            <Edit3 className="w-3 h-3 opacity-0 group-hover:opacity-100 text-purple-600 transition-opacity" />
                           </div>
                         </div>
                       );
@@ -708,10 +848,10 @@ export default function MenuCalendarMatrix({
         </div>
       )}
 
-      {/* 4. VIEW 3: SINGLE DAY INSPECTOR */}
+      {/* 4. VIEW 3: SINGLE DAY FOCUS */}
       {activeView === 'day' && (
         <div className="bg-white/80 dark:bg-[#0f1715]/90 rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-200/80 dark:border-white/10 backdrop-blur-xl space-y-5">
-          {/* Day Inspector Header */}
+          {/* Daily Schedule Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-gray-200/80 dark:border-white/10">
             <div>
               <div className="flex items-center gap-2">

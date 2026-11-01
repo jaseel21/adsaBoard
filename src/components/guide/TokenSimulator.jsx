@@ -50,7 +50,7 @@ const INITIAL_SIMULATOR_TOKENS = [
     username: 'salman_108',
     state: 'leave',
     dietary: ['No Fish'],
-    reason: 'Single-Day Leave Exception applied specifically for today.',
+    reason: 'Date Leave Exception applied specifically for today.',
   },
   {
     tokenNo: '189',
@@ -93,7 +93,7 @@ const TokenSimulator = () => {
           let reason = '';
           if (newState === 'active') reason = 'User toggled: confirmed dining active.';
           else if (newState === 'skipped') reason = 'User toggled: meal skipped.';
-          else if (newState === 'leave') reason = 'User toggled: Single-Day temporary leave exception.';
+          else if (newState === 'leave') reason = 'User toggled: Temporary date leave exception.';
           else if (newState === 'blocked') reason = 'User toggled: Committee security lock.';
           return { ...t, state: newState, reason };
         }

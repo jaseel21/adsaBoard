@@ -65,7 +65,7 @@ export const DEFAULT_PREFERENCES = {
   ambientAtmosphere: 'circadian', // 'circadian' (dynamic time-of-day mesh) | 'static' | 'off'
 
   // Student Privacy & Display
-  kioskTimeoutMode: 'strict', // 'strict' (90s) | 'extended' (15m) | 'persistent' (24h)
+  kioskTimeoutMode: 'kiosk_60s', // 'kiosk_60s' | 'kiosk_90s' | 'extended' | 'persistent' | 'custom'
 
   // Cook / Kitchen Ops Client Config
   kdsAutoRefreshInterval: 30, // seconds: 10 | 30 | 60 | 0 (manual)
@@ -73,20 +73,32 @@ export const DEFAULT_PREFERENCES = {
   audibleAvoidanceAlert: true,
 };
 
+import { resolveEffectiveIdleConfig } from './deviceProfileService';
+
 /**
  * Resolves standard inactivity timeout and warning thresholds for public kiosks and personal devices.
+ * Uses the Device Profile Service to check device-specific hardware rules and Sentinel overrides.
  *
- * @param {string} mode - 'strict' | 'extended' | 'persistent'
- * @returns {{ timeoutMs: number, warningMs: number, enabled: boolean }}
+ * @param {string} [mode] - Optional legacy mode override ('strict' | 'kiosk_60s' | 'kiosk_90s' | 'extended' | 'persistent')
+ * @returns {{ timeoutMs: number, warningMs: number, enabled: boolean, persona: string }}
  */
-export function getKioskTimeoutConfig(mode = 'strict') {
+export function getKioskTimeoutConfig(mode) {
+  // If no explicit mode provided, resolve using device-specific hardware profile
+  if (!mode || mode === 'auto' || mode === 'device') {
+    return resolveEffectiveIdleConfig();
+  }
+
   if (mode === 'persistent') {
-    return { timeoutMs: 86400000, warningMs: 60000, enabled: false }; // 24h (disabled)
+    return { timeoutMs: 86400000, warningMs: 60000, enabled: false, persona: 'kitchen_wallboard' }; // 24h (disabled)
   }
   if (mode === 'extended') {
-    return { timeoutMs: 900000, warningMs: 30000, enabled: true }; // 15 mins
+    return { timeoutMs: 900000, warningMs: 30000, enabled: true, persona: 'personal_mobile' }; // 15 mins
   }
-  return { timeoutMs: 90000, warningMs: 15000, enabled: true }; // 90s strict
+  if (mode === 'kiosk_90s') {
+    return { timeoutMs: 90000, warningMs: 15000, enabled: true, persona: 'public_kiosk' }; // 90s
+  }
+  // Default strict / kiosk_60s
+  return { timeoutMs: 60000, warningMs: 15000, enabled: true, persona: 'public_kiosk' }; // 60s
 }
 
 /**

@@ -28,8 +28,13 @@ import {
   Unlock,
   Ban,
   Receipt,
+  Camera,
+  User,
+  ChevronRight,
+  PanelRight,
 } from 'lucide-react';
 import { getStudentFineAmount } from '../utils/mealScheduleService';
+import { getBatchTheme } from '../utils/batchTheme';
 import { dialog } from '../utils/dialog';
 import DateGridMatrix from './ui/DateGridMatrix';
 import firebase from '../firebase/config';
@@ -63,6 +68,10 @@ import {
   calculateEffectiveDateMeals,
   cleanRedundantDateExceptions,
 } from '../utils/studentExceptionService';
+
+import StudentProfileCard from './profile/StudentProfileCard';
+import PhotoUploadModal from './profile/PhotoUploadModal';
+import IslamicAvatar from './ui/IslamicAvatar';
 
 // Compare meal routine
 const isRoutineEqual = (a = {}, b = {}) => {
@@ -100,6 +109,8 @@ function StudentPort() {
   // Live real-time unblock and lock status subscription
   const [unblockDocStatus, setUnblockDocStatus] = useState(null);
   const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(true);
 
   const isBlocked = unblockDocStatus ? Boolean(unblockDocStatus.block) : Boolean(stdata?.block);
   const pendingUnblock = unblockDocStatus ? unblockDocStatus.pendingUnblockRequest : stdata?.pendingUnblockRequest;
@@ -122,6 +133,10 @@ function StudentPort() {
     tomorrowIST,
     tomorrowDayShort,
     isTomorrowLocked,
+    isTomorrowBreakfastLocked,
+    isTomorrowLunchLocked,
+    breakfastCutoffDeadline,
+    lunchCutoffDeadline,
     tomorrowLockInfo,
     startTime,
     endTime,
@@ -258,7 +273,7 @@ function StudentPort() {
       title: t('cancelUnblockPrompt', 'Cancel Unblock Request?'),
       message: t(
         'cancelUnblockConfirm',
-        `Are you sure you want to withdraw your appeal to unblock token #${stdata.tokenNo}?`
+        `Are you sure you want to withdraw your appeal to unblock token ${stdata.tokenNo}?`
       ),
       confirmText: t('withdrawConfirm', 'Yes, Withdraw'),
       cancelText: t('cancel', 'Keep Request'),
@@ -404,26 +419,42 @@ function StudentPort() {
       let exceptionsToSave = cleanRedundantDateExceptions(dateExceptions || {}, { lunch, breakfast });
       const preservedDatesList = [];
 
-      // Safeguard Scenario 1: If tomorrow is locked past cutoff, preserve tomorrow's baseline status
-      if (isTomorrowLocked) {
-        const baselineExc = savedBaseline.dateExceptions?.[tomorrowIST];
-        const baselineBf = baselineExc?.breakfast !== undefined
-          ? baselineExc.breakfast
-          : Boolean(savedBaseline.breakfast?.[tomorrowDayShort]);
-        const baselineLu = baselineExc?.lunch !== undefined
-          ? baselineExc.lunch
-          : Boolean(savedBaseline.lunch?.[tomorrowDayShort]);
+      // Safeguard Scenario 1: Tomorrow's Granular Cutoffs (Breakfast & Lunch)
+      const baselineExc = savedBaseline.dateExceptions?.[tomorrowIST];
+      const baselineBf = baselineExc?.breakfast !== undefined
+        ? baselineExc.breakfast
+        : Boolean(savedBaseline.breakfast?.[tomorrowDayShort]);
+      const baselineLu = baselineExc?.lunch !== undefined
+        ? baselineExc.lunch
+        : Boolean(savedBaseline.lunch?.[tomorrowDayShort]);
 
-        const newRoutineBf = breakfast?.[tomorrowDayShort] !== undefined ? Boolean(breakfast[tomorrowDayShort]) : true;
-        const newRoutineLu = lunch?.[tomorrowDayShort] !== undefined ? Boolean(lunch[tomorrowDayShort]) : true;
+      const newRoutineBf = breakfast?.[tomorrowDayShort] !== undefined ? Boolean(breakfast[tomorrowDayShort]) : true;
+      const newRoutineLu = lunch?.[tomorrowDayShort] !== undefined ? Boolean(lunch[tomorrowDayShort]) : true;
 
-        if (baselineBf !== newRoutineBf || baselineLu !== newRoutineLu) {
+      const currentTomExc = dateExceptions?.[tomorrowIST];
+      const targetBf = currentTomExc?.breakfast !== undefined ? Boolean(currentTomExc.breakfast) : newRoutineBf;
+      const targetLu = currentTomExc?.lunch !== undefined ? Boolean(currentTomExc.lunch) : newRoutineLu;
+
+      let effectiveTomBf = targetBf;
+      let effectiveTomLu = targetLu;
+
+      if (isTomorrowBreakfastLocked && targetBf !== baselineBf) {
+        effectiveTomBf = baselineBf;
+        preservedDatesList.push(`Tomorrow's Breakfast (Cutoff passed at ${breakfastCutoffDeadline || 'cutoff'})`);
+      }
+
+      if (isTomorrowLunchLocked && targetLu !== baselineLu) {
+        effectiveTomLu = baselineLu;
+        preservedDatesList.push(`Tomorrow's Lunch (Cutoff passed at ${lunchCutoffDeadline || 'cutoff'})`);
+      }
+
+      if (isTomorrowBreakfastLocked || isTomorrowLunchLocked) {
+        if (effectiveTomBf !== newRoutineBf || effectiveTomLu !== newRoutineLu) {
           exceptionsToSave[tomorrowIST] = {
-            breakfast: baselineBf,
-            lunch: baselineLu,
+            breakfast: effectiveTomBf,
+            lunch: effectiveTomLu,
             label: baselineExc?.label || 'Cutoff Locked (Preserved)',
           };
-          preservedDatesList.push(`Tomorrow (${formatFriendlyDate(tomorrowIST, false)})`);
         } else {
           delete exceptionsToSave[tomorrowIST];
         }
@@ -512,20 +543,20 @@ function StudentPort() {
         actor: {
           uid: targetDocId,
           email: `token${stdata.tokenNo}@student.adsa`,
-          displayName: stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`,
+          displayName: stdata.nameEn || stdata.name || `Student ${stdata.tokenNo}`,
           role: 'student',
           tokenNo: Number(stdata.tokenNo),
         },
         target: {
           type: 'student',
           id: targetDocId,
-          label: `Token #${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'})`,
+          label: `Token ${stdata.tokenNo} (${stdata.nameEn || stdata.name || 'Student'})`,
           tokenNo: Number(stdata.tokenNo),
         },
         changes: {
           diffSummary: scheduleDeltas.items.length > 0
-            ? `Token #${stdata.tokenNo}: ${scheduleDeltas.summary}`
-            : `Student Token #${stdata.tokenNo} saved schedule preferences`,
+            ? `Token ${stdata.tokenNo}: ${scheduleDeltas.summary}`
+            : `Student Token ${stdata.tokenNo} saved schedule preferences`,
           fieldsChanged: scheduleDeltas.fieldsChanged.length > 0
             ? scheduleDeltas.fieldsChanged
             : ['obj', 'dateExceptions'],
@@ -637,6 +668,7 @@ function StudentPort() {
   };
 
   const sortedExceptionDates = Object.keys(dateExceptions).sort();
+  const batchTheme = getBatchTheme(stdata?.batch);
 
   if (!stdata || !stdata.tokenNo) {
     return (
@@ -659,142 +691,23 @@ function StudentPort() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-32 sm:pb-36 space-y-8">
-      
-      {/* ================= STUDENT HEADER CARD ================= */}
-      <div className="rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl p-4 xs:p-5 sm:p-7 backdrop-blur-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 xs:gap-3.5 sm:gap-4 min-w-0">
-            <div
-              className={`w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-2xl ${
-                isBlocked
-                  ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/25'
-                  : 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/25'
-              } text-white font-mono font-black text-lg xs:text-xl sm:text-2xl flex items-center justify-center shadow-lg flex-shrink-0 relative`}
-            >
-              #{stdata.tokenNo}
-              {isBlocked && (
-                <span
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 border-2 border-white dark:border-[#0f1715] flex items-center justify-center text-[10px] shadow-sm"
-                  title={t('tokenLockedBadge', 'Account Blocked')}
-                >
-                  <Ban className="w-2.5 h-2.5 text-white" />
-                </span>
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-base xs:text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
-                  {stdata.nameEn || stdata.name || `Token #${stdata.tokenNo}`}
-                </h1>
-                {stdata.batch && (
-                  <span className="px-2 xs:px-2.5 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    {stdata.batch}
-                  </span>
-                )}
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 select-none"
-                  title="Institutional student identity details are managed by ADSA Central Committee and cannot be edited by students"
-                >
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  <span>{t('officialRecordReadOnly', 'Official Record • Read-Only')}</span>
-                </span>
-                {isBlocked && (
-                  <>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
-                      <Ban className="w-3 h-3 text-rose-500" />
-                      <span>{t('tokenLockedBadge', 'Account Blocked')}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] xs:text-[11px] font-black uppercase bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/40 shadow-xs animate-pulse">
-                      <Receipt className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                      <span>{t('finePayableAmount', 'Fine Due')}: ₹{fineDue}</span>
-                    </span>
-                  </>
-                )}
-              </div>
-              {stdata.nameMl && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-malayalam">
-                  {stdata.nameMl}
-                </p>
-              )}
-              {isBlocked ? (
-                <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-rose-700 dark:text-rose-300 font-semibold flex-wrap">
-                  <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0 text-rose-600 dark:text-rose-400" />
-                  <span>
-                    {t('tokenLockedPortalNotice', 'Your dining account is currently blocked by the Canteen Committee.')}{' '}
-                    <strong className="text-amber-800 dark:text-amber-300 font-bold">
-                      ({t('finePayableAmount', 'Fine Due')}: ₹{fineDue} • Pay at ADSA Canteen Office to restore)
-                    </strong>
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 xs:gap-2 mt-1 xs:mt-1.5 text-[10px] xs:text-[11px] text-gray-500 dark:text-gray-400">
-                  <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${!isTomorrowLocked ? 'text-emerald-500' : 'text-amber-500'}`} />
-                  <span>
-                    {t('dailyCutoffHeader', 'Daily cutoff:')} {endTime} IST •{' '}
-                    <strong className={!isTomorrowLocked ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>
-                      {!isTomorrowLocked ? t('tomorrowIsOpen', 'Tomorrow is Open') : t('tomorrowIsLocked', 'Tomorrow is Locked')}
-                    </strong>
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+    <div className="max-w-[1536px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 pb-32 sm:pb-36">
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-white/5">
-            <button
-              type="button"
-              onClick={handleSafeBack}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{t('backToBoard', 'Back to Board')}</span>
-            </button>
+      {/* ================= DUAL-RAIL FLEX LAYOUT ================= */}
+      <div className="flex flex-col lg:flex-row items-start gap-6">
 
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                navigate('/menu');
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300/50 dark:border-emerald-500/30 transition-colors"
-              title="View Weekly Food Menu"
-            >
-              <UtensilsCrossed className="w-4 h-4" />
-              <span>{t('viewCanteenMenu', 'View Food Menu')}</span>
-            </button>
+      {/* ================= PRIMARY FUNCTIONING OPERATIONAL CONSOLE ================= */}
+      <div className="flex-1 min-w-0 w-full space-y-6">
 
-            {/* In-Header Save Preferences button when dirty and not blocked */}
-            <AnimatePresence>
-              {isDirty && !isBlocked && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  type="button"
-                  onClick={() => handleSave(false)}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-extrabold text-xs shadow-md shadow-emerald-500/25 transition-all active:scale-95 disabled:opacity-50"
-                  title="Save dining preferences"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
-                </motion.button>
-              )}
-            </AnimatePresence>
 
-            <button
-              type="button"
-              onClick={handleSafeLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200/60 dark:border-rose-500/20 transition-all active:scale-95"
-              title="Sign out of student account (Important on public computers)"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{t('navLogout') || 'Log Out'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
+
+
+
+
+
+
+
+
 
       {/* ================= ADMIN BLOCKED NOTICE BANNER ================= */}
       {isBlocked && (
@@ -871,7 +784,7 @@ function StudentPort() {
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-black text-base sm:text-lg text-rose-950 dark:text-white">
-                        Token #{stdata.tokenNo} Blocked • {t('dualGridSuspension', 'Dual-Grid Suspension')}
+                        Token {stdata.tokenNo} Blocked • {t('dualGridSuspension', 'Dual-Grid Suspension')}
                       </h3>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300/60">
                         Meals Paused
@@ -1030,10 +943,10 @@ function StudentPort() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                  {/* <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] font-bold text-gray-500 dark:text-gray-400">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                     <span>{t('adminApproved', 'Admin Controlled')}</span>
-                  </div>
+                  </div> */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1160,90 +1073,52 @@ function StudentPort() {
             })}
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-[11px] text-gray-500 dark:text-gray-400">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <span>
-                {t('dietaryCommitteeNoteUpgraded', 'Dietary preferences are managed by the ADSA Canteen Committee to plan accurate grocery supplies. Click "Request Change" to submit adjustments.')}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                feedback('tick');
-                setRequestModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex-shrink-0 cursor-pointer"
-            >
-              <span>{t('requestDietaryChange', 'Request Dietary Change')}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+
         </div>
 
-        {/* ================= BOTTOM SUBMIT ACTION BAR ================= */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/80 border border-gray-200/80 dark:border-white/10 shadow-md">
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <Info className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-            <span>
-              {isBlocked
-                ? t('tokenLockedPortalNotice', 'Your dining token is currently locked by the Canteen Committee. You are viewing your details in Read-Only mode.')
-                : isDirty
-                ? t('pendingModifications', 'You have pending modifications. Click "Save Preferences" to apply.')
-                : t('allSavedPrompt', 'All dining preferences are currently saved.')}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            {isBlocked ? (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-extrabold text-xs border border-rose-200 dark:border-rose-500/20 select-none">
-                  <Ban className="w-4 h-4 text-rose-500" />
-                  <span>{t('tokenLockedReadOnlyDock', 'Account Blocked • Meals Suspended')}</span>
-                </div>
-                {pendingUnblock?.status === 'pending' ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      feedback('tick');
-                      navigate(`/support?tab=tracker&code=${pendingUnblock.ticketNumber}`);
-                    }}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-extrabold text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{t('trackUnblockRequest', 'Track Status')} (#{pendingUnblock.ticketNumber})</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      feedback('tick');
-                      setIsUnblockModalOpen(true);
-                    }}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{t('requestUnblockBtn', 'Submit Unblock Appeal')}</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <button
-                type="submit"
-                disabled={saving || !isDirty}
-                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl transition-all transform active:scale-95 ${
-                  isDirty
-                    ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-500/25'
-                    : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-600 opacity-60 cursor-not-allowed'
-                }`}
-              >
-                <Save className="w-4 h-4" />
-                <span>{saving ? t('saving', 'Saving...') : (t('savePreferences') || 'Save Preferences')}</span>
-              </button>
-            )}
-          </div>
-        </div>
       </form>
+    </div>
+
+      {/* ================= DOCKED RIGHT PROFILE SIDEBAR (Desktop — NO blur/dimming) ================= */}
+      {isProfileOpen && (
+        <aside
+          aria-label="Student Profile"
+          className="hidden lg:block w-80 flex-shrink-0 sticky top-6 transition-all duration-300 ease-in-out"
+        >
+          <StudentProfileCard
+            student={activeStudentDoc}
+            fineDue={fineDue}
+            isBlocked={isBlocked}
+            isTomorrowLocked={isTomorrowLocked}
+            endTime={endTime}
+            onClose={() => setIsProfileOpen(false)}
+            onOpenPhotoModal={() => {
+              setIsPhotoModalOpen(true);
+            }}
+            onSafeLogout={handleSafeLogout}
+            onSafeBack={handleSafeBack}
+          />
+        </aside>
+      )}
+
+      {/* Desktop Floating Profile Re-Open Button (when collapsed) */}
+      {!isProfileOpen && (
+        <button
+          type="button"
+          onClick={() => {
+            feedback('tick');
+            setIsProfileOpen(true);
+          }}
+          className="hidden lg:flex fixed top-4 right-4 z-40 items-center gap-2 px-3 py-2 rounded-full bg-white/90 dark:bg-[#0c1412]/90 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-xl hover:scale-105 active:scale-95 text-gray-700 dark:text-gray-200 transition-all cursor-pointer font-bold text-xs"
+          title="Open My Profile"
+        >
+          <IslamicAvatar student={activeStudentDoc} size={22} />
+          <span>#{stdata.tokenNo}</span>
+          <PanelRight className="w-4 h-4 text-emerald-500" />
+        </button>
+      )}
+
+      </div>{/* End of DUAL-RAIL FLEX LAYOUT */}
 
       {/* ================= PERSISTENT FLOATING ACTION BAR (STICKY DOCK) ================= */}
       <div className="fixed bottom-2 xs:bottom-4 sm:bottom-6 inset-x-0 z-40 flex justify-center px-2 xs:px-4 pointer-events-none pb-safe">
@@ -1364,6 +1239,52 @@ function StudentPort() {
           // Success callback
         }}
       />
+
+      {/* Modal: Upload / Change Profile Photo */}
+      <PhotoUploadModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        student={activeStudentDoc}
+      />
+
+      {/* Slide-Over Drawer for Student Profile (Mobile Only < lg) */}
+      <AnimatePresence>
+        {isProfileOpen && (
+          <div data-lenis-prevent className="fixed inset-0 z-50 overflow-hidden lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfileOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 z-10 pointer-events-none">
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+                className="w-screen max-w-sm sm:max-w-md bg-transparent flex flex-col p-3 sm:p-4 overflow-y-auto pointer-events-auto"
+              >
+                <StudentProfileCard
+                  student={activeStudentDoc}
+                  fineDue={fineDue}
+                  isBlocked={isBlocked}
+                  isTomorrowLocked={isTomorrowLocked}
+                  endTime={endTime}
+                  onClose={() => setIsProfileOpen(false)}
+                  onOpenPhotoModal={() => {
+                    setIsProfileOpen(false);
+                    setIsPhotoModalOpen(true);
+                  }}
+                  onSafeLogout={handleSafeLogout}
+                  onSafeBack={handleSafeBack}
+                />
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

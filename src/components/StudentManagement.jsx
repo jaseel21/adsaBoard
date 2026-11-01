@@ -23,15 +23,20 @@ import {
   Home,
   Ban,
   Check,
+  Camera,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { getBatchTheme } from '../utils/batchTheme';
 import StudentDrawer from './StudentDrawer';
 import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
 import BlockManagementModal from './admin/BlockManagementModal';
+import PhotoModerationDrawer from './admin/PhotoModerationDrawer';
+import IslamicAvatar from './ui/IslamicAvatar';
+import { subscribePendingPhotoRequests } from '../utils/photoModerationService';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { AuthContext } from '../store/AuthContext';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
@@ -77,7 +82,16 @@ export default function StudentManagement() {
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [pendingPhotosCount, setPendingPhotosCount] = useState(0);
   const [preferences, setPreferences] = useState([]);
+
+  useEffect(() => {
+    const unsub = subscribePendingPhotoRequests((list) => {
+      setPendingPhotosCount(list.length);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsub = subscribeToPreferences((list) => {
@@ -285,7 +299,7 @@ export default function StudentManagement() {
         });
       }
 
-      const stName = student.nameEn || student.name || `Token #${student.tokenNo}`;
+      const stName = student.nameEn || student.name || `Token ${student.tokenNo}`;
       await logAuditEvent({
         category: AUDIT_CATEGORIES.TOKENS,
         action: nextStatus ? 'STUDENT_BLOCK' : 'STUDENT_UNBLOCK',
@@ -293,11 +307,11 @@ export default function StudentManagement() {
         target: {
           type: 'student',
           id: student.id,
-          label: `Token #${student.tokenNo} (${stName})`,
+          label: `Token ${student.tokenNo} (${stName})`,
           tokenNo: Number(student.tokenNo),
         },
         changes: {
-          diffSummary: `Token #${student.tokenNo} (${stName}) was ${nextStatus ? 'blocked/frozen' : 'unblocked/activated'}`,
+          diffSummary: `Token ${student.tokenNo} (${stName}) was ${nextStatus ? 'blocked/frozen' : 'unblocked/activated'}`,
           fieldsChanged: ['block'],
           before: { block: !nextStatus },
           after: { block: nextStatus },
@@ -438,6 +452,27 @@ export default function StudentManagement() {
               <span>{t('importCsvBtn') || 'Import / Export'}</span>
             </button>
           )}
+
+          <button
+            onClick={() => {
+              feedback('tick');
+              setPhotoModalOpen(true);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer border ${
+              pendingPhotosCount > 0
+                ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/40 shadow-xs animate-pulse'
+                : 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 border-gray-200/60 dark:border-white/10'
+            }`}
+            title="Review student photo submissions"
+          >
+            <Camera className="w-3.5 h-3.5 text-amber-500" />
+            <span>Photo Approvals</span>
+            {pendingPhotosCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-mono text-[10px] flex items-center justify-center font-black">
+                {pendingPhotosCount}
+              </span>
+            )}
+          </button>
 
           <button
             onClick={() => {
@@ -775,18 +810,16 @@ export default function StudentManagement() {
                           </button>
                         </td>
 
-                        {/* Token Badge */}
+                        {/* Token Badge & Avatar */}
                         <td className="py-3 px-4">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white font-extrabold text-xs shadow-sm shadow-emerald-500/20 font-mono">
-                            {st.tokenNo}
-                          </span>
+                          <IslamicAvatar student={st} size={38} showStatusRing={false} interactive />
                         </td>
 
                         {/* Student Name (EN & ML) */}
                         <td className="py-3 px-4">
                           <div className="space-y-0.5">
                             <span className="font-bold text-gray-900 dark:text-white block">
-                              {st.nameEn || st.name || `Student #${st.tokenNo}`}
+                              {st.nameEn || st.name || `Student ${st.tokenNo}`}
                             </span>
                             <div className="flex items-center gap-2">
                               {st.nameMl && (
@@ -803,9 +836,14 @@ export default function StudentManagement() {
 
                         {/* Batch */}
                         <td className="py-3 px-4">
-                          <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300">
-                            {st.batch || 'General'}
-                          </span>
+                          {(() => {
+                            const bTheme = getBatchTheme(st.batch);
+                            return (
+                              <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold ${bTheme.bg} ${bTheme.text} border ${bTheme.border}`}>
+                                {st.batch || 'General'}
+                              </span>
+                            );
+                          })()}
                         </td>
 
                         {/* Today's Meals */}
@@ -919,12 +957,10 @@ export default function StudentManagement() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-extrabold text-base shadow-md font-mono">
-                        {st.tokenNo}
-                      </div>
+                      <IslamicAvatar student={st} size={48} showStatusRing interactive />
                       <div>
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
-                          {st.nameEn || st.name || `Token #${st.tokenNo}`}
+                          {st.nameEn || st.name || `Token ${st.tokenNo}`}
                         </h3>
                         {st.nameMl && (
                           <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -950,9 +986,14 @@ export default function StudentManagement() {
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100 dark:border-white/5">
-                    <span className="px-2 py-0.5 rounded-md font-bold bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-[11px]">
-                      {st.batch || 'General'}
-                    </span>
+                    {(() => {
+                      const bTheme = getBatchTheme(st.batch);
+                      return (
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${bTheme.bg} ${bTheme.text} border ${bTheme.border}`}>
+                          {st.batch || 'General'}
+                        </span>
+                      );
+                    })()}
 
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
@@ -1086,6 +1127,12 @@ export default function StudentManagement() {
         isOpen={blockModalOpen}
         onClose={() => setBlockModalOpen(false)}
         allStudents={students}
+      />
+
+      {/* Central Committee Photo Moderation Queue */}
+      <PhotoModerationDrawer
+        isOpen={photoModalOpen}
+        onClose={() => setPhotoModalOpen(false)}
       />
     </div>
   );

@@ -33,6 +33,10 @@ import {
   ArchiveRestore,
   RefreshCw,
   Send,
+  Zap,
+  Copy,
+  Sun,
+  Flame,
 } from 'lucide-react';
 import { AuthContext } from '../../store/AuthContext';
 import { dialog } from '../../utils/dialog';
@@ -60,6 +64,9 @@ import {
   deleteDishPreset,
   createEmptyWeeklyMenu,
   DEFAULT_WEEKLY_MENU,
+  determineActiveMealSlot,
+  fillEmptyDaysFromBaseline,
+  syncWeeklyMenuFromBaseline,
 } from '../../utils/menuService';
 import {
   getTodayISTDate,
@@ -75,6 +82,9 @@ import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/a
 import MenuCalendarMatrix from './MenuCalendarMatrix';
 import MealTimingInput from './MealTimingInput';
 import RangedMenuModal from './RangedMenuModal';
+import PresetSelectorModal from './PresetSelectorModal';
+import MealItemsListEditor from './MealItemsListEditor';
+import DirectApplyPresetModal from './DirectApplyPresetModal';
 
 const CATEGORIES = [
   { key: 'Veg', label: 'Veg', badgeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/60' },
@@ -117,7 +127,13 @@ export default function UniversalMenuStudio() {
   const { user } = useContext(AuthContext);
   const { t } = useLanguage();
   const { feedback } = useFeedback();
-  const { dayShort } = useWorldTime('Asia/Kolkata');
+  const { dayShort, timeHms, todayIST: worldTodayIST } = useWorldTime('Asia/Kolkata');
+
+  // Authoritative Today and Tomorrow in IST
+  const todayStr = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
+  const tomorrowStr = useMemo(() => addDaysToDate(todayStr, 1), [todayStr]);
+  const todayDow = useMemo(() => getDayOfWeekShort(todayStr), [todayStr]);
+  const tomorrowDow = useMemo(() => getDayOfWeekShort(tomorrowStr), [tomorrowStr]);
 
   // Primary Workspace Tabs: 'calendar' | 'template' | 'live' | 'presets'
   const [studioMode, setStudioMode] = useState('calendar');
@@ -136,7 +152,6 @@ export default function UniversalMenuStudio() {
   // Scope Target Parameters
   const [selectedDayKey, setSelectedDayKey] = useState('fr');
   const [bulkDays, setBulkDays] = useState(['mo', 'tu', 'we', 'th', 'fr']);
-  const todayStr = useMemo(() => getTodayISTDate(), []);
   const [targetDate, setTargetDate] = useState(todayStr);
 
   // Metadata for Feast & Closure
@@ -161,19 +176,52 @@ export default function UniversalMenuStudio() {
     dinner: createEmptySlot(getCanonicalMealTiming('fr', 'dinner')),
   });
 
-  // Presets Management State
-  const [presetsShelfOpen, setPresetsShelfOpen] = useState(false);
+  // Preset Selector Modal when editing a meal in canvas
+  const [isPresetSelectorOpen, setIsPresetSelectorOpen] = useState(false);
+  const [presetSelectorSlot, setPresetSelectorSlot] = useState('breakfast');
+
+  // Direct Apply to Meal / Day Modal
+  const [isDirectApplyOpen, setIsDirectApplyOpen] = useState(false);
+  const [presetForDirectApply, setPresetForDirectApply] = useState(null);
+
+  // Presets Catalog Workspace State
   const [presetSearch, setPresetSearch] = useState('');
   const [activePresetSlot, setActivePresetSlot] = useState('breakfast');
-  const [editingPreset, setEditingPreset] = useState(null);
-  const [newPresetForm, setNewPresetForm] = useState({
+  const [presetCategoryFilter, setPresetCategoryFilter] = useState('all');
+
+  // Preset CRUD Modal (Create & Edit)
+  const [presetCrudModalOpen, setPresetCrudModalOpen] = useState(false);
+  const [presetCrudForm, setPresetCrudForm] = useState({
     title: '',
-    itemsStr: '',
+    items: [],
     category: 'Veg',
     timing: '',
     timeMode: 'clock',
+    slotKey: 'breakfast',
+    isEditing: false,
+    originalTitle: '',
   });
-  const [isAddingPreset, setIsAddingPreset] = useState(false);
+
+  // Real-time Today/Tomorrow active meal determination
+  const activeSlotMeta = useMemo(() => {
+    const todayData = weeklyMenu[todayDow] || defaultTemplate[todayDow];
+    return determineActiveMealSlot(timeHms, todayData);
+  }, [timeHms, weeklyMenu, defaultTemplate, todayDow]);
+
+  // Compute how many unconfigured days exist in Live Schedule
+  const unconfiguredLiveDaysCount = useMemo(() => {
+    let count = 0;
+    DAY_KEYS.forEach((k) => {
+      const d = weeklyMenu[k];
+      const hasFood =
+        Boolean(d?.breakfast?.title?.trim()) ||
+        Boolean(d?.lunch?.title?.trim()) ||
+        Boolean(d?.evening?.title?.trim()) ||
+        Boolean(d?.dinner?.title?.trim());
+      if (!hasFood) count += 1;
+    });
+    return count;
+  }, [weeklyMenu]);
 
   // Sync initial day from world clock
   useEffect(() => {
@@ -715,48 +763,125 @@ export default function UniversalMenuStudio() {
     }
   };
 
-  // Presets inline add/update
-  const handleSaveInlinePreset = async () => {
-    if (!newPresetForm.title.trim()) return;
+  // Presets CRUD & Direct Apply Handlers
+  const handleOpenCreatePreset = (slotKey = activePresetSlot) => {
+    feedback('tick');
+    const targetSlot = slotKey === 'all' ? 'breakfast' : slotKey;
+    setPresetCrudForm({
+      title: '',
+      items: [],
+      category: 'Veg',
+      timing: '',
+      timeMode: 'clock',
+      slotKey: targetSlot,
+      isEditing: false,
+      originalTitle: '',
+    });
+    setPresetCrudModalOpen(true);
+  };
+
+  const handleOpenEditPreset = (preset, slotKey = activePresetSlot) => {
+    feedback('tick');
+    const targetSlot = preset.sourceSlot || (slotKey === 'all' ? 'breakfast' : slotKey);
+    setPresetCrudForm({
+      title: preset.title || '',
+      items: Array.isArray(preset.items) ? [...preset.items] : [],
+      category: preset.category || 'Veg',
+      timing: preset.timing || '',
+      timeMode: preset.timeMode || 'clock',
+      slotKey: targetSlot,
+      isEditing: true,
+      originalTitle: preset.title || '',
+    });
+    setPresetCrudModalOpen(true);
+  };
+
+  const handleDuplicatePreset = async (preset, slotKey = activePresetSlot) => {
+    feedback('pop');
+    const targetSlot = preset.sourceSlot || (slotKey === 'all' ? 'breakfast' : slotKey);
     try {
-      const items = newPresetForm.itemsStr.split(',').map((s) => s.trim()).filter(Boolean);
-      if (editingPreset) {
-        await updateDishPreset(activePresetSlot, editingPreset.title, {
-          title: newPresetForm.title.trim(),
-          category: newPresetForm.category,
-          items,
-          timing: newPresetForm.timing || '',
-          timeMode: newPresetForm.timeMode || 'clock',
-        });
-        dialog.toast.success('Preset Updated', `"${newPresetForm.title}" updated.`);
-      } else {
-        await addDishPreset(activePresetSlot, {
-          title: newPresetForm.title.trim(),
-          category: newPresetForm.category,
-          items,
-          timing: newPresetForm.timing || '',
-          timeMode: newPresetForm.timeMode || 'clock',
-        });
-        dialog.toast.success('Preset Created', `"${newPresetForm.title}" saved.`);
-      }
-      setNewPresetForm({ title: '', itemsStr: '', category: 'Veg', timing: '', timeMode: 'clock' });
-      setEditingPreset(null);
-      setIsAddingPreset(false);
+      const clonedTitle = `${preset.title} (Copy)`;
+      await addDishPreset(targetSlot, {
+        title: clonedTitle,
+        category: preset.category || 'Veg',
+        items: Array.isArray(preset.items) ? [...preset.items] : [],
+        timing: preset.timing || '',
+        timeMode: preset.timeMode || 'clock',
+      });
+      dialog.toast.success('Preset Cloned', `Created duplicate: "${clonedTitle}" in ${targetSlot}.`);
     } catch (err) {
-      dialog.alert({ type: 'error', title: 'Preset Error', message: err.message });
+      dialog.alert({ type: 'error', title: 'Clone Failed', message: err.message });
     }
   };
 
+  const handleSavePresetModal = async () => {
+    const trimmedTitle = presetCrudForm.title.trim();
+    if (!trimmedTitle) {
+      dialog.alert({ type: 'warning', title: 'Title Required', message: 'Please enter a title for the dish preset.' });
+      return;
+    }
+
+    try {
+      feedback('pop');
+      const payload = {
+        title: trimmedTitle,
+        category: presetCrudForm.category || 'Veg',
+        items: presetCrudForm.items.length > 0 ? presetCrudForm.items : [trimmedTitle],
+        timing: presetCrudForm.timing || '',
+        timeMode: presetCrudForm.timeMode || 'clock',
+      };
+
+      if (presetCrudForm.isEditing) {
+        await updateDishPreset(presetCrudForm.slotKey, presetCrudForm.originalTitle, payload);
+        dialog.toast.success('Preset Updated', `"${trimmedTitle}" saved.`);
+      } else {
+        await addDishPreset(presetCrudForm.slotKey, payload);
+        dialog.toast.success('Preset Created', `"${trimmedTitle}" added to ${presetCrudForm.slotKey} presets.`);
+      }
+
+      setPresetCrudModalOpen(false);
+    } catch (err) {
+      console.error('Save preset error:', err);
+      dialog.alert({ type: 'error', title: 'Save Failed', message: err.message });
+    }
+  };
+
+  // Filtered presets catalog list for the Presets Workspace tab
   const currentPresetsList = useMemo(() => {
-    const list = Array.isArray(presetsMap[activePresetSlot]) ? presetsMap[activePresetSlot] : [];
-    if (!presetSearch.trim()) return list;
-    const q = presetSearch.toLowerCase();
-    return list.filter((p) => p.title?.toLowerCase().includes(q) || p.items?.some((it) => it.toLowerCase().includes(q)));
-  }, [presetsMap, activePresetSlot, presetSearch]);
+    let list = [];
+    if (activePresetSlot === 'all') {
+      Object.keys(presetsMap).forEach((sKey) => {
+        const slotItems = Array.isArray(presetsMap[sKey]) ? presetsMap[sKey] : [];
+        slotItems.forEach((p) => list.push({ ...p, sourceSlot: sKey }));
+      });
+    } else {
+      const slotItems = Array.isArray(presetsMap[activePresetSlot]) ? presetsMap[activePresetSlot] : [];
+      list = slotItems.map((p) => ({ ...p, sourceSlot: activePresetSlot }));
+    }
+
+    return list.filter((p) => {
+      if (presetCategoryFilter !== 'all' && p.category !== presetCategoryFilter) {
+        return false;
+      }
+      if (!presetSearch.trim()) return true;
+      const q = presetSearch.toLowerCase();
+      const matchTitle = p.title?.toLowerCase().includes(q);
+      const matchItems = Array.isArray(p.items) && p.items.some((it) => it.toLowerCase().includes(q));
+      return matchTitle || matchItems;
+    });
+  }, [presetsMap, activePresetSlot, presetCategoryFilter, presetSearch]);
+
+  const totalCatalogPresetsCount = useMemo(() => {
+    let total = 0;
+    Object.values(presetsMap).forEach((arr) => {
+      if (Array.isArray(arr)) total += arr.length;
+    });
+    return total;
+  }, [presetsMap]);
 
   return (
     <div className="min-h-screen w-full bg-[#f8faf8] dark:bg-[#080d0b] text-gray-900 dark:text-gray-100 py-6 px-3 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-5">
 
         {/* 1. Header Navigation Bar */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl">
@@ -809,13 +934,95 @@ export default function UniversalMenuStudio() {
           </div>
         </div>
 
+        {/* 1.5 Today-Tomorrow Active Serving Ribbon */}
+        <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-purple-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-purple-950/30 border border-emerald-500/20 dark:border-emerald-500/30 backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
+                activeSlotMeta?.isTomorrow
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'bg-emerald-600 text-white shadow-xs'
+              }`}
+            >
+              {activeSlotMeta?.isTomorrow ? <Moon className="w-4 h-4" /> : <Utensils className="w-4 h-4" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                  {activeSlotMeta?.isTomorrow ? "Tomorrow's Schedule Active" : "Serving Today"}
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                    activeSlotMeta?.isTomorrow
+                      ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800'
+                      : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                  }`}
+                >
+                  {activeSlotMeta?.statusLabel}
+                </span>
+                <span className="text-[10px] font-mono text-gray-400">
+                  IST {timeHms || '12:00:00'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
+                {activeSlotMeta?.isTomorrow
+                  ? "Evening cutoff passed (18:00 IST). Canteen is preparing tomorrow's meal roster."
+                  : `Currently active serving window: ${activeSlotMeta?.slot?.toUpperCase()} on ${DAY_NAMES[todayDow]}.`}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Focus Steppers */}
+          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setSelectedDayKey(todayDow);
+                setTargetDate(todayStr);
+                setEditingCalendarDate(null);
+                setStudioMode('live');
+                dialog.toast.info('Focus: Today', `Switched to ${DAY_NAMES[todayDow]}'s live supply.`);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 border ${
+                selectedDayKey === todayDow && studioMode === 'live'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                  : 'bg-white/80 dark:bg-white/5 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50'
+              }`}
+            >
+              <Zap className="w-3 h-3 text-emerald-400" />
+              <span>Focus Today ({DAY_SHORTS[todayDow]})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                setSelectedDayKey(tomorrowDow);
+                setTargetDate(tomorrowStr);
+                setEditingCalendarDate(null);
+                setStudioMode('live');
+                dialog.toast.info('Focus: Tomorrow', `Switched to ${DAY_NAMES[tomorrowDow]}'s live supply.`);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 border ${
+                selectedDayKey === tomorrowDow && studioMode === 'live'
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                  : 'bg-white/80 dark:bg-white/5 border-purple-200 dark:border-purple-800/40 text-purple-800 dark:text-purple-300 hover:bg-purple-50'
+              }`}
+            >
+              <Moon className="w-3 h-3 text-purple-400" />
+              <span>Focus Tomorrow ({DAY_SHORTS[tomorrowDow]})</span>
+            </button>
+          </div>
+        </div>
+
         {/* 2. Workspace Navigation Tabs */}
         <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/70 dark:bg-[#0f1715]/70 border border-gray-200/80 dark:border-white/10 backdrop-blur-md overflow-x-auto">
           {[
             { id: 'calendar', label: 'Dynamic Calendar', icon: Calendar, badge: `${Object.keys(overrides).length} Feasts` },
             { id: 'template', label: 'Baseline Routine Template', icon: Sliders, badge: 'Standard' },
             { id: 'live', label: 'Live Supply Schedule', icon: Clock, badge: 'Active Week' },
-            { id: 'presets', label: 'Dish Presets Library', icon: Bookmark, badge: 'Catalog' },
+            { id: 'presets', label: 'Dish Presets Library', icon: Bookmark, badge: `${totalCatalogPresetsCount} Catalog` },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = studioMode === tab.id && !editingCalendarDate;
@@ -875,89 +1082,263 @@ export default function UniversalMenuStudio() {
           />
         )}
 
-        {/* 4. PRESETS WORKSPACE */}
+        {/* 4. PRESETS WORKSPACE (COMPLETE CRUD & DIRECT APPLY) */}
         {studioMode === 'presets' && !editingCalendarDate && (
-          <div className="p-6 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-5">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl space-y-5">
+            {/* Presets Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/5">
               <div>
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
                   <Bookmark className="w-4 h-4 text-purple-600" />
-                  <span>Dish Presets Catalog</span>
+                  <span>Dish Presets Catalog & Library</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    {currentPresetsList.length} Items
+                  </span>
                 </h3>
-                <p className="text-xs text-gray-500">
-                  Reusable meal dishes and Malabar Dars specialties for 1-click autocomplete.
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Curated traditional Malabar Dars recipes and campus staples. Create, edit, clone, or apply directly across days.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => setIsAddingPreset(true)}
-                className="px-3.5 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-purple-700 transition-colors"
+                onClick={() => handleOpenCreatePreset(activePresetSlot)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Create New Preset</span>
+                <span>+ Create New Preset</span>
               </button>
             </div>
 
-            {/* Meal Slot Tabs for Presets */}
-            <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 pb-2">
-              {SLOT_CONFIGS.map((s) => (
+            {/* Filter Deck: Search Input + Slot Tabs + Category Pills */}
+            <div className="space-y-3 p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={presetSearch}
+                  onChange={(e) => setPresetSearch(e.target.value)}
+                  placeholder="Search preset by title (e.g. Porotta, Dum Biriyani) or dish ingredients..."
+                  className="w-full pl-10 pr-4 py-2 text-xs font-medium rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121c19] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                {presetSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setPresetSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Meal Slot Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase pr-1 shrink-0">Slot:</span>
                 <button
-                  key={s.key}
                   type="button"
-                  onClick={() => setActivePresetSlot(s.key)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    activePresetSlot === s.key
-                      ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-black'
-                      : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                  onClick={() => {
+                    feedback('tick');
+                    setActivePresetSlot('all');
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    activePresetSlot === 'all'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 border border-gray-200/60 dark:border-white/5'
                   }`}
                 >
-                  {s.label} ({Array.isArray(presetsMap[s.key]) ? presetsMap[s.key].length : 0})
+                  All Slots ({totalCatalogPresetsCount})
                 </button>
-              ))}
+                {SLOT_CONFIGS.map((s) => {
+                  const Icon = s.icon;
+                  const count = Array.isArray(presetsMap[s.key]) ? presetsMap[s.key].length : 0;
+                  const isSelected = activePresetSlot === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        setActivePresetSlot(s.key);
+                      }}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 border border-gray-200/60 dark:border-white/5'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>{s.label}</span>
+                      <span className="text-[10px] opacity-75">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <span className="text-[10px] font-bold text-gray-400 uppercase pr-1 shrink-0">Dietary:</span>
+                {[{ key: 'all', label: 'All Diets' }, ...CATEGORIES].map((cat) => {
+                  const isSelected = presetCategoryFilter === cat.key;
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => {
+                        feedback('tick');
+                        setPresetCategoryFilter(cat.key);
+                      }}
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap border ${
+                        isSelected
+                          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-transparent shadow-xs'
+                          : 'bg-white dark:bg-white/5 text-gray-500 border-gray-200/80 dark:border-white/5 hover:text-gray-800'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Presets Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {currentPresetsList.map((preset, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] space-y-2 hover:border-purple-300 transition-colors"
+            {/* Presets Cards Grid */}
+            {currentPresetsList.length === 0 ? (
+              <div className="py-12 text-center space-y-2">
+                <Bookmark className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600" />
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                  No presets found in this filter
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPresetSearch('');
+                    setPresetCategoryFilter('all');
+                    setActivePresetSlot('all');
+                  }}
+                  className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-extrabold text-sm text-gray-900 dark:text-white">
-                      {preset.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const confirmed = await dialog.confirm({
-                          title: `Delete Preset?`,
-                          message: `Remove "${preset.title}" from ${activePresetSlot} presets?`,
-                          confirmColor: 'rose',
-                        });
-                        if (confirmed) {
-                          await deleteDishPreset(activePresetSlot, preset.title);
-                          dialog.toast.info('Deleted', 'Preset removed.');
-                        }
-                      }}
-                      className="text-gray-400 hover:text-rose-500"
+                  Reset all filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {currentPresetsList.map((preset, idx) => {
+                  const slotForPreset = preset.sourceSlot || activePresetSlot;
+                  return (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/70 dark:bg-[#121c19]/70 hover:border-purple-300 dark:hover:border-purple-700 transition-all flex flex-col justify-between space-y-3 group shadow-xs hover:shadow-md"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  {Array.isArray(preset.items) && (
-                    <div className="flex flex-wrap gap-1">
-                      {preset.items.map((it, i) => (
-                        <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400">
-                          {it}
-                        </span>
-                      ))}
+                      <div className="space-y-2">
+                        {/* Card Header: Title + Category */}
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-black text-sm text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                            {preset.title}
+                          </span>
+
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${
+                              preset.category === 'Veg'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300'
+                                : preset.category === 'Non-Veg'
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300'
+                                : preset.category === 'Egg'
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300'
+                                : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300'
+                            }`}
+                          >
+                            {preset.category || 'Veg'}
+                          </span>
+                        </div>
+
+                        {/* Timing */}
+                        {preset.timing && (
+                          <div className="flex items-center gap-1 text-[10px] text-gray-400 font-mono">
+                            <Clock className="w-2.5 h-2.5 text-purple-500" />
+                            <span>{preset.timing}</span>
+                          </div>
+                        )}
+
+                        {/* Full Items Chips */}
+                        {Array.isArray(preset.items) && preset.items.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {preset.items.map((it, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 text-[11px] font-medium"
+                              >
+                                {it}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Card Action Deck: Direct Apply + Edit + Duplicate + Delete */}
+                      <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-1.5 flex-wrap">
+                        {/* Direct Apply Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            setPresetForDirectApply({ ...preset, sourceSlot: slotForPreset });
+                            setIsDirectApplyOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-colors"
+                          title="Apply this preset directly to any day, meal, or calendar date"
+                        >
+                          <Zap className="w-3 h-3" />
+                          <span>Direct Apply</span>
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {/* Edit Preset */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditPreset(preset, slotForPreset)}
+                            className="p-1.5 rounded-lg border border-gray-200 dark:border-white/10 hover:border-purple-300 text-gray-500 hover:text-purple-600 transition-colors"
+                            title="Edit Preset"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Clone Preset */}
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicatePreset(preset, slotForPreset)}
+                            className="p-1.5 rounded-lg border border-gray-200 dark:border-white/10 hover:border-blue-300 text-gray-500 hover:text-blue-600 transition-colors"
+                            title="Clone / Duplicate Preset"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete Preset */}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const confirmed = await dialog.confirm({
+                                title: `Delete Preset?`,
+                                message: `Remove "${preset.title}" from ${slotForPreset} presets?`,
+                                confirmColor: 'rose',
+                              });
+                              if (confirmed) {
+                                await deleteDishPreset(slotForPreset, preset.title);
+                                dialog.toast.info('Deleted', 'Preset removed.');
+                              }
+                            }}
+                            className="p-1.5 rounded-lg border border-gray-200 dark:border-white/10 hover:border-rose-300 text-gray-400 hover:text-rose-500 transition-colors"
+                            title="Delete Preset"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1037,6 +1418,42 @@ export default function UniversalMenuStudio() {
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset from Baseline Template</span>
+                </button>
+              </div>
+            )}
+
+            {/* Unconfigured Days Warning Banner in Live Schedule */}
+            {unconfiguredLiveDaysCount > 0 && studioMode === 'live' && !editingCalendarDate && (
+              <div className="p-4 rounded-3xl bg-amber-500/10 border border-amber-300 dark:border-amber-700/60 backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200">
+                      {unconfiguredLiveDaysCount} Day(s) in Live Schedule are currently blank
+                    </h4>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                      Auto-fill empty days from your Baseline Template so students and staff always see scheduled meals.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      feedback('pop');
+                      setSaving(true);
+                      const { filledCount } = await fillEmptyDaysFromBaseline(user?.email || 'admin');
+                      dialog.toast.success('Baseline Synced', `Populated ${filledCount} blank meal slots from baseline template.`);
+                    } catch (err) {
+                      dialog.alert({ type: 'error', title: 'Fill Failed', message: err.message });
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Auto-Fill from Baseline</span>
                 </button>
               </div>
             )}
@@ -1152,7 +1569,7 @@ export default function UniversalMenuStudio() {
                 const isSpecial = Boolean(current.isSpecialMeal);
                 const isArchived = Boolean(current.isArchived || current.slotStatus === 'leave');
                 const Icon = slot.icon;
-                const slotPresets = Array.isArray(presetsMap[slot.key]) ? presetsMap[slot.key].slice(0, 4) : [];
+                const slotPresets = Array.isArray(presetsMap[slot.key]) ? presetsMap[slot.key] : [];
 
                 return (
                   <div
@@ -1365,49 +1782,18 @@ export default function UniversalMenuStudio() {
                           </div>
                         </div>
 
-                        {/* Dish Ingredients / Items Tags */}
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-bold text-gray-400 block uppercase">
-                            Dishes & Ingredients
-                          </span>
-                          <div className="flex flex-wrap items-center gap-1.5 min-h-[32px] p-1.5 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200/60 dark:border-white/5">
-                            {Array.isArray(current.items) &&
-                              current.items.map((it, idx) => (
-                                <span
-                                  key={idx}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-[#192420] text-gray-800 dark:text-gray-200 text-[11px] font-medium border border-gray-200 dark:border-white/10 shadow-xs"
-                                >
-                                  <span>{it}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveItem(slot.key, idx)}
-                                    className="hover:text-rose-500"
-                                  >
-                                    <X className="w-2.5 h-2.5" />
-                                  </button>
-                                </span>
-                              ))}
+                        {/* Dishes & Accompaniments List Editor */}
+                        <MealItemsListEditor
+                          items={current.items || []}
+                          onChange={(newItems) => handleSlotChange(slot.key, 'items', newItems)}
+                          slotKey={slot.key}
+                        />
 
-                            <input
-                              type="text"
-                              placeholder="+ add item (hit Enter)"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  handleAddItem(slot.key, e.target.value);
-                                  e.target.value = '';
-                                }
-                              }}
-                              className="px-2 py-0.5 text-xs bg-transparent focus:outline-none flex-1 min-w-[120px] text-gray-900 dark:text-white"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Quick Presets for this slot */}
-                        {slotPresets.length > 0 && (
-                          <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center gap-1.5">
+                        {/* Quick Presets & Full Preset Catalog Browser for this slot */}
+                        <div className="pt-2.5 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-[10px] font-bold text-gray-400">Quick Fill:</span>
-                            {slotPresets.map((p, idx) => (
+                            {slotPresets.slice(0, 3).map((p, idx) => (
                               <button
                                 key={idx}
                                 type="button"
@@ -1418,7 +1804,20 @@ export default function UniversalMenuStudio() {
                               </button>
                             ))}
                           </div>
-                        )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              feedback('tick');
+                              setPresetSelectorSlot(slot.key);
+                              setIsPresetSelectorOpen(true);
+                            }}
+                            className="px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] shadow-xs flex items-center gap-1 transition-colors"
+                          >
+                            <Bookmark className="w-3 h-3" />
+                            <span>Browse All ({slotPresets.length})</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1473,6 +1872,178 @@ export default function UniversalMenuStudio() {
           weeklyMenu={weeklyMenu}
           userEmail={user?.email || 'admin'}
         />
+
+        {/* Preset Selector Popover / Modal (When Editing a Meal Slot in Canvas) */}
+        <PresetSelectorModal
+          isOpen={isPresetSelectorOpen}
+          onClose={() => setIsPresetSelectorOpen(false)}
+          presetsMap={presetsMap}
+          slotKey={presetSelectorSlot}
+          onSelectPreset={(preset) => handleApplyPreset(presetSelectorSlot, preset)}
+        />
+
+        {/* Direct Apply to Any Meal / Day Modal (From Presets Library) */}
+        <DirectApplyPresetModal
+          isOpen={isDirectApplyOpen}
+          onClose={() => {
+            setIsDirectApplyOpen(false);
+            setPresetForDirectApply(null);
+          }}
+          preset={presetForDirectApply}
+          userEmail={user?.email || 'admin'}
+        />
+
+        {/* Preset CRUD Modal (Create / Edit Preset in Catalog) */}
+        <AnimatePresence>
+          {presetCrudModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="relative w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-[#0f1715] border border-gray-200/80 dark:border-white/10 shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-300 flex items-center justify-center">
+                      <Bookmark className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-gray-900 dark:text-white">
+                        {presetCrudForm.isEditing ? 'Edit Dish Preset' : 'Create New Dish Preset'}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {presetCrudForm.isEditing ? `Modifying "${presetCrudForm.originalTitle}"` : 'Add a reusable delicacy to your catalog'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPresetCrudModalOpen(false)}
+                    className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-gray-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Form Body */}
+                <div className="space-y-3.5 overflow-y-auto max-h-[60vh] pr-1">
+                  {/* Title */}
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                      Preset Dish Title
+                    </label>
+                    <input
+                      type="text"
+                      value={presetCrudForm.title}
+                      onChange={(e) => setPresetCrudForm((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="e.g. Porotta & Beef Roast / Special Dum Biriyani"
+                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  {/* Target Slot Selector */}
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                      Meal Slot Assignment
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {SLOT_CONFIGS.map((slot) => {
+                        const Icon = slot.icon;
+                        const isSelected = presetCrudForm.slotKey === slot.key;
+                        return (
+                          <button
+                            key={slot.key}
+                            type="button"
+                            onClick={() => setPresetCrudForm((prev) => ({ ...prev, slotKey: slot.key }))}
+                            className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              isSelected
+                                ? 'border-purple-600 bg-purple-600 text-white shadow-xs'
+                                : 'border-gray-200/80 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                            <span>{slot.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Dietary Classification */}
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                      Dietary Classification
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CATEGORIES.map((cat) => {
+                        const isSelected = presetCrudForm.category === cat.key;
+                        return (
+                          <button
+                            key={cat.key}
+                            type="button"
+                            onClick={() => setPresetCrudForm((prev) => ({ ...prev, category: cat.key }))}
+                            className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all ${
+                              isSelected
+                                ? `${cat.badgeClass} ring-2 ring-purple-500/30 scale-105`
+                                : 'border-gray-200/80 dark:border-white/10 text-gray-500 hover:text-gray-800'
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Serving Timing (Optional) */}
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                      Serving Timing (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={presetCrudForm.timing}
+                      onChange={(e) => setPresetCrudForm((prev) => ({ ...prev, timing: e.target.value }))}
+                      placeholder="e.g. 07:30 AM - 08:45 AM or After Asr"
+                      className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#121c19] text-xs font-bold text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Items List Editor */}
+                  <div>
+                    <MealItemsListEditor
+                      items={presetCrudForm.items}
+                      onChange={(newItems) => setPresetCrudForm((prev) => ({ ...prev, items: newItems }))}
+                      slotKey={presetCrudForm.slotKey}
+                    />
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setPresetCrudModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSavePresetModal}
+                    className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-md shadow-purple-500/20 flex items-center gap-1.5 transition-all"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{presetCrudForm.isEditing ? 'Update Preset' : 'Save Preset'}</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
       </div>
     </div>

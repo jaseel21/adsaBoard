@@ -96,10 +96,10 @@ export default function ApexFloatingDock({
           }`}
           title={
             activeSurface === 'matrix'
-              ? 'Switch to Data Studio (Spreadsheet CRUD)'
+              ? 'Switch to Table View'
               : activeSurface === 'studio'
-              ? 'Switch to Operations Radar'
-              : 'Switch to Tactical Matrix'
+              ? 'Switch to Summary View'
+              : 'Switch to Grid View'
           }
         >
           {activeSurface === 'studio' ? (

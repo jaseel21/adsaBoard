@@ -48,7 +48,7 @@ export default function StudentCohortInsights({
               >
                 <div className="flex items-center gap-2.5">
                   <span className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-700 dark:text-rose-300 font-mono font-bold flex items-center justify-center text-[11px]">
-                    #{student.tokenNo}
+                    {student.tokenNo}
                   </span>
                   <div>
                     <div className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
@@ -56,7 +56,7 @@ export default function StudentCohortInsights({
                       <span className="text-[10px] text-gray-400">({student.batch})</span>
                     </div>
                     <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                      Room: {student.room} • Missed {student.consecutiveMissed} meals
+                      {student.batch ? `${student.batch} • ` : ''}Missed {student.consecutiveMissed} consecutive meals
                     </div>
                   </div>
                 </div>

@@ -97,6 +97,13 @@ const ROUTES = [
     image: `${BASE_DOMAIN}/og-preview.png`,
     url: `${BASE_DOMAIN}/settings`,
   },
+  {
+    path: 'about',
+    title: 'About Alathurpadi Dars & ADSA • Sacred Heritage & Digital T-Board',
+    description: 'Historic Alathurpadi Dars mosque-college legacy, Mudarrisun scholars, ADSA Central Committee, Canteen Wing mess operations, and T-Board food technology.',
+    image: `${BASE_DOMAIN}/og-preview.png`,
+    url: `${BASE_DOMAIN}/about`,
+  },
 ];
 
 console.log(`🚀 Prerendering route-specific Social HTML pages for ${BASE_DOMAIN}...`);

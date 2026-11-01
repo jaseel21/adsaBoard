@@ -4,7 +4,7 @@
  * Provides offline caching, background resilience, app shell caching, and push notification handling.
  */
 
-const CACHE_VERSION = 'v2.0.1';
+const CACHE_VERSION = 'v2.0.2';
 const STATIC_CACHE = `adsa-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `adsa-runtime-${CACHE_VERSION}`;
 const ASSET_CACHE = `adsa-assets-${CACHE_VERSION}`;
@@ -79,29 +79,41 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy A: Page Navigations (HTML) -> Network First with Cache Fallback to '/' or offline.html
+  // Strategy A: Page Navigations (HTML) -> Network First with fast 2500ms timeout, then Cache Fallback
   if (request.mode === 'navigate') {
-    event.respondWith(
+    const fetchWithTimeout = new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Navigation fetch timeout'));
+      }, 2500);
+
       fetch(request)
         .then((networkResponse) => {
+          clearTimeout(timeoutId);
           if (networkResponse && networkResponse.status === 200) {
             const responseClone = networkResponse.clone();
             caches.open(RUNTIME_CACHE).then((cache) => {
               cache.put(request, responseClone);
             });
           }
-          return networkResponse;
+          resolve(networkResponse);
         })
-        .catch(() => {
-          // Fallback to cached route, then root index.html, then offline sanctuary page
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) return cachedResponse;
-            return caches.match('/').then((rootResponse) => {
-              if (rootResponse) return rootResponse;
-              return caches.match('/offline.html');
-            });
+        .catch((err) => {
+          clearTimeout(timeoutId);
+          reject(err);
+        });
+    });
+
+    event.respondWith(
+      fetchWithTimeout.catch(() => {
+        // Fallback to cached route, then root index.html, then offline sanctuary page
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          return caches.match('/').then((rootResponse) => {
+            if (rootResponse) return rootResponse;
+            return caches.match('/offline.html');
           });
-        })
+        });
+      })
     );
     return;
   }

@@ -98,7 +98,7 @@ export default function SupportDataMatrix({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by Code, Token #, Name, or Subject..."
+            placeholder="Search by Code, Token, Name, or Subject..."
             className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           />
         </div>

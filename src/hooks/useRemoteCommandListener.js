@@ -6,6 +6,7 @@ import { DataOfOne } from '../store/StudentData';
 import { soundEngine } from '../utils/soundEffects';
 import { hapticEngine } from '../utils/haptics';
 import { dialog } from '../utils/dialog';
+import { setRemoteIdlePolicy } from '../utils/deviceProfileService';
 
 /**
  * useRemoteCommandListener
@@ -151,6 +152,22 @@ export function useRemoteCommandListener({ sessionId, identity }) {
                   setTimeout(() => {
                     window.location.reload();
                   }, 1500);
+                  break;
+                }
+
+                case 'SET_IDLE_POLICY': {
+                  soundEngine.playSoftChime();
+                  hapticEngine.mediumTick();
+                  setRemoteIdlePolicy({
+                    persona: cmd.payload?.persona,
+                    timeoutMs: cmd.payload?.timeoutMs,
+                    warningMs: cmd.payload?.warningMs,
+                    reason: cmd.payload?.reason,
+                  });
+                  dialog.toast.info(
+                    'Kiosk Policy Updated',
+                    cmd.payload?.reason || 'Administrator applied a new idle guard policy.'
+                  );
                   break;
                 }
 

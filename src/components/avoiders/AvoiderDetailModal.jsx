@@ -5,7 +5,7 @@ import {
   User,
   ShieldCheck,
   Phone,
-  DoorClosed,
+  Mail,
   Copy,
   Check,
   UtensilsCrossed,
@@ -16,7 +16,9 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
+import { getBatchTheme } from '../../utils/batchTheme';
 import { getCategoryIcon } from './dietaryIcons';
+import IslamicAvatar from '../ui/IslamicAvatar';
 
 export default function AvoiderDetailModal({
   isOpen,
@@ -33,12 +35,13 @@ export default function AvoiderDetailModal({
 
   if (!isOpen || !student) return null;
 
-  const stNameEn = student.nameEn || student.name || `Token #${student.tokenNo}`;
+  const stNameEn = student.nameEn || student.name || `Token ${student.tokenNo}`;
   const stNameMl = student.nameMl || '';
   const tokenNo = student.tokenNo;
   const batch = student.batch || 'General';
-  const room = student.room || student.roomNo || '-';
+  const batchTheme = getBatchTheme(batch);
   const phone = student.phone || student.mobile || '';
+  const email = student.email || '';
 
   // Calculate avoided items
   const avoidedPrefs = preferences.filter(
@@ -48,7 +51,7 @@ export default function AvoiderDetailModal({
 
   const handleCopyToken = () => {
     feedback('tick');
-    navigator.clipboard.writeText(`#${tokenNo}`);
+    navigator.clipboard.writeText(String(tokenNo));
     setCopiedToken(true);
     setTimeout(() => setCopiedToken(false), 1800);
   };
@@ -58,7 +61,7 @@ export default function AvoiderDetailModal({
     const avoidedStr = hasAvoidance
       ? avoidedPrefs.map((p) => p.labelEn).join(', ')
       : 'None (Standard Full Diet)';
-    const text = `ADSA Mess • Token #${tokenNo} (${stNameEn}) | Batch: ${batch} | Avoids: ${avoidedStr}`;
+    const text = `ADSA Mess • Token ${tokenNo} (${stNameEn}) | Batch: ${batch} | Avoids: ${avoidedStr}`;
     navigator.clipboard.writeText(text);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 1800);
@@ -106,10 +109,7 @@ export default function AvoiderDetailModal({
 
             <div className="flex items-start gap-3.5">
               {/* Token Number Avatar */}
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex flex-col items-center justify-center font-mono shadow-md shadow-emerald-500/20 shrink-0">
-                <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">Token</span>
-                <span className="text-xl font-extrabold leading-none">#{tokenNo}</span>
-              </div>
+              <IslamicAvatar student={student} size={56} showStatusRing interactive />
 
               {/* Student Metadata */}
               <div className="min-w-0 flex-1">
@@ -127,15 +127,21 @@ export default function AvoiderDetailModal({
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{stNameMl}</p>
                 )}
 
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 text-xs font-semibold">
-                    <Layers className="w-3 h-3 text-emerald-500" />
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold ${batchTheme.bg} ${batchTheme.text} border ${batchTheme.border}`}>
+                    <Layers className="w-3 h-3 opacity-80" />
                     {batch}
                   </span>
-                  {room !== '-' && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-500 text-xs font-medium">
-                      <DoorClosed className="w-3 h-3 text-gray-400" />
-                      {room}
+                  {phone && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-medium">
+                      <Phone className="w-3 h-3 text-emerald-500" />
+                      {phone}
+                    </span>
+                  )}
+                  {email && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-medium truncate max-w-[150px]">
+                      <Mail className="w-3 h-3 text-teal-500" />
+                      {email}
                     </span>
                   )}
                 </div>
@@ -227,7 +233,7 @@ export default function AvoiderDetailModal({
                 title="Copy Token Number"
               >
                 {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedToken ? 'Copied' : `#${tokenNo}`}</span>
+                <span>{copiedToken ? 'Copied' : `Token ${tokenNo}`}</span>
               </button>
 
               <button

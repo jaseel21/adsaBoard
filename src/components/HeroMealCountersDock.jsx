@@ -16,11 +16,16 @@ import {
   Layers,
 } from 'lucide-react';
 import MealFlipCard from './MealFlipCard';
+import MealSupplyNoticeCard from './board/MealSupplyNoticeCard';
 import {
   getEffectiveStudentMealStatus,
   addDaysToDate,
   getDefaultBoardDayOffset,
 } from '../utils/studentExceptionService';
+import {
+  subscribeToBoardServiceSchedule,
+  getMealSupplyStatus,
+} from '../utils/boardServiceSchedule';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 
@@ -45,8 +50,17 @@ export default function HeroMealCountersDock({
   windowOpenTime = '14:00',
   defaultOffset = null,
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
+
+  const [boardServiceSchedule, setBoardServiceSchedule] = React.useState({});
+
+  React.useEffect(() => {
+    const unsub = subscribeToBoardServiceSchedule((schedule) => {
+      setBoardServiceSchedule(schedule || {});
+    });
+    return () => unsub();
+  }, []);
 
   const effectiveSwitchTime = boardSwitchTime || windowOpenTime || '14:00';
 
@@ -97,6 +111,17 @@ export default function HeroMealCountersDock({
     return targetDateIST;
   }, [targetDateIST]);
 
+  const bfSupply = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, 'breakfast');
+  }, [boardServiceSchedule, targetDateIST]);
+
+  const lunchSupply = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, 'lunch');
+  }, [boardServiceSchedule, targetDateIST]);
+
+  const isBfSupplying = bfSupply.isSupplying !== false;
+  const isLunchSupplying = lunchSupply.isSupplying !== false;
+
   // Compute Active & Rejected meal counts and token lists
   const metrics = useMemo(() => {
     if (!studentsList || studentsList.length === 0) {
@@ -108,6 +133,10 @@ export default function HeroMealCountersDock({
         lunchActive: 0,
         lunchRejected: 0,
         lunchRejectedTokens: [],
+        isBfSupplying,
+        isLunchSupplying,
+        bfSupply,
+        lunchSupply,
       };
     }
 
@@ -137,16 +166,23 @@ export default function HeroMealCountersDock({
     bRejected.sort((a, b) => Number(a) - Number(b));
     lRejected.sort((a, b) => Number(a) - Number(b));
 
+    const effectiveBActive = isBfSupplying ? bActive : 0;
+    const effectiveLActive = isLunchSupplying ? lActive : 0;
+
     return {
       totalStudents: studentsList.length,
-      breakfastActive: bActive,
-      breakfastRejected: bRejected.length,
-      breakfastRejectedTokens: bRejected,
-      lunchActive: lActive,
-      lunchRejected: lRejected.length,
-      lunchRejectedTokens: lRejected,
+      breakfastActive: effectiveBActive,
+      breakfastRejected: isBfSupplying ? bRejected.length : studentsList.length,
+      breakfastRejectedTokens: isBfSupplying ? bRejected : studentsList.map((s) => s.tokenNo !== undefined ? s.tokenNo : s.id),
+      lunchActive: effectiveLActive,
+      lunchRejected: isLunchSupplying ? lRejected.length : studentsList.length,
+      lunchRejectedTokens: isLunchSupplying ? lRejected : studentsList.map((s) => s.tokenNo !== undefined ? s.tokenNo : s.id),
+      isBfSupplying,
+      isLunchSupplying,
+      bfSupply,
+      lunchSupply,
     };
-  }, [studentsList, targetDateIST, targetDayKey]);
+  }, [studentsList, targetDateIST, targetDayKey, isBfSupplying, isLunchSupplying, bfSupply, lunchSupply]);
 
   // Handler for Day Switcher with haptic feedback
   const handleSelectDay = (offset) => {
@@ -244,69 +280,95 @@ export default function HeroMealCountersDock({
             {targetDateFormatted || targetDateIST}
           </span>
 
-          <button
-            type="button"
-            onClick={handleFlipBoth}
-            className="px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-[11px] font-bold border border-white/20 transition-all flex items-center gap-1 cursor-pointer"
-            title={t('flipCardsHint', 'Click to flip cards between active and rejected counts')}
-          >
-            <RotateCw className="w-3 h-3 text-emerald-300" />
-            <span>
-              {isBreakfastFlipped || isLunchFlipped
-                ? t('unflipBothCards', 'Reset')
-                : t('flipBothCards', 'Flip Both')}
+          {isBfSupplying || isLunchSupplying ? (
+            <button
+              type="button"
+              onClick={handleFlipBoth}
+              className="px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-[11px] font-bold border border-white/20 transition-all flex items-center gap-1 cursor-pointer"
+              title={t('flipCardsHint', 'Click to flip cards between active and rejected counts')}
+            >
+              <RotateCw className="w-3 h-3 text-emerald-300" />
+              <span>
+                {isBreakfastFlipped || isLunchFlipped
+                  ? t('unflipBothCards', 'Reset')
+                  : t('flipBothCards', 'Flip Both')}
+              </span>
+            </button>
+          ) : (
+            <span className="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-200 text-[11px] font-bold border border-rose-400/30">
+              {lang === 'ml' ? 'അവധി അറിയിപ്പ്' : 'Notice Active'}
             </span>
-          </button>
+          )}
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* DUAL 3D FLIPPABLE CARDS GRID (BREAKFAST & LUNCH)          */}
+      {/* DUAL CARDS GRID (BREAKFAST & LUNCH - OR NOTICE CARDS)     */}
       {/* ========================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
-        {/* BREAKFAST CARD */}
-        <MealFlipCard
-          mealType="breakfast"
-          activeCount={loadingData ? 0 : metrics.breakfastActive}
-          rejectedCount={loadingData ? 0 : metrics.breakfastRejected}
-          totalStudents={metrics.totalStudents}
-          isFlipped={isBreakfastFlipped}
-          onFlip={handleToggleBreakfastFlip}
-          targetDateStr={targetDateFormatted}
-          dayLabel={dayLabel}
-          rejectedTokens={metrics.breakfastRejectedTokens}
-          onOpenTokensModal={(m) => {
-            feedback('tick');
-            setInspectedMeal(m);
-          }}
-        />
+        {/* BREAKFAST CARD OR NOTICE */}
+        {isBfSupplying ? (
+          <MealFlipCard
+            mealType="breakfast"
+            activeCount={loadingData ? 0 : metrics.breakfastActive}
+            rejectedCount={loadingData ? 0 : metrics.breakfastRejected}
+            totalStudents={metrics.totalStudents}
+            isFlipped={isBreakfastFlipped}
+            onFlip={handleToggleBreakfastFlip}
+            targetDateStr={targetDateFormatted}
+            dayLabel={dayLabel}
+            rejectedTokens={metrics.breakfastRejectedTokens}
+            onOpenTokensModal={(m) => {
+              feedback('tick');
+              setInspectedMeal(m);
+            }}
+          />
+        ) : (
+          <MealSupplyNoticeCard
+            mealType="breakfast"
+            supplyStatus={bfSupply}
+            targetDateStr={targetDateFormatted}
+            dayLabel={dayLabel}
+            lang={lang}
+            t={t}
+          />
+        )}
 
-        {/* LUNCH CARD */}
-        <MealFlipCard
-          mealType="lunch"
-          activeCount={loadingData ? 0 : metrics.lunchActive}
-          rejectedCount={loadingData ? 0 : metrics.lunchRejected}
-          totalStudents={metrics.totalStudents}
-          isFlipped={isLunchFlipped}
-          onFlip={handleToggleLunchFlip}
-          targetDateStr={targetDateFormatted}
-          dayLabel={dayLabel}
-          rejectedTokens={metrics.lunchRejectedTokens}
-          onOpenTokensModal={(m) => {
-            feedback('tick');
-            setInspectedMeal(m);
-          }}
-        />
+        {/* LUNCH CARD OR NOTICE */}
+        {isLunchSupplying ? (
+          <MealFlipCard
+            mealType="lunch"
+            activeCount={loadingData ? 0 : metrics.lunchActive}
+            rejectedCount={loadingData ? 0 : metrics.lunchRejected}
+            totalStudents={metrics.totalStudents}
+            isFlipped={isLunchFlipped}
+            onFlip={handleToggleLunchFlip}
+            targetDateStr={targetDateFormatted}
+            dayLabel={dayLabel}
+            rejectedTokens={metrics.lunchRejectedTokens}
+            onOpenTokensModal={(m) => {
+              feedback('tick');
+              setInspectedMeal(m);
+            }}
+          />
+        ) : (
+          <MealSupplyNoticeCard
+            mealType="lunch"
+            supplyStatus={lunchSupply}
+            targetDateStr={targetDateFormatted}
+            dayLabel={dayLabel}
+            lang={lang}
+            t={t}
+          />
+        )}
       </div>
 
       {/* Micro-Affordance Hint Bar */}
       <div className="flex items-center justify-between text-[11px] text-emerald-200/80 px-1 font-medium">
-        {/* <span className="flex items-center gap-1.5 truncate">
-          <Sparkles className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          <span>{t('flipCardsHint', 'Click cards to flip between Turned ON & Rejected tokens')}</span>
-        </span> */}
         <span className="font-mono text-[10px] text-emerald-300/80 flex-shrink-0">
-          {metrics.totalStudents} {t('tokensUnit', 'tokens')}
+          {isBfSupplying || isLunchSupplying
+            ? `${metrics.totalStudents} ${t('tokensUnit', 'tokens')}`
+            : (lang === 'ml' ? 'കാന്റീൻ ഭക്ഷണ വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു' : 'Food supply suspended by administration')}
         </span>
       </div>
 
@@ -370,7 +432,7 @@ export default function HeroMealCountersDock({
                           key={tokenNum}
                           className="flex items-center justify-center p-2 rounded-xl font-mono font-extrabold text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/30 shadow-xs"
                         >
-                          #{tokenNum}
+                          {tokenNum}
                         </div>
                       ))}
                     </div>
@@ -399,3 +461,5 @@ export default function HeroMealCountersDock({
     </div>
   );
 }
+
+

@@ -78,7 +78,7 @@ export default function ApexSentinelDashboard() {
     if (found) {
       setSelectedSession(found);
     } else {
-      dialog.toast.info(`Token #${tokenNo}`, 'Device not currently active online in live sessions.', 3000);
+      dialog.toast.info(`Token ${tokenNo}`, 'Device not currently active online in live sessions.', 3000);
     }
   };
 

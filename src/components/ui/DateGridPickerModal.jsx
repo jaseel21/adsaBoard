@@ -11,6 +11,7 @@ import {
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
+import { useAcademicYear } from '../../utils/academicYearService';
 import {
   addDaysToDate,
   getMonthCalendarDays,
@@ -34,6 +35,9 @@ export default function DateGridPickerModal({
   const { feedback } = useFeedback();
   const { t } = useLanguage();
   const { todayIST } = useTokenLockStatus();
+  const { startDate: acadStartDate, endDate: acadEndDate } = useAcademicYear();
+  const effectiveMin = minDate || acadStartDate;
+  const effectiveMax = maxDate || acadEndDate;
   const resolvedTitle = title || t('selectCalendarDate', 'Select Calendar Date');
 
   const [activeDate, setActiveDate] = useState(() => selectedDate || todayIST);
@@ -168,8 +172,8 @@ export default function DateGridPickerModal({
               }
 
               const isSelected = activeDate === day.dateStr;
-              const isPast = minDate ? day.dateStr < minDate : false;
-              const isFutureBlocked = maxDate ? day.dateStr > maxDate : false;
+              const isPast = effectiveMin ? day.dateStr < effectiveMin : false;
+              const isFutureBlocked = effectiveMax ? day.dateStr > effectiveMax : false;
               const isDisabled = isPast || isFutureBlocked;
 
               return (

@@ -40,21 +40,28 @@ import {
 } from '../utils/studentExceptionService';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
+import { subscribeToMealSupplyLedger } from '../utils/mealSupplyService';
+import {
+  subscribeToBoardServiceSchedule,
+  getMealSupplyStatus,
+} from '../utils/boardServiceSchedule';
 
 export default function KitchenDisplay() {
   const navigate = useNavigate();
   const { user, staffProfile, roleBadge, logoutAdmin } = useContext(AuthContext);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
 
   const [activeMeal, setActiveMeal] = useState('breakfast'); // 'breakfast' | 'lunch'
   const [students, setStudents] = useState([]);
   const [preferences, setPreferences] = useState([]);
+  const [boardServiceSchedule, setBoardServiceSchedule] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('ALL');
   const [dietFilter, setDietFilter] = useState('ALL'); // 'ALL' | 'SPECIAL_ONLY'
   const [universalDoc, setUniversalDoc] = useState({ isOpen: false, data: null });
+  const [liveServingSummary, setLiveServingSummary] = useState(null);
 
   const { timeHms, dayShort, todayIST } = useWorldTime('Asia/Kolkata');
   const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
@@ -87,6 +94,19 @@ export default function KitchenDisplay() {
     return () => unsub();
   }, []);
 
+  // Real-time listener for live serving distribution progress
+  useEffect(() => {
+    if (!activeMeal || !targetDateIST) return;
+    const unsub = subscribeToMealSupplyLedger(activeMeal, targetDateIST, ({ summary, servedMap }) => {
+      setLiveServingSummary({
+        totalServed: servedMap.size,
+        lastServedToken: summary?.lastServedToken || null,
+        lastServedAt: summary?.lastServedAtIso || null,
+      });
+    });
+    return () => unsub();
+  }, [activeMeal, targetDateIST]);
+
   // Real-time student subscription
   useEffect(() => {
     setLoading(true);
@@ -112,6 +132,20 @@ export default function KitchenDisplay() {
     return () => unsub();
   }, []);
 
+  // Real-time board food supply schedule listener
+  useEffect(() => {
+    const unsub = subscribeToBoardServiceSchedule((schedule) => {
+      setBoardServiceSchedule(schedule || {});
+    });
+    return () => unsub();
+  }, []);
+
+  const mealSupplyStatus = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, activeMeal);
+  }, [boardServiceSchedule, targetDateIST, activeMeal]);
+
+  const isSupplyActive = mealSupplyStatus.isSupplying !== false;
+
   // Compute live meal metrics
   const mealMetrics = useMemo(() => {
     let totalEligible = 0;
@@ -136,9 +170,9 @@ export default function KitchenDisplay() {
 
       const isTaking = getEffectiveStudentMealStatus(
         student,
-        activeMeal,
+        targetDateIST,
         targetDayKey,
-        targetDateIST
+        activeMeal
       );
 
       if (isTaking) {
@@ -179,17 +213,32 @@ export default function KitchenDisplay() {
       }
     });
 
+    const effectiveTakingMeal = isSupplyActive ? totalTakingMeal : 0;
+    const effectiveSpecialDiet = isSupplyActive ? specialDietCount : 0;
+    const effectiveRegular = isSupplyActive ? (totalTakingMeal - specialDietCount) : 0;
+    const effectiveTakingStudents = isSupplyActive ? takingStudents : [];
+    const effectiveSpecialCareList = isSupplyActive ? specialCareList : [];
+
     return {
       totalEligible,
-      totalTakingMeal,
-      totalOptedOut,
-      specialDietCount,
-      regularCount: totalTakingMeal - specialDietCount,
-      dietaryCounts,
-      takingStudents,
-      specialCareList,
+      rawTakingMeal: totalTakingMeal,
+      totalTakingMeal: effectiveTakingMeal,
+      totalOptedOut: isSupplyActive ? totalOptedOut : totalEligible,
+      specialDietCount: effectiveSpecialDiet,
+      regularCount: effectiveRegular,
+      dietaryCounts: isSupplyActive ? dietaryCounts : {
+        beefAvoiders: 0,
+        fishAvoiders: 0,
+        chickenAvoiders: 0,
+        muttonAvoiders: 0,
+        customAvoiders: 0,
+      },
+      takingStudents: effectiveTakingStudents,
+      specialCareList: effectiveSpecialCareList,
+      isSupplyActive,
+      mealSupplyStatus,
     };
-  }, [students, activeMeal, targetDayKey, targetDateIST, preferences]);
+  }, [students, activeMeal, targetDayKey, targetDateIST, preferences, isSupplyActive, mealSupplyStatus]);
 
   // Unique batches
   const allBatches = useMemo(() => {
@@ -234,14 +283,20 @@ export default function KitchenDisplay() {
       theme: 'grid',
       head: [['Metric', 'Headcount Portions', 'Kitchen Notes']],
       body: [
-        ['TOTAL SERVICE HEADCOUNT', String(mealMetrics.totalTakingMeal), 'Primary food prep count'],
-        ['Standard Regular Portions', String(mealMetrics.regularCount), 'General preparation'],
-        ['Special Dietary Portions', String(mealMetrics.specialDietCount), 'Separate packing / plating required'],
-        ['Beef Avoiders (Alternative)', String(mealMetrics.dietaryCounts.beefAvoiders), 'Prepare chicken/fish or veg substitute'],
-        ['Fish Avoiders (Alternative)', String(mealMetrics.dietaryCounts.fishAvoiders), 'Prepare beef/chicken or veg substitute'],
-        ['Tokens Opted Out', String(mealMetrics.totalOptedOut), 'Meals cancelled'],
+        [
+          'TOTAL SERVICE HEADCOUNT',
+          String(mealMetrics.totalTakingMeal),
+          isSupplyActive
+            ? 'Primary food prep count'
+            : `FOOD SUPPLY SUSPENDED: ${mealSupplyStatus.noteEn || mealSupplyStatus.reasonObj?.labelEn || 'Canteen Closed'}`
+        ],
+        ['Standard Regular Portions', String(mealMetrics.regularCount), isSupplyActive ? 'General preparation' : 'No preparation required'],
+        ['Special Dietary Portions', String(mealMetrics.specialDietCount), isSupplyActive ? 'Separate packing / plating required' : 'No preparation required'],
+        ['Beef Avoiders (Alternative)', String(mealMetrics.dietaryCounts.beefAvoiders), isSupplyActive ? 'Prepare chicken/fish or veg substitute' : 'None'],
+        ['Fish Avoiders (Alternative)', String(mealMetrics.dietaryCounts.fishAvoiders), isSupplyActive ? 'Prepare beef/chicken or veg substitute' : 'None'],
+        ['Tokens Opted Out', String(mealMetrics.totalOptedOut), isSupplyActive ? 'Meals cancelled' : 'Supply suspended by admin'],
       ],
-      headStyles: { fillColor: [16, 185, 129] },
+      headStyles: { fillColor: isSupplyActive ? [16, 185, 129] : [239, 68, 68] },
     });
 
     // Special Care Orders Table
@@ -260,7 +315,7 @@ export default function KitchenDisplay() {
         if (item.customAvoids.length > 0) restrictions.push(`NO ${item.customAvoids.join(', ')}`);
 
         return [
-          `#${s.tokenNo}`,
+          `${s.tokenNo}`,
           s.nameEn || s.name || 'Student',
           s.batch || 'General',
           restrictions.join(' • ') || 'Custom Diet',
@@ -454,11 +509,50 @@ export default function KitchenDisplay() {
         </div>
       </div>
 
+      {/* Food Supply Suspended Alert Banner */}
+      {!isSupplyActive && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-500/15 via-red-500/10 to-amber-500/10 border-2 border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-rose-800 dark:text-rose-200"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-sm sm:text-base">
+                  {lang === 'ml'
+                    ? 'കാന്റീൻ ഭക്ഷണ വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു'
+                    : 'Canteen Food Supply Suspended'}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40">
+                  {lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Supply'}
+                </span>
+              </div>
+              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5 font-medium">
+                {lang === 'ml'
+                  ? (mealSupplyStatus.noteMl || mealSupplyStatus.reasonObj?.labelMl || 'ഈ ഷിഫ്റ്റിൽ അടുക്കളയിൽ പാചകം ആവശ്യമില്ല.')
+                  : (mealSupplyStatus.noteEn || mealSupplyStatus.reasonObj?.labelEn || 'No food preparation is required for this kitchen shift.')}
+              </p>
+            </div>
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-mono font-bold text-rose-600 dark:text-rose-400">
+            {lang === 'ml' ? '0 വിഹിതം' : '0 Portions'}
+          </div>
+        </motion.div>
+      )}
+
       {/* Big Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Service Count */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/15">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100 block">
+        <div className={`p-4 sm:p-5 rounded-2xl text-white shadow-lg transition-all ${
+          !isSupplyActive
+            ? 'bg-gradient-to-br from-rose-600 to-red-700 shadow-rose-500/15'
+            : 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/15'
+        }`}>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-white/90 block">
             {t('totalPortions', 'Total Portions')} ({activeMeal === 'lunch' ? (t('lunch') || 'Lunch') : (t('breakfast') || 'Breakfast')})
           </span>
           <div className="mt-2 flex items-baseline gap-2">
@@ -471,12 +565,20 @@ export default function KitchenDisplay() {
             >
               {loading ? '...' : mealMetrics.totalTakingMeal}
             </motion.span>
-            <span className="text-xs text-emerald-100 font-semibold">
-              of {mealMetrics.totalEligible} {t('active', 'Active')}
-            </span>
+            {!isSupplyActive ? (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-white/20 text-white">
+                {lang === 'ml' ? 'വിതരണം ഇല്ല' : 'SUPPLY SUSPENDED'}
+              </span>
+            ) : (
+              <span className="text-xs text-emerald-100 font-semibold">
+                of {mealMetrics.totalEligible} {t('active', 'Active')}
+              </span>
+            )}
           </div>
-          <p className="mt-1 text-[11px] text-emerald-100/90 font-medium">
-            {t('primaryCookQuantity', 'Primary cook quantity for serving counter')}
+          <p className="mt-1 text-[11px] text-white/90 font-medium">
+            {!isSupplyActive
+              ? (lang === 'ml' ? 'പാചകം ആവശ്യമില്ല' : 'No preparation required for this shift')
+              : t('primaryCookQuantity', 'Primary cook quantity for serving counter')}
           </p>
         </div>
 
@@ -547,6 +649,50 @@ export default function KitchenDisplay() {
         </div>
       </div>
 
+      {/* Real-Time Live Dining Serving Progress Banner */}
+      {liveServingSummary && (
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-emerald-900/40 border border-purple-500/30 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-purple-300">
+                  Live Dining Room Serving Progress
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              </div>
+              <div className="text-sm sm:text-base font-bold text-white mt-0.5">
+                <span className="text-purple-300 font-mono text-lg font-black">
+                  {liveServingSummary.totalServed}
+                </span>{' '}
+                of {mealMetrics.totalTakingMeal} Portions Served (
+                {mealMetrics.totalTakingMeal > 0
+                  ? Math.round((liveServingSummary.totalServed / mealMetrics.totalTakingMeal) * 100)
+                  : 0}
+                %) •{' '}
+                <span className="text-amber-300 font-mono font-bold">
+                  {Math.max(0, mealMetrics.totalTakingMeal - liveServingSummary.totalServed)}
+                </span>{' '}
+                Still to Eat
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              feedback('pop');
+              navigate(`/supply/controller?meal=${activeMeal}&date=${targetDateIST}`);
+            }}
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs shadow-md shadow-purple-600/30 flex items-center gap-2 cursor-pointer transition-all self-stretch sm:self-auto justify-center"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>Open Serving Controller</span>
+          </button>
+        </div>
+      )}
+
       {/* Dietary Avoidance Breakdown Pills */}
       <div className="p-4 rounded-2xl bg-white dark:bg-[#0f1715] border border-gray-200/80 dark:border-white/10 shadow-sm space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -601,7 +747,7 @@ export default function KitchenDisplay() {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder={t('searchSpecialCare', 'Search token #, name, batch...')}
+                placeholder={t('searchSpecialCare', 'Search token, name, batch...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 pr-3 py-1.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -643,7 +789,7 @@ export default function KitchenDisplay() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-sm font-black text-gray-900 dark:text-white">
-                          Token #{s.tokenNo}
+                          Token {s.tokenNo}
                         </span>
                       </div>
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5 truncate">

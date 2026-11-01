@@ -56,7 +56,15 @@ export default function TokenBoardCalendarPopover({
     setDateToCustom,
     setDateToAuto,
     isPostEveningCutoff,
+    academicYear = null,
+    boardNotices = [],
   } = controller;
+
+  const acadStartDate = academicYear?.startDate || '';
+  const acadEndDate = academicYear?.endDate || '';
+
+  const [startAcadYear, startAcadMonth] = (acadStartDate || '2000-01-01').split('-').map(Number);
+  const [endAcadYear, endAcadMonth] = (acadEndDate || '2099-12-31').split('-').map(Number);
 
   // Active viewing month and year inside calendar
   const [viewYear, setViewYear] = useState(() => {
@@ -118,8 +126,19 @@ export default function TokenBoardCalendarPopover({
   const tomorrowIST = useMemo(() => addDaysToDate(todayIST, 1), [todayIST]);
   const yesterdayIST = useMemo(() => addDaysToDate(todayIST, -1), [todayIST]);
 
-  // Navigation handlers
+  const canGoPrevMonth = useMemo(() => {
+    if (!acadStartDate) return true;
+    return viewYear > startAcadYear || (viewYear === startAcadYear && viewMonth > (startAcadMonth - 1));
+  }, [viewYear, viewMonth, startAcadYear, startAcadMonth, acadStartDate]);
+
+  const canGoNextMonth = useMemo(() => {
+    if (!acadEndDate) return true;
+    return viewYear < endAcadYear || (viewYear === endAcadYear && viewMonth < (endAcadMonth - 1));
+  }, [viewYear, viewMonth, endAcadYear, endAcadMonth, acadEndDate]);
+
+  // Navigation handlers bounded to academic year
   const handlePrevMonth = () => {
+    if (!canGoPrevMonth) return;
     feedback('tick');
     if (viewMonth === 0) {
       setViewMonth(11);
@@ -130,6 +149,7 @@ export default function TokenBoardCalendarPopover({
   };
 
   const handleNextMonth = () => {
+    if (!canGoNextMonth) return;
     feedback('tick');
     if (viewMonth === 11) {
       setViewMonth(0);
@@ -158,15 +178,18 @@ export default function TokenBoardCalendarPopover({
     }
   };
 
-  // Generate Year options from 3 years ago to 2 years ahead
+  // Generate Year options bounded strictly to active academic year
   const currentBaseYear = Number(todayIST.split('-')[0]) || new Date().getFullYear();
   const yearOptions = useMemo(() => {
-    const list = [];
-    for (let y = currentBaseYear - 3; y <= currentBaseYear + 2; y++) {
-      list.push(y);
+    if (startAcadYear && endAcadYear && startAcadYear <= endAcadYear) {
+      const list = [];
+      for (let y = startAcadYear; y <= endAcadYear; y++) {
+        list.push(y);
+      }
+      return list;
     }
-    return list;
-  }, [currentBaseYear]);
+    return [currentBaseYear];
+  }, [startAcadYear, endAcadYear, currentBaseYear]);
 
   if (!isOpen) return null;
 
@@ -292,8 +315,13 @@ export default function TokenBoardCalendarPopover({
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors"
-              title="Previous Month"
+              disabled={!canGoPrevMonth}
+              className={`p-1.5 rounded-xl transition-colors ${
+                !canGoPrevMonth
+                  ? 'opacity-30 cursor-not-allowed text-gray-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 cursor-pointer'
+              }`}
+              title={!canGoPrevMonth ? 'Academic Year Start Reached' : 'Previous Month'}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -334,8 +362,13 @@ export default function TokenBoardCalendarPopover({
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors"
-              title="Next Month"
+              disabled={!canGoNextMonth}
+              className={`p-1.5 rounded-xl transition-colors ${
+                !canGoNextMonth
+                  ? 'opacity-30 cursor-not-allowed text-gray-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 cursor-pointer'
+              }`}
+              title={!canGoNextMonth ? 'Academic Year End Reached' : 'Next Month'}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -357,36 +390,63 @@ export default function TokenBoardCalendarPopover({
                 return <div key={cell.key} className="h-9 rounded-xl opacity-0 pointer-events-none" />;
               }
 
+              const isOutsideAcademicYear = Boolean(
+                (acadStartDate && cell.dateStr < acadStartDate) ||
+                (acadEndDate && cell.dateStr > acadEndDate)
+              );
+
               const isSelected = cell.dateStr === targetDateIST;
               const isCellToday = cell.dateStr === todayIST;
               const isCellTomorrow = cell.dateStr === tomorrowIST;
               const isPast = cell.dateStr < todayIST;
 
+              const cellNotice = boardNotices?.find(
+                (n) => cell.dateStr >= n.startDate && cell.dateStr <= (n.endDate || n.startDate)
+              );
+
               return (
                 <button
                   key={cell.key}
                   type="button"
-                  onClick={() => handleSelectDate(cell.dateStr)}
-                  className={`h-9 w-full rounded-xl text-xs font-bold flex flex-col items-center justify-center relative transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 font-black scale-105 z-10'
+                  disabled={isOutsideAcademicYear}
+                  onClick={() => {
+                    if (isOutsideAcademicYear) return;
+                    handleSelectDate(cell.dateStr);
+                  }}
+                  className={`h-9 w-full rounded-xl text-xs font-bold flex flex-col items-center justify-center relative transition-all ${
+                    isOutsideAcademicYear
+                      ? 'opacity-20 cursor-not-allowed bg-gray-100/30 dark:bg-white/[0.02] text-gray-400'
+                      : isSelected
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 font-black scale-105 z-10 cursor-pointer'
                       : isCellToday
-                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/50 hover:bg-emerald-500/25'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/50 hover:bg-emerald-500/25 cursor-pointer'
                       : isCellTomorrow
-                      ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 ring-1 ring-teal-500/40 hover:bg-teal-500/20'
+                      ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 ring-1 ring-teal-500/40 hover:bg-teal-500/20 cursor-pointer'
                       : isPast
-                      ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
-                      : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10'
+                      ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer'
+                      : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer'
                   }`}
-                  title={`${cell.dateStr}${isCellToday ? ' (Today)' : isCellTomorrow ? ' (Tomorrow)' : isPast ? ' (Past Record)' : ''}`}
+                  title={
+                    isOutsideAcademicYear
+                      ? `Outside Academic Year (${acadStartDate} to ${acadEndDate})`
+                      : `${cell.dateStr}${isCellToday ? ' (Today)' : isCellTomorrow ? ' (Tomorrow)' : isPast ? ' (Past Record)' : ''}`
+                  }
                 >
                   <span>{cell.dayNumber}</span>
 
+                  {/* Event Notice Amber Indicator */}
+                  {cellNotice && (
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute top-1 right-1 shadow-xs ring-1 ring-amber-300 animate-pulse"
+                      title={cellNotice.title}
+                    />
+                  )}
+
                   {/* Micro-dot Indicator for Today & Tomorrow */}
-                  {isCellToday && !isSelected && (
+                  {isCellToday && !isSelected && !isOutsideAcademicYear && (
                     <span className="w-1 h-1 rounded-full bg-emerald-500 absolute bottom-1" />
                   )}
-                  {isCellTomorrow && !isSelected && (
+                  {isCellTomorrow && !isSelected && !isOutsideAcademicYear && (
                     <span className="w-1 h-1 rounded-full bg-teal-500 absolute bottom-1" />
                   )}
                 </button>
@@ -412,7 +472,7 @@ export default function TokenBoardCalendarPopover({
                   {isPostEveningCutoff && dateMode === 'auto' ? ' (Auto)' : ''}
                 </span>
               ) : (
-                <span className="text-blue-600 dark:text-blue-400 font-bold">
+                <span className="text-teal-600 dark:text-teal-400 font-bold">
                   {t('upcomingDate', 'Upcoming Schedule')}
                 </span>
               )}

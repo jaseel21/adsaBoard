@@ -221,7 +221,7 @@ export default function DietaryChangeRequestModal({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs uppercase tracking-wider font-extrabold text-emerald-200 bg-white/10 px-2 py-0.5 rounded-md">
-                      {t('tokenNumber', 'Token')} #{student?.tokenNo}
+                      {t('tokenNumber', 'Token')} {student?.tokenNo}
                     </span>
                     {pendingRequest && (
                       <span className="text-[11px] font-black uppercase tracking-wide px-2 py-0.5 rounded-md bg-amber-400 text-amber-950 flex items-center gap-1 animate-pulse">

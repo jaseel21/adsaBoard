@@ -23,9 +23,11 @@ import {
   RotateCcw,
   Info,
   Layers,
+  LayoutGrid,
 } from 'lucide-react';
 import firebase from '../../firebase/config';
 import { AuthContext } from '../../store/AuthContext';
+import { DataOfOne } from '../../store/StudentData';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useTokenLockStatus } from '../../utils/useTokenLockStatus';
@@ -38,11 +40,12 @@ import {
   calculateMonthStats,
   formatFriendlyDate,
   getEffectiveStudentMealStatus,
-  getActiveStudentException,
   addDaysToDate,
   getDayOfWeekShort,
 } from '../../utils/studentExceptionService';
+import { subscribeToBoardServiceSchedule, getMealSupplyStatus } from '../../utils/boardServiceSchedule';
 import DateTokenButton from './DateTokenButton';
+import IslamicAvatar from './IslamicAvatar';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -68,8 +71,18 @@ export default function StudentDetailCalendarModal({
 }) {
   const navigate = useNavigate();
   const { user, role } = useContext(AuthContext);
+  const studentContext = useContext(DataOfOne);
+  const stdata = studentContext?.stdata;
   const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
+
+  // Local student state to allow instant reactive updates (optimistic toggling for admins)
+  const [currentStudent, setCurrentStudent] = useState(student);
+  useEffect(() => {
+    setCurrentStudent(student);
+  }, [student]);
+
+  const activeDoc = currentStudent || student;
 
   // Token lock and world-time status
   const {
@@ -80,13 +93,29 @@ export default function StudentDetailCalendarModal({
     isPortalAccessible,
   } = useTokenLockStatus();
 
-  // Local student state to allow instant reactive updates (optimistic toggling for admins)
-  const [currentStudent, setCurrentStudent] = useState(student);
-  useEffect(() => {
-    setCurrentStudent(student);
-  }, [student]);
+  // Role & Session calculation
+  const isEffectiveAdmin = isAdmin || Boolean(user);
+  const isCurrentLoggedInStudent = Boolean(
+    !isEffectiveAdmin &&
+    stdata?.tokenNo &&
+    activeDoc?.tokenNo &&
+    Number(stdata.tokenNo) === Number(activeDoc.tokenNo)
+  );
+  const isOtherLoggedInStudent = Boolean(
+    !isEffectiveAdmin &&
+    stdata?.tokenNo &&
+    activeDoc?.tokenNo &&
+    Number(stdata.tokenNo) !== Number(activeDoc.tokenNo)
+  );
 
-  const activeDoc = currentStudent || student;
+  // Board food supply schedule subscription
+  const [boardServiceSchedule, setBoardServiceSchedule] = useState({});
+  useEffect(() => {
+    const unsub = subscribeToBoardServiceSchedule((schedule) => {
+      setBoardServiceSchedule(schedule || {});
+    });
+    return () => unsub();
+  }, []);
 
   // Preferences list subscription fallback if not passed as prop
   const [availablePreferences, setAvailablePreferences] = useState([]);
@@ -121,13 +150,31 @@ export default function StudentDetailCalendarModal({
     }
   }, [isOpen, targetDateIST]);
 
+  // Active calendar perspective: 'month' | 'week' | 'day' (Default to 'month')
+  const [activeView, setActiveView] = useState('month');
+  const [weekAnchorDate, setWeekAnchorDate] = useState(() => targetDateIST || todayIST);
+  const [dayAnchorDate, setDayAnchorDate] = useState(() => targetDateIST || todayIST);
+
   // Meal focus tab: 'both' | 'breakfast' | 'lunch' (Default to 'both' meals view)
   const [mealFocus, setMealFocus] = useState('both');
   useEffect(() => {
     if (isOpen) {
+      const base = targetDateIST || todayIST;
+      setWeekAnchorDate(base);
+      setDayAnchorDate(base);
       setMealFocus('both');
     }
-  }, [isOpen]);
+  }, [isOpen, targetDateIST, todayIST]);
+
+  // 7 dates of current week in Week view (Sunday to Saturday)
+  const modalWeekDates = useMemo(() => {
+    const dow = getDayOfWeekShort(weekAnchorDate);
+    const dayIdx = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'].indexOf(dow) !== -1
+      ? ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'].indexOf(dow)
+      : 0;
+    const sundayDate = addDaysToDate(weekAnchorDate, -dayIdx);
+    return Array.from({ length: 7 }, (_, i) => addDaysToDate(sundayDate, i));
+  }, [weekAnchorDate]);
 
   // Global ESC key listener to dismiss modal
   useEffect(() => {
@@ -196,55 +243,6 @@ export default function StudentDetailCalendarModal({
     [t]
   );
 
-  // Active single-day exceptions for upcoming dates (diverging from baseline routine)
-  const activeExceptionsList = useMemo(() => {
-    const exc = activeDoc?.dateExceptions || {};
-    return Object.keys(exc)
-      .filter((d) => d >= todayIST)
-      .sort()
-      .map((dateKey) => {
-        const val = exc[dateKey];
-        const dayKey = getDayOfWeekShort(dateKey);
-        const routineBf =
-          activeDoc?.obj?.breakfast?.[dayKey] !== undefined
-            ? Boolean(activeDoc.obj.breakfast[dayKey])
-            : true;
-        const routineLu =
-          activeDoc?.obj?.lunch?.[dayKey] !== undefined
-            ? Boolean(activeDoc.obj.lunch[dayKey])
-            : true;
-        const isBfOn = val.breakfast !== undefined ? Boolean(val.breakfast) : routineBf;
-        const isLuOn = val.lunch !== undefined ? Boolean(val.lunch) : routineLu;
-        const isBfOverridden = isBfOn !== routineBf;
-        const isLuOverridden = isLuOn !== routineLu;
-
-        let autoLabel = 'Single-Day Override';
-        if (isBfOverridden && isLuOverridden) {
-          autoLabel = !isBfOn && !isLuOn ? 'Full Leave' : isBfOn && isLuOn ? 'Both Meals ON' : 'Schedule Override';
-        } else if (isBfOverridden) {
-          autoLabel = isBfOn ? 'Breakfast ON' : 'Breakfast OFF';
-        } else if (isLuOverridden) {
-          autoLabel = isLuOn ? 'Lunch ON' : 'Lunch OFF';
-        }
-
-        return {
-          dateKey,
-          label: val.label || autoLabel,
-          isBfOn,
-          isLuOn,
-          isBfOverridden,
-          isLuOverridden,
-        };
-      })
-      .filter((e) => e.isBfOverridden || e.isLuOverridden);
-  }, [activeDoc, todayIST]);
-
-  // Single-Day Exception for the parent board's inspected target date
-  const inspectedTargetException = useMemo(() => {
-    if (!activeDoc || !targetDateIST) return null;
-    return getActiveStudentException(activeDoc, targetDateIST);
-  }, [activeDoc, targetDateIST]);
-
   // Effective status for target date on parent board (for both meals and focused meal)
   const effectiveDayKey = effectiveDay || getDayOfWeekShort(targetDateIST);
   const targetDateMeals = useMemo(() => {
@@ -266,24 +264,56 @@ export default function StudentDetailCalendarModal({
   const handleDateClick = async (dateStr, mealType) => {
     if (!activeDoc) return;
 
-    if (!isAdmin) {
-      // Public / Student inspection mode: provide friendly informative feedback
-      feedback('tick');
+    if (!isEffectiveAdmin) {
+      feedback('pop');
       const meals = calculateEffectiveDateMeals(activeDoc, dateStr);
       const isRoutineBf = meals.routineBreakfast;
       const isRoutineLunch = meals.routineLunch;
-      const bfText = meals.breakfast ? 'Taking (ON)' : 'Skipped (OFF)';
-      const luText = meals.lunch ? 'Taking (ON)' : 'Skipped (OFF)';
+      const bfText = meals.breakfast ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)');
+      const luText = meals.lunch ? t('takingOn', 'Taking (ON)') : t('skippedOff', 'Skipped (OFF)');
       const dateLabel = formatFriendlyDate(dateStr, true);
+      const mealName = mealType === 'lunch' ? t('navLunch', 'Lunch') : mealType === 'breakfast' ? t('navBreakfast', 'Breakfast') : t('navBoth', 'Meals');
 
-      let message = `${dateLabel}\n• Breakfast: ${bfText}\n• Lunch: ${luText}`;
-      if (meals.hasException) {
-        message += `\n\n[Custom Override Active: ${meals.label || 'Leave / Schedule Change'}]`;
-      } else {
-        message += '\n\n(Following standard weekly routine)';
+      if (isCurrentLoggedInStudent) {
+        const confirmed = await dialog.confirm({
+          title: t('switchTokenInPortalTitle', 'Switch Token #{token} in Portal').replace('{token}', activeDoc.tokenNo),
+          message: `${dateLabel} (${mealName}):\n• Breakfast: ${bfText}\n• Lunch: ${luText}\n\n${t(
+            'openPortalToSwitchDesc',
+            'To turn breakfast or lunch ON or OFF and save your changes, open your Student Portal.'
+          )}`,
+          confirmText: t('openStudentPortal', 'Open Student Portal'),
+          cancelText: t('closeNotice', 'Stay Here'),
+          confirmColor: 'emerald',
+          icon: 'question',
+        });
+        if (confirmed) {
+          onClose();
+          navigate('/student');
+        }
+        return;
       }
 
-      dialog.toast.info(`Token #${activeDoc.tokenNo} Attendance`, message);
+      const confirmed = await dialog.confirm({
+        title: t('loginRequiredToToggleTitle', 'Login Required to Switch Token'),
+        message: `${dateLabel} (${mealName}):\n• Breakfast: ${bfText}\n• Lunch: ${luText}\n\n${t(
+          'loginRequiredToToggleDesc',
+          'Tokens cannot be switched directly from the public board. To turn Token #{token} ON or OFF for {date}, please log in with your student password.'
+        )
+          .replace('{token}', activeDoc.tokenNo)
+          .replace('{date}', dateLabel)}`,
+        confirmText: t('loginToSwitchToken', 'Log In to Switch Token #{token}').replace(
+          '{token}',
+          activeDoc.tokenNo
+        ),
+        cancelText: t('closeNotice', 'Close (Just Viewing)'),
+        confirmColor: 'emerald',
+        icon: 'lock',
+      });
+
+      if (confirmed) {
+        onClose();
+        navigate(`/login?token=${activeDoc.tokenNo}`);
+      }
       return;
     }
 
@@ -416,7 +446,12 @@ export default function StudentDetailCalendarModal({
               </div>
             </div>
 
-            {isAdmin && (
+            {!isEffectiveAdmin ? (
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold flex items-center gap-1 shrink-0 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md border border-gray-200 dark:border-white/10">
+                <Lock className="w-3 h-3 text-gray-400" />
+                <span>{t('viewOnlyBadge', 'View Only')}</span>
+              </span>
+            ) : (
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 shrink-0">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Admin 1-Tap Toggle</span>
@@ -457,7 +492,11 @@ export default function StudentDetailCalendarModal({
               }
 
               const meals = calculateEffectiveDateMeals(activeDoc, day.dateStr);
-              const lockInfo = getDateLockStatus(day.dateStr, { isAdmin });
+              const bfSupply = getMealSupplyStatus(boardServiceSchedule, day.dateStr, 'breakfast');
+              const lunchSupply = getMealSupplyStatus(boardServiceSchedule, day.dateStr, 'lunch');
+              const isBfSupplyOff = !bfSupply.isSupplying;
+              const isLunchSupplyOff = !lunchSupply.isSupplying;
+              const lockInfo = getDateLockStatus(day.dateStr, { isAdmin, mealType });
 
               // Meal-specific override check:
               // Only mark override if this specific meal differs from its weekly routine baseline!
@@ -479,7 +518,8 @@ export default function StudentDetailCalendarModal({
                     isBeyondMax={day.isBeyondMax}
                     isBookable={day.isBookable}
                     isLocked={lockInfo.isLocked}
-                    isAdmin={isAdmin}
+                    isAdmin={isEffectiveAdmin}
+                    isReadOnly={!isEffectiveAdmin}
                     isAdminOverride={lockInfo.isAdminOverride}
                     lockReason={lockInfo.reason}
                     breakfast={meals.breakfast}
@@ -487,12 +527,38 @@ export default function StudentDetailCalendarModal({
                     activeMeal={mealType}
                     showDualPills={false}
                     hasException={isMealOverridden}
-                    exceptionLabel={meals.label || (isMealOverridden ? 'Single-Day Override' : '')}
+                    exceptionLabel={meals.label || (isMealOverridden ? 'Custom Schedule' : '')}
+                    isBfSupplyOff={isBfSupplyOff}
+                    isLunchSupplyOff={isLunchSupplyOff}
                     onClick={(d) => handleDateClick(d, mealType)}
-                    onLockedClick={(d, reason) => {
-                      if (!isAdmin) {
+                    onLockedClick={async (d, reason) => {
+                      if (!isEffectiveAdmin) {
                         feedback('warning');
-                        dialog.toast.warning('Date Locked', reason || 'Updates for this date are closed.');
+                        const dateLabel = formatFriendlyDate(d, true);
+                        if (!isCurrentLoggedInStudent) {
+                          const confirmed = await dialog.confirm({
+                            title: t('dateLockedTitle', 'Date Locked • Login Required'),
+                            message: `${dateLabel}: ${reason || t('cutoffPassed', 'Cutoff deadline has passed.')}\n\n${t(
+                              'loginRequiredToToggleDesc',
+                              'Tokens cannot be switched directly from the public board. To turn Token #{token} ON or OFF for {date}, please log in with your student password.'
+                            )
+                              .replace('{token}', activeDoc.tokenNo)
+                              .replace('{date}', dateLabel)}`,
+                            confirmText: t('loginToSwitchToken', 'Log In to Switch Token #{token}').replace(
+                              '{token}',
+                              activeDoc.tokenNo
+                            ),
+                            cancelText: t('closeNotice', 'Close'),
+                            confirmColor: 'amber',
+                            icon: 'lock',
+                          });
+                          if (confirmed) {
+                            onClose();
+                            navigate(`/login?token=${activeDoc.tokenNo}`);
+                          }
+                        } else {
+                          dialog.toast.warning(t('dateLocked', 'Date Locked'), reason || t('cutoffPassed', 'Cutoff deadline has passed.'));
+                        }
                       }
                     }}
                   />
@@ -503,7 +569,7 @@ export default function StudentDetailCalendarModal({
         </div>
 
         {/* Card Footnote */}
-        <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500">
+        {/* <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500">
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span>Serving</span>
@@ -513,6 +579,232 @@ export default function StudentDetailCalendarModal({
           <span className="font-mono text-[9px] uppercase tracking-wider">
             {MONTH_NAMES[currentMonth].slice(0, 3)} {currentYear}
           </span>
+        </div> */}
+      </div>
+    );
+  };
+
+  // Render Weekly 7-day strip view
+  const renderWeekView = () => {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-2.5">
+          {modalWeekDates.map((dateStr) => {
+            const dow = getDayOfWeekShort(dateStr);
+            const isToday = dateStr === todayIST;
+            const meals = calculateEffectiveDateMeals(activeDoc, dateStr);
+
+            return (
+              <div
+                key={dateStr}
+                className={`p-3 rounded-2xl border transition-all flex flex-col justify-between space-y-2.5 ${
+                  isToday
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-500/50 shadow-xs ring-1 ring-emerald-500/30'
+                    : 'bg-gray-50/80 dark:bg-white/[0.02] border-gray-200/80 dark:border-white/10'
+                }`}
+              >
+                {/* Header: Day name + Date + Today Badge */}
+                <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/60 dark:border-white/5">
+                  <div className="min-w-0">
+                    <span className="text-xs font-black text-gray-900 dark:text-white block uppercase">
+                      {t(`daysShort.${dow}`) || dow.toUpperCase()}
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                      {formatFriendlyDate(dateStr, false)}
+                    </span>
+                  </div>
+                  {isToday && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-600 text-white uppercase animate-pulse">
+                      {t('today', 'Today')}
+                    </span>
+                  )}
+                </div>
+
+                {/* Meals in this day */}
+                <div className="space-y-1.5">
+                  {/* Breakfast */}
+                  {(mealFocus === 'both' || mealFocus === 'breakfast') && (
+                    <button
+                      type="button"
+                      onClick={() => handleDateClick(dateStr, 'breakfast')}
+                      className={`w-full p-2 rounded-xl text-left transition-all border flex items-center justify-between cursor-pointer ${
+                        meals.breakfast
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-600/40 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-600/30 text-rose-700 dark:text-rose-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Coffee className="w-3 h-3 shrink-0 text-amber-500" />
+                        <span className="text-[11px] font-bold truncate">Bf</span>
+                      </div>
+                      <span className="text-[10px] font-black">
+                        {meals.breakfast ? 'ON' : 'OFF'}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Lunch */}
+                  {(mealFocus === 'both' || mealFocus === 'lunch') && (
+                    <button
+                      type="button"
+                      onClick={() => handleDateClick(dateStr, 'lunch')}
+                      className={`w-full p-2 rounded-xl text-left transition-all border flex items-center justify-between cursor-pointer ${
+                        meals.lunch
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-600/40 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-600/30 text-rose-700 dark:text-rose-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Utensils className="w-3 h-3 shrink-0 text-emerald-500" />
+                        <span className="text-[11px] font-bold truncate">Lunch</span>
+                      </div>
+                      <span className="text-[10px] font-black">
+                        {meals.lunch ? 'ON' : 'OFF'}
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Day Summary */}
+                <div className="text-[10px] text-center font-bold text-gray-500 dark:text-gray-400 pt-1">
+                  {meals.isAllOn ? 'Full Active' : meals.isAllOff ? 'Full Leave' : 'Partial'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Render Daily deep focus card
+  const renderDayView = () => {
+    const meals = calculateEffectiveDateMeals(activeDoc, dayAnchorDate);
+    const isToday = dayAnchorDate === todayIST;
+    const isTomorrow = dayAnchorDate === tomorrowIST;
+
+    return (
+      <div className="max-w-2xl mx-auto space-y-4">
+        {/* Day Header Hero */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-gray-50/80 dark:bg-white/[0.02] border border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <CalendarDays className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
+                {formatFriendlyDate(dayAnchorDate, true)}
+              </h3>
+              {isToday ? (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white animate-pulse">
+                  {t('today', 'Today')}
+                </span>
+              ) : isTomorrow ? (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-teal-500 text-white">
+                  {t('tomorrow', 'Tomorrow')}
+                </span>
+              ) : null}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {meals.isAllOn
+                ? 'Standard Routine: Both Breakfast and Lunch active'
+                : meals.isAllOff
+                ? 'On Leave: Both meals switched off'
+                : 'Custom: One meal active, one meal skipped'}
+            </p>
+          </div>
+
+          {!isEffectiveAdmin && (
+            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-gray-200/80 dark:border-white/10 flex items-center gap-1.5 self-start sm:self-auto">
+              <Lock className="w-3.5 h-3.5 text-gray-400" />
+              <span>{t('viewOnlyBadge', 'View Only')}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Dual Meal Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {/* Breakfast Card */}
+          {(mealFocus === 'both' || mealFocus === 'breakfast') && (
+            <div
+              onClick={() => handleDateClick(dayAnchorDate, 'breakfast')}
+              className={`p-4 rounded-3xl border transition-all cursor-pointer space-y-3 ${
+                meals.breakfast
+                  ? 'bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/30 dark:to-transparent border-emerald-300 dark:border-emerald-600/40 shadow-xs'
+                  : 'bg-rose-50/60 dark:bg-rose-950/20 border-rose-200 dark:border-rose-600/30'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <Coffee className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                      {t('navBreakfast', 'Breakfast')}
+                    </h4>
+                    <span className="text-[10px] text-gray-400 font-mono">07:00 AM – 08:30 AM</span>
+                  </div>
+                </div>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                    meals.breakfast
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-rose-600 text-white'
+                  }`}
+                >
+                  {meals.breakfast ? 'SERVING (ON)' : 'LEAVE (OFF)'}
+                </span>
+              </div>
+
+              <div className="text-xs text-gray-600 dark:text-gray-300 pt-1 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                <span>{meals.routineBreakfast ? 'Routine Default: Active' : 'Routine Default: Off'}</span>
+                {meals.breakfast !== meals.routineBreakfast && (
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Exception</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Lunch Card */}
+          {(mealFocus === 'both' || mealFocus === 'lunch') && (
+            <div
+              onClick={() => handleDateClick(dayAnchorDate, 'lunch')}
+              className={`p-4 rounded-3xl border transition-all cursor-pointer space-y-3 ${
+                meals.lunch
+                  ? 'bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/30 dark:to-transparent border-emerald-300 dark:border-emerald-600/40 shadow-xs'
+                  : 'bg-rose-50/60 dark:bg-rose-950/20 border-rose-200 dark:border-rose-600/30'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <Utensils className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                      {t('navLunch', 'Lunch')}
+                    </h4>
+                    <span className="text-[10px] text-gray-400 font-mono">12:30 PM – 02:00 PM</span>
+                  </div>
+                </div>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                    meals.lunch
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-rose-600 text-white'
+                  }`}
+                >
+                  {meals.lunch ? 'SERVING (ON)' : 'LEAVE (OFF)'}
+                </span>
+              </div>
+
+              <div className="text-xs text-gray-600 dark:text-gray-300 pt-1 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                <span>{meals.routineLunch ? 'Routine Default: Active' : 'Routine Default: Off'}</span>
+                {meals.lunch !== meals.routineLunch && (
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Exception</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -550,21 +842,20 @@ export default function StudentDetailCalendarModal({
             }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              {/* Tactile Token Number Keycap */}
-              <div className="relative w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-mono font-black text-xl text-white shadow-inner flex-shrink-0">
-                {activeDoc.tokenNo}
-                {Boolean(activeDoc.block) && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-white/40 flex items-center justify-center shadow-xs">
-                    <Lock className="w-2.5 h-2.5 text-white" />
-                  </span>
-                )}
-              </div>
+              {/* Tactile Token Number Keycap & Islamic Avatar */}
+              <IslamicAvatar
+                student={activeDoc}
+                size={48}
+                showStatusRing
+                animate={false}
+                className="shrink-0"
+              />
 
               {/* Student Metadata */}
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base sm:text-lg font-bold text-white truncate">
-                    {activeDoc.nameEn || activeDoc.name || `Student #${activeDoc.tokenNo}`}
+                    {activeDoc.nameEn || activeDoc.name || `Student ${activeDoc.tokenNo}`}
                   </h3>
                   {targetDateMeals ? (
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -633,7 +924,7 @@ export default function StudentDetailCalendarModal({
                   <div className="text-xs text-rose-950 dark:text-rose-100 min-w-0 flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-black text-base sm:text-lg block text-rose-950 dark:text-white">
-                        Token #{activeDoc.tokenNo} Blocked
+                        Token {activeDoc.tokenNo} Blocked
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-200/80 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 border border-rose-300/60">
                         Dual-Grid Suspension
@@ -712,186 +1003,369 @@ export default function StudentDetailCalendarModal({
             ) : (
               /* ================= ACTIVE STUDENT VIEW: PROPER MONTHLY CALENDAR ================= */
               <>
-                {/* Single-Day Exception Alert for inspected date if present */}
-                {inspectedTargetException && (
-                  <div className="p-3 sm:p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-500/30 flex items-start gap-2.5 text-xs text-purple-950 dark:text-purple-200">
-                    <CalendarDays className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-black block">
-                        Single-Day Override Active for {formatFriendlyDate(targetDateIST)}
-                      </span>
-                      <span className="block mt-0.5 text-purple-800 dark:text-purple-300">
-                        {inspectedTargetException.breakfast !== undefined && (
-                          <>
-                            Breakfast:{' '}
-                            <strong>
-                              {inspectedTargetException.breakfast ? 'Taking (ON)' : 'Skipped (OFF)'}
-                            </strong>{' '}
-                          </>
-                        )}
-                        {inspectedTargetException.lunch !== undefined && (
-                          <>
-                            • Lunch:{' '}
-                            <strong>
-                              {inspectedTargetException.lunch ? 'Taking (ON)' : 'Skipped (OFF)'}
-                            </strong>
-                          </>
-                        )}
-                      </span>
-                      <span className="text-[10px] text-purple-600 dark:text-purple-400 block mt-1">
-                        Regular weekly dining routine automatically resumes for other dates.
-                      </span>
+                {/* Clear Guidance Banner: View-Only Attendance vs Login to Switch */}
+                {/* {!isEffectiveAdmin && (
+                  <div className="w-full">
+                    {isCurrentLoggedInStudent ? (
+                      <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
+                            <CheckCircle2 className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-xs text-emerald-950 dark:text-emerald-200">
+                                {t('loggedInAsThisStudent', 'You are logged in as Student #{token}').replace('{token}', activeDoc.tokenNo)}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                                {t('activeSession', 'Active Session')}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/80 leading-relaxed mt-0.5">
+                              {t('openPortalToSwitchDesc', 'To turn breakfast or lunch ON or OFF and save your changes, open your Student Portal.')}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            onClose();
+                            navigate('/student');
+                          }}
+                          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
+                        >
+                          <span>{t('goToPortalToSwitch', 'Go to Portal to Switch Token')}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : isOtherLoggedInStudent ? (
+                      <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                            <Info className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-xs text-amber-950 dark:text-amber-200">
+                                {t('viewOnlyAttendanceTitle', 'View-Only Token Record')}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                                {t('signedInAsOtherToken', 'Logged in as Token #{token}').replace('{token}', stdata.tokenNo)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 leading-relaxed mt-0.5">
+                              {t('mustLoginAsThisTokenDesc', 'To switch meals for Token #{token}, sign in with this student\'s password.').replace('{token}', activeDoc.tokenNo)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            onClose();
+                            navigate(`/login?token=${activeDoc.tokenNo}`);
+                          }}
+                          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
+                        >
+                          <span>{t('loginAsToken', 'Log In as Token #{token}').replace('{token}', activeDoc.tokenNo)}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
+                            <Lock className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-xs text-gray-900 dark:text-white">
+                                {t('viewOnlyAttendanceTitle', 'View-Only Token Record')}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                                {t('loginRequiredToEdit', 'Login Required to Switch')}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed mt-0.5">
+                              {t(
+                                'viewOnlyAttendanceNotice',
+                                'Tokens cannot be switched directly from the public board. Log in to your Student Portal to turn Breakfast or Lunch ON or OFF.'
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            onClose();
+                            navigate(`/login?token=${activeDoc.tokenNo}`);
+                          }}
+                          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer active:scale-95"
+                        >
+                          <span>{t('loginToSwitchToken', 'Log In to Switch Token #{token}').replace('{token}', activeDoc.tokenNo)}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div> 
+                    )}
+                  </div>
+                )} */}
+
+                {/* Navigation & View Perspective Control Deck */}
+                <div className="p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-3 shadow-xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    
+                    {/* Dynamic Stepper based on activeView */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {activeView === 'month' && (
+                        <>
+                          <div className="inline-flex items-center gap-1 p-0.5 rounded-xl bg-white dark:bg-[#1a2521] border border-gray-200/80 dark:border-white/10 shadow-xs">
+                            <button
+                              type="button"
+                              onClick={handlePrevMonth}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+                              title="Previous Month"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="px-2.5 text-xs sm:text-sm font-black font-mono text-gray-900 dark:text-white min-w-[120px] text-center">
+                              {MONTH_NAMES[currentMonth]} {currentYear}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleNextMonth}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+                              title="Next Month"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleJumpToToday}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            {t('todayBtn', 'Today')}
+                          </button>
+                        </>
+                      )}
+
+                      {activeView === 'week' && (
+                        <>
+                          <div className="inline-flex items-center gap-1 p-0.5 rounded-xl bg-white dark:bg-[#1a2521] border border-gray-200/80 dark:border-white/10 shadow-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('tick');
+                                setWeekAnchorDate((prev) => addDaysToDate(prev, -7));
+                              }}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+                              title="Previous Week"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="px-2.5 text-xs font-black font-mono text-gray-900 dark:text-white min-w-[140px] text-center">
+                              {formatFriendlyDate(modalWeekDates[0], false)} – {formatFriendlyDate(modalWeekDates[6], false)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('tick');
+                                setWeekAnchorDate((prev) => addDaysToDate(prev, 7));
+                              }}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+                              title="Next Week"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              feedback('tick');
+                              setWeekAnchorDate(todayIST);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            {t('thisWeek', 'This Week')}
+                          </button>
+                        </>
+                      )}
+
+                      {activeView === 'day' && (
+                        <>
+                          <div className="inline-flex items-center gap-1 p-0.5 rounded-xl bg-white dark:bg-[#1a2521] border border-gray-200/80 dark:border-white/10 shadow-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('tick');
+                                setDayAnchorDate((prev) => addDaysToDate(prev, -1));
+                              }}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+                              title="Previous Day"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="px-2.5 text-xs sm:text-sm font-black font-mono text-gray-900 dark:text-white min-w-[140px] text-center">
+                              {formatFriendlyDate(dayAnchorDate, true)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                feedback('tick');
+                                setDayAnchorDate((prev) => addDaysToDate(prev, 1));
+                              }}
+                              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
+                              title="Next Day"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              feedback('tick');
+                              setDayAnchorDate(todayIST);
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            {t('todayBtn', 'Today')}
+                          </button>
+                        </>
+                      )}
                     </div>
+
+                    {/* Right Controls: View Perspective Switcher + Meal Focus Switcher */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* View Perspective Switcher (Month | Week | Day) */}
+                      <div className="inline-flex p-0.5 rounded-xl bg-gray-200/70 dark:bg-white/10 border border-gray-300/40 dark:border-white/5 text-xs font-bold">
+                        {[
+                          { key: 'month', label: t('viewMonth', 'Month'), icon: LayoutGrid },
+                          { key: 'week', label: t('viewWeek', 'Week'), icon: CalendarDays },
+                          { key: 'day', label: t('viewDay', 'Day'), icon: Clock },
+                        ].map(({ key, label, icon: Icon }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                              feedback('tick');
+                              setActiveView(key);
+                            }}
+                            className={`relative px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 select-none cursor-pointer ${
+                              activeView === key
+                                ? 'text-emerald-700 dark:text-emerald-300'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                          >
+                            {activeView === key && (
+                              <motion.div
+                                layoutId="modalViewTabPill"
+                                className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
+                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                              />
+                            )}
+                            <Icon className="w-3.5 h-3.5" />
+                            <span>{label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Meal Focus Switcher (Both Meals | Breakfast | Lunch) */}
+                      <div className="inline-flex p-0.5 rounded-xl bg-gray-200/70 dark:bg-white/10 border border-gray-300/40 dark:border-white/5 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            setMealFocus('both');
+                          }}
+                          className={`relative px-2.5 py-1 rounded-lg transition-colors select-none cursor-pointer ${
+                            mealFocus === 'both'
+                              ? 'text-emerald-700 dark:text-emerald-300'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {mealFocus === 'both' && (
+                            <motion.div
+                              layoutId="modalMealTabPill"
+                              className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
+                              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                            />
+                          )}
+                          <span>{t('viewBothParallel', 'Both')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            setMealFocus('breakfast');
+                          }}
+                          className={`relative px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 select-none cursor-pointer ${
+                            mealFocus === 'breakfast'
+                              ? 'text-emerald-700 dark:text-emerald-300'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {mealFocus === 'breakfast' && (
+                            <motion.div
+                              layoutId="modalMealTabPill"
+                              className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
+                              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                            />
+                          )}
+                          <Coffee className="w-3 h-3 text-amber-500" />
+                          <span className="hidden sm:inline">{t('navBreakfast', 'Breakfast')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            feedback('tick');
+                            setMealFocus('lunch');
+                          }}
+                          className={`relative px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 select-none cursor-pointer ${
+                            mealFocus === 'lunch'
+                              ? 'text-emerald-700 dark:text-emerald-300'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {mealFocus === 'lunch' && (
+                            <motion.div
+                              layoutId="modalMealTabPill"
+                              className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
+                              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                            />
+                          )}
+                          <Utensils className="w-3 h-3 text-emerald-500" />
+                          <span className="hidden sm:inline">{t('navLunch', 'Lunch')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Perspective View Dispatcher: Month | Week | Day */}
+                {activeView === 'month' && (
+                  <div
+                    className={`grid gap-4 sm:gap-6 ${
+                      mealFocus === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-2xl mx-auto'
+                    }`}
+                  >
+                    {(mealFocus === 'both' || mealFocus === 'breakfast') &&
+                      renderMealCalendarCard('breakfast')}
+
+                    {(mealFocus === 'both' || mealFocus === 'lunch') &&
+                      renderMealCalendarCard('lunch')}
                   </div>
                 )}
 
-                {/* Month Navigation & Action Deck */}
-                <div className="p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200/80 dark:border-white/10 space-y-3 shadow-xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    {/* Month Stepper */}
-                    <div className="flex items-center gap-2">
-                      <div className="inline-flex items-center gap-1 p-0.5 rounded-xl bg-white dark:bg-[#1a2521] border border-gray-200/80 dark:border-white/10 shadow-xs">
-                        <button
-                          type="button"
-                          onClick={handlePrevMonth}
-                          className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
-                          title="Previous Month"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <span className="px-2.5 text-xs sm:text-sm font-black font-mono text-gray-900 dark:text-white min-w-[120px] text-center">
-                          {MONTH_NAMES[currentMonth]} {currentYear}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleNextMonth}
-                          className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors cursor-pointer"
-                          title="Next Month"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
+                {activeView === 'week' && renderWeekView()}
 
-                      {/* Jump to Today Button */}
-                      <button
-                        type="button"
-                        onClick={handleJumpToToday}
-                        className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        {t('todayBtn', 'Today')}
-                      </button>
-                    </div>
-
-                    {/* Meal Focus Switcher (Both Meals | Breakfast | Lunch) */}
-                    <div className="inline-flex p-0.5 rounded-xl bg-gray-200/60 dark:bg-white/10 border border-gray-300/40 dark:border-white/5 text-xs font-bold self-start sm:self-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          setMealFocus('both');
-                        }}
-                        className={`relative px-2.5 py-1 rounded-lg transition-colors select-none ${
-                          mealFocus === 'both'
-                            ? 'text-emerald-700 dark:text-emerald-300'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        {mealFocus === 'both' && (
-                          <motion.div
-                            layoutId="modalMealTabPill"
-                            className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
-                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                          />
-                        )}
-                        <span>{t('viewBothParallel', 'Both Meals')}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          setMealFocus('breakfast');
-                        }}
-                        className={`relative px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 select-none ${
-                          mealFocus === 'breakfast'
-                            ? 'text-emerald-700 dark:text-emerald-300'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        {mealFocus === 'breakfast' && (
-                          <motion.div
-                            layoutId="modalMealTabPill"
-                            className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
-                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                          />
-                        )}
-                        <Coffee className="w-3 h-3 text-amber-500" />
-                        <span>{t('navBreakfast', 'Breakfast')}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          feedback('tick');
-                          setMealFocus('lunch');
-                        }}
-                        className={`relative px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 select-none ${
-                          mealFocus === 'lunch'
-                            ? 'text-emerald-700 dark:text-emerald-300'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        {mealFocus === 'lunch' && (
-                          <motion.div
-                            layoutId="modalMealTabPill"
-                            className="absolute inset-0 bg-white dark:bg-[#1a2521] rounded-lg shadow-xs -z-10 border border-gray-200/80 dark:border-white/10"
-                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                          />
-                        )}
-                        <Utensils className="w-3 h-3 text-emerald-500" />
-                        <span>{t('navLunch', 'Lunch')}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Active Overrides Pill Strip */}
-                  {activeExceptionsList.length > 0 && (
-                    <div className="pt-2 border-t border-gray-200/60 dark:border-white/5 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] text-gray-500 font-bold">
-                        <span>Upcoming Single-Day Overrides ({activeExceptionsList.length}):</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {activeExceptionsList.map((exc) => (
-                          <span
-                            key={exc.dateKey}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold border ${
-                              !exc.isBfOn && !exc.isLuOn
-                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20'
-                                : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20'
-                            }`}
-                          >
-                            <span>{formatFriendlyDate(exc.dateKey, false)}</span>
-                            <span>:</span>
-                            <span>{exc.label}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Calendar Grid View: Either Parallel Both or Single Focused Meal */}
-                <div
-                  className={`grid gap-4 sm:gap-6 ${
-                    mealFocus === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-2xl mx-auto'
-                  }`}
-                >
-                  {(mealFocus === 'both' || mealFocus === 'breakfast') &&
-                    renderMealCalendarCard('breakfast')}
-
-                  {(mealFocus === 'both' || mealFocus === 'lunch') &&
-                    renderMealCalendarCard('lunch')}
-                </div>
+                {activeView === 'day' && renderDayView()}
 
                 {/* System Legend & Help */}
                 <div className="p-2.5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-[10px] text-gray-500">
@@ -904,23 +1378,17 @@ export default function StudentDetailCalendarModal({
                       <span className="w-2 h-2 rounded-full bg-rose-500" />
                       <span>OFF (Leave)</span>
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="inline-flex items-center justify-center w-3 h-3 rounded bg-indigo-600 text-white text-[7px] font-black ring-1 ring-white/40">
-                        ✦
-                      </span>
-                      <span>Single-Day Override</span>
-                    </span>
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full ring-2 ring-emerald-400" />
                       <span>Today</span>
                     </span>
                   </div>
 
-                  <span className="font-semibold text-gray-400">
-                    {isAdmin
-                      ? 'Admin: Click any date to toggle meal attendance'
-                      : 'Live accurate date-by-date calendar'}
-                  </span>
+                  {/* <span className="font-semibold text-gray-400">
+                    {isEffectiveAdmin
+                      ? t('adminToggleHelp', 'Admin: Click any date to toggle meal attendance')
+                      : t('viewOnlyLegendHelp', 'Live attendance record • Login to Student Portal to turn tokens ON/OFF')}
+                  </span> */}
                 </div>
 
                 {/* Dietary Inclusions & Exemptions */}
@@ -964,7 +1432,7 @@ export default function StudentDetailCalendarModal({
 
           {/* ================= MODAL FOOTER ACTION BAR ================= */}
           <div className="p-3 sm:p-4 bg-gray-50/90 dark:bg-white/[0.02] border-t border-gray-200/80 dark:border-white/10 flex flex-col sm:flex-row gap-2 justify-between items-center">
-            {isAdmin ? (
+            {isEffectiveAdmin ? (
               /* Admin Master Board Actions */
               <div className="w-full flex flex-col sm:flex-row gap-2">
                 {onOpenFullDrawer && (
@@ -1009,23 +1477,42 @@ export default function StudentDetailCalendarModal({
             ) : (
               /* Public / Student Dashboard Actions */
               <div className="w-full flex flex-col sm:flex-row gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    feedback('tick');
-                    onClose();
-                    navigate(`/login?token=${activeDoc.tokenNo}`);
-                  }}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <span>
-                    {t(
-                      'areYouStudent',
-                      `Are you Student #${activeDoc.tokenNo}? Update your Preferences in Portal`
-                    ).replace('{token}', activeDoc.tokenNo)}
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                {isCurrentLoggedInStudent ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      onClose();
+                      navigate('/student');
+                    }}
+                    className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-black text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>
+                      {t('openPortalToSwitchToken', 'Open Student Portal to Switch Token (ON / OFF)')}
+                    </span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      onClose();
+                      navigate(`/login?token=${activeDoc.tokenNo}`);
+                    }}
+                    className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-black text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
+                  >
+                    <Lock className="w-4 h-4" />
+                    <span>
+                      {t(
+                        'loginToSwitchTokenAction',
+                        `Log In as Token ${activeDoc.tokenNo}`
+                      ).replace('{token}', activeDoc.tokenNo)}
+                    </span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {

@@ -49,14 +49,19 @@ export default function LiveCloudStatusBadge({ className = '' }) {
     feedback('tick');
     setSyncing(true);
     try {
-      await triggerSoftReconnect();
+      const success = await triggerSoftReconnect();
+      if (success) {
+        feedback('success');
+      } else {
+        feedback('warning');
+      }
     } finally {
       setSyncing(false);
     }
   };
 
   const formattedLatency = latencyMs > 0 ? `${latencyMs}ms` : '<50ms';
-  const secondsAgo = Math.max(0, Math.round((Date.now() - (lastSyncedAt || Date.now())) / 1000));
+  const secondsAgo = lastSyncedAt ? Math.max(0, Math.round((Date.now() - lastSyncedAt) / 1000)) : null;
 
   return (
     <div ref={containerRef} className={`relative inline-flex items-center flex-shrink-0 ${className}`}>
@@ -152,7 +157,15 @@ export default function LiveCloudStatusBadge({ className = '' }) {
               <div className="p-2.5 rounded-xl bg-gray-50/80 dark:bg-white/5 border border-gray-100 dark:border-white/5">
                 <p className="text-[10px] text-gray-400 uppercase font-semibold">Last Cloud Sync</p>
                 <p className="text-sm font-bold font-mono text-gray-700 dark:text-gray-300 mt-0.5">
-                  {secondsAgo < 5 ? 'Just now' : `${secondsAgo}s ago`}
+                  {!isOnline
+                    ? secondsAgo !== null
+                      ? `${secondsAgo < 60 ? `${secondsAgo}s` : `${Math.round(secondsAgo / 60)}m`} ago (Offline)`
+                      : (lang === 'ml' ? 'ഓഫ്‌ലൈൻ' : 'Offline')
+                    : secondsAgo === null
+                    ? (lang === 'ml' ? 'കണക്റ്റ് ചെയ്യുന്നു...' : 'Connecting...')
+                    : secondsAgo < 5
+                    ? (lang === 'ml' ? 'ഇപ്പോൾ' : 'Just now')
+                    : `${secondsAgo}s ago`}
                 </p>
               </div>
             </div>
@@ -174,12 +187,18 @@ export default function LiveCloudStatusBadge({ className = '' }) {
               type="button"
               onClick={handleSyncClick}
               disabled={syncing}
-              className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+              className={`w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-white text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50 ${
+                !isOnline
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              } active:scale-95`}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
               <span>
                 {syncing
-                  ? (lang === 'ml' ? 'സമന്വയിപ്പിക്കുന്നു...' : 'Soft Re-syncing...')
+                  ? (lang === 'ml' ? 'പരിശോധിക്കുന്നു...' : 'Verifying connection...')
+                  : !isOnline
+                  ? (lang === 'ml' ? 'വീണ്ടും ശ്രമിക്കുക' : 'Retry Cloud Connection')
                   : (lang === 'ml' ? 'ഇപ്പോൾ സിങ്ക് ചെയ്യുക' : 'Force Soft Re-Sync')}
               </span>
             </button>

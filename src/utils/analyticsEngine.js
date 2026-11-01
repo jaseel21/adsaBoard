@@ -32,7 +32,10 @@ export function computeDashboardTelemetry({
   // 1. Filter students by batch if applied
   const scopeStudents = batchFilter === 'all'
     ? students
-    : students.filter((s) => (s.batch || 'Unassigned') === batchFilter);
+    : students.filter((s) => {
+        const b = s.batch ? s.batch.trim() : 'Unassigned';
+        return b === batchFilter;
+      });
 
   const totalEnrolled = scopeStudents.length;
   const blockedCount = scopeStudents.filter((s) => Boolean(s.block)).length;
@@ -107,7 +110,8 @@ export function computeDashboardTelemetry({
   // 3. Batch Aggregations & Health Benchmarking
   const batchMap = {};
   scopeStudents.forEach((student) => {
-    const bName = student.batch || 'Unassigned';
+    const raw = student.batch ? student.batch.trim() : '';
+    const bName = raw || 'Unassigned';
     if (!batchMap[bName]) {
       batchMap[bName] = {
         name: bName,
@@ -117,6 +121,7 @@ export function computeDashboardTelemetry({
         blocked: 0,
         beefAvoid: 0,
         fishAvoid: 0,
+        isUnassigned: bName === 'Unassigned',
       };
     }
     const b = batchMap[bName];
@@ -148,7 +153,11 @@ export function computeDashboardTelemetry({
       rate,
       status: rate >= 85 ? 'optimal' : rate >= 70 ? 'moderate' : 'low',
     };
-  }).sort((a, b) => b.rate - a.rate);
+  }).sort((a, b) => {
+    if (a.isUnassigned) return 1;
+    if (b.isUnassigned) return -1;
+    return b.rate - a.rate;
+  });
 
   // 4. Kitchen Ration Planning
   const kitchenRations = calculateKitchenRations({
@@ -174,17 +183,21 @@ export function computeDashboardTelemetry({
     effectiveDay,
   });
 
-  // 7. Hourly Decision Timing Curve (0 to 23 hours)
-  const decisionTiming = generateDecisionTimingCurve({
+  // 7. Calculate Genuine Period Averages & Statistics
+  const periodStats = calculatePeriodAverages(trendWaves, totalEligible);
+
+  // 8. Authentic Scheduled Leaves Registry
+  const leaveSummary = computeScheduledLeaves({
     students: scopeStudents,
     targetDateIST,
   });
 
-  // 8. Student Cohort Intelligence (Discipline vs Welfare Alerts)
-  const cohortInsights = computeStudentCohortInsights({
-    students: scopeStudents,
-    targetDateIST,
-  });
+  const cohortInsights = {
+    leaveSummary,
+    welfareAlerts: [],
+    honorRollCount: scopeStudents.filter((s) => !s.block && !s.dateExceptions?.[targetDateIST]).length,
+    activeLeaveCount: leaveSummary.count,
+  };
 
   return {
     meta: {
@@ -203,7 +216,7 @@ export function computeDashboardTelemetry({
       breakfastDiners,
       lunchDiners,
       optedOutCount,
-      onLeaveCount,
+      onLeaveCount: leaveSummary.count,
       participationRate,
       fullStandardDiners,
     },
@@ -221,8 +234,10 @@ export function computeDashboardTelemetry({
     kitchenRations,
     wasteEconomics,
     trendWaves,
-    decisionTiming,
+    periodStats,
+    leaveSummary,
     cohortInsights,
+    decisionTiming: [],
   };
 }
 
@@ -273,79 +288,103 @@ function generateTemporalTrendlines({
 }
 
 /**
- * Generates 24-hour decision timing curve (when students toggle tokens before cutoff)
+ * Calculates genuine mathematical averages and peak statistics across a temporal window
  */
-function generateDecisionTimingCurve({ students = [], targetDateIST }) {
-  // Peak canteen cutoff toggle distribution:
-  // Most students toggle in the evening (7 PM - 10 PM) before the lock, plus a secondary morning peak (7 AM - 9 AM)
-  const hours = Array.from({ length: 24 }).map((_, h) => {
-    let weight = 2; // base ambient toggles
-    if (h >= 7 && h <= 9) weight = 14 + (h % 3) * 4;   // Morning peak
-    if (h >= 12 && h <= 14) weight = 9 + (h % 2) * 3;  // Post lunch check
-    if (h >= 19 && h <= 21) weight = 38 + (h % 2) * 8; // Major pre-cutoff surge (7-9 PM)
-    if (h === 22) weight = 24;                          // Final 10 PM scramble
-    if (h >= 23 || h <= 5) weight = 1;                  // Midnight lull
-
-    const label = h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+function calculatePeriodAverages(trendPoints = [], totalEligible = 0) {
+  if (!trendPoints || trendPoints.length === 0) {
     return {
-      hour: h,
-      label,
-      volume: weight,
-      isCutoffWindow: h >= 19 && h <= 22,
+      totalDays: 0,
+      avgDailyBreakfast: 0,
+      avgDailyLunch: 0,
+      avgDailyActive: 0,
+      avgTurnoutRate: 0,
+      totalMealsServed: 0,
+      peakDay: null,
+      lowestDay: null,
     };
+  }
+
+  let sumBk = 0;
+  let sumLn = 0;
+  let peakDay = trendPoints[0];
+  let lowestDay = trendPoints[0];
+
+  trendPoints.forEach((pt) => {
+    sumBk += pt.breakfastCount || 0;
+    sumLn += pt.lunchCount || 0;
+    const totalDiners = (pt.breakfastCount || 0) + (pt.lunchCount || 0);
+    const peakTotal = (peakDay.breakfastCount || 0) + (peakDay.lunchCount || 0);
+    const lowestTotal = (lowestDay.breakfastCount || 0) + (lowestDay.lunchCount || 0);
+
+    if (totalDiners > peakTotal) peakDay = pt;
+    if (totalDiners < lowestTotal) lowestDay = pt;
   });
 
-  return hours;
+  const totalDays = trendPoints.length;
+  const avgDailyBreakfast = Math.round(sumBk / totalDays);
+  const avgDailyLunch = Math.round(sumLn / totalDays);
+  const avgDailyActive = Math.round((sumBk + sumLn) / (totalDays * 2));
+  const avgTurnoutRate = totalEligible > 0 ? Math.round((avgDailyActive / totalEligible) * 100) : 0;
+  const totalMealsServed = sumBk + sumLn;
+
+  return {
+    totalDays,
+    avgDailyBreakfast,
+    avgDailyLunch,
+    avgDailyActive,
+    avgTurnoutRate,
+    totalMealsServed,
+    peakDay: {
+      date: peakDay.date,
+      friendlyDate: peakDay.friendlyDate,
+      shortLabel: peakDay.shortLabel,
+      breakfastCount: peakDay.breakfastCount,
+      lunchCount: peakDay.lunchCount,
+      turnoutRate: peakDay.lunchRate,
+    },
+    lowestDay: {
+      date: lowestDay.date,
+      friendlyDate: lowestDay.friendlyDate,
+      shortLabel: lowestDay.shortLabel,
+      breakfastCount: lowestDay.breakfastCount,
+      lunchCount: lowestDay.lunchCount,
+      turnoutRate: lowestDay.lunchRate,
+    },
+  };
 }
 
 /**
- * Detects student welfare anomalies (e.g. 4+ consecutive missed meals) and discipline honors
+ * Extracts authentic scheduled student leaves & meal opt-outs
  */
-function computeStudentCohortInsights({ students = [], targetDateIST }) {
-  const consecutiveMissedAlerts = [];
-  const disciplineHonorRoll = [];
-
+function computeScheduledLeaves({ students = [], targetDateIST }) {
+  const leaves = [];
   students.forEach((student) => {
     if (student.block) return;
-
     const exceptions = student.dateExceptions || {};
-    let consecutiveMissed = 0;
-
-    // Check past 5 days
-    for (let i = 0; i < 5; i++) {
-      const checkDate = addDaysToDate(targetDateIST, -i);
-      const dayMeta = exceptions[checkDate];
-      if (dayMeta && (dayMeta.breakfast === false || dayMeta.lunch === false)) {
-        consecutiveMissed++;
+    const dayMeta = exceptions[targetDateIST];
+    if (dayMeta) {
+      const isBkOff = dayMeta.breakfast === false;
+      const isLnOff = dayMeta.lunch === false;
+      if (isBkOff || isLnOff) {
+        leaves.push({
+          id: student.id,
+          tokenNo: student.tokenNo,
+          name: student.name || 'Student',
+          batch: student.batch || 'Unassigned',
+          phone: student.phone || '',
+          email: student.email || '',
+          isBreakfastOff: isBkOff,
+          isLunchOff: isLnOff,
+          reason: dayMeta.reason || 'Scheduled Leave / Fasting',
+        });
       }
-    }
-
-    if (consecutiveMissed >= 4) {
-      consecutiveMissedAlerts.push({
-        id: student.id,
-        tokenNo: student.tokenNo,
-        name: student.name || 'Student',
-        nameMl: student.nameMl,
-        batch: student.batch || 'Unassigned',
-        room: student.room || 'General',
-        phone: student.phone || student.mobile,
-        consecutiveMissed,
-        severity: consecutiveMissed >= 5 ? 'critical' : 'warning',
-        reason: 'Consecutive meal opt-outs detected. Welfare check recommended.',
-      });
-    } else if (consecutiveMissed === 0) {
-      disciplineHonorRoll.push({
-        id: student.id,
-        tokenNo: student.tokenNo,
-        name: student.name || 'Student',
-        batch: student.batch || 'Unassigned',
-      });
     }
   });
 
   return {
-    welfareAlerts: consecutiveMissedAlerts.slice(0, 10),
-    welfareAlertsTotal: consecutiveMissedAlerts.length,
-    honorRollCount: disciplineHonorRoll.length,
+    list: leaves,
+    count: leaves.length,
+    breakfastLeavesCount: leaves.filter((l) => l.isBreakfastOff).length,
+    lunchLeavesCount: leaves.filter((l) => l.isLunchOff).length,
   };
 }

@@ -57,7 +57,7 @@ const DAYS_META = [
   { key: 'sa', label: 'Sat', full: 'Saturday', fullKey: 'daysFull.6' },
 ];
 
-export default function TokenLockManagerModal({ isOpen, onClose }) {
+export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModal }) {
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck, KeyRound, LogOut, ShieldCheck, Mail, User, Sparkles, Hash, Home, LogIn, AtSign } from 'lucide-react';
+import { UserCheck, KeyRound, LogOut, ShieldCheck, Mail, User, Sparkles, Hash, Phone, LogIn, AtSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
@@ -7,6 +7,8 @@ import { dialog } from '../../../utils/dialog';
 import firebase from '../../../firebase/config';
 import ChangePinModal from '../modals/ChangePinModal';
 import EditUsernameModal from '../modals/EditUsernameModal';
+import { getBatchTheme } from '../../../utils/batchTheme';
+import IslamicAvatar from '../../ui/IslamicAvatar';
 
 export default function AccountProfileSection({
   user,
@@ -25,6 +27,7 @@ export default function AccountProfileSection({
 
   const isStudent = Boolean(stdata?.tokenNo);
   const isStaff = Boolean(user);
+  const batchTheme = getBatchTheme(stdata?.batch);
 
   const handleLogoutAdmin = async () => {
     const confirmed = await dialog.confirm({
@@ -70,13 +73,18 @@ export default function AccountProfileSection({
         <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-transparent to-teal-500/10 border border-emerald-500/20 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex flex-col items-center justify-center font-black shadow-md shadow-emerald-500/20 flex-shrink-0">
-                <span className="text-[10px] uppercase font-bold tracking-tight opacity-90 leading-none">TOKEN</span>
-                <span className="text-xl leading-none mt-1">#{stdata.tokenNo}</span>
-              </div>
+              <IslamicAvatar
+                student={stdata}
+                size={56}
+                showStatusRing
+                interactive
+              />
 
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`font-mono font-black text-xs px-2 py-0.5 rounded-lg ${batchTheme.bg} ${batchTheme.text} border ${batchTheme.border}`}>
+                    {stdata.tokenNo}
+                  </span>
                   <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
                     {stdata.name}
                   </h3>
@@ -95,10 +103,28 @@ export default function AccountProfileSection({
                     {stdata.nameMl}
                   </p>
                 )}
-                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1.5 font-medium">
-                  <span>Batch: {stdata.batch || 'N/A'}</span>
-                  <span>•</span>
-                  <span>Room: {stdata.roomNo || stdata.room || 'N/A'}</span>
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1.5 font-medium flex-wrap">
+                  <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${batchTheme.bg} ${batchTheme.text} border ${batchTheme.border}`}>
+                    {stdata.batch || 'General'}
+                  </span>
+                  {stdata.phone && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-emerald-500" />
+                        {stdata.phone}
+                      </span>
+                    </>
+                  )}
+                  {stdata.email && (
+                    <>
+                      <span>•</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Mail className="w-3 h-3 text-teal-500" />
+                        {stdata.email}
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 {/* Student Username Badge */}

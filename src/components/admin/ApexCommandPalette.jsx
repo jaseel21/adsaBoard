@@ -151,8 +151,8 @@ export default function ApexCommandPalette({
       },
       {
         id: 'block_management',
-        title: 'Block & Fine Management Console',
-        subtitle: 'Food waste penalties, fine ledger & dual-grid suspension',
+        title: 'Disciplinary Block & Appeals Console',
+        subtitle: 'Suspension ledger, student appeals desk & dining sanctions',
         icon: Ban,
         iconColor: 'text-rose-500',
         action: () => {
@@ -177,8 +177,8 @@ export default function ApexCommandPalette({
         },
         {
           id: 'cutoff_rules',
-          title: t('configureCutoffTimers', 'Configure Cutoff Window & Timers'),
-          subtitle: t('configureCutoffTimersSub', 'Adjust daily cutoff time and grace period'),
+          title: t('tokenCutoffEngine', 'Token Cutoff & Locking Engine'),
+          subtitle: 'Configure cutoff window, board lock schedules, timed overrides & calendar events',
           icon: Sliders,
           iconColor: 'text-blue-500',
           action: () => {
@@ -188,8 +188,8 @@ export default function ApexCommandPalette({
         },
         {
           id: 'audit_logs',
-          title: t('auditLogsAction', 'Audit Trail & Activity Logs'),
-          subtitle: t('auditLogsSub', 'Inspect immutable records of all token switches and security events'),
+          title: t('auditLogsAction', 'Audit Logs'),
+          subtitle: t('auditLogsSub', 'Inspect records of token switches and administrative events'),
           icon: Activity,
           iconColor: 'text-emerald-500',
           action: () => {
@@ -199,8 +199,8 @@ export default function ApexCommandPalette({
         },
         {
           id: 'analytics_intelligence',
-          title: 'Intelligence & Performance Analytics Command',
-          subtitle: 'Live dining telemetry, batch benchmarks, kitchen rations & waste economics (/admin/analytics)',
+          title: 'Analytics & Reports',
+          subtitle: 'Dining statistics, batch benchmarks, attendance & reports (/admin/analytics)',
           icon: BarChart3,
           iconColor: 'text-emerald-500',
           action: () => {
@@ -210,8 +210,8 @@ export default function ApexCommandPalette({
         },
         {
           id: 'governance_cockpit',
-          title: 'Master Governance Cockpit',
-          subtitle: 'Global killswitches, institutional maintenance & emergency meal overrides',
+          title: 'System Maintenance',
+          subtitle: 'Emergency killswitches, maintenance mode & meal overrides',
           icon: Power,
           iconColor: 'text-rose-500',
           action: () => {
@@ -221,8 +221,8 @@ export default function ApexCommandPalette({
         },
         {
           id: 'backup_vault',
-          title: 'Cloud Storage & Database Backup Vault',
-          subtitle: 'Point-in-time snapshots, SHA-256 verification & live rehydration hub',
+          title: 'Backup & Restore',
+          subtitle: 'Cloud snapshots, JSON export/import and disaster recovery',
           icon: Database,
           iconColor: 'text-teal-400',
           action: () => {

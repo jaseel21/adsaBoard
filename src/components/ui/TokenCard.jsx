@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
 import {
   Lock,
@@ -7,12 +7,16 @@ import {
   CheckCircle2,
   XCircle,
   CalendarDays,
+  PowerOff,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
+import { DataOfOne } from '../../store/StudentData';
 import { useExperienceFX } from '../fx/ExperienceFXProvider';
 import { useTiltGlare } from '../../hooks/useTiltGlare';
 import { useSpotlightBorder } from '../../hooks/useSpotlightBorder';
 import { useLongPressPeek } from '../../hooks/useLongPressPeek';
+import { getBatchTheme } from '../../utils/batchTheme';
+import IslamicAvatar from './IslamicAvatar';
 
 /**
  * Detailed Student Token Card View
@@ -26,14 +30,20 @@ export default function TokenCard({
   onLeave,
   isBlocked,
   isLunch,
+  isSupplyOff = false,
   onClick,
+  isSelectMode = false,
+  isSelected = false,
   className = '',
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const studentSession = useContext(DataOfOne);
   const tokenNumber = doc.tokenNo;
-  const nameEn = doc.nameEn || doc.name || `Token #${tokenNumber}`;
+  const isMe = Boolean(studentSession?.stdata?.tokenNo && Number(studentSession.stdata.tokenNo) === Number(tokenNumber));
+  const nameEn = doc.nameEn || doc.name || `Token ${tokenNumber}`;
   const nameMl = doc.nameMl;
   const batch = doc.batch || 'General';
+  const batchTheme = getBatchTheme(batch);
 
   const {
     triggerParticleBurst,
@@ -73,7 +83,9 @@ export default function TokenCard({
     });
   }
 
-  const statusDescription = isBlocked
+  const statusDescription = isSupplyOff
+    ? (lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Food Supply')
+    : isBlocked
     ? t('locked', 'Locked')
     : onLeave
     ? t('leave', 'On Leave')
@@ -85,16 +97,16 @@ export default function TokenCard({
     ? t('lunchOff', 'Lunch Cancelled')
     : t('breakfastOff', 'Breakfast Cancelled');
 
-  const fullAccessibleLabel = `Token ${tokenNumber}, ${nameEn}${nameMl ? `, ${nameMl}` : ''}, Batch ${batch}. Status: ${statusDescription}. ${dietaryAvoided.length > 0 ? `Diet: Excludes ${dietaryAvoided.map(d => d.label).join(', ')}` : ''}. Press Enter to view details.`;
+  const fullAccessibleLabel = `${isMe ? '(Your Token) ' : ''}Token ${tokenNumber}, ${nameEn}${nameMl ? `, ${nameMl}` : ''}, Batch ${batch}. Status: ${statusDescription}. ${dietaryAvoided.length > 0 ? `Diet: Excludes ${dietaryAvoided.map(d => d.label).join(', ')}` : ''}. Press Enter to view live attendance calendar.`;
 
   const handleClick = (e) => {
     triggerParticleBurst(
       e.clientX,
       e.clientY,
-      isBlocked ? 'amber' : isOn ? 'emerald' : 'rose',
+      isSupplyOff ? 'gray' : isBlocked ? 'amber' : isOn ? 'emerald' : 'rose',
       12
     );
-    if (onClick) onClick(doc);
+    if (onClick) onClick(doc, e);
   };
 
   const handleContextMenu = (e) => {
@@ -118,6 +130,7 @@ export default function TokenCard({
       role="button"
       tabIndex={0}
       data-magnetic="true"
+      title={`Token ${tokenNumber} (${nameEn}) — Click to view live attendance calendar`}
       aria-label={fullAccessibleLabel}
       aria-pressed={Boolean(isOn)}
       onMouseMove={handleMouseMove}
@@ -135,7 +148,9 @@ export default function TokenCard({
       }}
       style={tilt.style}
       className={`spotlight-card relative group rounded-2xl p-3.5 sm:p-4 bg-white/90 dark:bg-[#0f1715]/90 border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between gap-2.5 select-none focus-visible:ring-4 focus-visible:ring-emerald-500/60 focus-visible:outline-none transform-style-preserve-3d ${
-        isBlocked
+        isSupplyOff
+          ? 'border-gray-300 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] shadow-inner opacity-80'
+          : isBlocked
           ? 'border-gray-300 dark:border-white/10 opacity-75'
           : isOn
           ? 'border-emerald-300/80 dark:border-emerald-500/25 bg-emerald-500/[0.02]'
@@ -151,27 +166,44 @@ export default function TokenCard({
 
       {/* Tier 1: Token Number & Meal Status Badge Row */}
       <div className="flex items-center justify-between gap-2 relative z-10">
-        {/* Tactile Token Number Square */}
-        <div
-          className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center font-extrabold font-mono text-sm sm:text-base text-white shadow-sm flex-shrink-0 ${
-            isBlocked
-              ? 'bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-600'
-              : isOn
-              ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-emerald-500/25 border border-emerald-400'
-              : 'bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/25 border border-rose-400'
-          }`}
-        >
-          {tokenNumber}
-          {isBlocked && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center shadow-sm z-10">
-              <Lock className="w-2.5 h-2.5 text-gray-300" />
+        {/* Tactile Token Number & Islamic Avatar */}
+        <div className="relative">
+          <IslamicAvatar
+            student={doc}
+            size={42}
+            showStatusRing={!isSupplyOff}
+            animate={false}
+            className="shadow-xs shrink-0"
+          />
+          {isMe && (
+            <span
+              title="You are logged in as this student"
+              className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white ring-2 ring-white dark:ring-[#0f1715] shadow-xs z-30 flex items-center gap-0.5"
+            >
+              <span>{t('youBadge', 'You')}</span>
+            </span>
+          )}
+          {isSelectMode && (
+            <span
+              className={`absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-all shadow-md z-30 ${
+                isSelected
+                  ? 'bg-emerald-500 text-white ring-2 ring-white scale-110 font-black'
+                  : 'bg-black/60 border border-white/40 text-transparent'
+              }`}
+            >
+              ✓
             </span>
           )}
         </div>
 
         {/* Meal Pill Badge */}
         <div className="flex-shrink-0">
-          {isBlocked ? (
+          {isSupplyOff ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gray-200/90 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-300/80 dark:border-white/15 shadow-inner">
+              <PowerOff className="w-2.5 h-2.5 text-gray-500 dark:text-gray-400" />
+              <span>{lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Food Supply'}</span>
+            </span>
+          ) : isBlocked ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300">
               <Lock className="w-2.5 h-2.5" />
               <span>{t('locked', 'Locked')}</span>
@@ -210,7 +242,7 @@ export default function TokenCard({
       {/* Middle & Footer: Batch & Dietary Badges */}
       <div className="pt-2 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 relative z-10">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md truncate max-w-[140px]">{batch}</span>
+          <span className={`font-semibold ${batchTheme.text} ${batchTheme.bg} border ${batchTheme.border} px-2 py-0.5 rounded-md truncate max-w-[140px]`}>{batch}</span>
         </div>
 
         {/* Dietary avoidance tags if any */}

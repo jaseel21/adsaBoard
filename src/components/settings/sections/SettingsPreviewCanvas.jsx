@@ -53,11 +53,11 @@ export default function SettingsPreviewCanvas({ preferences }) {
             <div className="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
               <span>{language === 'ml' ? 'മുഹമ്മദ് റാഷിദ്' : 'Muhammed Rashid'}</span>
               <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600/30">
-                Thooba 2
+                Batch 2024
               </span>
             </div>
             <span className="text-[11px] text-gray-500 dark:text-gray-400">
-              {language === 'ml' ? 'റൂം 104 • ബാച്ച് 2024' : 'Room 104 • Batch 2024'}
+              {language === 'ml' ? 'ബാച്ച് 2024 • ടോക്കൺ 42' : 'Batch 2024 • Token 42'}
             </span>
           </div>
         </div>

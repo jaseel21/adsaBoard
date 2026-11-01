@@ -75,9 +75,14 @@ export default function LandingPage() {
   const {
     todayIST,
     isTomorrowLocked,
+    isTomorrowBreakfastLocked,
+    isTomorrowLunchLocked,
+    isTomorrowPartiallyLocked,
     statusBadge,
     startTime,
     endTime,
+    breakfastCutoffDeadline,
+    lunchCutoffDeadline,
     isPortalAccessible,
     defaultDayOffset,
     rawBoardSwitchTime,
@@ -400,7 +405,7 @@ export default function LandingPage() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white">
                     {stdata?.tokenNo
-                      ? t('activeStudentSession', 'Active Student Session: Token #{token}').replace('{token}', stdata.tokenNo)
+                      ? t('activeStudentSession', 'Active Student Session: Token {token}').replace('{token}', stdata.tokenNo)
                       : t('activeStaffSession', 'Active Staff Session: {name}').replace('{name}', user.email?.split('@')[0] || t('committeeMember', 'Committee Member'))}
                   </h4>
                 </div>
@@ -550,9 +555,15 @@ export default function LandingPage() {
                 <span className="font-bold">{statusBadge}</span>
                 <span className="text-white/40">•</span>
                 <span className="text-[11px] opacity-80 font-mono">
-                  {!isTomorrowLocked
-                    ? t('cutoffAtTime', 'Cutoff at {time}').replace('{time}', endTime || '11:00 PM IST')
-                    : t('nextDaySelectionsClosed', 'Next-day selections closed')}
+                  {isTomorrowLocked
+                    ? t('nextDaySelectionsClosed', 'Next-day selections closed')
+                    : isTomorrowPartiallyLocked
+                    ? (isTomorrowBreakfastLocked
+                        ? `Bf closed • Lu cutoff ${lunchCutoffDeadline || endTime}`
+                        : `Lu closed • Bf cutoff ${breakfastCutoffDeadline || endTime}`)
+                    : (breakfastCutoffDeadline && lunchCutoffDeadline && breakfastCutoffDeadline !== lunchCutoffDeadline
+                        ? `Bf ${breakfastCutoffDeadline} • Lu ${lunchCutoffDeadline}`
+                        : t('cutoffAtTime', 'Cutoff at {time}').replace('{time}', endTime || '11:00 PM IST'))}
                 </span>
               </div>
 

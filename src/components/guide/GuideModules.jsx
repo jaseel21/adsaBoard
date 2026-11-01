@@ -156,7 +156,7 @@ export const StudentPortalTips = () => {
         <div className="space-y-3 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
           <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-500/20">
             <strong className="text-emerald-900 dark:text-emerald-300 block mb-0.5">
-              1. Single-Day Override (Leaving for a Day?)
+              1. Single-Date Leave (Leaving for a Day?)
             </strong>
             <span>
               In the Student Portal, click on the target date in the calendar and flip Breakfast or Lunch to OFF. This creates a temporary leave that automatically expires after 24 hours. The token will show as <strong>Red</strong> on the board.

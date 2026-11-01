@@ -12,6 +12,7 @@ import {
   FileText,
   ArrowUp,
   Heart,
+  GraduationCap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../store/LanguageContext';
@@ -131,6 +132,17 @@ export default function Footer() {
 
             {/* Institutional Sub-links */}
             <nav className="flex flex-col space-y-1.5 pt-1 text-xs text-gray-600 dark:text-gray-400">
+              <ApexLinkPreview url="/about">
+                <Link
+                  to="/about"
+                  onClick={() => feedback('tick')}
+                  className="inline-flex items-center gap-2 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-0.5"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{lang === 'ml' ? 'ആലത്തൂർപടി ദർസ് & അഡ്സ' : 'About Dars & ADSA'}</span>
+                </Link>
+              </ApexLinkPreview>
+
               <ApexLinkPreview url="/support">
                 <Link
                   to="/support"
@@ -148,7 +160,7 @@ export default function Footer() {
                 className="inline-flex items-center gap-2 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-0.5"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{lang === 'ml' ? 'ആദാബുൽ മാഇദ (ഭക്ഷണ മര്യാദകൾ)' : 'Dining Ethics & Sunnah Adab'}</span>
+                <span>{lang === 'ml' ? 'ഭക്ഷണ മര്യാദകൾ' : 'Dining Ethics & Sunnah Adab'}</span>
               </Link>
 
               <ApexLinkPreview url="/guide">

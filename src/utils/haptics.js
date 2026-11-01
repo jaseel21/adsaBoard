@@ -76,6 +76,23 @@ class HapticController {
   urgentAlert() {
     this.vibrate([25, 40, 25, 40, 40]);
   }
+
+  // Food Supply Controller Cadences
+  servingApproved() {
+    this.vibrate(16);
+  }
+
+  avoiderWarning() {
+    this.vibrate([35, 45, 35]);
+  }
+
+  duplicateAlert() {
+    this.vibrate([40, 30, 40, 30, 40]);
+  }
+
+  gracePlate() {
+    this.vibrate([20, 40, 20]);
+  }
 }
 
 export const hapticEngine = new HapticController();

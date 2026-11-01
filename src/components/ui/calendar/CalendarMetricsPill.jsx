@@ -45,8 +45,8 @@ export default function CalendarMetricsPill({ stats, monthOverridesCount = 0 }) 
               )}
             </span>
             {monthOverridesCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25 flex items-center gap-0.5">
-                <Zap className="w-2.5 h-2.5 text-indigo-500" />
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/25 flex items-center gap-0.5">
+                <Zap className="w-2.5 h-2.5 text-teal-500" />
                 {monthOverridesCount}
               </span>
             )}
@@ -96,10 +96,10 @@ export default function CalendarMetricsPill({ stats, monthOverridesCount = 0 }) 
               </div>
 
               {monthOverridesCount > 0 && (
-                <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 pt-1 border-t border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between text-teal-600 dark:text-teal-400 pt-1 border-t border-gray-100 dark:border-white/5">
                   <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-indigo-500" />
-                    Month Overrides:
+                    <Zap className="w-3 h-3 text-teal-500" />
+                    Custom Dates:
                   </span>
                   <span className="font-mono font-bold">{monthOverridesCount} dates</span>
                 </div>

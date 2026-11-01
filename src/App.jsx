@@ -11,6 +11,7 @@ import SupplySections from './components/SupplySections';
 import Menu from './components/Menu';
 import PersonInfo from './store/StudentData';
 import Admin from './components/Admin';
+import SuperAdminDashboard from './components/admin/SuperAdminDashboard';
 import AdminLogin from './components/AdminLogin';
 import StudentManagement from './components/StudentManagement';
 import UniversalMenuStudio from './components/menu/UniversalMenuStudio';
@@ -19,8 +20,11 @@ import AuditTrail from './components/audit/AuditTrail';
 import ApexAnalyticsDashboard from './components/analytics/ApexAnalyticsDashboard';
 import ApexSentinelDashboard from './components/admin/sentinel/ApexSentinelDashboard';
 import KitchenDisplay from './components/KitchenDisplay';
+import FoodSupplyController from './components/supply/FoodSupplyController';
 import GuidePage from './components/guide/GuidePage';
 import DiningEthicsPage from './components/ethics/DiningEthicsPage';
+import AboutPage from './components/about/AboutPage';
+import AboutStudio from './components/admin/studio/AboutStudio';
 import NotFound from './components/NotFound';
 import AdminRoute from './components/guards/AdminRoute';
 import RoleRoute from './components/guards/RoleRoute';
@@ -56,6 +60,7 @@ import ExperienceFXProvider from './components/fx/ExperienceFXProvider';
 import { useLivePresenceTracker } from './hooks/useLivePresenceTracker';
 import { useRemoteCommandListener } from './hooks/useRemoteCommandListener';
 import EmergencyAlertBannerModal from './components/admin/sentinel/EmergencyAlertBannerModal';
+import CampusKioskGuardHUD from './components/guards/CampusKioskGuardHUD';
 import { MasterGovernanceProvider, useMasterGovernance } from './store/MasterGovernanceContext';
 import MasterMaintenanceScreen from './components/admin/governance/MasterMaintenanceScreen';
 import InstitutionalAlertRibbon from './components/admin/governance/InstitutionalAlertRibbon';
@@ -178,6 +183,12 @@ function AppContent() {
             <Route path="/support" element={<CareHubPage />} />
             <Route path="/feedback" element={<CareHubPage />} />
             <Route path="/contact" element={<CareHubPage />} />
+            {/* Flagship Institutional About Sanctuary & Story */}
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/dars" element={<Navigate to="/about" replace />} />
+            <Route path="/adsa" element={<Navigate to="/about" replace />} />
+            <Route path="/mudarrisun" element={<Navigate to="/about" replace />} />
+            <Route path="/committee" element={<Navigate to="/about" replace />} />
             {/* System Preferences & Personalization */}
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/preferences" element={<Navigate to="/settings" replace />} />
@@ -212,9 +223,46 @@ function AppContent() {
             <Route path="/kds" element={<Navigate to="/kitchen" replace />} />
             <Route path="/cook-portal" element={<Navigate to="/kitchen" replace />} />
 
-            {/* Master Board & Student Management (Central Committee, Canteen Sub-Committee, Devs) */}
+            {/* Dedicated Food Supply Sentinel & Live Serving Controller */}
+            <Route
+              path="/supply/controller"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.COOK,
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <FoodSupplyController />
+                </RoleRoute>
+              }
+            />
+            <Route path="/supply-controller" element={<Navigate to="/supply/controller" replace />} />
+            <Route path="/supply-marker" element={<Navigate to="/supply/controller" replace />} />
+            <Route path="/serving-controller" element={<Navigate to="/supply/controller" replace />} />
+
+            {/* Super Admin Executive Command Dashboard */}
             <Route
               path="/admin"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <SuperAdminDashboard />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+
+            {/* Master Token Board (Tactile Keycap Attendance Matrix) */}
+            <Route
+              path="/admin/master-board"
               element={
                 <RoleRoute
                   allowedRoles={[
@@ -227,6 +275,8 @@ function AppContent() {
                 </RoleRoute>
               }
             />
+            <Route path="/admin/board" element={<Navigate to="/admin/master-board" replace />} />
+            <Route path="/master-board" element={<Navigate to="/admin/master-board" replace />} />
             <Route
               path="/student-management"
               element={
@@ -360,6 +410,23 @@ function AppContent() {
             <Route path="/admin/avoiders" element={<Navigate to="/admin/dietary" replace />} />
             <Route path="/dietary-management" element={<Navigate to="/admin/dietary" replace />} />
 
+            {/* Institutional About Studio & Content Manager */}
+            <Route
+              path="/admin/about"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <AboutStudio />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/about-studio" element={<Navigate to="/admin/about" replace />} />
+
             {/* Legacy Redirects */}
             <Route path="/add-student" element={<Navigate to="/student-management?add=true" replace />} />
             <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
@@ -416,6 +483,7 @@ function App() {
                     <SmoothScrollProvider>
                       <SidebarProvider>
                         <AppContent />
+                        <CampusKioskGuardHUD />
                         <NotificationDrawer />
                         <EmergencyNotificationDialog />
                         <PwaInstallPrompt />

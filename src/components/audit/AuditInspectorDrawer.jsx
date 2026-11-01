@@ -261,7 +261,7 @@ export default function AuditInspectorDrawer({
                 </div>
                 {log.target?.tokenNo && (
                   <div className="pt-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    Token #{log.target.tokenNo}
+                    Token {log.target.tokenNo}
                   </div>
                 )}
               </div>

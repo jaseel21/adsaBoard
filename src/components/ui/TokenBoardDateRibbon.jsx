@@ -7,6 +7,7 @@ import {
   RotateCcw,
   History,
   Clock,
+  PowerOff,
 } from 'lucide-react';
 import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
@@ -31,7 +32,7 @@ export default function TokenBoardDateRibbon({
   children = null,
 }) {
   const { feedback } = useFeedback();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const calendarButtonRef = useRef(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -47,6 +48,11 @@ export default function TokenBoardDateRibbon({
     stepDateForward,
     isPostEveningCutoff,
     relativeDateMeta,
+    canStepBackward = true,
+    canStepForward = true,
+    academicYear = null,
+    isAtAcademicYearStart = false,
+    isAtAcademicYearEnd = false,
   } = controller;
 
   const tomorrowIST = addDaysToDate(todayIST, 1);
@@ -110,6 +116,13 @@ export default function TokenBoardDateRibbon({
             </span>
 
             {/* Dynamic Status Pill */}
+            {controller.activeNoticeForDate && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-black shrink-0 animate-pulse">
+                <span>✨</span>
+                <span>{controller.activeNoticeForDate.badgeText || controller.activeNoticeForDate.badgeTextEn || 'Notice'}</span>
+              </span>
+            )}
+
             {isToday ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -131,22 +144,42 @@ export default function TokenBoardDateRibbon({
                 {t('pastRecord', 'Past Record')}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 text-[10px] font-bold shrink-0">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-500/15 text-teal-700 dark:text-teal-300 text-[10px] font-bold shrink-0">
                 <Clock className="w-2.5 h-2.5" />
                 {t('scheduledDate', 'Scheduled Date')}
               </span>
             )}
 
             {/* Relative Distance / Auto-shift contextual notes */}
-            {isPostEveningCutoff && isTomorrow && dateMode === 'auto' && (
+            {/* {isPostEveningCutoff && isTomorrow && dateMode === 'auto' && (
               <span className="text-[10px] text-gray-400 font-medium hidden md:inline">
                 {t('autoAdvancedForTomorrow', "(Auto-advanced for tomorrow's prep)")}
               </span>
-            )}
+            )} */}
 
             {relativeDateMeta?.relativeLabel && !isToday && !isTomorrow && (
               <span className="text-[10px] text-gray-400 font-semibold hidden sm:inline">
                 ({relativeDateMeta.relativeLabel})
+              </span>
+            )}
+
+            {/* Academic Year Boundary Indicators */}
+            {isAtAcademicYearStart && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 text-[10px] font-bold shrink-0">
+                Academic Year Start
+              </span>
+            )}
+            {isAtAcademicYearEnd && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 text-[10px] font-bold shrink-0">
+                Academic Year End
+              </span>
+            )}
+
+            {/* Food Supply Suspended Badge: Greyed / Shadowed Out */}
+            {controller?.isBoardSupplyActive === false && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-300/80 dark:border-white/10 text-[10px] font-black shrink-0 shadow-inner">
+                <PowerOff className="w-2.5 h-2.5 text-gray-500 dark:text-gray-400" />
+                <span>{controller.boardSupplyStatus?.reasonObj?.labelMl && lang === 'ml' ? controller.boardSupplyStatus.reasonObj.labelMl : (lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Food Supply')}</span>
               </span>
             )}
           </div>
@@ -160,12 +193,18 @@ export default function TokenBoardDateRibbon({
         <button
           type="button"
           onClick={() => {
+            if (!canStepBackward) return;
             feedback('tick');
             stepDateBackward();
             if (onSelectDate) onSelectDate(addDaysToDate(targetDateIST, -1));
           }}
-          className="p-1.5 sm:p-2 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 border border-gray-200/80 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-all cursor-pointer shrink-0"
-          title={`${t('prevDay', 'Previous Day')} (${addDaysToDate(targetDateIST, -1)})`}
+          disabled={!canStepBackward}
+          className={`p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 ${
+            !canStepBackward
+              ? 'opacity-30 cursor-not-allowed bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400'
+              : 'bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 border-gray-200/80 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white cursor-pointer'
+          }`}
+          title={!canStepBackward ? `Reached Academic Year Start (${academicYear?.startDate || ''})` : `${t('prevDay', 'Previous Day')} (${addDaysToDate(targetDateIST, -1)})`}
           aria-label={t('prevDay', 'Previous Day')}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -206,12 +245,18 @@ export default function TokenBoardDateRibbon({
         <button
           type="button"
           onClick={() => {
+            if (!canStepForward) return;
             feedback('tick');
             stepDateForward();
             if (onSelectDate) onSelectDate(addDaysToDate(targetDateIST, 1));
           }}
-          className="p-1.5 sm:p-2 rounded-xl bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 border border-gray-200/80 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-all cursor-pointer shrink-0"
-          title={`${t('nextDay', 'Next Day')} (${addDaysToDate(targetDateIST, 1)})`}
+          disabled={!canStepForward}
+          className={`p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 ${
+            !canStepForward
+              ? 'opacity-30 cursor-not-allowed bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400'
+              : 'bg-gray-100 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 border-gray-200/80 dark:border-white/10 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white cursor-pointer'
+          }`}
+          title={!canStepForward ? `Reached Academic Year End (${academicYear?.endDate || ''})` : `${t('nextDay', 'Next Day')} (${addDaysToDate(targetDateIST, 1)})`}
           aria-label={t('nextDay', 'Next Day')}
         >
           <ChevronRight className="w-4 h-4" />

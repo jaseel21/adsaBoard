@@ -3,11 +3,13 @@ import { motion } from 'framer-motion';
 import { PieChart, Scale, Utensils, AlertCircle } from 'lucide-react';
 import { soundEngine } from '../../../utils/soundEffects';
 import { hapticEngine } from '../../../utils/haptics';
+import { useLanguage } from '../../../store/LanguageContext';
 
 export default function DietaryDistributionRing({
   dietary = {},
   telemetry = {},
 }) {
+  const { lang } = useLanguage();
   const [activeSegment, setActiveSegment] = useState(null);
 
   const totalDiners = telemetry.activeDiners || 0;
@@ -20,28 +22,28 @@ export default function DietaryDistributionRing({
   const segments = [
     {
       id: 'standard',
-      label: 'Standard Full Diet',
+      label: lang === 'ml' ? 'പൂർണ്ണ ഭക്ഷണം' : 'Standard Full Diet',
       count: standardDiners,
       color: '#10b981', // emerald
       bgColor: 'bg-emerald-500',
     },
     {
       id: 'beef',
-      label: 'No Beef (മാട്ടിറച്ചി ഒഴിവാക്കൽ)',
+      label: lang === 'ml' ? 'മാട്ടിറച്ചി ഒഴിവാക്കൽ' : 'No Beef',
       count: beefAvoid,
       color: '#ef4444', // red
       bgColor: 'bg-red-500',
     },
     {
       id: 'fish',
-      label: 'No Fish (മത്സ്യം ഒഴിവാക്കൽ)',
+      label: lang === 'ml' ? 'മത്സ്യം ഒഴിവാക്കൽ' : 'No Fish',
       count: fishAvoid,
       color: '#3b82f6', // blue
       bgColor: 'bg-blue-500',
     },
     {
       id: 'chicken',
-      label: 'No Chicken (ചിക്കൻ ഒഴിവാക്കൽ)',
+      label: lang === 'ml' ? 'ചിക്കൻ ഒഴിവാക്കൽ' : 'No Chicken',
       count: chickenAvoid,
       color: '#f59e0b', // amber
       bgColor: 'bg-amber-500',

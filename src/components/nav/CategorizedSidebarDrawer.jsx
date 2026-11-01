@@ -25,6 +25,7 @@ import { useFeedback } from '../../utils/useFeedback';
 import ThemeSwitch from '../ThemeSwitch';
 import LanguageSwitch from '../LanguageSwitch';
 import BlockManagementModal from '../admin/BlockManagementModal';
+import BoardSupplySwitchModal from '../board/BoardSupplySwitchModal';
 
 export default function CategorizedSidebarDrawer({
   isOpen,
@@ -51,6 +52,7 @@ export default function CategorizedSidebarDrawer({
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedCategories, setCollapsedCategories] = useState({});
   const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [supplySwitchModalOpen, setSupplySwitchModalOpen] = useState(false);
 
   const toggleCategory = (categoryId) => {
     feedback('tick');
@@ -74,6 +76,8 @@ export default function CategorizedSidebarDrawer({
         onOpenShareModal();
       } else if (item.action === 'open_block_modal') {
         setBlockModalOpen(true);
+      } else if (item.action === 'open_board_supply_modal') {
+        setSupplySwitchModalOpen(true);
       }
       onClose();
       return;
@@ -208,14 +212,14 @@ export default function CategorizedSidebarDrawer({
                     </span>
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    Token #{stdata.tokenNo}
+                    Token {stdata.tokenNo}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-bold text-gray-900 dark:text-white">
-                      {stdata.nameEn || stdata.name || `Student #${stdata.tokenNo}`}
+                      {stdata.nameEn || stdata.name || `Student ${stdata.tokenNo}`}
                     </p>
                     <p className="text-[10px] text-gray-500 dark:text-gray-400">
                       {stdata.batch || 'Active Dining Member'}
@@ -481,6 +485,12 @@ export default function CategorizedSidebarDrawer({
       <BlockManagementModal
         isOpen={blockModalOpen}
         onClose={() => setBlockModalOpen(false)}
+      />
+
+      {/* Board Food Supply Switch Modal (Turn Canteen Supply ON/OFF) */}
+      <BoardSupplySwitchModal
+        isOpen={supplySwitchModalOpen}
+        onClose={() => setSupplySwitchModalOpen(false)}
       />
     </AnimatePresence>
   );

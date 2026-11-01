@@ -307,8 +307,13 @@ export default function ApexFleetMatrix({
 
                   <div className="flex items-center justify-between gap-2 text-[11px]">
                     <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                      <DeviceIcon className="w-3.5 h-3.5" />
-                      <span>{s.device?.os} ({s.device?.browser})</span>
+                      <DeviceIcon className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>{s.device?.deviceName || `${s.device?.os} (${s.device?.browser})`}</span>
+                      {s.device?.persona && (
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 capitalize">
+                          {s.device.persona.replace('_', ' ')}
+                        </span>
+                      )}
                     </div>
 
                     <span className="text-emerald-500 font-extrabold">

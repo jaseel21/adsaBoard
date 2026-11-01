@@ -147,7 +147,7 @@ export default function SupportInspectorDrawer({
 
       soundEngine.playSoftChime();
       hapticEngine.successPulse();
-      alert(`Token #${ticket.student.tokenNumber} has been successfully unblocked!`);
+      alert(`Token ${ticket.student.tokenNumber} has been successfully unblocked!`);
     } catch (err) {
       console.error('Failed to unblock student token:', err);
       soundEngine.playCautionThud();
@@ -219,7 +219,7 @@ export default function SupportInspectorDrawer({
 
               {ticket.student?.tokenNumber && (
                 <span className="font-mono text-xs font-black px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                  Token #{ticket.student.tokenNumber}
+                  Token {ticket.student.tokenNumber}
                 </span>
               )}
             </div>

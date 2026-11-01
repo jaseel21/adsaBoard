@@ -180,21 +180,32 @@ export default function ApexOperationsRadar({
 
           <div className="space-y-3.5">
             {batchAnalytics.map((batch, idx) => {
-              const colorClass =
-                batch.percent >= 80
-                  ? 'from-emerald-500 to-green-600 text-emerald-600 dark:text-emerald-400'
-                  : batch.percent >= 60
-                  ? 'from-teal-500 to-emerald-600 text-teal-600 dark:text-teal-400'
-                  : batch.percent >= 40
-                  ? 'from-amber-500 to-orange-600 text-amber-600 dark:text-amber-400'
-                  : 'from-rose-500 to-red-600 text-rose-600 dark:text-rose-400';
+              const isUnassigned = batch.batchName === 'Unassigned' || batch.batchName === 'General';
+              const colorClass = isUnassigned
+                ? 'from-amber-500 to-amber-600 text-amber-600 dark:text-amber-400'
+                : batch.percent >= 80
+                ? 'from-emerald-500 to-green-600 text-emerald-600 dark:text-emerald-400'
+                : batch.percent >= 60
+                ? 'from-teal-500 to-emerald-600 text-teal-600 dark:text-teal-400'
+                : batch.percent >= 40
+                ? 'from-amber-500 to-orange-600 text-amber-600 dark:text-amber-400'
+                : 'from-rose-500 to-red-600 text-rose-600 dark:text-rose-400';
 
               return (
                 <div key={batch.batchName} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {batch.batchName}
+                      <span className={`w-1.5 h-1.5 rounded-full ${isUnassigned ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      {isUnassigned ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5">
+                          <span>{t('unassignedBatch', 'Unassigned (No Batch Set)')}</span>
+                          <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            Needs Batch
+                          </span>
+                        </span>
+                      ) : (
+                        batch.batchName
+                      )}
                     </span>
                     <span className="font-mono text-gray-600 dark:text-gray-300">
                       <b className={colorClass.split(' ')[2]}>{batch.active}</b> / {batch.total} ({batch.percent}%)

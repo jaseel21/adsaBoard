@@ -87,6 +87,7 @@ export default function CsvManagerModal({
           const password = String(row.password || row.pass || 'pass123').trim();
           const batch = (row.batch || row.class || row.year || 'General').trim();
           const phone = String(row.phone || row.mobile || '').trim();
+          const email = String(row.email || row.mail || '').trim().toLowerCase();
 
           const isTokenMissing = isNaN(tokenNo) || tokenNo <= 0;
           const isNameMissing = !nameEn;
@@ -95,7 +96,7 @@ export default function CsvManagerModal({
           if (isTokenMissing) {
             issues.push({ rowIdx: idx + 1, message: 'Missing or invalid token number' });
           } else if (isNameMissing) {
-            issues.push({ rowIdx: idx + 1, message: `Token #${tokenNo} is missing student name` });
+            issues.push({ rowIdx: idx + 1, message: `Token ${tokenNo} is missing student name` });
           }
 
           validated.push({
@@ -106,6 +107,7 @@ export default function CsvManagerModal({
             password,
             batch,
             phone,
+            email,
             isExisting,
             isValid: !isTokenMissing && !isNameMissing
           });
@@ -184,6 +186,7 @@ export default function CsvManagerModal({
             password: row.password || (existing ? existing.password : 'pass123'),
             batch: row.batch || (existing ? existing.batch : 'General'),
             phone: row.phone || (existing ? existing.phone || '' : ''),
+            email: row.email || (existing ? existing.email || '' : ''),
             block: existing ? Boolean(existing.block) : false,
             blockReason: existing ? existing.blockReason || '' : '',
             obj: existing?.obj || {
@@ -221,11 +224,11 @@ export default function CsvManagerModal({
   // Sample CSV generator with Malayalam text (UTF-8 BOM)
   const handleDownloadSample = () => {
     feedback('tick');
-    const sampleHeaders = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'password', 'batch', 'phone'];
+    const sampleHeaders = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'password', 'batch', 'phone', 'email'];
     const sampleRows = [
-      ['1', 'Muhammed Rashad', 'മുഹമ്മദ് റഷാദ്', 'rashad_1', 'pass123', 'Batch 2024', '9847000001'],
-      ['2', 'Ahmed Faris', 'അഹ്മദ് ഫാരിസ്', 'faris_2', 'pass456', 'Batch 2024', '9847000002'],
-      ['3', 'Ali Shaheen', 'അലി ഷാഹീൻ', 'shaheen_3', 'pass789', 'Senior Dars', '9847000003'],
+      ['1', 'Muhammed Rashad', 'മുഹമ്മദ് റഷാദ്', 'rashad_1', 'pass123', 'Batch 2024', '9847000001', 'rashad@dars.edu'],
+      ['2', 'Ahmed Faris', 'അഹ്മദ് ഫാരിസ്', 'faris_2', 'pass456', 'Batch 2024', '9847000002', 'faris@dars.edu'],
+      ['3', 'Ali Shaheen', 'അലി ഷാഹീൻ', 'shaheen_3', 'pass789', 'Senior Dars', '9847000003', 'shaheen@dars.edu'],
     ];
 
     const csvText = '\uFEFF' + [sampleHeaders.join(','), ...sampleRows.map(r => r.join(','))].join('\n');
@@ -241,7 +244,7 @@ export default function CsvManagerModal({
   // Export current students to CSV (Hardened: Passwords excluded for data protection)
   const handleExportCsv = () => {
     feedback('tick');
-    const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'batch', 'phone', 'status'];
+    const headers = ['tokenNo', 'nameEn', 'nameMl', 'uname', 'batch', 'phone', 'email', 'status'];
     const rows = allStudents.map(s => [
       s.tokenNo,
       `"${(s.nameEn || s.name || '').replace(/"/g, '""')}"`,
@@ -249,6 +252,7 @@ export default function CsvManagerModal({
       `"${(s.username || s.uname || String(s.tokenNo || '')).replace(/"/g, '""')}"`,
       `"${(s.batch || 'General').replace(/"/g, '""')}"`,
       `"${(s.phone || '').replace(/"/g, '""')}"`,
+      `"${(s.email || '').replace(/"/g, '""')}"`,
       s.block ? 'Blocked' : 'Active'
     ]);
 
@@ -550,7 +554,7 @@ export default function CsvManagerModal({
                       <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                         {parsedRows.slice(0, 30).map((row, idx) => (
                           <tr key={idx} className={!row.isValid ? 'bg-rose-50/50 dark:bg-rose-950/20' : ''}>
-                            <td className="px-3 py-2 font-bold font-mono">#{row.tokenNo}</td>
+                            <td className="px-3 py-2 font-bold font-mono">{row.tokenNo}</td>
                             <td className="px-3 py-2 font-medium text-gray-900 dark:text-white">{row.nameEn || '-'}</td>
                             <td className="px-3 py-2 text-emerald-600 dark:text-emerald-400 font-medium">{row.nameMl || '-'}</td>
                             <td className="px-3 py-2 text-gray-500">{row.batch}</td>

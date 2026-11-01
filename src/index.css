@@ -354,8 +354,8 @@
 dialog,
 [data-lenis-prevent],
 .overscroll-contain,
-.fixed.inset-0,
-[class*="fixed inset-0"] {
+.fixed.inset-0:not(.pointer-events-none):not([class*="pointer-events-none"]),
+[class*="fixed inset-0"]:not(.pointer-events-none):not([class*="pointer-events-none"]) {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }

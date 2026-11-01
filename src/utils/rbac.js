@@ -151,6 +151,7 @@ export function getRoleHomeRoute(role) {
     case ROLES.COOK:
       return '/kitchen';
     case ROLES.CANTEEN_COMMITTEE:
+      return '/admin/master-board';
     case ROLES.CENTRAL_COMMITTEE:
     case ROLES.DEVELOPER:
       return '/admin';

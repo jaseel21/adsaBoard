@@ -323,7 +323,7 @@ export default function DietaryManagement() {
 
     feedback('tick');
     const confirmed = await dialog.confirm({
-      title: `Include Token #${student.tokenNo}?`,
+      title: `Include Token ${student.tokenNo}?`,
       message: `Remove from ${catName} avoiders list so ${student.nameEn || student.name || 'this student'} will be included for ${catName}?`,
       confirmText: 'Yes, Include in Meal',
       cancelText: 'Cancel',
@@ -344,10 +344,10 @@ export default function DietaryManagement() {
         feedback('success');
         dialog.toast.success(
           'Avoider Removed',
-          `Token #${student.tokenNo} (${student.nameEn || student.name || ''}) will now be served ${catName}.`
+          `Token ${student.tokenNo} (${student.nameEn || student.name || ''}) will now be served ${catName}.`
         );
         // Warn if kitchen printout already taken
-        await checkAndWarnIfPrintsInvalidated(1, `Token #${student.tokenNo} included in ${catName}`);
+        await checkAndWarnIfPrintsInvalidated(1, `Token ${student.tokenNo} included in ${catName}`);
       } catch (err) {
         console.error('Error removing avoider:', err);
         feedback('warning');
@@ -548,7 +548,7 @@ export default function DietaryManagement() {
       title: t('approveDietaryRequestTitle', 'Approve Dietary Modification?'),
       message: t(
         'approveDietaryRequestConfirm',
-        `Apply requested dietary changes for Student #${req.tokenNo} (${req.studentName})? This will immediately update their dining profile in Firestore.`
+        `Apply requested dietary changes for Student ${req.tokenNo} (${req.studentName})? This will immediately update their dining profile in Firestore.`
       ),
       confirmText: t('approveAndApply', 'Approve & Apply'),
       cancelText: t('cancel', 'Cancel'),
@@ -567,10 +567,10 @@ export default function DietaryManagement() {
       });
       dialog.toast.success(
         t('requestApproved', 'Request Approved'),
-        t('requestApprovedDesc', `Dietary preferences updated for Student #${req.tokenNo}.`)
+        t('requestApprovedDesc', `Dietary preferences updated for Student ${req.tokenNo}.`)
       );
       // Warn if kitchen printout already taken
-      await checkAndWarnIfPrintsInvalidated(1, `Request approved for Student #${req.tokenNo}`);
+      await checkAndWarnIfPrintsInvalidated(1, `Request approved for Student ${req.tokenNo}`);
     } catch (err) {
       console.error('Error approving dietary request:', err);
       dialog.toast.error('Approval Failed', err.message);
@@ -585,7 +585,7 @@ export default function DietaryManagement() {
       title: t('rejectDietaryRequestTitle', 'Reject Dietary Request?'),
       message: t(
         'rejectDietaryRequestPrompt',
-        `Provide an explanation for declining Token #${req.tokenNo}'s request (optional):`
+        `Provide an explanation for declining Token ${req.tokenNo}'s request (optional):`
       ),
       placeholder: t('rejectionReasonPlaceholder', 'E.g., Special ingredients unavailable, please consult committee...'),
       confirmText: t('rejectRequest', 'Reject Request'),
@@ -610,7 +610,7 @@ export default function DietaryManagement() {
       );
       dialog.toast.info(
         t('requestRejected', 'Request Declined'),
-        t('requestRejectedDesc', `Dietary change request for Token #${req.tokenNo} was marked as rejected.`)
+        t('requestRejectedDesc', `Dietary change request for Token ${req.tokenNo} was marked as rejected.`)
       );
     } catch (err) {
       console.error('Error rejecting dietary request:', err);
@@ -728,7 +728,7 @@ export default function DietaryManagement() {
       activeList.forEach((p) => {
         const list = avoidersMap[p.id] || [];
         const student = list[index];
-        row[p.id] = student ? `#${student.tokenNo} ${student.nameEn || student.name || ''}`.trim() : '-';
+        row[p.id] = student ? `${student.tokenNo} ${student.nameEn || student.name || ''}`.trim() : '-';
       });
       return row;
     });
@@ -1318,7 +1318,7 @@ export default function DietaryManagement() {
                           {/* Token & Batch Badges */}
                           <div className="flex items-center gap-1.5 mb-1">
                             <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-xs border border-emerald-300/40">
-                              #{student.tokenNo}
+                              {student.tokenNo}
                             </span>
                             <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-[10px] font-semibold">
                               {student.batch || 'General'}
@@ -1448,7 +1448,7 @@ export default function DietaryManagement() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                            #{student.tokenNo}
+                            {student.tokenNo}
                           </span>
                           {student.pendingDietaryRequest && (
                             <button
@@ -1890,7 +1890,7 @@ export default function DietaryManagement() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-black text-xs text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/40">
-                            #{req.tokenNo}
+                            {req.tokenNo}
                           </span>
                           <span className="font-bold text-sm text-gray-900 dark:text-white">
                             {req.studentName}
@@ -2118,7 +2118,7 @@ export default function DietaryManagement() {
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                                #{st.tokenNo}
+                                {st.tokenNo}
                               </span>
                               <span className="text-xs font-bold text-gray-900 dark:text-white">
                                 {st.nameEn || st.name}

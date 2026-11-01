@@ -36,16 +36,13 @@ import firebase from '../../firebase/config';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/auditLogger';
 import { approveUnblockRequest } from '../../utils/unblockRequestService';
 import {
-  DAY_KEYS,
-  DAY_NAMES,
-  DEFAULT_MEAL_SCHEDULE,
   DEFAULT_FINE_POLICY,
   BLOCK_REASON_CATEGORIES,
+  DAY_KEYS,
+  DAY_NAMES,
   subscribeToMealScheduleAndFines,
-  saveMealScheduleAndFines,
   getStudentFineAmount,
   updateStudentFineAmount,
-  formatMealTimeRange,
 } from '../../utils/mealScheduleService';
 
 export default function BlockManagementModal({
@@ -53,27 +50,17 @@ export default function BlockManagementModal({
   onClose,
   allStudents = [],
   onStudentUpdated,
+  onOpenTimeModal,
 }) {
   const { user, role } = useContext(AuthContext);
   const { lang, t } = useLanguage();
   const { feedback } = useFeedback();
 
-  // Active Top-Level View: 'roster' | 'settings' | 'new_block'
+  // Active Top-Level View: 'roster' | 'new_block' | 'appeals'
   const [activeTab, setActiveTab] = useState('roster');
 
-  // Real-time Meal & Fine Settings
-  const [mealSchedule, setMealSchedule] = useState(DEFAULT_MEAL_SCHEDULE);
+  // Real-time Fine Settings for calculating violation penalties
   const [finePolicy, setFinePolicy] = useState(DEFAULT_FINE_POLICY);
-  const [savingSettings, setSavingSettings] = useState(false);
-
-  // Tab 3 Bulk Timings & Fine Matrix State
-  const [selectedDays, setSelectedDays] = useState(['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa']);
-  const [bulkBfStart, setBulkBfStart] = useState('07:30');
-  const [bulkBfEnd, setBulkBfEnd] = useState('08:45');
-  const [bulkLunchStart, setBulkLunchStart] = useState('12:45');
-  const [bulkLunchEnd, setBulkLunchEnd] = useState('14:00');
-  const [bulkBfFine, setBulkBfFine] = useState(50);
-  const [bulkLunchFine, setBulkLunchFine] = useState(50);
 
   // Filter & Search in Roster
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,7 +88,6 @@ export default function BlockManagementModal({
   useEffect(() => {
     if (!isOpen) return;
     const unsub = subscribeToMealScheduleAndFines((data) => {
-      if (data?.mealSchedule) setMealSchedule(data.mealSchedule);
       if (data?.finePolicy) setFinePolicy(data.finePolicy);
     });
     return () => unsub();
@@ -152,15 +138,15 @@ export default function BlockManagementModal({
   // Filtered Roster
   const filteredRoster = useMemo(() => {
     return blockedStudents.filter((st) => {
-      // Search token, name, phone, room
+      // Search token, name, phone, email
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesToken = String(st.tokenNo || '').includes(q);
         const matchesName = (st.name || st.nameEn || '').toLowerCase().includes(q);
         const matchesMl = (st.nameMl || '').toLowerCase().includes(q);
-        const matchesRoom = String(st.roomNo || '').toLowerCase().includes(q);
+        const matchesEmail = String(st.email || '').toLowerCase().includes(q);
         const matchesPhone = String(st.phone || '').toLowerCase().includes(q);
-        if (!matchesToken && !matchesName && !matchesMl && !matchesRoom && !matchesPhone) return false;
+        if (!matchesToken && !matchesName && !matchesMl && !matchesEmail && !matchesPhone) return false;
       }
 
       // Batch filter
@@ -211,14 +197,12 @@ export default function BlockManagementModal({
     };
   }, [blockedStudents, finePolicy]);
 
-  if (!isOpen || typeof document === 'undefined') return null;
-
   // Single Student Unblock
   const handleUnblockStudent = async (student) => {
     feedback('tick');
     const confirmed = await dialog.confirm({
-      title: `Unblock Token #${student.tokenNo}?`,
-      message: `Re-activate Token #${student.tokenNo} (${student.name || 'Student'}) into dining rotation on both Breakfast and Lunch grids?`,
+      title: `Unblock Token ${student.tokenNo}?`,
+      message: `Re-activate Token ${student.tokenNo} (${student.name || 'Student'}) into dining rotation on both Breakfast and Lunch grids?`,
       confirmText: 'Unblock Student',
       confirmColor: 'emerald',
       icon: 'check',
@@ -253,15 +237,15 @@ export default function BlockManagementModal({
         category: AUDIT_CATEGORIES.TOKENS,
         action: 'STUDENT_UNBLOCK',
         severity: AUDIT_SEVERITIES.INFO,
-        target: { type: 'student', id: student.id, label: `Token #${student.tokenNo}` },
+        target: { type: 'student', id: student.id, label: `Token ${student.tokenNo}` },
         changes: {
-          diffSummary: `Token #${student.tokenNo} unblocked and dining access restored.`,
+          diffSummary: `Token ${student.tokenNo} unblocked and dining access restored.`,
           before: { block: true },
           after: { block: false },
         },
       });
 
-      dialog.toast.success('Student Unblocked', `Token #${student.tokenNo} is now active.`);
+      dialog.toast.success('Student Unblocked', `Token ${student.tokenNo} is now active.`);
       if (onStudentUpdated) onStudentUpdated();
     } catch (err) {
       console.error('Error unblocking student:', err);
@@ -280,7 +264,7 @@ export default function BlockManagementModal({
         fineSettledBy: newStatus === 'paid' ? (user?.displayName || user?.email || 'Admin') : null,
       });
 
-      dialog.toast.success('Fine Status Updated', `Token #${student.tokenNo} fine set to ${newStatus.toUpperCase()}`);
+      dialog.toast.success('Fine Status Updated', `Token ${student.tokenNo} fine set to ${newStatus.toUpperCase()}`);
       if (onStudentUpdated) onStudentUpdated();
     } catch (err) {
       console.error('Error updating fine status:', err);
@@ -319,7 +303,7 @@ export default function BlockManagementModal({
 
       dialog.toast.success(
         'Fine Updated',
-        `Token #${editingFineStudent.tokenNo} fine set to ₹${fineAdjustmentAmount}`
+        `Token ${editingFineStudent.tokenNo} fine set to ₹${fineAdjustmentAmount}`
       );
       setEditingFineStudent(null);
       if (onStudentUpdated) onStudentUpdated();
@@ -501,187 +485,38 @@ export default function BlockManagementModal({
     }
   };
 
-  // Save Settings Tab
-  const handleSaveSettings = async () => {
+  // Pending Appeals Extraction
+  const studentsWithAppeals = useMemo(() => {
+    return effectiveStudents.filter((s) => s.pendingUnblockRequest?.status === 'pending');
+  }, [effectiveStudents]);
+
+  // Decline / Reject Student Appeal
+  const handleRejectAppeal = async (student) => {
     feedback('tick');
-    setSavingSettings(true);
+    const confirmed = await dialog.confirm({
+      title: `Decline Appeal for Token ${student.tokenNo}?`,
+      message: `Decline the unblock appeal submitted by Token ${student.tokenNo}? The dining suspension will remain active.`,
+      confirmText: 'Decline Appeal',
+      confirmColor: 'rose',
+    });
+    if (!confirmed) return;
+
     try {
-      await saveMealScheduleAndFines({
-        mealSchedule,
-        finePolicy,
-        actor: {
-          uid: user?.uid,
-          displayName: user?.displayName || user?.email,
-          role,
-        },
+      await firebase.firestore().collection('students').doc(student.id).update({
+        'pendingUnblockRequest.status': 'declined',
+        'pendingUnblockRequest.declinedAt': new Date().toISOString(),
+        'pendingUnblockRequest.declinedBy': user?.displayName || user?.email || 'Admin',
+        updatedAt: new Date().toISOString(),
       });
-      dialog.toast.success('Settings Saved', 'Meal schedule and fine rates saved to Firestore.');
+      dialog.toast.info('Appeal Declined', `Appeal for Token ${student.tokenNo} was declined.`);
+      if (onStudentUpdated) onStudentUpdated();
     } catch (err) {
-      console.error('Error saving settings:', err);
-      dialog.alert({ type: 'error', title: 'Save Failed', message: err.message });
-    } finally {
-      setSavingSettings(false);
+      console.error('Error declining appeal:', err);
+      dialog.alert({ type: 'error', title: 'Action Failed', message: err.message });
     }
   };
 
-  // Reset to Standard Fine Preset
-  const handleApplyStandardFines = () => {
-    feedback('pop');
-    setFinePolicy(DEFAULT_FINE_POLICY);
-    dialog.toast.info('Standard Rates Applied', 'All days: ₹50 | Friday BF: ₹100 | Friday Lunch: ₹200');
-  };
-
-  // Bulk Day Selection Helpers
-  const handleSelectAllDays = () => {
-    feedback('tick');
-    setSelectedDays([...DAY_KEYS]);
-  };
-
-  const handleSelectWeekdays = () => {
-    feedback('tick');
-    setSelectedDays(['su', 'mo', 'tu', 'we', 'th']);
-  };
-
-  const handleSelectWeekend = () => {
-    feedback('tick');
-    setSelectedDays(['fr', 'sa']);
-  };
-
-  const handleSelectFridayOnly = () => {
-    feedback('tick');
-    setSelectedDays(['fr']);
-  };
-
-  const handleClearDaySelection = () => {
-    feedback('tick');
-    setSelectedDays([]);
-  };
-
-  const handleToggleDay = (dayKey) => {
-    feedback('tick');
-    setSelectedDays((prev) =>
-      prev.includes(dayKey) ? prev.filter((d) => d !== dayKey) : [...prev, dayKey]
-    );
-  };
-
-  // Bulk Apply Timings to Selected Days
-  const handleApplyBulkBfTiming = () => {
-    if (selectedDays.length === 0) return;
-    feedback('pop');
-    setMealSchedule((prev) => {
-      const next = { ...prev };
-      selectedDays.forEach((dayKey) => {
-        next[dayKey] = {
-          ...next[dayKey],
-          breakfast: {
-            ...next[dayKey].breakfast,
-            startTime: bulkBfStart,
-            endTime: bulkBfEnd,
-            label: formatMealTimeRange(bulkBfStart, bulkBfEnd),
-          },
-        };
-      });
-      return next;
-    });
-    dialog.toast.success(
-      'Breakfast Timings Applied',
-      `Updated for ${selectedDays.length} selected day(s): ${bulkBfStart} - ${bulkBfEnd}`
-    );
-  };
-
-  const handleApplyBulkLunchTiming = () => {
-    if (selectedDays.length === 0) return;
-    feedback('pop');
-    setMealSchedule((prev) => {
-      const next = { ...prev };
-      selectedDays.forEach((dayKey) => {
-        next[dayKey] = {
-          ...next[dayKey],
-          lunch: {
-            ...next[dayKey].lunch,
-            startTime: bulkLunchStart,
-            endTime: bulkLunchEnd,
-            label: formatMealTimeRange(bulkLunchStart, bulkLunchEnd),
-          },
-        };
-      });
-      return next;
-    });
-    dialog.toast.success(
-      'Lunch Timings Applied',
-      `Updated for ${selectedDays.length} selected day(s): ${bulkLunchStart} - ${bulkLunchEnd}`
-    );
-  };
-
-  // Bulk Apply Fines to Selected Days
-  const handleApplyBulkBfFine = (amt = bulkBfFine) => {
-    if (selectedDays.length === 0) return;
-    feedback('pop');
-    const val = Number(amt);
-    setFinePolicy((prev) => {
-      const next = { ...prev };
-      selectedDays.forEach((dayKey) => {
-        next[dayKey] = {
-          ...next[dayKey],
-          breakfast: val,
-        };
-      });
-      return next;
-    });
-    dialog.toast.success('Breakfast Fine Applied', `Set to ₹${val} across ${selectedDays.length} day(s).`);
-  };
-
-  const handleApplyBulkLunchFine = (amt = bulkLunchFine) => {
-    if (selectedDays.length === 0) return;
-    feedback('pop');
-    const val = Number(amt);
-    setFinePolicy((prev) => {
-      const next = { ...prev };
-      selectedDays.forEach((dayKey) => {
-        next[dayKey] = {
-          ...next[dayKey],
-          lunch: val,
-        };
-      });
-      return next;
-    });
-    dialog.toast.success('Lunch Fine Applied', `Set to ₹${val} across ${selectedDays.length} day(s).`);
-  };
-
-  // Bulk Master Apply (Timings + Fines)
-  const handleApplyAllBulk = () => {
-    if (selectedDays.length === 0) return;
-    feedback('pop');
-    handleApplyBulkBfTiming();
-    handleApplyBulkLunchTiming();
-    handleApplyBulkBfFine();
-    handleApplyBulkLunchFine();
-  };
-
-  // Copy Sunday Schedule to Weekdays (Mo-Th)
-  const handleCopySundayToWeekdays = () => {
-    feedback('pop');
-    const sundaySched = mealSchedule.su || DEFAULT_MEAL_SCHEDULE.su;
-    const sundayFine = finePolicy.su || DEFAULT_FINE_POLICY.su;
-
-    setMealSchedule((prev) => ({
-      ...prev,
-      mo: { ...sundaySched },
-      tu: { ...sundaySched },
-      we: { ...sundaySched },
-      th: { ...sundaySched },
-    }));
-
-    setFinePolicy((prev) => ({
-      ...prev,
-      mo: { ...sundayFine },
-      tu: { ...sundayFine },
-      we: { ...sundayFine },
-      th: { ...sundayFine },
-    }));
-
-    dialog.toast.success('Schedule Replicated', 'Sunday timings & fines copied to Monday through Thursday.');
-  };
+  if (!isOpen || typeof document === 'undefined') return null;
 
   return createPortal(
     <AnimatePresence>
@@ -778,16 +613,21 @@ export default function BlockManagementModal({
                 type="button"
                 onClick={() => {
                   feedback('tick');
-                  setActiveTab('settings');
+                  setActiveTab('appeals');
                 }}
                 className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'settings'
+                  activeTab === 'appeals'
                     ? 'bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-xs'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                <span>{lang === 'ml' ? 'സമയവും പിഴയും' : 'Timings & Fine Matrix'}</span>
+                <AlertTriangle className="w-3.5 h-3.5 text-purple-500" />
+                <span>{lang === 'ml' ? 'അപ്പീലുകൾ' : 'Student Appeals'}</span>
+                {telemetry.pendingAppealsCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-purple-500/20 text-purple-600 dark:text-purple-300 font-black">
+                    {telemetry.pendingAppealsCount}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -850,7 +690,7 @@ export default function BlockManagementModal({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by Token #, Name, Room..."
+                      placeholder="Search by Token, Name, Phone, Email..."
                       className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-transparent focus:border-emerald-500 text-xs text-gray-900 dark:text-white outline-none"
                     />
                   </div>
@@ -961,13 +801,13 @@ export default function BlockManagementModal({
                           />
 
                           <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 font-mono font-black text-sm flex items-center justify-center flex-shrink-0 border border-rose-500/20">
-                            #{student.tokenNo}
+                            {student.tokenNo}
                           </div>
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                                {student.name || student.nameEn || `Token #${student.tokenNo}`}
+                                {student.name || student.nameEn || `Token ${student.tokenNo}`}
                               </span>
                               <span className="px-2 py-0.2 rounded-md text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">
                                 {student.batch || 'General'}
@@ -1056,7 +896,7 @@ export default function BlockManagementModal({
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                                 <Receipt className="w-4 h-4 text-emerald-500" />
-                                <span>Adjust Fine for Token #{student.tokenNo} ({student.name || student.nameEn})</span>
+                                <span>Adjust Fine for Token ${student.tokenNo} ({student.name || student.nameEn})</span>
                               </span>
                               <button
                                 type="button"
@@ -1290,464 +1130,137 @@ export default function BlockManagementModal({
             </div>
           )}
 
-          {/* Tab 3: Timings & Fine Policy Settings Matrix */}
-          {activeTab === 'settings' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-gray-100 dark:border-white/5">
+          {/* Tab 3: Student Appeals Desk */}
+          {activeTab === 'appeals' && (
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="pb-2 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <span>Campus Meal Timings & Fine Matrix</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                      Bulk Config
+                    <AlertTriangle className="w-4 h-4 text-purple-500" />
+                    <span>Student Unblock Appeals & Dispute Resolution</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                      {studentsWithAppeals.length} Pending
                     </span>
                   </h4>
                   <p className="text-xs text-gray-500">
-                    Universal schedule fetched automatically by the menu, radar, and public displays.
+                    Review and resolve formal reinstatement appeals submitted by suspended students via Student Port.
                   </p>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCopySundayToWeekdays}
-                    className="py-1.5 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                    title="Copy Sunday schedule & fines to Monday through Thursday"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Copy Sun → Weekdays</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleApplyStandardFines}
-                    className="py-1.5 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Standard Preset</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveSettings}
-                    disabled={savingSettings}
-                    className="py-1.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{savingSettings ? 'Saving...' : 'Save Settings'}</span>
-                  </button>
+              {studentsWithAppeals.length === 0 ? (
+                <div className="py-12 px-4 text-center rounded-2xl bg-gray-50/50 dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/10 space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                  <h5 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                    No Pending Appeals
+                  </h5>
+                  <p className="text-xs text-gray-400 max-w-md mx-auto">
+                    All student unblock requests have been reviewed and resolved. New dispute tickets submitted from the student portal will appear here in real time.
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {studentsWithAppeals.map((student) => {
+                    const appealReq = student.pendingUnblockRequest || {};
+                    const fineAmt = getStudentFineAmount(student, finePolicy);
 
-              {/* Multi-Day Selection Filter Bar */}
-              <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 space-y-2.5">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                    <Filter className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Multi-Day Selection for Bulk Changes:</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
-                      ({selectedDays.length} of 7 Selected)
-                    </span>
-                  </span>
+                    return (
+                      <div
+                        key={student.id}
+                        className="p-4 rounded-2xl bg-white dark:bg-white/5 border border-purple-200/80 dark:border-purple-500/30 shadow-xs space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-2xl bg-purple-500/15 text-purple-700 dark:text-purple-300 font-mono font-black text-sm flex items-center justify-center shrink-0">
+                              {student.tokenNo}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-extrabold text-sm text-gray-900 dark:text-white">
+                                  {student.name || student.nameEn || 'Student'}
+                                </h5>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400">
+                                  Batch: {student.batch || 'General'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                Suspension Reason: {student.blockReason || 'Disciplinary'}
+                              </p>
+                            </div>
+                          </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={handleSelectAllDays}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        selectedDays.length === 7
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20'
-                      }`}
-                    >
-                      All 7 Days
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSelectWeekdays}
-                      className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300 text-xs font-bold transition-all cursor-pointer"
-                    >
-                      Weekdays (Su-Th)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSelectWeekend}
-                      className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300 text-xs font-bold transition-all cursor-pointer"
-                    >
-                      Weekend (Fr-Sa)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSelectFridayOnly}
-                      className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300 text-xs font-bold transition-all cursor-pointer"
-                    >
-                      Friday Only
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClearDaySelection}
-                      className="px-2 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-rose-600 transition-colors cursor-pointer"
-                    >
-                      Clear
-                    </button>
-                  </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                              Fine: ₹{fineAmt}
+                            </span>
+                            {appealReq.submittedAt && (
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                {new Date(appealReq.submittedAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Appeal Note */}
+                        <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-500/20 text-xs text-purple-900 dark:text-purple-200 space-y-1">
+                          <span className="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400 block">
+                            Student&apos;s Appeal Justification:
+                          </span>
+                          <p className="italic font-medium leading-relaxed">
+                            &ldquo;{appealReq.reason || appealReq.studentNote || appealReq.message || 'I request to be unblocked and will ensure adherence to dining rules.'}&rdquo;
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleRejectAppeal(student)}
+                            className="px-3 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 dark:border-rose-500/30 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs transition-colors cursor-pointer"
+                          >
+                            Decline Appeal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUnblockStudent(student)}
+                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve & Restore Dining</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {/* Bulk Actions Panel when Days are Selected */}
-                {selectedDays.length > 0 && (
-                  <div className="pt-2.5 border-t border-gray-200/60 dark:border-white/10 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Bulk Breakfast Timings & Fine */}
-                    <div className="p-3 rounded-xl bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5">
-                          <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                          <span>Bulk Breakfast ({selectedDays.length} Days)</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleApplyBulkBfTiming}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-[11px] transition-colors cursor-pointer"
-                        >
-                          Apply Times
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-0.5">Start</label>
-                          <input
-                            type="time"
-                            value={bulkBfStart}
-                            onChange={(e) => setBulkBfStart(e.target.value)}
-                            className="w-full py-1 px-2 rounded-lg bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 font-mono font-bold text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-0.5">End</label>
-                          <input
-                            type="time"
-                            value={bulkBfEnd}
-                            onChange={(e) => setBulkBfEnd(e.target.value)}
-                            className="w-full py-1 px-2 rounded-lg bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 font-mono font-bold text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-0.5">Fine (₹)</label>
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              value={bulkBfFine}
-                              onChange={(e) => setBulkBfFine(Number(e.target.value))}
-                              className="w-full py-1 px-1.5 rounded-lg bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 font-mono font-bold text-xs text-rose-600 dark:text-rose-400"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleApplyBulkBfFine()}
-                              className="p-1 rounded-lg bg-gray-200 dark:bg-white/10 hover:bg-emerald-500 hover:text-white text-gray-600 dark:text-gray-300 transition-colors"
-                              title="Apply Fine"
-                            >
-                              <Check className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Quick Fine Presets for BF */}
-                      <div className="flex items-center gap-1 text-[10px]">
-                        <span className="text-gray-400">Presets:</span>
-                        {[0, 50, 100].map((p) => (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => {
-                              setBulkBfFine(p);
-                              handleApplyBulkBfFine(p);
-                            }}
-                            className="px-2 py-0.5 rounded bg-gray-100 dark:bg-white/10 hover:bg-emerald-500 hover:text-white text-gray-700 dark:text-gray-300 font-bold transition-colors cursor-pointer"
-                          >
-                            ₹{p}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Bulk Lunch Timings & Fine */}
-                    <div className="p-3 rounded-xl bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5">
-                          <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Bulk Lunch ({selectedDays.length} Days)</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleApplyBulkLunchTiming}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] transition-colors cursor-pointer"
-                        >
-                          Apply Times
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-0.5">Start</label>
-                          <input
-                            type="time"
-                            value={bulkLunchStart}
-                            onChange={(e) => setBulkLunchStart(e.target.value)}
-                            className="w-full py-1 px-2 rounded-lg bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 font-mono font-bold text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-0.5">End</label>
-                          <input
-                            type="time"
-                            value={bulkLunchEnd}
-                            onChange={(e) => setBulkLunchEnd(e.target.value)}
-                            className="w-full py-1 px-2 rounded-lg bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 font-mono font-bold text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-400 block mb-0.5">Fine (₹)</label>
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              value={bulkLunchFine}
-                              onChange={(e) => setBulkLunchFine(Number(e.target.value))}
-                              className="w-full py-1 px-1.5 rounded-lg bg-gray-50 dark:bg-white/10 border border-gray-200 dark:border-white/10 font-mono font-bold text-xs text-rose-600 dark:text-rose-400"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleApplyBulkLunchFine()}
-                              className="p-1 rounded-lg bg-gray-200 dark:bg-white/10 hover:bg-emerald-500 hover:text-white text-gray-600 dark:text-gray-300 transition-colors"
-                              title="Apply Fine"
-                            >
-                              <Check className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Quick Fine Presets for Lunch */}
-                      <div className="flex items-center gap-1 text-[10px]">
-                        <span className="text-gray-400">Presets:</span>
-                        {[0, 50, 100, 200].map((p) => (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => {
-                              setBulkLunchFine(p);
-                              handleApplyBulkLunchFine(p);
-                            }}
-                            className="px-2 py-0.5 rounded bg-gray-100 dark:bg-white/10 hover:bg-emerald-500 hover:text-white text-gray-700 dark:text-gray-300 font-bold transition-colors cursor-pointer"
-                          >
-                            ₹{p}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Day-by-Day Configuration Table */}
-              <div className="space-y-3">
-                {DAY_KEYS.map((dayKey) => {
-                  const daySched = mealSchedule[dayKey] || DEFAULT_MEAL_SCHEDULE[dayKey];
-                  const dayFine = finePolicy[dayKey] || DEFAULT_FINE_POLICY[dayKey];
-                  const isFriday = dayKey === 'fr';
-                  const isDaySelected = selectedDays.includes(dayKey);
-
-                  return (
-                    <div
-                      key={dayKey}
-                      className={`p-3.5 rounded-2xl border transition-all ${
-                        isDaySelected
-                          ? 'border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/20'
-                          : ''
-                      } ${
-                        isFriday
-                          ? 'bg-purple-50/40 dark:bg-purple-950/15 border-purple-200 dark:border-purple-500/20'
-                          : 'bg-white dark:bg-white/[0.02] border-gray-200/80 dark:border-white/5'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="font-extrabold text-xs text-gray-900 dark:text-white flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={isDaySelected}
-                            onChange={() => handleToggleDay(dayKey)}
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 cursor-pointer"
-                          />
-                          <span>{DAY_NAMES[dayKey].en} ({DAY_NAMES[dayKey].ml})</span>
-                          {isFriday && (
-                            <span className="px-2 py-0.2 rounded text-[10px] font-black bg-purple-500 text-white">
-                              Jumu&apos;ah Special
-                            </span>
-                          )}
-                          {isDaySelected && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                              Selected for Bulk Edit
-                            </span>
-                          )}
-                        </label>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Breakfast Timing & Fine */}
-                        <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 space-y-2">
-                          <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                            <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                            <span>Breakfast</span>
-                          </span>
-
-                          <div className="grid grid-cols-3 gap-1.5 text-xs">
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Start</span>
-                              <input
-                                type="time"
-                                value={daySched.breakfast.startTime}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setMealSchedule((prev) => ({
-                                    ...prev,
-                                    [dayKey]: {
-                                      ...prev[dayKey],
-                                      breakfast: {
-                                        ...prev[dayKey].breakfast,
-                                        startTime: val,
-                                        label: formatMealTimeRange(val, prev[dayKey].breakfast.endTime),
-                                      },
-                                    },
-                                  }));
-                                }}
-                                className="w-full py-1 px-1.5 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                              />
-                            </div>
-
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">End</span>
-                              <input
-                                type="time"
-                                value={daySched.breakfast.endTime}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setMealSchedule((prev) => ({
-                                    ...prev,
-                                    [dayKey]: {
-                                      ...prev[dayKey],
-                                      breakfast: {
-                                        ...prev[dayKey].breakfast,
-                                        endTime: val,
-                                        label: formatMealTimeRange(prev[dayKey].breakfast.startTime, val),
-                                      },
-                                    },
-                                  }));
-                                }}
-                                className="w-full py-1 px-1.5 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                              />
-                            </div>
-
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Fine (₹)</span>
-                              <input
-                                type="number"
-                                value={dayFine.breakfast}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  setFinePolicy((prev) => ({
-                                    ...prev,
-                                    [dayKey]: {
-                                      ...prev[dayKey],
-                                      breakfast: val,
-                                    },
-                                  }));
-                                }}
-                                className="w-full py-1 px-1.5 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold text-rose-600 dark:text-rose-400"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Lunch Timing & Fine */}
-                        <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 space-y-2">
-                          <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                            <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>Lunch</span>
-                          </span>
-
-                          <div className="grid grid-cols-3 gap-1.5 text-xs">
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Start</span>
-                              <input
-                                type="time"
-                                value={daySched.lunch.startTime}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setMealSchedule((prev) => ({
-                                    ...prev,
-                                    [dayKey]: {
-                                      ...prev[dayKey],
-                                      lunch: {
-                                        ...prev[dayKey].lunch,
-                                        startTime: val,
-                                        label: formatMealTimeRange(val, prev[dayKey].lunch.endTime),
-                                      },
-                                    },
-                                  }));
-                                }}
-                                className="w-full py-1 px-1.5 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                              />
-                            </div>
-
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">End</span>
-                              <input
-                                type="time"
-                                value={daySched.lunch.endTime}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setMealSchedule((prev) => ({
-                                    ...prev,
-                                    [dayKey]: {
-                                      ...prev[dayKey],
-                                      lunch: {
-                                        ...prev[dayKey].lunch,
-                                        endTime: val,
-                                        label: formatMealTimeRange(prev[dayKey].lunch.startTime, val),
-                                      },
-                                    },
-                                  }));
-                                }}
-                                className="w-full py-1 px-1.5 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold"
-                              />
-                            </div>
-
-                            <div>
-                              <span className="text-[10px] text-gray-400 block">Fine (₹)</span>
-                              <input
-                                type="number"
-                                value={dayFine.lunch}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  setFinePolicy((prev) => ({
-                                    ...prev,
-                                    [dayKey]: {
-                                      ...prev[dayKey],
-                                      lunch: val,
-                                    },
-                                  }));
-                                }}
-                                className="w-full py-1 px-1.5 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-xs font-mono font-bold text-rose-600 dark:text-rose-400"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              )}
             </div>
           )}
+
+          {/* Bottom Banner linking to Time Settings */}
+          <div className="p-3.5 bg-gray-50/80 dark:bg-white/[0.02] border-t border-gray-200/80 dark:border-white/10 flex items-center justify-between gap-3 text-xs flex-wrap">
+            <div className="flex items-center gap-2 text-gray-500">
+              <Info className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>
+                Campus meal serving hours and baseline fine rates are systematically managed in{' '}
+                <b className="text-gray-700 dark:text-gray-300">Time &amp; Operations Settings</b>.
+              </span>
+            </div>
+            {onOpenTimeModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  onClose();
+                  onOpenTimeModal();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold transition-colors cursor-pointer"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Open Time Settings</span>
+              </button>
+            )}
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>,

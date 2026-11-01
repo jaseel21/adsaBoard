@@ -203,7 +203,7 @@ export default function UnblockRequestModal({
                   </h2>
                 </div>
                 <p className="text-xs text-rose-100 font-medium truncate">
-                  Token #{tokenNo} • {studentName}
+                  Token {tokenNo} • {studentName}
                 </p>
               </div>
             </div>

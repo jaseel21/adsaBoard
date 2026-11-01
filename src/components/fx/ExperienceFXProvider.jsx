@@ -5,6 +5,7 @@ import ContextMenuDock from './ContextMenuDock';
 import TouchPeekSheet from './TouchPeekSheet';
 import CircadianAtmosphereCanvas from './CircadianAtmosphereCanvas';
 import StudentDetailCalendarModal from '../ui/StudentDetailCalendarModal';
+import { AuthContext } from '../../store/AuthContext';
 import { usePreferences } from '../../store/PreferencesContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { dialog } from '../../utils/dialog';
@@ -31,6 +32,7 @@ export function useExperienceFX() {
 export default function ExperienceFXProvider({ children, onTokenAction }) {
   const { preferences } = usePreferences();
   const { feedback } = useFeedback();
+  const { user } = useContext(AuthContext) || {};
 
   const [cursorVariant, setCursorVariant] = useState('default');
   const [magneticTarget, setMagneticTarget] = useState(null);
@@ -147,9 +149,9 @@ export default function ExperienceFXProvider({ children, onTokenAction }) {
         });
       }
       if (avoided.length > 0) {
-        dialog.toast.info(`Token #${doc.tokenNo} Dietary Tags`, `Excluded foods: ${avoided.join(', ')}`);
+        dialog.toast.info(`Token ${doc.tokenNo} Dietary Tags`, `Excluded foods: ${avoided.join(', ')}`);
       } else {
-        dialog.toast.info(`Token #${doc?.tokenNo || ''} Dietary Status`, 'No dietary exclusions registered (Standard diet).');
+        dialog.toast.info(`Token ${doc?.tokenNo || ''} Dietary Status`, 'No dietary exclusions registered (Standard diet).');
       }
     } else if (action === 'toggleStatus') {
       setPoppedStudentDoc(doc);
@@ -203,6 +205,7 @@ export default function ExperienceFXProvider({ children, onTokenAction }) {
         <StudentDetailCalendarModal
           isOpen={Boolean(poppedStudentDoc)}
           student={poppedStudentDoc}
+          isAdmin={Boolean(user)}
           onClose={() => setPoppedStudentDoc(null)}
         />
       )}

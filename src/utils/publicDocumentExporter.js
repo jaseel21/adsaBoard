@@ -46,15 +46,15 @@ function packTokensForTable(tokens = [], maxAllowedRows = 30) {
 
   // If items fit within the vertical height budget, keep 1 token per row!
   if (tokens.length <= maxAllowedRows) {
-    return tokens.map((t) => (String(t).startsWith('#') ? t : `#${t}`));
+    return tokens.map((t) => String(t).replace(/^#/, ''));
   }
 
   // Content would exceed available page height: dynamically pair tokens
   const rows = [];
   for (let i = 0; i < tokens.length; i += 2) {
-    const t1 = String(tokens[i]).startsWith('#') ? tokens[i] : `#${tokens[i]}`;
+    const t1 = String(tokens[i]).replace(/^#/, '');
     if (i + 1 < tokens.length) {
-      const t2 = String(tokens[i + 1]).startsWith('#') ? tokens[i + 1] : `#${tokens[i + 1]}`;
+      const t2 = String(tokens[i + 1]).replace(/^#/, '');
       rows.push(`${t1}, ${t2}`);
     } else {
       rows.push(`${t1}`);
@@ -65,7 +65,7 @@ function packTokensForTable(tokens = [], maxAllowedRows = 30) {
   if (rows.length > maxAllowedRows) {
     const condensed = [];
     for (let i = 0; i < tokens.length; i += 3) {
-      const chunk = tokens.slice(i, i + 3).map((t) => (String(t).startsWith('#') ? t : `#${t}`));
+      const chunk = tokens.slice(i, i + 3).map((t) => String(t).replace(/^#/, ''));
       condensed.push(chunk.join(', '));
     }
     return condensed;
@@ -648,7 +648,7 @@ export function generateDietaryAvoidersDoc({
     const row = {};
     activePrefs.forEach((p) => {
       const list = rejections[p.id] || [];
-      row[p.id] = rIdx < list.length ? `#${list[rIdx]}` : '-';
+      row[p.id] = rIdx < list.length ? `${list[rIdx]}` : '-';
     });
     return row;
   });

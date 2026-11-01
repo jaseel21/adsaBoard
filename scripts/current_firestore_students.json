@@ -6882,8 +6882,7 @@
         "lunch": true,
         "label": "Cutoff Locked (Preserved)"
       }
-    },
-    "roomNo": ""
+    }
   },
   {
     "id": "3LUxIInqlKVraArOXyoh",
@@ -72982,7 +72981,6 @@
     "uname": "166",
     "nameMl": "ഹാഫിള് മഹ്മൂദ് കന്യാകുമാരി",
     "lastUpdatedBy": "navarmp@gmail.com",
-    "roomNo": "",
     "dateExceptions": {},
     "updatedAt": "2026-10-21T17:35:53.741Z",
     "tokenNo": 166
@@ -83938,7 +83936,6 @@
     "blockReason": "",
     "password": "482",
     "dateExceptions": {},
-    "roomNo": "",
     "updatedAt": {
       "seconds": 1793011624,
       "nanoseconds": 835000000
@@ -88191,7 +88188,6 @@
     "nameEn": "Hafiz Muhammed Ali Jauhar Cherkkala",
     "uname": "3",
     "nameMl": "ഹാഫിള് മുഹമ്മദ് അലി ജൗഹർ ചെർക്കള",
-    "roomNo": "",
     "updatedAt": "2026-10-18T07:57:03.514Z",
     "password": "156",
     "tokenNo": 3,
@@ -116586,7 +116582,6 @@
       "chicken": true,
       "mutton": true
     },
-    "roomNo": "",
     "uname": "5",
     "password": "327",
     "name": "Muhammed Sinan Melmuri",

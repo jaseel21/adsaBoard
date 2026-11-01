@@ -259,6 +259,20 @@ export const INTERNAL_ROUTE_PREVIEWS = {
     badgeText: 'User Manual',
     badgeTextMl: 'യൂസർ ഗൈഡ്',
   },
+  '/about': {
+    title: 'About Alathurpadi Dars & ADSA',
+    titleMl: 'ആലത്തൂർപടി ദർസ് & അഡ്സ വിവരണം',
+    siteName: 'ADSA Institutional Heritage',
+    description: 'Sacred Dars tradition, Mudarrisun scholars, ADSA Central Committee, Canteen Wing mess operations, and T-Board food technology.',
+    descriptionMl: 'ആലത്തൂർപടി ദർസ് പാരമ്പര്യം, മുദരിസുമാർ, അഡ്സ കമ്മിറ്റികൾ, കാന്റീൻ വിംഗ് & ടി-ബോർഡ് വിവരങ്ങൾ.',
+    image: null,
+    gradient: 'from-emerald-950 via-teal-950 to-slate-950',
+    iconName: 'GraduationCap',
+    mediaType: 'route',
+    trustStatus: 'verified_campus',
+    badgeText: 'Institutional Heritage',
+    badgeTextMl: 'പവിത്ര പാരമ്പര്യം',
+  },
 };
 
 /**

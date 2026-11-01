@@ -26,6 +26,8 @@ import {
   addDaysToDate,
   calculateEffectiveDateMeals,
 } from '../../utils/studentExceptionService';
+import { getMealSupplyStatus } from '../../utils/boardServiceSchedule';
+import { dialog } from '../../utils/dialog';
 
 export default function DateTurnModal({
   isOpen,
@@ -36,10 +38,17 @@ export default function DateTurnModal({
   onRemoveException,
   onApplyRange,
   isAdmin = false,
+  boardServiceSchedule = {},
 }) {
   const { feedback } = useFeedback();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { getDateLockStatus, todayIST } = useTokenLockStatus();
+
+  // Food supply operational status for this date
+  const bfSupply = useMemo(() => getMealSupplyStatus(boardServiceSchedule, dateStr, 'breakfast'), [boardServiceSchedule, dateStr]);
+  const lunchSupply = useMemo(() => getMealSupplyStatus(boardServiceSchedule, dateStr, 'lunch'), [boardServiceSchedule, dateStr]);
+  const isBfSupplyOff = !bfSupply.isSupplying;
+  const isLunchSupplyOff = !lunchSupply.isSupplying;
 
   const quickReasons = useMemo(() => [
     { key: 'home', label: t('reasonHome', 'Leave / Going Home') },
@@ -230,11 +239,23 @@ export default function DateTurnModal({
             <button
               type="button"
               onClick={() => {
+                if (isBfSupplyOff) {
+                  feedback('warning');
+                  dialog.toast.warning(
+                    lang === 'ml' ? 'വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു' : 'Food Supply Suspended',
+                    lang === 'ml'
+                      ? (bfSupply.noteMl || bfSupply.reasonObj?.descMl || 'ഈ സമയത്ത് പ്രഭാതഭക്ഷണം ഉണ്ടായിരിക്കുന്നതല്ല.')
+                      : (bfSupply.noteEn || bfSupply.reasonObj?.descEn || 'Breakfast food supply is suspended for this date.')
+                  );
+                  return;
+                }
                 feedback('pop');
                 setLocalBf((prev) => !prev);
               }}
               className={`p-4 rounded-2xl text-left border transition-all duration-200 transform active:scale-95 flex items-center justify-between ${
-                localBf
+                isBfSupplyOff
+                  ? 'bg-gradient-to-b from-gray-200 to-gray-300 dark:from-[#1b2622] dark:to-[#121c18] border-gray-300/80 dark:border-white/10 shadow-inner'
+                  : localBf
                   ? 'bg-gradient-to-br from-teal-50 to-teal-100/70 dark:from-teal-950/40 dark:to-teal-900/20 border-teal-300 dark:border-teal-500/40 shadow-sm'
                   : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/10 opacity-70'
               }`}
@@ -242,7 +263,9 @@ export default function DateTurnModal({
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                    localBf
+                    isBfSupplyOff
+                      ? 'bg-gray-300 dark:bg-white/10 text-gray-500 shadow-inner'
+                      : localBf
                       ? 'bg-teal-600 text-white shadow-sm'
                       : 'bg-gray-200 dark:bg-white/10 text-gray-400'
                   }`}
@@ -254,31 +277,52 @@ export default function DateTurnModal({
                     {t('navBreakfast') || 'Breakfast'}
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {t('routineWeekly', 'Routine')}: {routineBf ? 'ON' : 'OFF'}
+                    {isBfSupplyOff
+                      ? (lang === 'ml' ? (bfSupply.reasonObj?.labelMl || 'ഭക്ഷണ വിതരണം ഇല്ല') : (bfSupply.reasonObj?.labelEn || 'No Food Supply'))
+                      : `${t('routineWeekly', 'Routine')}: ${routineBf ? 'ON' : 'OFF'}`}
                   </span>
                 </div>
               </div>
 
-              <div
-                className={`px-3 py-1.5 rounded-xl font-mono font-extrabold text-xs shadow-sm transition-all ${
-                  localBf
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-500/25'
-                    : 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-rose-500/25'
-                }`}
-              >
-                {localBf ? 'ON' : 'OFF'}
-              </div>
+              {isBfSupplyOff ? (
+                <div className="px-2.5 py-1.5 rounded-xl font-mono font-extrabold text-xs shadow-inner bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-300/80 dark:border-white/10 flex items-center gap-1 shrink-0">
+                  <PowerOff className="w-2.5 h-2.5 text-gray-500 dark:text-gray-400" />
+                  <span>{lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Supply'}</span>
+                </div>
+              ) : (
+                <div
+                  className={`px-3 py-1.5 rounded-xl font-mono font-extrabold text-xs shadow-sm transition-all ${
+                    localBf
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-500/25'
+                      : 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-rose-500/25'
+                  }`}
+                >
+                  {localBf ? 'ON' : 'OFF'}
+                </div>
+              )}
             </button>
 
             {/* Lunch Switch Card */}
             <button
               type="button"
               onClick={() => {
+                if (isLunchSupplyOff) {
+                  feedback('warning');
+                  dialog.toast.warning(
+                    lang === 'ml' ? 'വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു' : 'Food Supply Suspended',
+                    lang === 'ml'
+                      ? (lunchSupply.noteMl || lunchSupply.reasonObj?.descMl || 'ഈ സമയത്ത് ഉച്ചഭക്ഷണം ഉണ്ടായിരിക്കുന്നതല്ല.')
+                      : (lunchSupply.noteEn || lunchSupply.reasonObj?.descEn || 'Lunch food supply is suspended for this date.')
+                  );
+                  return;
+                }
                 feedback('pop');
                 setLocalLunch((prev) => !prev);
               }}
               className={`p-4 rounded-2xl text-left border transition-all duration-200 transform active:scale-95 flex items-center justify-between ${
-                localLunch
+                isLunchSupplyOff
+                  ? 'bg-gradient-to-b from-gray-200 to-gray-300 dark:from-[#1b2622] dark:to-[#121c18] border-gray-300/80 dark:border-white/10 shadow-inner'
+                  : localLunch
                   ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/70 dark:from-emerald-950/40 dark:to-emerald-900/20 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
                   : 'bg-gray-50 dark:bg-white/[0.03] border-gray-200 dark:border-white/10 opacity-70'
               }`}
@@ -286,7 +330,9 @@ export default function DateTurnModal({
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                    localLunch
+                    isLunchSupplyOff
+                      ? 'bg-gray-300 dark:bg-white/10 text-gray-500 shadow-inner'
+                      : localLunch
                       ? 'bg-emerald-500 text-white shadow-sm'
                       : 'bg-gray-200 dark:bg-white/10 text-gray-400'
                   }`}
@@ -298,20 +344,29 @@ export default function DateTurnModal({
                     {t('navLunch') || 'Lunch'}
                   </span>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    {t('routineWeekly', 'Routine')}: {routineLunch ? 'ON' : 'OFF'}
+                    {isLunchSupplyOff
+                      ? (lang === 'ml' ? (lunchSupply.reasonObj?.labelMl || 'ഭക്ഷണ വിതരണം ഇല്ല') : (lunchSupply.reasonObj?.labelEn || 'No Food Supply'))
+                      : `${t('routineWeekly', 'Routine')}: ${routineLunch ? 'ON' : 'OFF'}`}
                   </span>
                 </div>
               </div>
 
-              <div
-                className={`px-3 py-1.5 rounded-xl font-mono font-extrabold text-xs shadow-sm transition-all ${
-                  localLunch
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-500/25'
-                    : 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-rose-500/25'
-                }`}
-              >
-                {localLunch ? 'ON' : 'OFF'}
-              </div>
+              {isLunchSupplyOff ? (
+                <div className="px-2.5 py-1.5 rounded-xl font-mono font-extrabold text-xs shadow-inner bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-300/80 dark:border-white/10 flex items-center gap-1 shrink-0">
+                  <PowerOff className="w-2.5 h-2.5 text-gray-500 dark:text-gray-400" />
+                  <span>{lang === 'ml' ? 'വിതരണം ഇല്ല' : 'No Supply'}</span>
+                </div>
+              ) : (
+                <div
+                  className={`px-3 py-1.5 rounded-xl font-mono font-extrabold text-xs shadow-sm transition-all ${
+                    localLunch
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-500/25'
+                      : 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-rose-500/25'
+                  }`}
+                >
+                  {localLunch ? 'ON' : 'OFF'}
+                </div>
+              )}
             </button>
           </div>
         </div>

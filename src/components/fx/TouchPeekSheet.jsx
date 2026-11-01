@@ -35,7 +35,7 @@ export default function TouchPeekSheet({
 
   const doc = tokenData.doc || tokenData;
   const tokenNo = doc.tokenNo;
-  const nameEn = doc.nameEn || doc.name || `Token #${tokenNo}`;
+  const nameEn = doc.nameEn || doc.name || `Token ${tokenNo}`;
   const isBlocked = Boolean(doc.block);
   const isOn = Boolean(tokenData.isOn);
   const isLunch = Boolean(tokenData.isLunch);

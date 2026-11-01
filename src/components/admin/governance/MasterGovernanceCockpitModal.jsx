@@ -200,9 +200,9 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-lg font-black tracking-wide flex items-center gap-2">
-                Apex Master Governance Cockpit
+                System Maintenance & Controls
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/20 tracking-wider">
-                  Super Admin
+                  Admin
                 </span>
               </h2>
               <p className="text-xs text-white/80 font-medium">

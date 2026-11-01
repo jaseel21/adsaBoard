@@ -98,7 +98,7 @@ export default function MobileTopBar({
               )}
               {stdata?.tokenNo && !user && (
                 <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  #{stdata.tokenNo}
+                  {stdata.tokenNo}
                 </span>
               )}
             </div>

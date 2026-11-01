@@ -266,10 +266,10 @@ export default function StudentTemplateModal({
             </div>
 
             {/* Mon & Thu Sunnah Fasting */}
-            <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-500/20 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/20 border border-teal-200/70 dark:border-teal-500/20 flex items-center justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <Moon className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                   <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                     Mon & Thu Fasting
                   </h4>
@@ -282,7 +282,7 @@ export default function StudentTemplateModal({
               <button
                 type="button"
                 onClick={handleApplyMonThuFasting}
-                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 whitespace-nowrap"
+                className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 whitespace-nowrap"
               >
                 Apply
               </button>
@@ -292,7 +292,7 @@ export default function StudentTemplateModal({
             <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 flex items-center justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-blue-500" />
+                  <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                   <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                     Next 3 Days Leave
                   </h4>

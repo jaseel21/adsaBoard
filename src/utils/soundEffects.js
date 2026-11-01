@@ -257,6 +257,129 @@ class AudioSynthesizer {
       });
     } catch (_) {}
   }
+
+  /**
+   * 8. Food Supply Approved Chime
+   * Crisp, high-fidelity ascending tone (C6 -> G6) for sub-second serving confirmation
+   */
+  playServingApprovedChime() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const notes = [1046.5, 1567.98]; // C6, G6
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        const startAt = now + idx * 0.035;
+        osc.frequency.setValueAtTime(freq, startAt);
+
+        gain.gain.setValueAtTime(0.12, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.0008, startAt + 0.16);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startAt);
+        osc.stop(startAt + 0.17);
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * 9. Food Supply Avoider Warning Tone
+   * Distinctive low-frequency warning buzz to instantly arrest server's hand before dishing food
+   */
+  playAvoiderWarningTone() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.linearRampToValueAtTime(90, now + 0.18);
+
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch (_) {}
+  }
+
+  /**
+   * 10. Duplicate Serving Alert
+   * Dissonant dual-tone alert (320Hz + 370Hz) when a token has already taken food
+   */
+  playDuplicateAlert() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      [320, 370].forEach((freq) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.23);
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * 11. Grace Plate Courtesy Chime
+   * Warm, gentle major triad (F5 -> A5 -> C6) for issuing compassionate dining plates
+   */
+  playGracePlateChime() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const notes = [698.46, 880.0, 1046.5]; // F5, A5, C6
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        const startAt = now + idx * 0.05;
+        osc.frequency.setValueAtTime(freq, startAt);
+
+        gain.gain.setValueAtTime(0.09, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.0005, startAt + 0.28);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startAt);
+        osc.stop(startAt + 0.29);
+      });
+    } catch (_) {}
+  }
 }
 
 export const soundEngine = new AudioSynthesizer();

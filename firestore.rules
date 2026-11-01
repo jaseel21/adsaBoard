@@ -110,7 +110,7 @@ service cloud.firestore {
         isCentralCommittee() ||
         
         // B) Canteen Sub-Committee: Operational dining authority only (routines, exceptions, dietary, block/unblock).
-        // Personal profile data (name, room, phone, batch, password, token number) cannot be altered.
+        // Personal profile data (name, phone, batch, password, token number) cannot be altered.
         (
           isCanteenCommittee() &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -125,13 +125,16 @@ service cloud.firestore {
             'dateExceptions',
             'templates',
             'diningHistory',
+            'pendingPhotoRequest',
+            'photoURL',
+            'photoApprovedAt',
             'lastUpdatedBy',
             'updatedAt'
           ])
         ) ||
         
         // C) Student Self-Service: Strictly restricted to meal routine & calendar exceptions for non-blocked tokens.
-        // Students CANNOT edit profile info (name, room, phone, batch, password, token, or block status).
+        // Students CANNOT edit profile info (name, phone, batch, password, token, or block status).
         (
           resource.data.block == false &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -139,6 +142,7 @@ service cloud.firestore {
             'dateExceptions',
             'templates',
             'diningHistory',
+            'pendingPhotoRequest',
             'lastUpdatedBy',
             'updatedAt'
           ]) &&
@@ -282,6 +286,91 @@ service cloud.firestore {
         );
 
       allow delete: if isCentralCommittee();
+    }
+
+    // ==========================================
+    // 11. PROFILE PHOTO APPROVAL REQUESTS
+    // ==========================================
+    match /photo_requests/{requestId} {
+      // Public read so student can track their submission status and admins can moderate
+      allow read: if true;
+
+      // Students can submit a photo moderation request
+      allow create: if request.resource.data.studentId is string &&
+        request.resource.data.tokenNo is number &&
+        request.resource.data.photoURL is string &&
+        request.resource.data.status == 'pending';
+
+      // Central Committee can approve, reject, or update request status
+      allow update: if isCentralCommittee() ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        );
+
+      allow delete: if isCentralCommittee();
+    }
+
+    // ==========================================
+    // 12. LIVE MEAL SERVING CONTROLLER & SENTINEL
+    // ==========================================
+    match /meal_servings/{servingId} {
+      // Public / Staff read for live counter sync and kitchen display
+      allow read: if true;
+
+      // Staff (Cook, Canteen Committee, Central Committee, Developers) can update serving records
+      allow create, update: if isCook();
+      allow delete: if isCentralCommittee();
+
+      match /served_records/{recordId} {
+        allow read: if true;
+        allow create, update, delete: if isCook();
+      }
+
+      match /intercepted_attempts/{attemptId} {
+        allow read: if isCook();
+        allow create: if isCook();
+        allow update, delete: if isCentralCommittee();
+      }
+    }
+
+    // ==========================================
+    // 13. INSTITUTIONAL ABOUT & GOVERNANCE DIRECTORY
+    // ==========================================
+    match /about_meta/{configId} {
+      // Public read for campus diners, visitors, and alumni
+      allow read: if true;
+      // Writing restricted to Central Committee & Developers
+      allow write: if isCentralCommittee();
+    }
+
+    match /about_mudarrisun/{facultyId} {
+      allow read: if true;
+      allow write: if isCentralCommittee();
+    }
+
+    match /about_committees/{tenureId} {
+      allow read: if true;
+      // Central Committee can manage entire committee rosters;
+      // Canteen Sub-Committee can update canteen wing members and tasks
+      allow write: if isCentralCommittee() || (
+        isCanteenCommittee() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['canteenWing', 'updatedAt', 'lastUpdatedBy'])
+      );
+    }
+
+    match /about_features/{featureId} {
+      allow read: if true;
+      allow write: if isCentralCommittee();
+    }
+
+    match /about_milestones/{milestoneId} {
+      allow read: if true;
+      allow write: if isCentralCommittee();
+    }
+
+    match /about_gallery/{galleryId} {
+      allow read: if true;
+      allow write: if isCentralCommittee();
     }
   }
 }

@@ -33,10 +33,11 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 2000) {
 class LiveSyncManager {
   constructor() {
     // Optimistic initial state; verified within 500ms by active multi-tier probe
-    this.isOnline = true;
-    this.isFirestoreConnected = true;
+    const isBrowserOnline = typeof navigator !== 'undefined' ? Boolean(navigator.onLine) : true;
+    this.isOnline = isBrowserOnline;
+    this.isFirestoreConnected = isBrowserOnline;
     this.latencyMs = 0;
-    this.lastSyncedAt = Date.now();
+    this.lastSyncedAt = isBrowserOnline ? Date.now() : null;
     this.isReconnecting = false;
     this.listeners = new Set();
     this.broadcastChannel = null;
@@ -211,19 +212,14 @@ class LiveSyncManager {
       this.latencyMs = Math.max(1, Math.round(performance.now() - t0));
       this.lastSyncedAt = Date.now();
       this.isOnline = true;
+      this.isFirestoreConnected = true;
       this.notify();
       return true;
     } catch (_) {}
 
-    // If browser adapter reports online, maintain online state (prevent false offline flashes)
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
-      this.isOnline = true;
-      this.notify();
-      return true;
-    }
-
-    // Genuinely offline:
+    // All connectivity probes failed: we are genuinely offline or edge is unreachable
     this.isOnline = false;
+    this.isFirestoreConnected = false;
     this.notify();
     return false;
   }
@@ -262,10 +258,15 @@ class LiveSyncManager {
       // 2. Re-synchronize verified anti-tamper server clock
       await syncServerTime().catch(() => {});
 
-      // 3. Verify reachability & latency
-      await this.pingEdge(2500);
+      // 3. Verify reachability & latency before claiming success
+      const verified = await this.pingEdge(2500);
+      if (!verified) {
+        this.isOnline = false;
+        this.isFirestoreConnected = false;
+        return false;
+      }
 
-      this.isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      this.isOnline = true;
       this.isFirestoreConnected = true;
       this.lastSyncedAt = Date.now();
 
@@ -281,6 +282,8 @@ class LiveSyncManager {
       return true;
     } catch (err) {
       console.warn('Soft reconnect attempt failed:', err);
+      this.isOnline = false;
+      this.isFirestoreConnected = false;
       return false;
     } finally {
       this.isReconnecting = false;

@@ -33,6 +33,8 @@ import { AuthContext } from '../../store/AuthContext';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/auditLogger';
 import { approveUnblockRequest } from '../../utils/unblockRequestService';
 import { DAY_FULL_NAMES } from '../../utils/tokenAuditHelper';
+import { getBatchTheme } from '../../utils/batchTheme';
+import IslamicAvatar from './IslamicAvatar';
 import {
   formatFriendlyDate,
   getActiveStudentException,
@@ -64,9 +66,10 @@ export default function AdminTokenPopover({
 }) {
   const { user, role } = useContext(AuthContext);
   const { feedback } = useFeedback();
-  const { t } = useLanguage();
-  const [togglingMeal, setTogglingMeal] = useState(null); // 'breakfast' | 'lunch' | 'both' | null
+  const { t, lang } = useLanguage();
+  const [togglingMeal, setTogglingMeal] = useState(null); // 'breakfast' | 'lunch' | 'both' | 'leave' | null
   const isToggling = Boolean(togglingMeal);
+  const [showLeaveReasonPicker, setShowLeaveReasonPicker] = useState(false);
   const [editingFine, setEditingFine] = useState(false);
   const [fineInput, setFineInput] = useState('');
   const [fineReason, setFineReason] = useState('');
@@ -92,9 +95,10 @@ export default function AdminTokenPopover({
   const bfExc = getActiveStudentException(activeDoc, targetDateIST, 'breakfast');
   const luExc = getActiveStudentException(activeDoc, targetDateIST, 'lunch');
 
-  const nameEn = activeDoc.nameEn || activeDoc.name || `Token #${activeDoc.tokenNo}`;
+  const nameEn = activeDoc.nameEn || activeDoc.name || `Token ${activeDoc.tokenNo}`;
   const nameMl = activeDoc.nameMl;
   const batch = activeDoc.batch || 'General';
+  const batchTheme = getBatchTheme(batch);
   const studentFineAmt = getStudentFineAmount(activeDoc);
 
   // Save Custom Fine from Popover
@@ -118,7 +122,7 @@ export default function AdminTokenPopover({
 
       dialog.toast.success(
         'Fine Updated',
-        `Token #${activeDoc.tokenNo} fine set to ₹${fineInput}`
+        `Token ${activeDoc.tokenNo} fine set to ₹${fineInput}`
       );
       setEditingFine(false);
       const updatedStudent = {
@@ -234,11 +238,11 @@ export default function AdminTokenPopover({
         target: {
           type: 'student',
           id: activeDoc.id,
-          label: `Token #${activeDoc.tokenNo} (${nameEn})`,
+          label: `Token ${activeDoc.tokenNo} (${nameEn})`,
           tokenNo: Number(activeDoc.tokenNo),
         },
         changes: {
-          diffSummary: `Token #${activeDoc.tokenNo} (${nameEn}): ${mealName} turned ${nextMealState ? 'ON' : 'OFF'} for ${friendlyDate}`,
+          diffSummary: `Token ${activeDoc.tokenNo} (${nameEn}): ${mealName} turned ${nextMealState ? 'ON' : 'OFF'} for ${friendlyDate}`,
           fieldsChanged: [fieldKey],
           before: { [fieldKey]: currentMealState },
           after: { [fieldKey]: nextMealState },
@@ -279,7 +283,7 @@ export default function AdminTokenPopover({
         nextMealState
           ? (t('mealTurnedOnToast', '{meal} Turned ON').replace('{meal}', mealLabel))
           : (t('mealTurnedOffToast', '{meal} Turned OFF').replace('{meal}', mealLabel)),
-        t('studentUpdatedForDate', 'Token #{token} ({name}) updated for {date}.')
+        t('studentUpdatedForDate', 'Token {token} ({name}) updated for {date}.')
           .replace('{token}', activeDoc.tokenNo)
           .replace('{name}', nameEn)
           .replace('{date}', formatFriendlyDate(targetDateIST))
@@ -385,11 +389,11 @@ export default function AdminTokenPopover({
         target: {
           type: 'student',
           id: activeDoc.id,
-          label: `Token #${activeDoc.tokenNo} (${nameEn})`,
+          label: `Token ${activeDoc.tokenNo} (${nameEn})`,
           tokenNo: Number(activeDoc.tokenNo),
         },
         changes: {
-          diffSummary: `Token #${activeDoc.tokenNo} (${nameEn}): Breakfast & Lunch turned ${nextState ? 'ON' : 'OFF'} for ${friendlyDate}`,
+          diffSummary: `Token ${activeDoc.tokenNo} (${nameEn}): Breakfast & Lunch turned ${nextState ? 'ON' : 'OFF'} for ${friendlyDate}`,
           fieldsChanged: [`${friendlyDate} • Both Meals`],
           before: { breakfast: isBfOn, lunch: isLuOn },
           after: { breakfast: nextState, lunch: nextState },
@@ -399,7 +403,7 @@ export default function AdminTokenPopover({
       feedback('success');
       dialog.toast.success(
         nextState ? (t('turnBothOn') || 'Both Meals Turned ON') : (t('turnBothOff') || 'Both Meals Turned OFF'),
-        t('studentUpdatedForDate', 'Token #{token} ({name}) updated for {date}.')
+        t('studentUpdatedForDate', 'Token {token} ({name}) updated for {date}.')
           .replace('{token}', activeDoc.tokenNo)
           .replace('{name}', nameEn)
           .replace('{date}', formatFriendlyDate(targetDateIST))
@@ -419,16 +423,92 @@ export default function AdminTokenPopover({
     }
   };
 
+  // Mark Leave for Day with Institutional Reason Preset
+  const handleMarkLeaveWithReason = async (reasonLabel) => {
+    feedback('tick');
+    setTogglingMeal('leave');
+
+    const updatedExceptions = { ...(activeDoc.dateExceptions || {}) };
+    updatedExceptions[targetDateIST] = {
+      breakfast: false,
+      lunch: false,
+      label: reasonLabel,
+      source: 'admin_popover_leave',
+      updatedAt: new Date().toISOString(),
+      updatedBy: user?.email || 'admin',
+    };
+
+    const updatedStudent = {
+      ...activeDoc,
+      dateExceptions: updatedExceptions,
+    };
+    setCurrentStudent(updatedStudent);
+    if (onStudentUpdated) onStudentUpdated(updatedStudent);
+
+    try {
+      const docRef = firebase.firestore().collection('students').doc(activeDoc.id);
+      await docRef.set(
+        {
+          dateExceptions: updatedExceptions,
+          lastUpdatedBy: user?.email || 'admin',
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      const friendlyDate = formatFriendlyDate(targetDateIST, true);
+      await logAuditEvent({
+        category: AUDIT_CATEGORIES.TOKENS,
+        action: 'QUICK_MEAL_LEAVE',
+        severity: AUDIT_SEVERITIES.INFO,
+        actor: {
+          uid: user?.uid || 'admin',
+          email: user?.email || 'admin@adsa',
+          displayName: user?.displayName || user?.email?.split('@')[0] || 'Admin',
+          role: role || 'canteen_committee',
+        },
+        target: {
+          type: 'student',
+          id: activeDoc.id,
+          label: `Token ${activeDoc.tokenNo} (${nameEn})`,
+          tokenNo: Number(activeDoc.tokenNo),
+        },
+        changes: {
+          diffSummary: `Token ${activeDoc.tokenNo} (${nameEn}): Marked Leave for ${friendlyDate} - "${reasonLabel}"`,
+          date: targetDateIST,
+          reason: reasonLabel,
+        },
+      });
+
+      dialog.toast.success(
+        'Leave Marked',
+        `Token ${activeDoc.tokenNo} marked on leave: ${reasonLabel}`
+      );
+      setShowLeaveReasonPicker(false);
+    } catch (err) {
+      console.error('Error marking leave in popover:', err);
+      setCurrentStudent(activeDoc);
+      if (onStudentUpdated) onStudentUpdated(activeDoc);
+      dialog.alert({
+        type: 'error',
+        title: 'Update Failed',
+        message: err.message || 'Could not mark leave.',
+      });
+    } finally {
+      setTogglingMeal(null);
+    }
+  };
+
   // Quick Account Block/Unblock
   const handleQuickToggleBlock = async () => {
     feedback('warning');
     const nextBlock = !isBlocked;
 
     const confirmed = await dialog.confirm({
-      title: nextBlock ? `Block Token #${activeDoc.tokenNo}?` : `Unblock Token #${activeDoc.tokenNo}?`,
+      title: nextBlock ? `Block Token ${activeDoc.tokenNo}?` : `Unblock Token ${activeDoc.tokenNo}?`,
       message: nextBlock
-        ? `Blocking will suspend Token #${activeDoc.tokenNo} (${nameEn}) from both Breakfast and Lunch grids.`
-        : `Re-activate Token #${activeDoc.tokenNo} (${nameEn}) into active canteen rotation?`,
+        ? `Blocking will suspend Token ${activeDoc.tokenNo} (${nameEn}) from both Breakfast and Lunch grids.`
+        : `Re-activate Token ${activeDoc.tokenNo} (${nameEn}) into active canteen rotation?`,
       confirmText: nextBlock ? 'Block Student' : 'Unblock Student',
       confirmColor: nextBlock ? 'rose' : 'emerald',
       icon: nextBlock ? 'shield-alert' : 'shield-check',
@@ -472,11 +552,11 @@ export default function AdminTokenPopover({
         target: {
           type: 'student',
           id: activeDoc.id,
-          label: `Token #${activeDoc.tokenNo} (${nameEn})`,
+          label: `Token ${activeDoc.tokenNo} (${nameEn})`,
           tokenNo: Number(activeDoc.tokenNo),
         },
         changes: {
-          diffSummary: `Token #${activeDoc.tokenNo} (${nameEn}) ${nextBlock ? 'locked/frozen' : 'unlocked/re-activated'} from Master Board`,
+          diffSummary: `Token ${activeDoc.tokenNo} (${nameEn}) ${nextBlock ? 'locked/frozen' : 'unlocked/re-activated'} from Master Board`,
           fieldsChanged: ['block'],
           before: { block: !nextBlock },
           after: { block: nextBlock },
@@ -507,7 +587,7 @@ export default function AdminTokenPopover({
       feedback('success');
       dialog.toast.success(
         nextBlock ? 'Account Locked' : 'Account Re-activated',
-        `Token #${activeDoc.tokenNo} status updated.`
+        `Token ${activeDoc.tokenNo} status updated.`
       );
 
       const updatedStudent = {
@@ -546,27 +626,12 @@ export default function AdminTokenPopover({
           {/* Header */}
           <div className="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div
-                className={`relative w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold font-mono text-lg text-white shadow-sm flex-shrink-0 ${
-                  isBlocked
-                    ? 'bg-gradient-to-b from-gray-700 to-gray-900 border border-gray-600'
-                    : isBothOn
-                    ? 'bg-gradient-to-br from-emerald-500 to-green-600 border border-emerald-400'
-                    : isBothOff
-                    ? 'bg-gradient-to-br from-rose-500 to-red-600 border border-rose-400'
-                    : 'bg-gradient-to-r from-emerald-500 to-rose-500 border border-emerald-300/40 shadow-sm'
-                }`}
-              >
-                <span className="leading-none">{activeDoc.tokenNo}</span>
-                {isBlocked && (
-                  <span
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-800 border border-gray-500 flex items-center justify-center shadow-sm z-10"
-                    title="Account Locked by Admin"
-                  >
-                    <Lock className="w-2.5 h-2.5 text-gray-300" />
-                  </span>
-                )}
-              </div>
+              <IslamicAvatar
+                student={activeDoc}
+                size={48}
+                showStatusRing
+                animate={false}
+              />
 
               <div className="min-w-0">
                 <h3 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white truncate">
@@ -578,7 +643,7 @@ export default function AdminTokenPopover({
                   </p>
                 )}
                 <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
-                  <span>{batch}</span>
+                  <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${batchTheme.bg} ${batchTheme.text} border ${batchTheme.border}`}>{batch}</span>
                   {(activeDoc.username || activeDoc.uname) && (
                     <span className="font-mono opacity-80">@{activeDoc.username || activeDoc.uname}</span>
                   )}
@@ -765,7 +830,11 @@ export default function AdminTokenPopover({
                 )}
               </div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
-                {bfExc ? (bfExc.label || 'Override') : (activeDoc.obj?.breakfast?.[effectiveDay] ? 'Routine: ON' : 'Routine: OFF')}
+                {targetDateIST < todayIST
+                  ? (isBfOn ? 'Ledger: ON' : 'Ledger: OFF')
+                  : bfExc
+                  ? (bfExc.label && bfExc.label !== 'Single-Day Override' ? bfExc.label : 'Custom Schedule')
+                  : (activeDoc.obj?.breakfast?.[effectiveDay] ? 'Routine: ON' : 'Routine: OFF')}
               </p>
             </div>
 
@@ -789,7 +858,11 @@ export default function AdminTokenPopover({
                 )}
               </div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
-                {luExc ? (luExc.label || 'Override') : (activeDoc.obj?.lunch?.[effectiveDay] ? 'Routine: ON' : 'Routine: OFF')}
+                {targetDateIST < todayIST
+                  ? (isLuOn ? 'Ledger: ON' : 'Ledger: OFF')
+                  : luExc
+                  ? (luExc.label && luExc.label !== 'Single-Day Override' ? luExc.label : 'Custom Schedule')
+                  : (activeDoc.obj?.lunch?.[effectiveDay] ? 'Routine: ON' : 'Routine: OFF')}
               </p>
             </div>
           </div>
@@ -911,6 +984,50 @@ export default function AdminTokenPopover({
                     </span>
                   </button>
                 )}
+                {/* 2.5 Quick Leave with Institutional Reason */}
+                <div>
+                  <button
+                    type="button"
+                    disabled={isToggling}
+                    onClick={() => {
+                      feedback('pop');
+                      setShowLeaveReasonPicker((prev) => !prev);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all flex items-center justify-between cursor-pointer shadow-xs"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDays className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{t('markLeaveWithReason', 'Mark Leave with Reason...')}</span>
+                    </span>
+                    <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded-full">
+                      {showLeaveReasonPicker ? '▲' : '▼'}
+                    </span>
+                  </button>
+
+                  {showLeaveReasonPicker && (
+                    <div className="mt-1.5 p-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-1">
+                      {[
+                        { labelEn: 'Monthly Dars Leave', labelMl: 'മാസാന്ത ദർസ് അവധി' },
+                        { labelEn: 'Nikah Ceremony', labelMl: 'നിക്കാഹ് സൽക്കാരം' },
+                        { labelEn: 'Temporary Canteen Close', labelMl: 'താത്കാലിക കാന്റീൻ അവധി' },
+                        { labelEn: 'Home Leave', labelMl: 'വീട്ടിൽ പോക്ക്' },
+                        { labelEn: 'Medical Leave', labelMl: 'അനാരോഗ്യം' },
+                      ].map((preset) => {
+                        const label = lang === 'ml' ? preset.labelMl : preset.labelEn;
+                        return (
+                          <button
+                            key={preset.labelEn}
+                            type="button"
+                            onClick={() => handleMarkLeaveWithReason(label)}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 transition-colors"
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

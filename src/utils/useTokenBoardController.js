@@ -15,6 +15,17 @@ import {
 import { subscribeToPreferences } from './preferenceService';
 import { subscribeToCanteenConfig } from './canteenConfigService';
 import { useTokenLockStatus } from './useTokenLockStatus';
+import { useAcademicYear, clampDateToAcademicYear } from './academicYearService';
+import {
+  subscribeToBoardNotices,
+  getNoticesForDate,
+  isCanteenClosedForDate as isCanteenClosedForDateHelper,
+} from './boardNoticeService';
+import {
+  subscribeToBoardServiceSchedule,
+  getMealSupplyStatus,
+  FOOD_SUPPLY_REASONS,
+} from './boardServiceSchedule';
 
 /**
  * Custom hook providing a unified, reactive controller for the Token Board across
@@ -22,8 +33,8 @@ import { useTokenLockStatus } from './useTokenLockStatus';
  *
  * Encapsulates:
  * - Real-time Firestore student & dietary preference subscriptions
- * - Multi-field search (Token #, English Name, Malayalam Name, Username, Room, Phone, Batch)
- * - 7-algorithm sorting pipeline
+ * - Multi-field search (Token, English Name, Malayalam Name, Username, Email, Phone, Batch)
+ * - 6-algorithm sorting pipeline
  * - Multi-dimensional filtering (Status, Dynamic Batches, Dietary Preferences)
  * - Categorisation engines (Continuous Matrix, Academic Batch Accordions, Mess Sections of 25)
  * - Live real-time order & dietary headcount analytics
@@ -55,13 +66,23 @@ export function useTokenBoardController(options = {}) {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'off' | 'leave' | 'blocked'
   const [batchFilter, setBatchFilter] = useState('all');
   const [dietaryFilter, setDietaryFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('token_asc'); // 'token_asc' | 'token_desc' | 'name_asc' | 'name_ml' | 'status_active' | 'status_off' | 'room_asc'
+  const [sortBy, setSortBy] = useState('token_asc'); // 'token_asc' | 'token_desc' | 'name_asc' | 'name_ml' | 'status_active' | 'status_off'
 
   // Layout & Density States
   const [viewCategory, setViewCategory] = useState(initialViewCategory); // 'all' | 'batch' | 'section' | 'dietary'
   const [viewDensity, setViewDensity] = useState(initialViewDensity); // 'matrix' | 'cards'
   const [collapsedBatches, setCollapsedBatches] = useState({});
   const [collapsedDietary, setCollapsedDietary] = useState({});
+
+  // Board Notice Notes & Operational Events State
+  const [boardNotices, setBoardNotices] = useState([]);
+
+  // Board Food Supply Schedule State (settings/board_service)
+  const [boardServiceSchedule, setBoardServiceSchedule] = useState({});
+
+  // Multi-Selection States (Tactical Board Operations)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedTokens, setSelectedTokens] = useState([]);
 
   // Verified IST Server Clock
   const {
@@ -78,6 +99,7 @@ export function useTokenBoardController(options = {}) {
 
   // Real-time Token Board Cutoff & Window Configuration
   const { activeWindow, rawBoardSwitchTime, boardSwitchTime: statusBoardSwitchTime } = useTokenLockStatus();
+  const { academicYear, startDate: acadStartDate, endDate: acadEndDate } = useAcademicYear();
 
   const todayIST = useMemo(() => worldTodayIST || getTodayISTDate(), [worldTodayIST]);
 
@@ -89,7 +111,7 @@ export function useTokenBoardController(options = {}) {
     autoEveningShift && isPastBoardSwitchTime(timeHms, effectiveSwitchTime)
   );
 
-  const targetDateIST = useMemo(() => {
+  const rawTargetDate = useMemo(() => {
     if (dateMode === 'today') {
       return todayIST;
     }
@@ -107,6 +129,18 @@ export function useTokenBoardController(options = {}) {
     }
     return todayIST;
   }, [dateMode, customDate, todayIST, isPostEveningCutoff]);
+
+  // Clamped strictly within academic year boundaries
+  const targetDateIST = useMemo(() => {
+    if (!academicYear) return rawTargetDate;
+    if (acadStartDate && rawTargetDate < acadStartDate) {
+      return acadStartDate;
+    }
+    if (acadEndDate && rawTargetDate > acadEndDate) {
+      return acadEndDate;
+    }
+    return rawTargetDate;
+  }, [rawTargetDate, academicYear, acadStartDate, acadEndDate]);
 
   // Effective 2-letter lowercase day for schedule resolution ('su'..'sa')
   const effectiveDay = useMemo(() => {
@@ -146,10 +180,20 @@ export function useTokenBoardController(options = {}) {
       }
     });
 
+    const unsubNotices = subscribeToBoardNotices((notices) => {
+      setBoardNotices(notices);
+    });
+
+    const unsubSupply = subscribeToBoardServiceSchedule((schedule) => {
+      setBoardServiceSchedule(schedule || {});
+    });
+
     return () => {
       unsubStudents();
       unsubPrefs();
       unsubCanteen();
+      unsubNotices();
+      unsubSupply();
     };
   }, []);
 
@@ -157,15 +201,21 @@ export function useTokenBoardController(options = {}) {
   const allBatches = useMemo(() => {
     const batchCountMap = {};
     documents.forEach((doc) => {
-      const b = (doc.batch && doc.batch.trim()) || 'General';
+      const raw = doc.batch ? doc.batch.trim() : '';
+      const b = raw || 'Unassigned';
       batchCountMap[b] = (batchCountMap[b] || 0) + 1;
     });
 
     return Object.keys(batchCountMap)
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+      .sort((a, b) => {
+        if (a === 'Unassigned') return 1;
+        if (b === 'Unassigned') return -1;
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+      })
       .map((name) => ({
         name,
         count: batchCountMap[name],
+        isUnassigned: name === 'Unassigned',
       }));
   }, [documents]);
 
@@ -173,6 +223,27 @@ export function useTokenBoardController(options = {}) {
   const allTokens = useMemo(() => {
     return documents.map((d) => Number(d.tokenNo)).filter((n) => !isNaN(n));
   }, [documents]);
+
+  // Active Meal Key
+  const activeMealKey = isLunch ? 'lunch' : 'breakfast';
+
+  // Board Food Supply Operational Statuses (settings/board_service)
+  const currentMealSupplyStatus = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, activeMealKey);
+  }, [boardServiceSchedule, targetDateIST, activeMealKey]);
+
+  const breakfastSupplyStatus = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, 'breakfast');
+  }, [boardServiceSchedule, targetDateIST]);
+
+  const lunchSupplyStatus = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, 'lunch');
+  }, [boardServiceSchedule, targetDateIST]);
+
+  const isBoardSupplyActive = currentMealSupplyStatus.isSupplying !== false;
+  const isBreakfastSupplyActive = breakfastSupplyStatus.isSupplying !== false;
+  const isLunchSupplyActive = lunchSupplyStatus.isSupplying !== false;
+  const isEntireDaySupplyOff = !isBreakfastSupplyActive && !isLunchSupplyActive;
 
   // Global Headcount Calculations across the full database for target date
   const metrics = useMemo(() => {
@@ -193,8 +264,6 @@ export function useTokenBoardController(options = {}) {
     let totalAvoidersRoster = 0;
     let totalAvoidersActiveMeal = 0;
     let standardFullDietActiveCount = 0;
-
-    const activeMealKey = isLunch ? 'lunch' : 'breakfast';
 
     documents.forEach((doc) => {
       const isBlocked = Boolean(doc.block);
@@ -253,24 +322,45 @@ export function useTokenBoardController(options = {}) {
     });
 
     const total = documents.length;
-    const activePercentage = total > 0 ? Number(((activeCurrent / total) * 100).toFixed(1)) : 0;
+    // When food supply in canteen is OFF, operational active headcount served is 0
+    const effectiveLunchCount = isLunchSupplyActive ? lunchCount : 0;
+    const effectiveBreakfastCount = isBreakfastSupplyActive ? breakfastCount : 0;
+    const effectiveActiveCurrent = isBoardSupplyActive ? activeCurrent : 0;
+    const effectiveMealCount = isLunch ? effectiveLunchCount : effectiveBreakfastCount;
+    const activePercentage = total > 0 ? Number(((effectiveActiveCurrent / total) * 100).toFixed(1)) : 0;
 
     return {
       total,
-      lunchCount,
-      breakfastCount,
-      currentMealCount: isLunch ? lunchCount : breakfastCount,
-      activeCount: activeCurrent,
-      offCount: offCurrent,
+      rawLunchCount: lunchCount,
+      rawBreakfastCount: breakfastCount,
+      rawCurrentMealCount: isLunch ? lunchCount : breakfastCount,
+      lunchCount: effectiveLunchCount,
+      breakfastCount: effectiveBreakfastCount,
+      currentMealCount: effectiveMealCount,
+      activeCount: effectiveActiveCurrent,
+      offCount: isBoardSupplyActive ? offCurrent : total - blockedCount,
       leaveCount: leaveCurrent,
       blockedCount,
       activePercentage,
-      totalAvoiders: totalAvoidersActiveMeal,
+      totalAvoiders: isBoardSupplyActive ? totalAvoidersActiveMeal : 0,
       totalAvoidersRoster,
-      standardFullDietCount: standardFullDietActiveCount,
+      standardFullDietCount: isBoardSupplyActive ? standardFullDietActiveCount : 0,
       dietaryTallies,
+      isSupplySuspended: !isBoardSupplyActive,
+      supplyNotice: currentMealSupplyStatus,
     };
-  }, [documents, targetDateIST, effectiveDay, isLunch, preferencesList]);
+  }, [
+    documents,
+    targetDateIST,
+    effectiveDay,
+    isLunch,
+    activeMealKey,
+    preferencesList,
+    isBoardSupplyActive,
+    isBreakfastSupplyActive,
+    isLunchSupplyActive,
+    currentMealSupplyStatus,
+  ]);
 
   // Reactive Multi-Dimensional Filtering & Sorting Pipeline
   const filteredDocuments = useMemo(() => {
@@ -287,6 +377,7 @@ export function useTokenBoardController(options = {}) {
           const matchMl = (doc.nameMl || '').toLowerCase().includes(q);
           const matchUname = (doc.username || doc.uname || '').toLowerCase().includes(q);
           const matchPhone = (doc.phone || '').toLowerCase().includes(q);
+          const matchEmail = (doc.email || '').toLowerCase().includes(q);
           const matchBatch = (doc.batch || '').toLowerCase().includes(q);
 
           if (
@@ -295,6 +386,7 @@ export function useTokenBoardController(options = {}) {
             !matchMl &&
             !matchUname &&
             !matchPhone &&
+            !matchEmail &&
             !matchBatch
           ) {
             return false;
@@ -388,7 +480,8 @@ export function useTokenBoardController(options = {}) {
     });
 
     filteredDocuments.forEach((doc) => {
-      const b = (doc.batch && doc.batch.trim()) || 'General';
+      const raw = doc.batch ? doc.batch.trim() : '';
+      const b = raw || 'Unassigned';
       if (!groups[b]) groups[b] = [];
       groups[b].push(doc);
     });
@@ -553,7 +646,7 @@ export function useTokenBoardController(options = {}) {
         id: 'standard_full',
         prefId: 'standard',
         name: 'Standard Full Diet',
-        nameMl: 'പൂർണ്ണ ഭക്ഷണം (എല്ലാം കഴിക്കുന്നവർ)',
+        nameMl: 'പൂർണ്ണ ഭക്ഷണം',
         subtitle: 'No food restrictions / All items accepted',
         icon: 'CheckCircle2',
         students: standardStudents,
@@ -640,34 +733,192 @@ export function useTokenBoardController(options = {}) {
 
   const setDateToCustom = useCallback((dateStr) => {
     if (dateStr) {
+      const clamped = clampDateToAcademicYear(dateStr, academicYear);
       setDateMode('custom');
-      setCustomDate(dateStr);
+      setCustomDate(clamped);
     }
-  }, []);
+  }, [academicYear]);
 
   const relativeDateMeta = useMemo(() => {
     return getRelativeDateMeta(targetDateIST, todayIST);
   }, [targetDateIST, todayIST]);
 
+  const canStepBackward = useMemo(() => {
+    if (!acadStartDate) return true;
+    return targetDateIST > acadStartDate;
+  }, [targetDateIST, acadStartDate]);
+
+  const canStepForward = useMemo(() => {
+    if (!acadEndDate) return true;
+    return targetDateIST < acadEndDate;
+  }, [targetDateIST, acadEndDate]);
+
   const shiftDate = useCallback((days) => {
     if (!days || isNaN(days)) return;
     const nextDate = addDaysToDate(targetDateIST, days);
+    const clamped = clampDateToAcademicYear(nextDate, academicYear);
     setDateMode('custom');
-    setCustomDate(nextDate);
-  }, [targetDateIST]);
+    setCustomDate(clamped);
+  }, [targetDateIST, academicYear]);
 
   const stepDateBackward = useCallback(() => {
+    if (!canStepBackward) return;
     shiftDate(-1);
-  }, [shiftDate]);
+  }, [canStepBackward, shiftDate]);
 
   const stepDateForward = useCallback(() => {
+    if (!canStepForward) return;
     shiftDate(1);
-  }, [shiftDate]);
+  }, [canStepForward, shiftDate]);
 
   const setDateToAuto = useCallback(() => {
     setDateMode('auto');
     setCustomDate('');
   }, []);
+
+  // Filter active notices matching current target date and meal
+  const activeMealType = isLunch ? 'lunch' : 'breakfast';
+  const rawNoticesForDate = useMemo(() => {
+    return getNoticesForDate(boardNotices, targetDateIST, activeMealType);
+  }, [boardNotices, targetDateIST, activeMealType]);
+
+  const activeNoticeForDate = useMemo(() => {
+    const rawNotice = rawNoticesForDate[0] || null;
+    if (rawNotice) {
+      return {
+        ...rawNotice,
+        isSupplyOff: !isBoardSupplyActive,
+        supplyStatus: currentMealSupplyStatus,
+      };
+    }
+    if (!isBoardSupplyActive) {
+      const rObj = currentMealSupplyStatus.reasonObj || {};
+      return {
+        id: `supply_${targetDateIST}_${activeMealType}`,
+        category: currentMealSupplyStatus.reasonKey || 'temporary_close',
+        title: currentMealSupplyStatus.noteEn || rObj.labelEn || 'Canteen Food Supply Suspended',
+        titleMl: currentMealSupplyStatus.noteMl || rObj.labelMl || 'കാന്റീൻ ഭക്ഷണ വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു',
+        badgeText: rObj.badgeMl || 'ഭക്ഷണം ലഭ്യമല്ല',
+        badgeTextEn: rObj.badgeEn || 'No Food Supply',
+        severity: rObj.severity || 'critical',
+        mealScope: isEntireDaySupplyOff ? 'both' : activeMealType,
+        canteenStatus: 'closed',
+        description: currentMealSupplyStatus.descEn || rObj.descEn || 'Canteen food supply is suspended for this meal.',
+        descriptionMl: currentMealSupplyStatus.descMl || rObj.descMl || 'ഈ സമയത്ത് കാന്റീൻ പ്രവർത്തനം ഉണ്ടായിരിക്കുന്നതല്ല.',
+        isSupplyOff: true,
+        supplyStatus: currentMealSupplyStatus,
+      };
+    }
+    return null;
+  }, [rawNoticesForDate, isBoardSupplyActive, currentMealSupplyStatus, targetDateIST, activeMealType, isEntireDaySupplyOff]);
+
+  const activeNoticesForDate = useMemo(() => {
+    if (activeNoticeForDate) return [activeNoticeForDate];
+    return rawNoticesForDate;
+  }, [activeNoticeForDate, rawNoticesForDate]);
+
+  const isCanteenClosedForDate = useMemo(() => {
+    if (!isBoardSupplyActive) return true;
+    return isCanteenClosedForDateHelper(boardNotices, targetDateIST, activeMealType);
+  }, [isBoardSupplyActive, boardNotices, targetDateIST, activeMealType]);
+
+  // Multi-Selection Engines
+  const selectedTokenIds = useMemo(() => {
+    return new Set(selectedTokens.map((t) => t.id || String(t.tokenNo)));
+  }, [selectedTokens]);
+
+  const isTokenSelected = useCallback(
+    (doc) => {
+      if (!doc) return false;
+      return selectedTokenIds.has(doc.id || String(doc.tokenNo));
+    },
+    [selectedTokenIds]
+  );
+
+  const toggleSelectMode = useCallback((forcedVal = null) => {
+    setIsSelectMode((prev) => {
+      const next = typeof forcedVal === 'boolean' ? forcedVal : !prev;
+      if (!next) {
+        setSelectedTokens([]);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleTokenSelection = useCallback((doc) => {
+    if (!doc) return;
+    setSelectedTokens((prev) => {
+      const docKey = doc.id || String(doc.tokenNo);
+      const exists = prev.some((t) => (t.id || String(t.tokenNo)) === docKey);
+      if (exists) {
+        return prev.filter((t) => (t.id || String(t.tokenNo)) !== docKey);
+      }
+      return [...prev, doc];
+    });
+  }, []);
+
+  const selectTokens = useCallback((tokensList) => {
+    if (!Array.isArray(tokensList)) return;
+    setSelectedTokens(tokensList);
+  }, []);
+
+  const selectAll = useCallback((list = null) => {
+    const targetList = list || filteredDocuments;
+    setSelectedTokens([...targetList]);
+  }, [filteredDocuments]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedTokens([]);
+  }, []);
+
+  const selectBatch = useCallback((batchName) => {
+    if (!batchName) return;
+    const batchMatches = documents.filter((s) => (s.batch?.trim() || 'Unassigned') === batchName);
+    setSelectedTokens((prev) => {
+      const existingKeys = new Set(prev.map((t) => t.id || String(t.tokenNo)));
+      const newItems = batchMatches.filter((s) => !existingKeys.has(s.id || String(s.tokenNo)));
+      return [...prev, ...newItems];
+    });
+  }, [documents]);
+
+  const selectSection = useCallback((sectionStudents) => {
+    if (!Array.isArray(sectionStudents)) return;
+    setSelectedTokens((prev) => {
+      const existingKeys = new Set(prev.map((t) => t.id || String(t.tokenNo)));
+      const newItems = sectionStudents.filter((s) => !existingKeys.has(s.id || String(s.tokenNo)));
+      return [...prev, ...newItems];
+    });
+  }, []);
+
+  const selectByMealStatus = useCallback((statusType = 'on') => {
+    const mealKey = isLunch ? 'lunch' : 'breakfast';
+    const matches = filteredDocuments.filter((s) => {
+      const isOn = getEffectiveStudentMealStatus(s, targetDateIST, effectiveDay, mealKey);
+      return statusType === 'on' ? isOn : !isOn;
+    });
+    setSelectedTokens(matches);
+  }, [filteredDocuments, isLunch, targetDateIST, effectiveDay]);
+
+  const selectTokenRange = useCallback((fromDoc, toDoc) => {
+    if (!fromDoc || !toDoc) return;
+    const fromIdx = filteredDocuments.findIndex(
+      (s) => (s.id || String(s.tokenNo)) === (fromDoc.id || String(fromDoc.tokenNo))
+    );
+    const toIdx = filteredDocuments.findIndex(
+      (s) => (s.id || String(s.tokenNo)) === (toDoc.id || String(toDoc.tokenNo))
+    );
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const start = Math.min(fromIdx, toIdx);
+    const end = Math.max(fromIdx, toIdx);
+    const rangeList = filteredDocuments.slice(start, end + 1);
+
+    setSelectedTokens((prev) => {
+      const existingKeys = new Set(prev.map((t) => t.id || String(t.tokenNo)));
+      const newItems = rangeList.filter((s) => !existingKeys.has(s.id || String(s.tokenNo)));
+      return [...prev, ...newItems];
+    });
+  }, [filteredDocuments]);
 
   return {
     // Data & Loading
@@ -699,6 +950,15 @@ export function useTokenBoardController(options = {}) {
     isPostEveningCutoff,
     boardSwitchTime: effectiveSwitchTime,
     isPastBoardSwitch: isPostEveningCutoff,
+
+    // Academic Year Boundaries
+    academicYear,
+    academicYearStartDate: acadStartDate,
+    academicYearEndDate: acadEndDate,
+    canStepBackward,
+    canStepForward,
+    isAtAcademicYearStart: Boolean(acadStartDate && targetDateIST === acadStartDate),
+    isAtAcademicYearEnd: Boolean(acadEndDate && targetDateIST === acadEndDate),
 
     // Clock & Anti-Tamper IST
     timeHms,
@@ -746,6 +1006,39 @@ export function useTokenBoardController(options = {}) {
 
     // Real-Time Analytics & Headcounts
     metrics,
+
+    // Board Food Supply Operational Schedule (settings/board_service)
+    boardServiceSchedule,
+    currentMealSupplyStatus,
+    breakfastSupplyStatus,
+    lunchSupplyStatus,
+    isBoardSupplyActive,
+    isBreakfastSupplyActive,
+    isLunchSupplyActive,
+    isEntireDaySupplyOff,
+    activeSupplyNotice: currentMealSupplyStatus,
+
+    // Board Notice Notes & Operational Events
+    boardNotices,
+    activeNoticesForDate,
+    activeNoticeForDate,
+    isCanteenClosedForDate,
+
+    // Tactical Multi-Selection State & Actions
+    isSelectMode,
+    selectedTokens,
+    selectedTokenIds,
+    selectedCount: selectedTokens.length,
+    isTokenSelected,
+    toggleSelectMode,
+    toggleTokenSelection,
+    selectTokens,
+    selectAll,
+    clearSelection,
+    selectBatch,
+    selectSection,
+    selectByMealStatus,
+    selectTokenRange,
   };
 }
 

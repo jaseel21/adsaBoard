@@ -81,7 +81,7 @@ export default function ChangePinModal({ isOpen, onClose, studentData, onPinUpda
           target: {
             type: 'student',
             id: docId,
-            label: `Token #${studentData.tokenNo}`,
+            label: `Token ${studentData.tokenNo}`,
           },
         });
       } catch (logErr) {
@@ -127,7 +127,7 @@ export default function ChangePinModal({ isOpen, onClose, studentData, onPinUpda
                 {language === 'ml' ? 'ടോക്കൺ പാസ്‌വേഡ് മാറ്റുക' : 'Change Dining Portal PIN'}
               </h3>
               <span className="text-[11px] text-gray-400 font-medium">
-                {language === 'ml' ? `ടോക്കൺ #${studentData?.tokenNo}` : `Token #${studentData?.tokenNo} • Passcode Security`}
+                {language === 'ml' ? `ടോക്കൺ ${studentData?.tokenNo}` : `Token ${studentData?.tokenNo} • Passcode Security`}
               </span>
             </div>
           </div>

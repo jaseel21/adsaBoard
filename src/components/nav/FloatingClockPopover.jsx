@@ -56,7 +56,14 @@ export default function FloatingClockPopover({
     return getCalibratedHijriDate(nowDate, preferences?.hijriDateOffset || 0);
   }, [nowDate, preferences?.hijriDateOffset]);
 
-  const { activeWindow, isUpdationWindowOpen, rawStartTime, rawEndTime } = useTokenLockStatus();
+  const {
+    activeWindow,
+    isUpdationWindowOpen,
+    rawStartTime,
+    rawEndTime,
+    rawBreakfastDeadlineTime,
+    rawLunchDeadlineTime,
+  } = useTokenLockStatus();
   const [schedule, setSchedule] = useState(() => getCachedMealSchedule());
 
   // Subscribe to real-time meal schedule updates
@@ -118,10 +125,25 @@ export default function FloatingClockPopover({
     const currentMins = hh * 60 + mm;
 
     const [startH, startM] = (rawStartTime || '00:00').split(':').map(Number);
+    const bfRaw = rawBreakfastDeadlineTime || rawEndTime || '23:00';
+    const luRaw = rawLunchDeadlineTime || rawEndTime || '23:00';
+    const isSplit = bfRaw !== luRaw;
+
+    const [bfH, bfM] = bfRaw.split(':').map(Number);
+    const [luH, luM] = luRaw.split(':').map(Number);
     const [endH, endM] = (rawEndTime || '23:00').split(':').map(Number);
 
     const startMins = startH * 60 + (startM || 0);
+    const bfMins = bfH * 60 + (bfM || 0);
+    const luMins = luH * 60 + (luM || 0);
     const endMins = endH * 60 + (endM || 0);
+
+    const formatDiff = (targetMins) => {
+      const diff = targetMins - currentMins;
+      const h = Math.floor(diff / 60);
+      const m = diff % 60;
+      return `${h}h ${m}m`;
+    };
 
     // If opening time is explicitly restricted and current time is before open time
     if (activeWindow?.restrictOpenTime && currentMins < startMins) {
@@ -130,30 +152,62 @@ export default function FloatingClockPopover({
       const m = diff % 60;
       return {
         isOpen: false,
+        isSplit: false,
         badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
         text: lang === 'ml'
           ? `തുടങ്ങാൻ ${h}മ ${m}മി ബാക്കി (${formatTime12(rawStartTime, false)})`
           : `Opens in ${h}h ${m}m (${formatTime12(rawStartTime, false)})`,
       };
-    } else if (currentMins <= endMins) {
-      const diff = endMins - currentMins;
-      const h = Math.floor(diff / 60);
-      const m = diff % 60;
-      return {
-        isOpen: true,
-        badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-        text: lang === 'ml'
-          ? `കട്ട് ഓഫ് വരെ ${h}മ ${m}മി ബാക്കി (${formatTime12(rawEndTime, false)})`
-          : `Open • Cutoff in ${h}h ${m}m (${formatTime12(rawEndTime, false)})`,
-      };
-    } else {
+    }
+
+    const bfOpen = currentMins <= bfMins;
+    const luOpen = currentMins <= luMins;
+    const anyOpen = bfOpen || luOpen;
+
+    if (!anyOpen) {
       return {
         isOpen: false,
+        isSplit,
         badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-        text: lang === 'ml' ? 'ഇന്നത്തെ കട്ട് ഓഫ് കഴിഞ്ഞു' : 'Closed • Cutoff deadline passed',
+        text: lang === 'ml' ? 'ഇന്നത്തെ കട്ട് ഓഫ് കഴിഞ്ഞു' : 'Closed • Cutoff deadlines passed',
+        bfOpen: false,
+        luOpen: false,
+        bfText: lang === 'ml' ? 'കഴിഞ്ഞു' : 'Cutoff passed',
+        luText: lang === 'ml' ? 'കഴിഞ്ഞു' : 'Cutoff passed',
       };
     }
-  }, [timeHms, rawStartTime, rawEndTime, activeWindow?.restrictOpenTime, lang]);
+
+    if (isSplit) {
+      return {
+        isOpen: anyOpen,
+        isSplit: true,
+        badgeClass: anyOpen
+          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+        text: `Bf: ${bfRaw} | Lu: ${luRaw}`,
+        bfOpen,
+        luOpen,
+        bfText: bfOpen
+          ? `${formatDiff(bfMins)} left (${formatTime12(bfRaw, false)})`
+          : (lang === 'ml' ? 'കഴിഞ്ഞു' : 'Cutoff passed'),
+        luText: luOpen
+          ? `${formatDiff(luMins)} left (${formatTime12(luRaw, false)})`
+          : (lang === 'ml' ? 'കഴിഞ്ഞു' : 'Cutoff passed'),
+      };
+    }
+
+    const diff = endMins - currentMins;
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return {
+      isOpen: true,
+      isSplit: false,
+      badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      text: lang === 'ml'
+        ? `കട്ട് ഓഫ് വരെ ${h}മ ${m}മി ബാക്കി (${formatTime12(rawEndTime, false)})`
+        : `Open • Cutoff in ${h}h ${m}m (${formatTime12(rawEndTime, false)})`,
+    };
+  }, [timeHms, rawStartTime, rawEndTime, rawBreakfastDeadlineTime, rawLunchDeadlineTime, activeWindow?.restrictOpenTime, lang]);
 
   if (!isOpen || typeof document === 'undefined') return null;
 
@@ -483,7 +537,7 @@ export default function FloatingClockPopover({
           </div>
 
           {/* Daily Token Board Updation Window Status */}
-          <div className="p-2.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-1">
+          <div className="p-2.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-extrabold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
                 <Timer className="w-3.5 h-3.5 text-emerald-500" />
@@ -493,9 +547,26 @@ export default function FloatingClockPopover({
                 {windowMilestone.isOpen ? (lang === 'ml' ? 'തുറന്നിരിക്കുന്നു' : 'Open') : (lang === 'ml' ? 'അടച്ചിരിക്കുന്നു' : 'Closed')}
               </span>
             </div>
-            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium pl-5">
-              {windowMilestone.text}
-            </p>
+            {windowMilestone.isSplit ? (
+              <div className="space-y-1 pt-0.5 text-[11px] font-medium pl-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">{lang === 'ml' ? 'പ്രഭാതഭക്ഷണം:' : 'Breakfast:'}</span>
+                  <span className={windowMilestone.bfOpen ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 font-semibold"}>
+                    {windowMilestone.bfText}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">{lang === 'ml' ? 'ഉച്ചഭക്ഷണം:' : 'Lunch:'}</span>
+                  <span className={windowMilestone.luOpen ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 font-semibold"}>
+                    {windowMilestone.luText}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium pl-5">
+                {windowMilestone.text}
+              </p>
+            )}
           </div>
 
           {/* Telemetry Footer */}

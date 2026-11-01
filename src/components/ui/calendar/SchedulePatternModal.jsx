@@ -136,7 +136,8 @@ export default function SchedulePatternModal({
     let locked = 0;
     targetDates.forEach((dateStr) => {
       const lockInfo = getDateLockStatus(dateStr, { isAdmin });
-      if (lockInfo.isLocked && !isAdmin) {
+      const isBothLocked = !isAdmin && (lockInfo.isBothLocked || (lockInfo.isLocked && !lockInfo.isPartiallyLocked));
+      if (isBothLocked) {
         locked++;
       } else {
         applicable++;
@@ -166,16 +167,21 @@ export default function SchedulePatternModal({
     targetDates.forEach((dateStr) => {
       const lockInfo = getDateLockStatus(dateStr, { isAdmin });
       // Protect locked dates for students
-      if (!isAdmin && lockInfo.isLocked) {
+      const isBothLocked = !isAdmin && (lockInfo.isBothLocked || (lockInfo.isLocked && !lockInfo.isPartiallyLocked));
+      if (isBothLocked) {
         return;
       }
 
       const dayKey = getDayOfWeekShort(dateStr);
       const mealSettings = getPatternForDay(dayKey);
+      const existingMeal = calculateEffectiveDateMeals(student, dateStr);
+
+      const isBfLocked = !isAdmin && Boolean(lockInfo.isBreakfastLocked);
+      const isLuLocked = !isAdmin && Boolean(lockInfo.isLunchLocked);
 
       updatedExceptions[dateStr] = {
-        breakfast: mealSettings.breakfast,
-        lunch: mealSettings.lunch,
+        breakfast: isBfLocked ? existingMeal.breakfast : mealSettings.breakfast,
+        lunch: isLuLocked ? existingMeal.lunch : mealSettings.lunch,
         label: selectedPreset === 'all_on'
           ? 'Full Dining'
           : selectedPreset === 'weekend_off'
@@ -311,13 +317,13 @@ export default function SchedulePatternModal({
                 }}
                 className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                   selectedPreset === 'weekdays'
-                    ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-950 dark:text-blue-100 shadow-sm ring-1 ring-blue-500/40'
+                    ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 text-teal-950 dark:text-teal-100 shadow-sm ring-1 ring-teal-500/40'
                     : 'bg-gray-50/80 dark:bg-white/5 border-gray-200/80 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 text-gray-700 dark:text-gray-200'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-black">Weekdays Only</span>
-                  {selectedPreset === 'weekdays' && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                  {selectedPreset === 'weekdays' && <Check className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />}
                 </div>
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 block">Sun–Thu Active, Weekend Off</span>
               </button>
@@ -331,13 +337,13 @@ export default function SchedulePatternModal({
                 }}
                 className={`p-3 rounded-2xl border text-left transition-all cursor-pointer col-span-2 sm:col-span-2 ${
                   selectedPreset === 'custom'
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-950 dark:text-amber-100 shadow-sm ring-1 ring-amber-500/40'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-sm ring-1 ring-emerald-500/40'
                     : 'bg-gray-50/80 dark:bg-white/5 border-gray-200/80 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 text-gray-700 dark:text-gray-200'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-black">Custom 7-Day Matrix</span>
-                  {selectedPreset === 'custom' && <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
+                  {selectedPreset === 'custom' && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
                 </div>
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 block">Pick exact meals for each day (Sun–Sat)</span>
               </button>

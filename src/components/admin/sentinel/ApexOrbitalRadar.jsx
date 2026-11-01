@@ -236,7 +236,7 @@ export default function ApexOrbitalRadar({
                 className="transition-all duration-200"
               />
 
-              {/* Token # or Role Monogram */}
+              {/* Token Number or Role Monogram */}
               {s.userType === 'student' && s.tokenNo ? (
                 <text
                   y="16"

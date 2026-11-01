@@ -373,7 +373,7 @@ export default function CareDispatcherForm({ onTicketCreated, onNavigateTrack })
         {!isAnonymous && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div>
-              <label className="text-[10px] font-bold text-gray-500 uppercase">Token #</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase">Token Number</label>
               <input
                 type="number"
                 value={tokenNumber}

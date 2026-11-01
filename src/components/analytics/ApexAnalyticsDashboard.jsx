@@ -32,9 +32,8 @@ import AnalyticsTelemetryHud from './telemetry/AnalyticsTelemetryHud';
 import SplineAttendanceWave from './charts/SplineAttendanceWave';
 import DietaryDistributionRing from './charts/DietaryDistributionRing';
 import BatchPerformanceHeatmap from './charts/BatchPerformanceHeatmap';
-import DecisionTimingHistogram from './charts/DecisionTimingHistogram';
-import KitchenRationCalculator from './kitchen/KitchenRationCalculator';
-import StudentCohortInsights from './cohorts/StudentCohortInsights';
+import MealHeadcountManifestSummary from './kitchen/MealHeadcountManifestSummary';
+import DiningAttendanceLeaveSummary from './cohorts/DiningAttendanceLeaveSummary';
 import AnalyticsExportMenu from './export/AnalyticsExportMenu';
 
 export default function ApexAnalyticsDashboard() {
@@ -224,27 +223,26 @@ export default function ApexAnalyticsDashboard() {
         </div>
       </div>
 
-      {/* Charts Grid: Batch Performance & Decision Timing */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Charts Grid: Batch Performance Spectrum */}
+      <div className="mb-6">
         <BatchPerformanceHeatmap
           batchBenchmarks={analyticsData.batchBenchmarks}
           onSelectBatch={(batchName) => setBatchFilter(batchName)}
         />
-        <DecisionTimingHistogram
-          hours={analyticsData.decisionTiming}
-        />
       </div>
 
-      {/* Kitchen Ration Preparation Projections */}
-      <KitchenRationCalculator
-        kitchenRations={analyticsData.kitchenRations}
+      {/* Verified Kitchen Headcount Manifest Summary */}
+      <MealHeadcountManifestSummary
         telemetry={analyticsData.telemetry}
+        dietary={analyticsData.dietary}
         meta={analyticsData.meta}
       />
 
-      {/* Student Cohort Insights & Welfare Radar */}
-      <StudentCohortInsights
-        cohortInsights={analyticsData.cohortInsights}
+      {/* Period Attendance Averages & Scheduled Leaves */}
+      <DiningAttendanceLeaveSummary
+        periodStats={analyticsData.periodStats}
+        leaveSummary={analyticsData.leaveSummary}
+        meta={analyticsData.meta}
       />
     </div>
   );

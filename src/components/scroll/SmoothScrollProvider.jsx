@@ -122,9 +122,37 @@ export default function SmoothScrollProvider({ children }) {
   const prefersReducedMotion = useReducedMotion();
   const { preferences } = usePreferences();
 
+  // Touch / Mobile hardware check: Mobile devices have native 120Hz momentum touch physics.
+  // Bypassing Lenis on mobile/touch screens prevents gesture interception, click stalls, and PWA viewport lockups.
+  const [isTouchDevice, setIsTouchDevice] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return 'ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const media = window.matchMedia('(pointer: coarse)');
+    const update = () => {
+      setIsTouchDevice(
+        'ontouchstart' in window ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+        media.matches
+      );
+    };
+    update();
+    try {
+      media.addEventListener('change', update);
+      return () => media.removeEventListener('change', update);
+    } catch (_) {
+      media.addListener(update);
+      return () => media.removeListener(update);
+    }
+  }, []);
+
   // Operational exclusion: Kitchen Display (/kitchen) requires zero-latency raw touch responsiveness
   const isKitchenRoute = location.pathname.startsWith('/kitchen');
   const isBypassed =
+    isTouchDevice ||
     prefersReducedMotion ||
     isKitchenRoute ||
     preferences?.smoothScrollEnabled === false ||

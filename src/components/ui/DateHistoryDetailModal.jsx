@@ -25,7 +25,7 @@ export default function DateHistoryDetailModal({
   student,
   preferencesList = [],
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   // Handle ESC key to close
   useEffect(() => {
@@ -125,11 +125,11 @@ export default function DateHistoryDetailModal({
                 ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-500/20 text-emerald-900 dark:text-emerald-200'
                 : !isBfOn && !isLuOn
                 ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-500/20 text-rose-900 dark:text-rose-200'
-                : 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-500/20 text-indigo-900 dark:text-indigo-200'
+                : 'bg-teal-50/70 dark:bg-teal-950/20 border-teal-200/60 dark:border-teal-500/20 text-teal-900 dark:text-teal-200'
             }`}>
               <div className="flex items-center gap-2.5">
                 <span className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                  isBfOn && isLuOn ? 'bg-emerald-500 animate-pulse' : !isBfOn && !isLuOn ? 'bg-rose-500' : 'bg-indigo-500'
+                  isBfOn && isLuOn ? 'bg-emerald-500 animate-pulse' : !isBfOn && !isLuOn ? 'bg-rose-500' : 'bg-teal-500'
                 }`} />
                 <span className="text-xs sm:text-sm font-extrabold">
                   {isBfOn && isLuOn
@@ -143,9 +143,9 @@ export default function DateHistoryDetailModal({
               </div>
 
               {hasException && (
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                   <Tag className="w-2.5 h-2.5" />
-                  Override
+                  Custom
                 </span>
               )}
             </div>
@@ -159,7 +159,7 @@ export default function DateHistoryDetailModal({
                   </div>
                   <div>
                     <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white">
-                      Breakfast (കാപ്പി)
+                      {lang === 'ml' ? 'പ്രഭാതഭക്ഷണം' : 'Breakfast'}
                     </h4>
                     <span className="text-[10px] text-gray-400 font-mono">07:00 AM – 08:30 AM</span>
                   </div>
@@ -171,16 +171,18 @@ export default function DateHistoryDetailModal({
                     : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                 }`}>
                   {isBfOn ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                  <span>{isBfOn ? 'Attended / ON' : 'Skipped / OFF'}</span>
+                  <span>{isBfOn ? (lang === 'ml' ? 'കഴിച്ചു / ON' : 'Attended / ON') : (lang === 'ml' ? 'ഒഴിവാക്കി / OFF' : 'Skipped / OFF')}</span>
                 </div>
               </div>
 
               <div className="text-[11px] text-gray-500 dark:text-gray-400 pl-8">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Origin: </span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  {lang === 'ml' ? 'ഉറവിടം: ' : 'Origin: '}
+                </span>
                 {hasException ? (
-                  <span>Scheduled Date Override {label ? `(${label})` : ''}</span>
+                  <span>{lang === 'ml' ? 'തീയതി ക്രമീകരണം' : 'Scheduled Date Override'} {label ? `(${label})` : ''}</span>
                 ) : (
-                  <span>Standard Weekly Routine Schedule</span>
+                  <span>{lang === 'ml' ? 'സാധാരണ പ്രതിവാര ക്രമം' : 'Standard Weekly Routine Schedule'}</span>
                 )}
               </div>
             </div>
@@ -194,7 +196,7 @@ export default function DateHistoryDetailModal({
                   </div>
                   <div>
                     <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white">
-                      Lunch (ഉച്ചഭക്ഷണം)
+                      {lang === 'ml' ? 'ഉച്ചഭക്ഷണം' : 'Lunch'}
                     </h4>
                     <span className="text-[10px] text-gray-400 font-mono">12:30 PM – 02:00 PM</span>
                   </div>
@@ -206,16 +208,18 @@ export default function DateHistoryDetailModal({
                     : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                 }`}>
                   {isLuOn ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                  <span>{isLuOn ? 'Attended / ON' : 'Skipped / OFF'}</span>
+                  <span>{isLuOn ? (lang === 'ml' ? 'കഴിച്ചു / ON' : 'Attended / ON') : (lang === 'ml' ? 'ഒഴിവാക്കി / OFF' : 'Skipped / OFF')}</span>
                 </div>
               </div>
 
               <div className="text-[11px] text-gray-500 dark:text-gray-400 pl-8">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Origin: </span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  {lang === 'ml' ? 'ഉറവിടം: ' : 'Origin: '}
+                </span>
                 {hasException ? (
-                  <span>Scheduled Date Override {label ? `(${label})` : ''}</span>
+                  <span>{lang === 'ml' ? 'തീയതി ക്രമീകരണം' : 'Scheduled Date Override'} {label ? `(${label})` : ''}</span>
                 ) : (
-                  <span>Standard Weekly Routine Schedule</span>
+                  <span>{lang === 'ml' ? 'സാധാരണ പ്രതിവാര ക്രമം' : 'Standard Weekly Routine Schedule'}</span>
                 )}
               </div>
             </div>
@@ -253,8 +257,8 @@ export default function DateHistoryDetailModal({
             )}
 
             {/* Mess Accounting Integrity Note */}
-            <div className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-500/20 flex items-start gap-2.5 text-[11px] text-blue-900 dark:text-blue-200">
-              <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-500/20 flex items-start gap-2.5 text-[11px] text-purple-900 dark:text-purple-200">
+              <Info className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
               <span>
                 <strong>Archived Record:</strong> Because this date has already passed and mess food preparation was concluded, this record is permanently locked for mess billing integrity and cannot be modified retroactively.
               </span>

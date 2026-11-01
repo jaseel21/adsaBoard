@@ -32,6 +32,10 @@ import ShareActionModal from '../ui/ShareActionModal';
 import CanteenOpsActivityDrawer from '../admin/CanteenOpsActivityDrawer';
 import BlockManagementModal from '../admin/BlockManagementModal';
 import MealAlarmModal from '../notifications/MealAlarmModal';
+import MasterGovernanceCockpitModal from '../admin/governance/MasterGovernanceCockpitModal';
+import BackupVaultModal from '../admin/vault/BackupVaultModal';
+import TokenLockManagerModal from '../TokenLockManagerModal';
+import BoardSupplySwitchModal from '../board/BoardSupplySwitchModal';
 
 export default function BrowserLeftSidebar() {
   const location = useLocation();
@@ -59,6 +63,10 @@ export default function BrowserLeftSidebar() {
   const [opsLogOpen, setOpsLogOpen] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [alarmModalOpen, setAlarmModalOpen] = useState(false);
+  const [governanceModalOpen, setGovernanceModalOpen] = useState(false);
+  const [vaultModalOpen, setVaultModalOpen] = useState(false);
+  const [lockModalOpen, setLockModalOpen] = useState(false);
+  const [supplySwitchModalOpen, setSupplySwitchModalOpen] = useState(false);
 
   const toggleCategory = (categoryId) => {
     feedback('tick');
@@ -108,6 +116,10 @@ export default function BrowserLeftSidebar() {
       if (item.action === 'open_share_modal') setShareModalOpen(true);
       if (item.action === 'open_ops_log_modal') setOpsLogOpen(true);
       if (item.action === 'open_block_modal') setBlockModalOpen(true);
+      if (item.action === 'open_governance_modal') setGovernanceModalOpen(true);
+      if (item.action === 'open_vault_modal') setVaultModalOpen(true);
+      if (item.action === 'open_lock_modal') setLockModalOpen(true);
+      if (item.action === 'open_board_supply_modal') setSupplySwitchModalOpen(true);
       if (!isDesktop) closeSidebar();
       return;
     }
@@ -214,7 +226,7 @@ export default function BrowserLeftSidebar() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                Token #{stdata.tokenNo}
+                Token {stdata.tokenNo}
               </span>
 
               <div className="flex items-center gap-1">
@@ -546,12 +558,44 @@ export default function BrowserLeftSidebar() {
       <BlockManagementModal
         isOpen={blockModalOpen}
         onClose={() => setBlockModalOpen(false)}
+        onOpenTimeModal={() => {
+          setBlockModalOpen(false);
+          setLockModalOpen(true);
+        }}
       />
 
       {/* Meal Cutoff Alarm Configuration Modal */}
       <MealAlarmModal
         isOpen={alarmModalOpen}
         onClose={() => setAlarmModalOpen(false)}
+      />
+
+      {/* Master Governance Cockpit (Admin / Central Only) */}
+      <MasterGovernanceCockpitModal
+        isOpen={governanceModalOpen}
+        onClose={() => setGovernanceModalOpen(false)}
+      />
+
+      {/* Cloud Storage & Backup Vault (Admin / Central Only) */}
+      <BackupVaultModal
+        isOpen={vaultModalOpen}
+        onClose={() => setVaultModalOpen(false)}
+      />
+
+      {/* Board Cutoff & Lock Schedules Manager (Admin / Central Only) */}
+      <TokenLockManagerModal
+        isOpen={lockModalOpen}
+        onClose={() => setLockModalOpen(false)}
+        onOpenBlockModal={() => {
+          setLockModalOpen(false);
+          setBlockModalOpen(true);
+        }}
+      />
+
+      {/* Board Food Supply Switch Modal (Turn Canteen Supply ON/OFF) */}
+      <BoardSupplySwitchModal
+        isOpen={supplySwitchModalOpen}
+        onClose={() => setSupplySwitchModalOpen(false)}
       />
     </>
   );

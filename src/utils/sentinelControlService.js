@@ -99,7 +99,7 @@ export async function dispatchRemoteCommand({
 
     const targetLabel =
       targetSession?.identifier ||
-      (resolvedTokenNo ? `Token #${resolvedTokenNo}` : null) ||
+      (resolvedTokenNo ? `Token ${resolvedTokenNo}` : null) ||
       (resolvedSessionId === 'all' ? 'All Campus Devices (Fleet Broadcast)' : `Session ${resolvedSessionId}`);
 
     await logAuditEvent({
@@ -248,6 +248,29 @@ export async function remoteReloadClient(session, reason = 'Applying critical up
     targetSession: session,
     action: 'RELOAD_CLIENT',
     payload: {},
+    reason,
+  });
+}
+
+/**
+ * 8. Remote Idle Policy & Kiosk Timeout Override
+ */
+export async function remoteSetIdlePolicy(session, {
+  persona = 'public_kiosk',
+  timeoutMs = 60000,
+  warningMs = 15000,
+  reason = 'Administrative policy dispatch',
+} = {}) {
+  return dispatchRemoteCommand({
+    targetType: session?.sessionId ? 'single_session' : 'fleet_broadcast',
+    targetSession: session,
+    action: 'SET_IDLE_POLICY',
+    payload: {
+      persona,
+      timeoutMs,
+      warningMs,
+      reason,
+    },
     reason,
   });
 }

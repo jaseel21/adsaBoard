@@ -67,8 +67,9 @@ export default function UniversalDataStudio({
         const tokenMatch = String(st.tokenNo || '').includes(q);
         const nameMatch = (st.name || '').toLowerCase().includes(q);
         const malMatch = (st.nameMl || st.malName || '').toLowerCase().includes(q);
-        const roomMatch = (st.roomNo || '').toLowerCase().includes(q);
-        if (!tokenMatch && !nameMatch && !malMatch && !roomMatch) return false;
+        const phoneMatch = (st.phone || '').toLowerCase().includes(q);
+        const emailMatch = (st.email || '').toLowerCase().includes(q);
+        if (!tokenMatch && !nameMatch && !malMatch && !phoneMatch && !emailMatch) return false;
       }
 
       // Batch Match
@@ -328,8 +329,8 @@ export default function UniversalDataStudio({
       NameEn: s.name,
       NameMl: s.nameMl || s.malName || '',
       Batch: s.batch || '',
-      RoomNo: s.roomNo || '',
       ContactPhone: s.phone || '',
+      Email: s.email || '',
       Status: s.block ? 'Blocked' : 'Active',
       LunchActive: Boolean(s.obj?.lunch?.[effectiveDay]),
       BreakfastActive: Boolean(s.obj?.breakfast?.[effectiveDay]),
@@ -358,7 +359,7 @@ export default function UniversalDataStudio({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Quick search by token, student name, Malayalam name, or room..."
+            placeholder="Quick search by token, student name, Malayalam name, phone, or email..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           {searchQuery && (

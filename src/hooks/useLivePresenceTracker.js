@@ -4,6 +4,7 @@ import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { liveSyncManager } from '../utils/liveSyncManager';
+import { getDeviceProfile, resolveEffectiveIdleConfig } from '../utils/deviceProfileService';
 
 /**
  * Helper to generate or restore persistent session ID
@@ -153,14 +154,14 @@ export function useLivePresenceTracker() {
 
     if (studentObj && (studentObj.tokenNo || studentObj.token)) {
       const tokenNum = Number(studentObj.tokenNo || studentObj.token);
-      const studentName = studentObj.name || studentObj.uname || `Token #${tokenNum}`;
+      const studentName = studentObj.name || studentObj.uname || `Token ${tokenNum}`;
       return {
         userType: 'student',
         role: 'student',
         tokenNo: tokenNum,
         studentName,
         batch: studentObj.batch || 'General',
-        identifier: studentObj.name ? `${studentObj.name} (#${tokenNum})` : `Token #${tokenNum}`,
+        identifier: studentObj.name ? `${studentObj.name} (${tokenNum})` : `Token ${tokenNum}`,
         userId: `student_${tokenNum}`,
         email: studentObj.email || null,
         photoUrl: studentObj.photoUrl || null,
@@ -237,6 +238,8 @@ export function useLivePresenceTracker() {
         const env = getClientEnvironment();
         const routeInfo = resolveRouteInfo(location.pathname);
         const syncState = liveSyncManager.getState();
+        const deviceProfile = getDeviceProfile();
+        const idleConfig = resolveEffectiveIdleConfig(deviceProfile);
 
         const payload = {
           sessionId,
@@ -244,7 +247,14 @@ export function useLivePresenceTracker() {
           route: location.pathname,
           routeTitle: routeInfo.title,
           zone: routeInfo.zone,
-          device: env,
+          device: {
+            ...env,
+            deviceId: deviceProfile.deviceId,
+            deviceName: deviceProfile.deviceName,
+            persona: idleConfig.persona,
+            kioskTimeoutSec: Math.round(idleConfig.timeoutMs / 1000),
+            isRemoteOverride: Boolean(idleConfig.isRemoteOverride),
+          },
           network: {
             online: syncState.isOnline,
             effectiveType:

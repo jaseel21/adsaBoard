@@ -17,6 +17,7 @@ import {
   Trash2,
   Layers,
   Phone,
+  Mail,
   Home,
   CalendarDays,
   LayoutGrid,
@@ -80,6 +81,7 @@ export default function StudentDrawer({
   const [showPassword, setShowPassword] = useState(false);
   const [batch, setBatch] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [block, setBlock] = useState(false);
   const [blockReason, setBlockReason] = useState('');
 
@@ -126,6 +128,7 @@ export default function StudentDrawer({
       setPassword(student.password || '');
       setBatch(student.batch || 'General');
       setPhone(student.phone || '');
+      setEmail(student.email || '');
       setBlock(Boolean(student.block));
       setBlockReason(student.blockReason || '');
 
@@ -143,6 +146,7 @@ export default function StudentDrawer({
       setPassword('');
       setBatch(existingBatches[0] || 'Batch 2024');
       setPhone('');
+      setEmail('');
       setBlock(false);
       setBlockReason('');
       setLunch(defaultMealDays);
@@ -250,7 +254,7 @@ export default function StudentDrawer({
         return;
       }
       if (isDuplicateToken) {
-        dialog.alert({ type: 'error', title: 'Duplicate Token', message: `Token #${tokenNum} is already assigned to another student.` });
+        dialog.alert({ type: 'error', title: 'Duplicate Token', message: `Token ${tokenNum} is already assigned to another student.` });
         return;
       }
       if (!nameEn.trim()) {
@@ -260,6 +264,13 @@ export default function StudentDrawer({
       if (!password.trim()) {
         dialog.alert({ type: 'warning', title: 'Missing Password', message: 'Please provide a login password for the student.' });
         return;
+      }
+      if (email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
+          dialog.alert({ type: 'warning', title: 'Invalid Email', message: 'Please enter a valid email address or leave the field blank.' });
+          return;
+        }
       }
     }
 
@@ -283,6 +294,7 @@ export default function StudentDrawer({
           password: student?.password || password.trim(),
           batch: student?.batch || batch.trim() || 'General',
           phone: student?.phone !== undefined ? student.phone : phone.trim(),
+          email: student?.email !== undefined ? student.email : email.trim().toLowerCase(),
           // Operational Canteen updates:
           block: Boolean(block),
           blockReason: block ? blockReason.trim() : '',
@@ -311,6 +323,7 @@ export default function StudentDrawer({
           password: password.trim(),
           batch: batch.trim() || 'General',
           phone: phone.trim(),
+          email: email.trim().toLowerCase(),
           block: Boolean(block),
           blockReason: block ? blockReason.trim() : '',
           pendingUnblockRequest: block ? (student?.pendingUnblockRequest || null) : null,
@@ -334,7 +347,10 @@ export default function StudentDrawer({
       if (isEdit) {
         // Detect removed date exception keys so Firestore does not retain them via merge
         const prevExceptions = student?.dateExceptions || {};
-        const deletedKeys = {};
+        const deletedKeys = {
+          room: firebase.firestore.FieldValue.delete(),
+          roomNo: firebase.firestore.FieldValue.delete(),
+        };
         Object.keys(prevExceptions).forEach((d) => {
           if (!cleanedExceptions[d]) {
             deletedKeys[`dateExceptions.${d}`] = firebase.firestore.FieldValue.delete();
@@ -360,9 +376,9 @@ export default function StudentDrawer({
           category: AUDIT_CATEGORIES.STUDENTS,
           action: 'STUDENT_UPDATE',
           severity: AUDIT_SEVERITIES.NOTICE,
-          target: { type: 'student', id: student.id, label: `Token #${tokenNum} (${nameEn})`, tokenNo: Number(tokenNum) },
+          target: { type: 'student', id: student.id, label: `Token ${tokenNum} (${nameEn})`, tokenNo: Number(tokenNum) },
           changes: {
-            diffSummary: `Student Token #${tokenNum} updated: ${diff.fieldsChanged.join(', ') || 'No fields changed'}`,
+            diffSummary: `Student Token ${tokenNum} updated: ${diff.fieldsChanged.join(', ') || 'No fields changed'}`,
             fieldsChanged: diff.fieldsChanged,
             before: diff.before,
             after: diff.after,
@@ -372,7 +388,7 @@ export default function StudentDrawer({
 
         dialog.toast.success(
           t('studentSavedSuccess') || 'Saved Successfully',
-          `Token #${tokenNum} (${nameEn}) updated.`
+          `Token ${tokenNum} (${nameEn}) updated.`
         );
 
         // Scenario 2: Proactive Kitchen Desynchronization Check
@@ -391,7 +407,7 @@ export default function StudentDrawer({
               dialog.alert({
                 type: 'warning',
                 title: 'Kitchen Manifest Desynchronization',
-                message: `You updated dining/dietary preferences for Token #${tokenNum}, but kitchen manifest(s) have ALREADY been printed for: ${printLabels}.\n\nThe kitchen is currently holding an outdated sheet! Please reprint the manifest from Supply Sections or immediately notify kitchen staff.`,
+                message: `You updated dining/dietary preferences for Token ${tokenNum}, but kitchen manifest(s) have ALREADY been printed for: ${printLabels}.\n\nThe kitchen is currently holding an outdated sheet! Please reprint the manifest from Supply Sections or immediately notify kitchen staff.`,
               });
             }
           }).catch(() => {});
@@ -406,9 +422,9 @@ export default function StudentDrawer({
           category: AUDIT_CATEGORIES.STUDENTS,
           action: 'STUDENT_CREATE',
           severity: AUDIT_SEVERITIES.NOTICE,
-          target: { type: 'student', id: docRef.id, label: `Token #${tokenNum} (${nameEn})`, tokenNo: Number(tokenNum) },
+          target: { type: 'student', id: docRef.id, label: `Token ${tokenNum} (${nameEn})`, tokenNo: Number(tokenNum) },
           changes: {
-            diffSummary: `Created new student Token #${tokenNum} (${nameEn})`,
+            diffSummary: `Created new student Token ${tokenNum} (${nameEn})`,
             fieldsChanged: Object.keys(payload),
             before: null,
             after: payload,
@@ -418,7 +434,7 @@ export default function StudentDrawer({
 
         dialog.toast.success(
           'Student Created',
-          `Token #${tokenNum} (${nameEn}) added successfully!`
+          `Token ${tokenNum} (${nameEn}) added successfully!`
         );
         if (onSaved) onSaved({ id: docRef.id, ...payload });
       }
@@ -446,8 +462,8 @@ export default function StudentDrawer({
     }
     if (!student || !student.id) return;
     const confirmed = await dialog.confirm({
-      title: `${t('deleteStudentRecord') || 'Delete'} #${student.tokenNo}?`,
-      message: t('confirmDeleteStudent') || `Permanently delete ${student.nameEn || student.name || `Token #${student.tokenNo}`}? This cannot be undone.`,
+      title: `${t('deleteStudentRecord') || 'Delete'} Token ${student.tokenNo}?`,
+      message: t('confirmDeleteStudent') || `Permanently delete ${student.nameEn || student.name || `Token ${student.tokenNo}`}? This cannot be undone.`,
       icon: 'trash',
       confirmColor: 'rose',
       confirmText: 'Yes, Delete',
@@ -466,18 +482,18 @@ export default function StudentDrawer({
           target: {
             type: 'student',
             id: student.id,
-            label: `Token #${student.tokenNo} (${student.nameEn || student.name || 'Student'})`,
+            label: `Token ${student.tokenNo} (${student.nameEn || student.name || 'Student'})`,
             tokenNo: Number(student.tokenNo),
           },
           changes: {
-            diffSummary: `Permanently deleted student record for Token #${student.tokenNo}`,
+            diffSummary: `Permanently deleted student record for Token ${student.tokenNo}`,
             fieldsChanged: ['deleted'],
             before: student,
             after: null,
           },
         });
 
-        dialog.toast.success(t('studentDeletedSuccess') || 'Deleted!', `Token #${student.tokenNo} removed.`);
+        dialog.toast.success(t('studentDeletedSuccess') || 'Deleted!', `Token ${student.tokenNo} removed.`);
         if (onDeleted) onDeleted(student.id);
         onClose();
       } catch (err) {
@@ -539,8 +555,8 @@ export default function StudentDrawer({
                   <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
                     {isEdit
                       ? (isCanteenMode
-                          ? `Token #${tokenNum || '?'} (${t('canteenSubCommitteeMode') || 'Canteen Mode'})`
-                          : `Editing Token #${tokenNum || '?'}`)
+                          ? `Token ${tokenNum || '?'} (${t('canteenSubCommitteeMode') || 'Canteen Mode'})`
+                          : `Editing Token ${tokenNum || '?'}`)
                       : 'Register new student into canteen system'}
                   </p>
                 </div>
@@ -599,12 +615,12 @@ export default function StudentDrawer({
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Canteen Mode Operational Alert Banner */}
                 {isCanteenMode && (
-                  <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200 flex items-start gap-3 text-xs leading-relaxed">
-                    <div className="w-5 h-5 rounded-lg bg-blue-500 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold shadow-sm">
+                  <div className="p-3.5 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-900 dark:text-teal-200 flex items-start gap-3 text-xs leading-relaxed">
+                    <div className="w-5 h-5 rounded-lg bg-teal-600 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold shadow-sm">
                       <Lock className="w-3 h-3 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="font-extrabold block text-blue-800 dark:text-blue-300">
+                      <span className="font-extrabold block text-teal-800 dark:text-teal-300">
                         {t('canteenSubCommitteeMode') || 'Canteen Operations Mode'}
                       </span>
                       <span className="opacity-90">
@@ -623,7 +639,7 @@ export default function StudentDrawer({
                       <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                         <Hash className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{t('tokenNumber') || 'Token Number'} *</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
+                        {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
                       </label>
                       {!isEdit && !isCanteenMode && (
                         <button
@@ -655,7 +671,7 @@ export default function StudentDrawer({
                     {!isCanteenMode && isDuplicateToken && (
                       <p className="mt-1 text-xs text-rose-500 font-medium inline-flex items-center gap-1.5">
                         <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>Token #{tokenNum} already exists! Please choose another number.</span>
+                        <span>Token {tokenNum} already exists! Please choose another number.</span>
                       </p>
                     )}
                   </div>
@@ -666,7 +682,7 @@ export default function StudentDrawer({
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <span>{t('englishNameLabel') || 'Name (English)'} *</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
+                        {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
                       </label>
                       <input
                         type="text"
@@ -686,8 +702,8 @@ export default function StudentDrawer({
                     {/* Malayalam Name */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                        <span>{t('malayalamNameLabel') || 'Name (Malayalam മലയാളം)'}</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
+                        <span>{t('malayalamNameLabel', 'Malayalam Name')}</span>
+                        {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
                       </label>
                       <input
                         type="text"
@@ -735,7 +751,7 @@ export default function StudentDrawer({
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <span>{t('usernameLabel') || 'Username'}</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
+                        {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
                       </label>
                       <input
                         type="text"
@@ -756,7 +772,7 @@ export default function StudentDrawer({
                       {isCanteenMode ? (
                         <div>
                           <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5 text-blue-500" />
+                            <Lock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                             <span>{t('passwordLabel') || 'Password'}</span>
                           </label>
                           <div className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center justify-between">
@@ -820,7 +836,7 @@ export default function StudentDrawer({
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{t('batchYearLabel') || 'Batch / Class'}</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
+                        {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
                       </label>
                       <input
                         type="text"
@@ -842,25 +858,47 @@ export default function StudentDrawer({
                       </datalist>
                     </div>
 
-                    {/* Phone */}
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{t('phoneLabel') || 'Phone'}</span>
-                        {isCanteenMode && <Lock className="w-3 h-3 text-blue-500" />}
-                      </label>
-                      <input
-                        type="tel"
-                        disabled={isCanteenMode}
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="e.g. 9847000000"
-                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
-                          isCanteenMode
-                            ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
-                            : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
-                        }`}
-                      />
+                    {/* Phone & Email (Optional) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>{t('phoneLabel') || 'Phone (Optional)'}</span>
+                          {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
+                        </label>
+                        <input
+                          type="tel"
+                          disabled={isCanteenMode}
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="e.g. +91 98470 00000"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                            isCanteenMode
+                              ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                              : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>{t('emailLabel') || 'Email (Optional)'}</span>
+                          {isCanteenMode && <Lock className="w-3 h-3 text-teal-600 dark:text-teal-400" />}
+                        </label>
+                        <input
+                          type="email"
+                          disabled={isCanteenMode}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="e.g. student@dars.edu"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2 ${
+                            isCanteenMode
+                              ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 cursor-not-allowed opacity-80'
+                              : 'bg-gray-50 dark:bg-[#15221e] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-emerald-500/40'
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -1018,7 +1056,7 @@ export default function StudentDrawer({
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="text-base font-black text-gray-900 dark:text-white">
-                                  Complete Dining Calendar — Token #{tokenNo} ({nameEn || 'Student'})
+                                  Complete Dining Calendar — Token {tokenNo} ({nameEn || 'Student'})
                                 </h3>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                   <ShieldCheck className="w-3 h-3" />
@@ -1120,7 +1158,7 @@ export default function StudentDrawer({
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-extrabold flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                            Unblock Requested (#{student.pendingUnblockRequest.ticketNumber})
+                            Unblock Requested ({student.pendingUnblockRequest.ticketNumber})
                           </span>
                           {block && (
                             <button

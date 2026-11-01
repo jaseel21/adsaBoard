@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Layers, DoorClosed, Copy, Check, UtensilsCrossed, ExternalLink, Grid3X3 } from 'lucide-react';
+import { Layers, Copy, Check, UtensilsCrossed, ExternalLink, Grid3X3 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
+import { getBatchTheme } from '../../utils/batchTheme';
 import { getCategoryIcon } from './dietaryIcons';
+import IslamicAvatar from '../ui/IslamicAvatar';
 
 export default function AvoidersCardsView({
   students = [],
@@ -19,7 +21,7 @@ export default function AvoidersCardsView({
   const handleCopyToken = (e, tokenNo) => {
     e.stopPropagation();
     feedback('tick');
-    navigator.clipboard.writeText(`#${tokenNo}`);
+    navigator.clipboard.writeText(String(tokenNo));
     setCopiedTokenId(tokenNo);
     setTimeout(() => setCopiedTokenId(null), 1800);
   };
@@ -42,10 +44,10 @@ export default function AvoidersCardsView({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 w-full max-w-full min-w-0">
       {students.map((student) => {
         const tokenNo = Number(student.tokenNo) || 0;
-        const stNameEn = student.nameEn || student.name || `Token #${tokenNo}`;
+        const stNameEn = student.nameEn || student.name || `Token ${tokenNo}`;
         const stNameMl = student.nameMl || '';
         const batch = student.batch || 'General';
-        const room = student.room || student.roomNo;
+        const batchTheme = getBatchTheme(batch);
 
         const sectionSize = sectionChunkSize || 25;
         const sectionIndex = Math.floor((tokenNo - 1) / sectionSize) + 1;
@@ -69,9 +71,7 @@ export default function AvoidersCardsView({
             {/* Card Header: Token & Batch */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-mono font-black text-sm flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
-                  #{tokenNo}
-                </div>
+                <IslamicAvatar student={student} size={44} showStatusRing animate={false} />
 
                 <div className="min-w-0">
                   <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -88,7 +88,7 @@ export default function AvoidersCardsView({
                 type="button"
                 onClick={(e) => handleCopyToken(e, tokenNo)}
                 className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors shrink-0"
-                title={`Copy #${tokenNo}`}
+                title={`Copy Token ${tokenNo}`}
               >
                 {isCopied ? (
                   <Check className="w-3.5 h-3.5 text-emerald-500" />
@@ -98,24 +98,17 @@ export default function AvoidersCardsView({
               </button>
             </div>
 
-            {/* Badges: Section, Batch & Room */}
+            {/* Badges: Section & Batch */}
             <div className="flex items-center gap-1.5 mt-3 text-[11px] font-semibold text-gray-500 flex-wrap">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-[10px] font-bold">
                 <Grid3X3 className="w-3 h-3 text-emerald-500" />
                 Sec {sectionIndex}
               </span>
 
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 text-[10px]">
-                <Layers className="w-3 h-3 text-emerald-500" />
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold ${batchTheme.bg} ${batchTheme.text} border ${batchTheme.border}`}>
+                <Layers className="w-3 h-3 opacity-80" />
                 {batch}
               </span>
-
-              {room && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-400 text-[10px]">
-                  <DoorClosed className="w-3 h-3" />
-                  {room}
-                </span>
-              )}
             </div>
 
             {/* Excluded Food Pills Strip */}

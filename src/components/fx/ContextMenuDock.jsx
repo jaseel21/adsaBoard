@@ -77,7 +77,7 @@ export default function ContextMenuDock({
 
   const doc = data.doc || data;
   const tokenNo = doc.tokenNo;
-  const nameEn = doc.nameEn || doc.name || `Token #${tokenNo}`;
+  const nameEn = doc.nameEn || doc.name || `Token ${tokenNo}`;
   const isBlocked = Boolean(doc.block);
   const isOn = Boolean(data.isOn);
   const isLunch = Boolean(data.isLunch);
@@ -88,7 +88,7 @@ export default function ContextMenuDock({
       const url = `${window.location.origin}/student?token=${tokenNo}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      dialog.toast.success('Link Copied', `Direct link for Token #${tokenNo} copied to clipboard.`);
+      dialog.toast.success('Link Copied', `Direct link for Token ${tokenNo} copied to clipboard.`);
       setTimeout(() => setCopied(false), 2000);
       onClose();
     } catch (_) {

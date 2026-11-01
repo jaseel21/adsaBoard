@@ -122,7 +122,7 @@ function TokenDeltasView({ deltas, compact = false, diffSummary }) {
 
                 {item.tokenNo && (
                   <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-mono font-bold">
-                    Token #{item.tokenNo}
+                    Token {item.tokenNo}
                   </span>
                 )}
               </div>

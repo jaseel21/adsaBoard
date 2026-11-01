@@ -25,7 +25,7 @@ export default function ApexSurfaceTabs({
   return (
     <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-1.5 sm:p-2 rounded-2xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 backdrop-blur-xl">
       <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-        {/* Surface 1: Tactical Token Matrix */}
+        {/* Surface 1: Grid View */}
         <button
           type="button"
           onClick={() => handleTabChange('matrix')}
@@ -43,13 +43,13 @@ export default function ApexSurfaceTabs({
             />
           )}
           <LayoutGrid className="w-4 h-4 relative z-10 shrink-0" />
-          <span className="relative z-10">{t('tacticalMatrix', 'Tactical Matrix')}</span>
+          <span className="relative z-10">{t('viewGrid', 'Grid View')}</span>
           <span className="relative z-10 px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] font-black">
             {tokenCount}
           </span>
         </button>
 
-        {/* Surface 2: Universal Data Studio (Spreadsheet CRUD) */}
+        {/* Surface 2: Table View */}
         <button
           type="button"
           onClick={() => handleTabChange('studio')}
@@ -67,10 +67,10 @@ export default function ApexSurfaceTabs({
             />
           )}
           <Table2 className="w-4 h-4 relative z-10 shrink-0" />
-          <span className="relative z-10">Data Studio (CRUD)</span>
+          <span className="relative z-10">{t('viewTable', 'Table View')}</span>
         </button>
 
-        {/* Surface 3: Operations Radar & Telemetry */}
+        {/* Surface 3: Summary View */}
         <button
           type="button"
           onClick={() => handleTabChange('radar')}
@@ -88,7 +88,7 @@ export default function ApexSurfaceTabs({
             />
           )}
           <BarChart3 className="w-4 h-4 relative z-10 shrink-0" />
-          <span className="relative z-10">{t('operationsRadar', 'Operations Radar')}</span>
+          <span className="relative z-10">{t('viewSummary', 'Summary View')}</span>
           <span className="relative z-10 flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-300" />
@@ -100,10 +100,10 @@ export default function ApexSurfaceTabs({
         <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
         <span className="font-medium text-[11px]">
           {activeSurface === 'matrix'
-            ? t('interactiveSwitchGrid', 'Interactive Switch Grid')
+            ? t('interactiveSwitchGrid', 'Interactive Token Grid')
             : activeSurface === 'studio'
-            ? 'Spreadsheet-Style Grid with Inline Editing & Bulk Dispatch'
-            : t('realtimeInstitutionalTelemetry', 'Real-time Institutional Telemetry')}
+            ? t('spreadsheetGridSubtitle', 'Spreadsheet Table with Inline Editing')
+            : t('realtimeInstitutionalTelemetry', 'Visual Batch & Attendance Summary')}
         </span>
       </div>
     </div>

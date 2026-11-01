@@ -17,7 +17,7 @@ import { useFeedback } from '../../utils/useFeedback';
 import { guideStaggerVariants, guideItemVariants } from './guideAnimations';
 
 const ColorSystemLegend = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
 
   const states = [
@@ -47,8 +47,8 @@ const ColorSystemLegend = () => {
     },
     {
       id: 'leave',
-      title: t('colorLeaveTitle') || 'Rose Red (Single-Day Leave / OFF)',
-      desc: t('colorLeaveDesc') || 'Student has a temporary single-day override OR opted out for this date. Token displays as red — same as routine OFF. Check the details modal for the specific reason.',
+      title: t('colorLeaveTitle') || 'Rose Red (Temporary Leave / OFF)',
+      desc: t('colorLeaveDesc') || 'Student has a temporary leave exception OR opted out for this date. Token displays as red — same as routine OFF. Check the details modal for the specific reason.',
       previewClass: 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/30 border border-rose-400/50',
       badge: '1-DAY EXCEPTION',
       badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
@@ -73,26 +73,26 @@ const ColorSystemLegend = () => {
 
   const dietaryTags = [
     {
-      name: 'Beef Avoiders (ബീഫ് ഒഴിവാക്കൽ)',
-      desc: 'Excluded from beef preparations. Alternative fish/veg provided.',
+      name: lang === 'ml' ? 'ബീഫ് ഒഴിവാക്കൽ' : 'Beef Avoiders',
+      desc: lang === 'ml' ? 'മാട്ടിറച്ചി ഒഴിവാക്കിയവർ. പകരമുള്ള മീൻ/പച്ചക്കറി നൽകുന്നു.' : 'Excluded from beef preparations. Alternative fish/veg provided.',
       badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
       dotClass: 'bg-rose-500',
     },
     {
-      name: 'Chicken Avoiders (ചിക്കൻ ഒഴിവാക്കൽ)',
-      desc: 'Excluded from chicken curries or fries.',
+      name: lang === 'ml' ? 'ചിക്കൻ ഒഴിവാക്കൽ' : 'Chicken Avoiders',
+      desc: lang === 'ml' ? 'ചിക്കൻ വിഭവങ്ങൾ ഒഴിവാക്കിയവർ.' : 'Excluded from chicken curries or fries.',
       badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
       dotClass: 'bg-amber-500',
     },
     {
-      name: 'Fish Avoiders (മീൻ ഒഴിവാക്കൽ)',
-      desc: 'Exempted from fish dishes.',
+      name: lang === 'ml' ? 'മീൻ ഒഴിവാക്കൽ' : 'Fish Avoiders',
+      desc: lang === 'ml' ? 'മത്സ്യ വിഭവങ്ങൾ ഒഴിവാക്കിയവർ.' : 'Exempted from fish dishes.',
       badgeClass: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30',
       dotClass: 'bg-cyan-500',
     },
     {
-      name: 'Mutton Avoiders (മട്ടൺ ഒഴിവാക്കൽ)',
-      desc: 'Exempted from mutton gravies on feast days.',
+      name: lang === 'ml' ? 'മട്ടൺ ഒഴിവാക്കൽ' : 'Mutton Avoiders',
+      desc: lang === 'ml' ? 'വിരുന്ന് ദിവസങ്ങളിലെ മട്ടൺ വിഭവങ്ങൾ ഒഴിവാക്കിയവർ.' : 'Exempted from mutton gravies on feast days.',
       badgeClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30',
       dotClass: 'bg-purple-500',
     },
@@ -162,7 +162,7 @@ const ColorSystemLegend = () => {
               <div className="hidden sm:block absolute -top-4 -right-28 text-left">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 dark:text-rose-400">
                   <CalendarDays className="w-3 h-3" />
-                  <span>Leave Badge (Single-Day)</span>
+                  <span>Leave Badge (Date Exception)</span>
                 </div>
                 <div className="text-[10px] text-gray-500 dark:text-gray-400 w-32 leading-tight">
                   CalendarDays icon badge signals a temporary exception. Token is red like any OFF state.
@@ -172,7 +172,7 @@ const ColorSystemLegend = () => {
               {/* Callout Arrow: Token Number */}
               <div className="hidden sm:block absolute top-8 -left-36 text-right">
                 <div className="text-[11px] font-bold text-gray-900 dark:text-white">
-                  Student Token # (Mono)
+                  Student Token (Mono)
                 </div>
                 <div className="text-[10px] text-gray-500 dark:text-gray-400 w-32 leading-tight">
                   High-contrast numerical identification (1 - 197).
@@ -274,7 +274,7 @@ const ColorSystemLegend = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-xs text-gray-900 dark:text-white">
-                  Breakfast Slot (പ്രഭാതഭക്ഷണം)
+                  {lang === 'ml' ? 'പ്രഭാതഭക്ഷണം' : 'Breakfast Slot'}
                 </span>
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
                   Amber Glow
@@ -293,14 +293,16 @@ const ColorSystemLegend = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-xs text-gray-900 dark:text-white">
-                  Lunch Slot (ഉച്ചഭക്ഷണം)
+                  {lang === 'ml' ? 'ഉച്ചഭക്ഷണം' : 'Lunch Slot'}
                 </span>
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                  Emerald Green
+                  {lang === 'ml' ? 'പച്ച' : 'Emerald Green'}
                 </span>
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                Active midday meal. Monitored for rice, curries, sides, and protein portioning.
+                {lang === 'ml'
+                  ? 'ഉച്ചഭക്ഷണ വിതരണം. ചോറ്, കറികൾ, പ്രോട്ടീൻ വിഹിതങ്ങൾ നിരീക്ഷിക്കുന്നു.'
+                  : 'Active midday meal. Monitored for rice, curries, sides, and protein portioning.'}
               </p>
             </div>
           </div>
@@ -309,7 +311,7 @@ const ColorSystemLegend = () => {
         {/* Dietary Tag Badges */}
         <div className="pt-2">
           <span className="text-xs font-bold text-gray-500 dark:text-gray-400 block mb-2.5">
-            Dietary Avoider Badges (ഭക്ഷണ നിയന്ത്രണങ്ങൾ):
+            {lang === 'ml' ? 'ഭക്ഷണ നിയന്ത്രണങ്ങൾ:' : 'Dietary Avoider Badges:'}
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {dietaryTags.map((tag) => (

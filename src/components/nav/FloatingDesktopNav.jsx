@@ -188,8 +188,8 @@ export default function FloatingDesktopNav({
             onClick={() => handleNav('/student')}
             active={isActive('/student')}
             icon={UserCheck}
-            label={`#${stdata.tokenNo}`}
-            tooltip={`Token #${stdata.tokenNo} (${t('studentPortal', 'Student Portal')})`}
+            label={`${stdata.tokenNo}`}
+            tooltip={`Token ${stdata.tokenNo} (${t('studentPortal', 'Student Portal')})`}
             pulseDot={true}
           />
         ) : (

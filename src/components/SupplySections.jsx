@@ -51,6 +51,10 @@ import {
   formatFriendlyDate,
 } from '../utils/studentExceptionService';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
+import {
+  subscribeToBoardServiceSchedule,
+  getMealSupplyStatus,
+} from '../utils/boardServiceSchedule';
 
 export default function SupplySections({ defaultMeal }) {
   const navigate = useNavigate();
@@ -67,7 +71,7 @@ export default function SupplySections({ defaultMeal }) {
       )
     )
   );
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
 
   // Determine initial meal from URL query param (?meal=lunch), prop, or pathname
@@ -178,6 +182,21 @@ export default function SupplySections({ defaultMeal }) {
     return () => unsubPrint();
   }, [activeMeal, targetDateIST]);
 
+  const [boardServiceSchedule, setBoardServiceSchedule] = useState({});
+
+  useEffect(() => {
+    const unsub = subscribeToBoardServiceSchedule((schedule) => {
+      setBoardServiceSchedule(schedule || {});
+    });
+    return () => unsub();
+  }, []);
+
+  const mealSupplyStatus = useMemo(() => {
+    return getMealSupplyStatus(boardServiceSchedule, targetDateIST, activeMeal);
+  }, [boardServiceSchedule, targetDateIST, activeMeal]);
+
+  const isSupplyActive = mealSupplyStatus.isSupplying !== false;
+
   // Compute live canonical fingerprint of active tokens & dietary avoiders
   const currentComputed = useMemo(() => {
     return computeManifestFingerprint({
@@ -236,7 +255,7 @@ export default function SupplySections({ defaultMeal }) {
       return batches.map((bName, idx) => {
         const slice = documents.filter((d) => d.batch === bName);
         const canceledTokens = slice
-          .filter((doc) => !getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, activeMeal))
+          .filter((doc) => !isSupplyActive || !getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, activeMeal))
           .map((doc) => doc.tokenNo);
 
         const rangeStr =
@@ -248,7 +267,7 @@ export default function SupplySections({ defaultMeal }) {
           range: rangeStr,
           canceledTokens,
           total: slice.length,
-          activeCount: slice.length - canceledTokens.length,
+          activeCount: isSupplyActive ? (slice.length - canceledTokens.length) : 0,
         };
       });
     }
@@ -263,7 +282,7 @@ export default function SupplySections({ defaultMeal }) {
       const slice = documents.slice(start, end);
 
       const canceledTokens = slice
-        .filter((doc) => !getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, activeMeal))
+        .filter((doc) => !isSupplyActive || !getEffectiveStudentMealStatus(doc, targetDateIST, effectiveDay, activeMeal))
         .map((doc) => doc.tokenNo);
 
       const rangeStr =
@@ -277,12 +296,12 @@ export default function SupplySections({ defaultMeal }) {
         range: rangeStr,
         canceledTokens,
         total: slice.length,
-        activeCount: slice.length - canceledTokens.length,
+        activeCount: isSupplyActive ? (slice.length - canceledTokens.length) : 0,
       });
     }
 
     return result;
-  }, [documents, effectiveDay, sectionMode, customChunkSize, activeMeal, targetDateIST]);
+  }, [documents, effectiveDay, sectionMode, customChunkSize, activeMeal, targetDateIST, isSupplyActive]);
 
   const toggleSection = (id) => {
     feedback('pop');
@@ -533,6 +552,20 @@ export default function SupplySections({ defaultMeal }) {
           </div>
 
           <div className="flex items-center gap-1.5 min-w-[200px]">
+            {/* Live Serving Sentinel Launch Button */}
+            <button
+              type="button"
+              onClick={() => {
+                feedback('pop');
+                navigate(`/supply/controller?meal=${activeMeal}&date=${targetDateIST}`);
+              }}
+              className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-md shadow-emerald-600/25 flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+              title="Launch Live Serving Marker & Controller"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+              <span>Live Controller</span>
+            </button>
+
             {isAdmin && (
               <button
                 type="button"
@@ -693,22 +726,65 @@ export default function SupplySections({ defaultMeal }) {
         </div>
       )}
 
+      {/* Food Supply Suspended Alert */}
+      {!isSupplyActive && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-rose-500/15 via-red-500/10 to-amber-500/10 border-2 border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-rose-800 dark:text-rose-200"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-sm sm:text-base">
+                  {lang === 'ml'
+                    ? 'കാന്റീൻ ഭക്ഷണ വിതരണം നിർത്തിവെച്ചിരിക്കുന്നു'
+                    : 'Canteen Food Supply Suspended'}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40">
+                  {lang === 'ml' ? 'വിതരണം ഇല്ല' : '0 Plates'}
+                </span>
+              </div>
+              <p className="text-xs text-rose-700/80 dark:text-rose-300/80 mt-0.5 font-medium">
+                {lang === 'ml'
+                  ? (mealSupplyStatus.noteMl || mealSupplyStatus.reasonObj?.labelMl || 'ഈ ഷിഫ്റ്റിൽ ഭക്ഷണ വിതരണം ഉണ്ടായിരിക്കുന്നതല്ല.')
+                  : (mealSupplyStatus.noteEn || mealSupplyStatus.reasonObj?.labelEn || 'No food serving operations for this meal.')}
+              </p>
+            </div>
+          </div>
+          <div className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-mono font-bold text-rose-600 dark:text-rose-400">
+            0 {lang === 'ml' ? 'വിതരണം' : 'Plates'}
+          </div>
+        </motion.div>
+      )}
+
       {/* Overview Stat Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xs">
           <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-            Total Students
+            {lang === 'ml' ? 'ആകെ വിദ്യാർത്ഥികൾ' : 'Total Students'}
           </span>
           <span className="text-2xl font-black text-gray-900 dark:text-white mt-1 block">
             {documents.length}
           </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xs">
-          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
-            Meals to Prepare
+        <div className={`p-4 rounded-2xl border shadow-xs ${
+          !isSupplyActive
+            ? 'bg-rose-500/10 dark:bg-rose-950/20 border-rose-500/30'
+            : 'bg-white/80 dark:bg-[#0f1715]/90 border-gray-200/80 dark:border-white/10'
+        }`}>
+          <span className={`text-[11px] font-bold uppercase tracking-wider block ${
+            !isSupplyActive ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+          }`}>
+            {!isSupplyActive ? (lang === 'ml' ? 'വിതരണം ഇല്ല' : 'Supply Off') : (lang === 'ml' ? 'തയ്യാറാക്കേണ്ട ഭക്ഷണം' : 'Meals to Prepare')}
           </span>
-          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block">
+          <span className={`text-2xl font-black mt-1 block ${
+            !isSupplyActive ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+          }`}>
             {totalActive}
           </span>
         </div>

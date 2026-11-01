@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { soundEngine } from '../../../utils/soundEffects';
 import { hapticEngine } from '../../../utils/haptics';
+import { useLanguage } from '../../../store/LanguageContext';
 import RationPrintModal from './RationPrintModal';
 
 export default function KitchenRationCalculator({
@@ -24,6 +25,7 @@ export default function KitchenRationCalculator({
   telemetry = {},
   meta = {},
 }) {
+  const { lang } = useLanguage();
   const [printModalOpen, setPrintModalOpen] = useState(false);
 
   const activeDiners = kitchenRations.activeDiners || telemetry.activeDiners || 0;
@@ -31,7 +33,9 @@ export default function KitchenRationCalculator({
 
   const items = [
     {
-      name: isBreakfast ? 'Rice / Flour (അരി/മാവ്)' : 'Mess Rice (ചോറരി)',
+      name: isBreakfast
+        ? (lang === 'ml' ? 'അരി അല്ലെങ്കിൽ മാവ്' : 'Rice / Flour')
+        : (lang === 'ml' ? 'ചോറരി' : 'Mess Rice'),
       weight: `${kitchenRations.totalRiceKg || 0} kg`,
       sub: `${kitchenRations.riceSacks || 0} Chakku Sacks`,
       icon: Wheat,
@@ -40,7 +44,7 @@ export default function KitchenRationCalculator({
     },
     ...(!isBreakfast ? [
       {
-        name: 'Fresh Beef (ബീഫ്)',
+        name: lang === 'ml' ? 'ബീഫ്' : 'Fresh Beef',
         weight: `${kitchenRations.totalBeefKg || 0} kg`,
         sub: 'Deducted avoiders',
         icon: Drumstick,
@@ -48,7 +52,7 @@ export default function KitchenRationCalculator({
         highlight: false,
       },
       {
-        name: 'Fresh Fish (മത്സ്യം)',
+        name: lang === 'ml' ? 'മത്സ്യം' : 'Fresh Fish',
         weight: `${kitchenRations.totalFishKg || 0} kg`,
         sub: 'Deducted avoiders',
         icon: Fish,
@@ -57,7 +61,7 @@ export default function KitchenRationCalculator({
       },
     ] : []),
     {
-      name: 'Fresh Vegetables (പച്ചക്കറികൾ)',
+      name: lang === 'ml' ? 'പച്ചക്കറികൾ' : 'Fresh Vegetables',
       weight: `${kitchenRations.totalVegKg || 0} kg`,
       sub: 'Curry & Sides',
       icon: Carrot,
@@ -65,7 +69,7 @@ export default function KitchenRationCalculator({
       highlight: false,
     },
     {
-      name: 'Pulses & Dhal (പരിപ്പ്)',
+      name: lang === 'ml' ? 'പരിപ്പ്' : 'Pulses & Dhal',
       weight: `${kitchenRations.totalDhalKg || 0} kg`,
       sub: 'Sambar / Parippu',
       icon: UtensilsCrossed,
@@ -73,7 +77,7 @@ export default function KitchenRationCalculator({
       highlight: false,
     },
     {
-      name: 'Cooking Oil (വെളിച്ചെണ്ണ/എണ്ണ)',
+      name: lang === 'ml' ? 'പാചക എണ്ണ' : 'Cooking Oil',
       weight: `${kitchenRations.cookingOilLiters || 0} L`,
       sub: 'Standard allocation',
       icon: Droplets,
@@ -81,7 +85,7 @@ export default function KitchenRationCalculator({
       highlight: false,
     },
     {
-      name: 'Onions & Shallots (ഉള്ളി)',
+      name: lang === 'ml' ? 'ഉള്ളി' : 'Onions & Shallots',
       weight: `${kitchenRations.onionsKg || 0} kg`,
       sub: 'Base gravy',
       icon: Layers,
