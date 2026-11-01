@@ -23,6 +23,7 @@ import {
   StudentPortalTips,
   KitchenAndSheets,
   ShortcutsAndGestures,
+  VisualSlidePostModule,
 } from './GuideModules';
 import WalkthroughTour from './WalkthroughTour';
 import useSEO from '../../hooks/useSEO';
@@ -44,11 +45,12 @@ const GuidePage = () => {
   });
 
   const TABS = [
+    { id: 'visual-slides', label: 'Slide Post Guide', icon: Sparkles },
+    { id: 'student-portal', label: 'Student Portal Walkthrough', icon: UserCheck },
     { id: 'color-system', label: 'Color System', icon: Layers },
     { id: 'simulator', label: 'Tactile Simulator', icon: Sparkles },
-    { id: 'views-filters', label: 'Views & Search', icon: Filter },
     { id: 'timings-cutoff', label: 'Cutoff & IST Time', icon: Clock },
-    { id: 'student-portal', label: 'Student Portal', icon: UserCheck },
+    { id: 'views-filters', label: 'Views & Search', icon: Filter },
     { id: 'kitchen-sheets', label: 'Kitchen Sheets', icon: Printer },
     { id: 'shortcuts', label: 'Shortcuts & Power Tips', icon: Command },
   ];
@@ -135,11 +137,12 @@ const GuidePage = () => {
 
       {/* Active Tab Content */}
       <div className="min-h-[400px]">
+        {activeTab === 'visual-slides' && <VisualSlidePostModule />}
+        {activeTab === 'student-portal' && <StudentPortalTips />}
         {activeTab === 'color-system' && <ColorSystemLegend />}
         {activeTab === 'simulator' && <TokenSimulator />}
         {activeTab === 'views-filters' && <ViewsAndFilters />}
         {activeTab === 'timings-cutoff' && <TimingsAndCutoff />}
-        {activeTab === 'student-portal' && <StudentPortalTips />}
         {activeTab === 'kitchen-sheets' && <KitchenAndSheets />}
         {activeTab === 'shortcuts' && <ShortcutsAndGestures />}
       </div>

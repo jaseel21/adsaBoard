@@ -90,6 +90,17 @@ export default function SocialCardStudioModal({
     downloadCanvasAsPng(canvasRef.current, `adsa-tboard-${activeTemplate}-${aspectRatio}.png`);
   };
 
+  const handleCopyLink = async () => {
+    try {
+      const url = initialData.customUrl || 'https://canteen.alathurpadidars.in';
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      soundEngine.playMechanicalClick();
+      hapticEngine.lightTap();
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (_) {}
+  };
+
   const handleCopyImage = async () => {
     if (!canvasRef.current) return;
     try {
@@ -102,17 +113,6 @@ export default function SocialCardStudioModal({
       // Fallback: copy link
       handleCopyLink();
     }
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      const url = initialData.customUrl || 'https://canteen.alathurpadidars.in';
-      await navigator.clipboard.writeText(url);
-      setCopiedLink(true);
-      soundEngine.playMechanicalClick();
-      hapticEngine.lightTap();
-      setTimeout(() => setCopiedLink(false), 2000);
-    } catch (_) {}
   };
 
   const handleShareTelegram = () => {

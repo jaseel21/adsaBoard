@@ -106,8 +106,5 @@ export function MasterGovernanceProvider({ children }) {
 
 export function useMasterGovernance() {
   const context = useContext(MasterGovernanceContext);
-  if (!context) {
-    throw new Error('useMasterGovernance must be used within a MasterGovernanceProvider');
-  }
   return context;
 }

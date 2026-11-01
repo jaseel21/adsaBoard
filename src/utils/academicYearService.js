@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import firebase from '../firebase/config';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger';
-import { getTodayISTDate } from './studentExceptionService';
+import { getSyncedISTDateString } from './time';
 
 const ACADEMIC_YEAR_DOC_REF = () =>
   firebase.firestore().collection('settings').doc('academic_year');
@@ -14,7 +14,7 @@ const ACADEMIC_YEAR_DOC_REF = () =>
  * Zero hardcoded years!
  */
 export function computeDynamicDefaultAcademicYear(baseDate = null) {
-  const today = baseDate || getTodayISTDate();
+  const today = baseDate || getSyncedISTDateString();
   const [yearStr, monthStr] = today.split('-');
   const currYear = parseInt(yearStr, 10) || new Date().getFullYear();
   const currMonth = parseInt(monthStr, 10) || (new Date().getMonth() + 1);

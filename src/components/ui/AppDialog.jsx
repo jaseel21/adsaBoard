@@ -633,8 +633,13 @@ export function DialogProvider({ children }) {
 
 export function useAppDialog() {
   const context = useContext(DialogContext);
-  if (!context) {
-    throw new Error('useAppDialog must be used within a DialogProvider');
-  }
-  return context;
+  return (
+    context || {
+      showConfirm: async () => false,
+      showAlert: async () => {},
+      showPrompt: async () => null,
+      showToast: () => {},
+      closeAll: () => {},
+    }
+  );
 }

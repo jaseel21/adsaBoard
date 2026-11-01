@@ -118,6 +118,14 @@ const WalkthroughTour = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const handleFinish = () => {
+    feedback('success');
+    try {
+      localStorage.setItem('adsatboard-tour-seen', 'true');
+    } catch (_) {}
+    onClose();
+  };
+
   const handleNext = () => {
     feedback('tick');
     if (currentStepIndex < TOUR_STEPS.length - 1) {
@@ -132,14 +140,6 @@ const WalkthroughTour = ({ isOpen, onClose }) => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex((prev) => prev - 1);
     }
-  };
-
-  const handleFinish = () => {
-    feedback('success');
-    try {
-      localStorage.setItem('adsatboard-tour-seen', 'true');
-    } catch (_) {}
-    onClose();
   };
 
   return (

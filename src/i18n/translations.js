@@ -851,6 +851,8 @@ export const translations = {
     turnAllMealOff: "Turn All {meal} OFF",
     resetRoutine: "Reset Routine",
     tokenBoardGuide: "Token Board Guide",
+    slideGuide: "Slide Guide",
+    visualSlideGuide: "Portrait Slide Guide (1080x1920)",
     guide: "Guide",
 
     // Token Lock & Cutoffs
@@ -2426,6 +2428,8 @@ export const translations = {
     turnAllMealOff: "എല്ലാ {meal} OFF ആക്കുക",
     resetRoutine: "സാധാരണ ക്രമത്തിലേക്ക് മാറ്റുക",
     tokenBoardGuide: "ടോക്കൺ ബോർഡ് ഗൈഡ്",
+    slideGuide: "സ്ലൈഡ് ഗൈഡ്",
+    visualSlideGuide: "പോർട്രെയ്റ്റ് സ്ലൈഡ് ഗൈഡ് (1080x1920)",
     guide: "ഗൈഡ്",
 
     // Token Lock & Cutoffs

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADSA Canteen Token Board - How To Use Guide Carousel (1080x1920)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Noto+Sans+Malayalam:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #020f0a;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      max-width: 800px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    p.sub {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .carousel-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 9 / 16;
+      background: #000;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(16, 185, 129, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .slide-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+      transition: opacity 0.3s ease;
+    }
+    .slide-img.active {
+      display: block;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .nav-btn:hover {
+      background: #10b981;
+      border-color: #34d399;
+      transform: translateY(-50%) scale(1.1);
+    }
+    .nav-btn.prev { left: 16px; }
+    .nav-btn.next { right: 16px; }
+
+    /* Thumbnails and controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .index-indicator {
+      font-size: 15px;
+      font-weight: 700;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 6px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .index-indicator span {
+      color: #f59e0b;
+      font-weight: 900;
+    }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 12px;
+      background: #10b981;
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+    .dl-btn:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+
+    /* Dots bar */
+    .dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .dot.active {
+      background: #10b981;
+      width: 28px;
+      border-radius: 9999px;
+    }
+
+    /* Grid of all slides */
+    .all-slides-grid {
+      margin-top: 50px;
+      max-width: 1200px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .grid-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .grid-card:hover {
+      border-color: #10b981;
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .grid-card img {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .grid-card .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge">
+      <span>●</span>
+      <span>Official Slide Post Carousel • 1080x1920 (9:16)</span>
+    </div>
+    <h1>ADSA കാന്റീൻ ടോക്കൺ ബോർഡ് - യൂസർ ഗൈഡ്</h1>
+    <p class="sub">ലോഗിൻ, ലീവ് അപ്‌ഡേറ്റ്, സേവിങ്, ലോഗ് ഔട്ട് തുടങ്ങി എല്ലാ ഘട്ടങ്ങളും വ്യക്തമായി പ്രതിപാദിക്കുന്ന സ്ലൈഡ് പോസ്റ്റ് കാരൗസൽ.</p>
+  </header>
+
+  <!-- Interactive Portrait Carousel Container -->
+  <div class="carousel-container">
+    <button class="nav-btn prev" onclick="prevSlide()">❮</button>
+    <button class="nav-btn next" onclick="nextSlide()">❯</button>
+
+    <img class="slide-img active" src="assets/1080x1920/slide_01.png" alt="Slide 1">
+    <img class="slide-img" src="assets/1080x1920/slide_02.png" alt="Slide 2">
+    <img class="slide-img" src="assets/1080x1920/slide_03.png" alt="Slide 3">
+    <img class="slide-img" src="assets/1080x1920/slide_04.png" alt="Slide 4">
+    <img class="slide-img" src="assets/1080x1920/slide_05.png" alt="Slide 5">
+    <img class="slide-img" src="assets/1080x1920/slide_06.png" alt="Slide 6">
+    <img class="slide-img" src="assets/1080x1920/slide_07.png" alt="Slide 7">
+    <img class="slide-img" src="assets/1080x1920/slide_08.png" alt="Slide 8">
+    <img class="slide-img" src="assets/1080x1920/slide_09.png" alt="Slide 9">
+    <img class="slide-img" src="assets/1080x1920/slide_10.png" alt="Slide 10">
+  </div>
+
+  <div class="controls">
+    <div class="index-indicator">സ്ലൈഡ് <span id="currentIdx">01</span> / 10</div>
+    <a id="downloadLink" class="dl-btn" href="assets/1080x1920/slide_01.png" download="ADSA_Guide_Slide_01.png">
+      📥 സ്ലൈഡ് ഡൗൺലോഡ് (1080x1920)
+    </a>
+  </div>
+
+  <div class="dots" id="dotsContainer"></div>
+
+  <!-- All Slides Gallery Grid -->
+  <div class="all-slides-grid">
+    <div class="grid-card" onclick="goToSlide(0)">
+      <img src="assets/1080x1920/slide_01.png" alt="Slide 1">
+      <div class="title">01 • കവർ പേജ്</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(1)">
+      <img src="assets/1080x1920/slide_02.png" alt="Slide 2">
+      <div class="title">02 • ഘട്ടം 1: ലിങ്ക് തുറക്കുക</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(2)">
+      <img src="assets/1080x1920/slide_03.png" alt="Slide 3">
+      <div class="title">03 • ഘട്ടം 2: ലോഗിൻ</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(3)">
+      <img src="assets/1080x1920/slide_04.png" alt="Slide 4">
+      <div class="title">04 • ഘട്ടം 3: ഡാഷ്‌ബോർഡ്</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(4)">
+      <img src="assets/1080x1920/slide_05.png" alt="Slide 5">
+      <div class="title">05 • ഘട്ടം 4: ഭക്ഷണം അപ്‌ഡേറ്റ്</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(5)">
+      <img src="assets/1080x1920/slide_06.png" alt="Slide 6">
+      <div class="title">06 • ഘട്ടം 5: സേവ് ചെയ്യുക</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(6)">
+      <img src="assets/1080x1920/slide_07.png" alt="Slide 7">
+      <div class="title">07 • ഘട്ടം 6: ലോഗ് ഔട്ട്</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(7)">
+      <img src="assets/1080x1920/slide_08.png" alt="Slide 8">
+      <div class="title">08 • കട്ട്-ഓഫും നിയമങ്ങളും</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(8)">
+      <img src="assets/1080x1920/slide_09.png" alt="Slide 9">
+      <div class="title">09 • കളർ കോഡുകൾ</div>
+    </div>
+    <div class="grid-card" onclick="goToSlide(9)">
+      <img src="assets/1080x1920/slide_10.png" alt="Slide 10">
+      <div class="title">10 • ഹെൽപ്പ് & സപ്പോർട്ട്</div>
+    </div>
+  </div>
+
+  <script>
+    let currentIndex = 0;
+    const slides = document.querySelectorAll('.slide-img');
+    const currentIdxEl = document.getElementById('currentIdx');
+    const downloadLink = document.getElementById('downloadLink');
+    const dotsContainer = document.getElementById('dotsContainer');
+
+    // Create dots
+    slides.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.onclick = () => goToSlide(i);
+      dotsContainer.appendChild(dot);
+    });
+
+    function updateSlide() {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === currentIndex);
+      });
+      document.querySelectorAll('.dot').forEach((d, i) => {
+        d.classList.toggle('active', i === currentIndex);
+      });
+      const numStr = String(currentIndex + 1).padStart(2, '0');
+      currentIdxEl.innerText = numStr;
+      downloadLink.href = 'assets/1080x1920/slide_' + numStr + '.png';
+      downloadLink.download = 'ADSA_Guide_Slide_' + numStr + '.png';
+    }
+
+    function nextSlide() {
+      currentIndex = (currentIndex + 1) % slides.length;
+      updateSlide();
+    }
+
+    function prevSlide() {
+      currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+      updateSlide();
+    }
+
+    function goToSlide(i) {
+      currentIndex = i;
+      updateSlide();
+    }
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+  </script>
+</body>
+</html>

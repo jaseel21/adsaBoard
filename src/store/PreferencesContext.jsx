@@ -5,7 +5,20 @@ import { useLanguage } from './LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { dialog } from '../utils/dialog';
 
-export const PreferencesContext = createContext(null);
+export const DEFAULT_PREFERENCES_CONTEXT_VALUE = {
+  preferences: DEFAULT_PREFERENCES,
+  persistedPreferences: DEFAULT_PREFERENCES,
+  setPreference: () => {},
+  updatePreferences: () => {},
+  savePreferences: () => {},
+  discardChanges: () => {},
+  resetToFactoryDefaults: () => {},
+  isDirty: false,
+  dirtyKeys: [],
+  dirtyCount: 0,
+};
+
+export const PreferencesContext = createContext(DEFAULT_PREFERENCES_CONTEXT_VALUE);
 
 const STORAGE_KEY = 'adsatboard-app-preferences';
 
@@ -208,8 +221,5 @@ export function PreferencesProvider({ children }) {
 
 export function usePreferences() {
   const context = useContext(PreferencesContext);
-  if (!context) {
-    throw new Error('usePreferences must be used within a PreferencesProvider');
-  }
-  return context;
+  return context || DEFAULT_PREFERENCES_CONTEXT_VALUE;
 }

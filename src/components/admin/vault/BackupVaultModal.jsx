@@ -127,6 +127,23 @@ export default function BackupVaultModal({ isOpen, onClose }) {
   };
 
   // Handle Local File Upload for Restore
+  // Open Dry-Run Inspection Modal
+  const openInspection = async (backupData) => {
+    setSelectedBackupData(backupData);
+    setSelectedCollectionsToRestore(Object.keys(backupData.collections || {}));
+    setInspectModalOpen(true);
+    setComputingDiff(true);
+
+    try {
+      const diff = await computeDryRunDiff(backupData);
+      setDiffReport(diff);
+    } catch (err) {
+      console.warn('Error computing diff:', err);
+    } finally {
+      setComputingDiff(false);
+    }
+  };
+
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -152,23 +169,6 @@ export default function BackupVaultModal({ isOpen, onClose }) {
       openInspection(validation.parsedData);
     };
     reader.readAsText(file);
-  };
-
-  // Open Dry-Run Inspection Modal
-  const openInspection = async (backupData) => {
-    setSelectedBackupData(backupData);
-    setSelectedCollectionsToRestore(Object.keys(backupData.collections || {}));
-    setInspectModalOpen(true);
-    setComputingDiff(true);
-
-    try {
-      const diff = await computeDryRunDiff(backupData);
-      setDiffReport(diff);
-    } catch (err) {
-      console.warn('Error computing diff:', err);
-    } finally {
-      setComputingDiff(false);
-    }
   };
 
   // Execute Restore Operation

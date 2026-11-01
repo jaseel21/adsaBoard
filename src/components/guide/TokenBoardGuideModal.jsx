@@ -29,15 +29,17 @@ import {
   StudentPortalTips,
   KitchenAndSheets,
   ShortcutsAndGestures,
+  VisualSlidePostModule,
 } from './GuideModules';
 import { guideSprings } from './guideAnimations';
 
 const TABS = [
+  { id: 'visual-slides', label: 'Slide Guide', labelMl: 'സ്ലൈഡ് ഗൈഡ്', icon: Sparkles },
+  { id: 'student-portal', label: 'Student Portal', labelMl: 'പോർട്ടൽ സഹായം', icon: UserCheck },
   { id: 'color-system', label: 'Color System', labelMl: 'കളർ സിസ്റ്റം', icon: Layers },
   { id: 'simulator', label: 'Sandbox Simulator', labelMl: 'ലൈവ് സിമുലേറ്റർ', icon: Sparkles },
-  { id: 'views-filters', label: 'Views & Search', labelMl: 'വ്യൂകളും സെർച്ചും', icon: Filter },
   { id: 'timings-cutoff', label: 'Cutoff & IST Time', labelMl: 'സമയവും കട്ട്-ഓഫും', icon: Clock },
-  { id: 'student-portal', label: 'Student Portal', labelMl: 'പോർട്ടൽ സഹായം', icon: UserCheck },
+  { id: 'views-filters', label: 'Views & Search', labelMl: 'വ്യൂകളും സെർച്ചും', icon: Filter },
   { id: 'kitchen-sheets', label: 'Kitchen Sheets', labelMl: 'കിച്ചൻ ഷീറ്റ്', icon: Printer },
   { id: 'shortcuts', label: 'Shortcuts', labelMl: 'ഷോർട്ട്കട്ടുകൾ', icon: Command },
 ];
@@ -193,11 +195,12 @@ const TokenBoardGuideModal = ({ isOpen, onClose, onStartTour }) => {
 
           {/* Tab Content Body */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 pb-safe">
+            {activeTab === 'visual-slides' && <VisualSlidePostModule />}
+            {activeTab === 'student-portal' && <StudentPortalTips />}
             {activeTab === 'color-system' && <ColorSystemLegend />}
             {activeTab === 'simulator' && <TokenSimulator />}
             {activeTab === 'views-filters' && <ViewsAndFilters />}
             {activeTab === 'timings-cutoff' && <TimingsAndCutoff />}
-            {activeTab === 'student-portal' && <StudentPortalTips />}
             {activeTab === 'kitchen-sheets' && <KitchenAndSheets />}
             {activeTab === 'shortcuts' && <ShortcutsAndGestures />}
           </div>
