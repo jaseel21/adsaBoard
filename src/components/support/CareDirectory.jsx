@@ -48,7 +48,7 @@ export default function CareDirectory() {
       </div>
 
       {/* Hotline Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+      <div data-tour="committee-contact-cards" className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
         {COMMITTEE_HOTLINES.map((contact) => {
           const roleTitle = lang === 'ml' ? contact.roleMl : contact.roleEn;
           const timing = lang === 'ml' ? contact.availableTimeMl : contact.availableTimeEn;

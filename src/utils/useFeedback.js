@@ -123,6 +123,15 @@ export function useFeedback() {
         gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
         osc.start(now);
         osc.stop(now + 0.1);
+      } else if (type === 'nudge') {
+        // Gentle double bump for guiding user back to interactive target
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.linearRampToValueAtTime(180, now + 0.08);
+        gain.gain.setValueAtTime(0.03 * volumeMultiplier, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
       }
     } catch (_) {}
   };
@@ -163,6 +172,8 @@ export function useFeedback() {
           navigator.vibrate([25, 40, 25]);
         } else if (type === 'warning' || type === 'error') {
           navigator.vibrate([40, 40, 60]);
+        } else if (type === 'nudge') {
+          navigator.vibrate([10, 40, 15]);
         }
       }
     } catch (_) {}

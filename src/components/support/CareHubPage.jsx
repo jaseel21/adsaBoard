@@ -103,7 +103,7 @@ export default function CareHubPage() {
       </motion.div>
 
       {/* Surface Navigation Ribbon */}
-      <div className="flex items-center p-1.5 rounded-2xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-sm overflow-x-auto scrollbar-none">
+      <div data-tour="care-hub-appeal" className="flex items-center p-1.5 rounded-2xl bg-white dark:bg-[#0c1412] border border-gray-200/80 dark:border-white/10 shadow-sm overflow-x-auto scrollbar-none">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;

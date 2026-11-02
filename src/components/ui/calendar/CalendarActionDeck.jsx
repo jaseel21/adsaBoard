@@ -50,6 +50,7 @@ export default function CalendarActionDeck({
             {onOpenSchedulePattern && (
               <button
                 type="button"
+                data-tour="bulk-pattern-button"
                 onClick={() => handleAction(onOpenSchedulePattern)}
                 className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-xs shadow-emerald-600/25 active:scale-95 transition-all flex items-center gap-1.5 select-none cursor-pointer"
                 title="Configure and apply a weekly dining schedule pattern across month or term"

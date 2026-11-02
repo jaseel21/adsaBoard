@@ -211,7 +211,7 @@ function Login() {
         </div>
 
         {/* Login Card */}
-        <div className="rounded-2xl sm:rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl backdrop-blur-xl p-5 xs:p-6 sm:p-8 space-y-5 sm:space-y-6">
+        <div data-tour="portal-auth-dock" className="rounded-2xl sm:rounded-3xl bg-white/90 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-xl backdrop-blur-xl p-5 xs:p-6 sm:p-8 space-y-5 sm:space-y-6">
           <div className="text-center space-y-1.5">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md">
               <KeyRound className="w-6 h-6" />

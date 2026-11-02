@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Clock,
@@ -168,16 +168,16 @@ export const ViewsAndFilters = () => {
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 font-semibold text-center">
-            {isMl ? 'ടോക്കൺ നമ്പർ' : 'Token Number'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">154</code>
+            {isMl ? 'ടോക്കൺ നമ്പർ' : 'Token Number'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">042</code>
           </div>
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 font-semibold text-center">
-            {isMl ? 'ഇംഗ്ലീഷ് പേര്' : 'English Name'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">Navar</code>
+            {isMl ? 'ഇംഗ്ലീഷ് പേര്' : 'English Name'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">Ahmed</code>
           </div>
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 font-semibold text-center font-malayalam">
-            {isMl ? 'മലയാളം പേര്' : 'Malayalam Name'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">നവാർ</code>
+            {isMl ? 'മലയാളം പേര്' : 'Malayalam Name'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">അഹ്‌മദ്</code>
           </div>
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 font-semibold text-center">
-            {isMl ? 'യൂസർനെയിം' : 'Username'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">@navar</code>
+            {isMl ? 'യൂസർനെയിം' : 'Username'} <code className="block text-[11px] text-emerald-500 font-mono mt-0.5">@ahmed</code>
           </div>
         </div>
       </motion.div>
@@ -206,8 +206,8 @@ export const StudentPortalTips = () => {
       color: 'blue',
       titleEn: 'Enter Token & Password',
       titleMl: 'ലോഗിൻ ചെയ്യുക',
-      descEn: 'Type your assigned Token Number (e.g. 154) or username, followed by your private password (e.g. 0786), then click "Sign In to Portal".',
-      descMl: 'നിങ്ങളുടെ ടോക്കൺ നമ്പറും (ഉദാ: 154) രഹസ്യ പാസ്‌വേഡും (ഉദാ: 0786) കൃത്യമായി നൽകി "Sign In to Portal" ബട്ടൺ അമർത്തുക.',
+      descEn: 'Type your assigned Token Number (e.g. 042) or username, followed by your private password (e.g. ••••••••), then click "Sign In to Portal".',
+      descMl: 'നിങ്ങളുടെ ടോക്കൺ നമ്പറും (ഉദാ: 042) രഹസ്യ പാസ്‌വേഡും (ഉദാ: ••••••••) കൃത്യമായി നൽകി "Sign In to Portal" ബട്ടൺ അമർത്തുക.',
     },
     {
       num: '03',
@@ -262,7 +262,7 @@ export const StudentPortalTips = () => {
           <p className="text-xs text-emerald-100/90 leading-relaxed max-w-xl">
             {isMl
               ? 'ലോഗിൻ, ലീവ് രേഖപ്പെടുത്തൽ, സേവിങ് എന്നിവ വിശദീകരിക്കുന്ന അതിമനോഹരമായ മലയാളം സ്ലൈഡ് പോസ്റ്റുകൾ കാണാനും ഡൗൺലോഡ് ചെയ്യാനും സാധിക്കും.'
-              : 'Award-winning visual slide posts formatted in portrait 1080x1920 with real desktop screenshots (Token 154 demo).'}
+              : 'Award-winning visual slide posts formatted in portrait 1080x1920 with interactive portal walkthrough (Demo Token 042).'}
           </p>
         </div>
         <a
@@ -416,6 +416,8 @@ export const VisualSlidePostModule = () => {
   const { lang } = useLanguage();
   const isMl = lang === 'ml';
   const [activeSlide, setActiveSlide] = useState(0);
+  const containerRef = useRef(null);
+  const [scale, setScale] = useState(0.35);
 
   const slideTitles = [
     { en: '01 • Cover: ADSA Canteen Guide', ml: '01 • കവർ: ADSA കാന്റീൻ ഗൈഡ്' },
@@ -431,7 +433,20 @@ export const VisualSlidePostModule = () => {
   ];
 
   const currentNumberStr = String(activeSlide + 1).padStart(2, '0');
-  const slideSrc = `/assets/slides/slide_${currentNumberStr}.png`;
+  const slideHtmlSrc = `/assets/slides/slide_${currentNumberStr}.html`;
+  const slideSvgSrc = `/assets/slides_svg/slide_${currentNumberStr}.svg`;
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateScale = () => {
+      if (containerRef.current) {
+        setScale(containerRef.current.clientWidth / 1080);
+      }
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
 
   return (
     <motion.div variants={guideStaggerVariants} initial="hidden" animate="show" className="space-y-6">
@@ -449,14 +464,15 @@ export const VisualSlidePostModule = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
           <a
-            href={slideSrc}
-            download={`ADSA_Guide_Slide_${currentNumberStr}.png`}
+            href={slideSvgSrc}
+            download={`ADSA_Guide_Slide_${currentNumberStr}.svg`}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all active:scale-95"
+            title="Download Vector SVG"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{isMl ? 'സ്ലൈഡ് സേവ് ചെയ്യുക' : 'Save Slide PNG'}</span>
+            <span>{isMl ? 'SVG സേവ് ചെയ്യുക' : 'Save SVG'}</span>
           </a>
           <a
             href="/guide-carousel.html"
@@ -464,7 +480,7 @@ export const VisualSlidePostModule = () => {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs shadow-md transition-all active:scale-95"
           >
-            <span>{isMl ? 'ഫുൾ സ്ക്രീൻ വ്യൂവർ' : 'Web Viewer'}</span>
+            <span>{isMl ? 'ഫുൾ സ്ക്രീൻ & എക്‌സ്‌പോർട്ട്' : 'Web Viewer & Export'}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
@@ -500,14 +516,22 @@ export const VisualSlidePostModule = () => {
           </button>
         </div>
 
-        {/* Slide Image Mockup */}
-        <div className="relative w-full max-w-sm aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-300 dark:border-white/15 bg-black">
-          <img
-            key={slideSrc}
-            src={slideSrc}
-            alt={slideTitles[activeSlide].en}
-            className="w-full h-full object-contain"
-            loading="lazy"
+        {/* Scaled Slide Viewport Mockup */}
+        <div
+          ref={containerRef}
+          className="relative w-full max-w-sm aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-300 dark:border-white/15 bg-[#020f0a]"
+        >
+          <iframe
+            key={currentNumberStr}
+            src={slideHtmlSrc}
+            title={slideTitles[activeSlide].en}
+            className="border-none origin-top-left pointer-events-none select-none"
+            style={{
+              width: '1080px',
+              height: '1920px',
+              transform: `scale(${scale})`,
+            }}
+            scrolling="no"
           />
         </div>
 

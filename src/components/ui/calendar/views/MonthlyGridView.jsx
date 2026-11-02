@@ -247,7 +247,7 @@ export default function MonthlyGridView({
                 const isSelected = selectedDates.includes(day.dateStr);
 
                 return (
-                  <div key={day.dateStr} className="relative">
+                  <div key={day.dateStr} className="relative" {...(day.isTomorrow ? { 'data-tour': 'calendar-single-day-cell' } : {})}>
                     <DateTokenButton
                       dateStr={day.dateStr}
                       dayNumber={day.dayNumber}

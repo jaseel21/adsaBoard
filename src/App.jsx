@@ -64,6 +64,15 @@ import CampusKioskGuardHUD from './components/guards/CampusKioskGuardHUD';
 import { MasterGovernanceProvider, useMasterGovernance } from './store/MasterGovernanceContext';
 import MasterMaintenanceScreen from './components/admin/governance/MasterMaintenanceScreen';
 import InstitutionalAlertRibbon from './components/admin/governance/InstitutionalAlertRibbon';
+import { TourProvider } from './components/tour/TourEngineContext';
+import TourSpotlightOverlay from './components/tour/TourSpotlightOverlay';
+import TourTargetBeacon from './components/tour/TourTargetBeacon';
+import TourFloatingHUD from './components/tour/TourFloatingHUD';
+import TourActionWatcher from './components/tour/TourActionWatcher';
+import TourCelebrationModal from './components/tour/TourCelebrationModal';
+import TourMissionHubModal from './components/tour/TourMissionHubModal';
+import TourAutoPromptBanner from './components/tour/TourAutoPromptBanner';
+import TourCampaignAdminStudio from './components/admin/tour/TourCampaignAdminStudio';
 import './App.css';
 
 function AppContent() {
@@ -427,6 +436,23 @@ function AppContent() {
             />
             <Route path="/admin/about-studio" element={<Navigate to="/admin/about" replace />} />
 
+            {/* Tour & Onboarding Campaign Studio */}
+            <Route
+              path="/admin/tour"
+              element={
+                <RoleRoute
+                  allowedRoles={[
+                    ROLES.CANTEEN_COMMITTEE,
+                    ROLES.CENTRAL_COMMITTEE,
+                    ROLES.DEVELOPER,
+                  ]}
+                >
+                  <TourCampaignAdminStudio />
+                </RoleRoute>
+              }
+            />
+            <Route path="/admin/campaign" element={<Navigate to="/admin/tour" replace />} />
+
             {/* Legacy Redirects */}
             <Route path="/add-student" element={<Navigate to="/student-management?add=true" replace />} />
             <Route path="/add-students" element={<Navigate to="/student-management?add=true" replace />} />
@@ -482,11 +508,20 @@ function App() {
                   <ExperienceFXProvider>
                     <SmoothScrollProvider>
                       <SidebarProvider>
-                        <AppContent />
-                        <CampusKioskGuardHUD />
-                        <NotificationDrawer />
-                        <EmergencyNotificationDialog />
-                        <PwaInstallPrompt />
+                        <TourProvider>
+                          <AppContent />
+                          <CampusKioskGuardHUD />
+                          <NotificationDrawer />
+                          <EmergencyNotificationDialog />
+                          <PwaInstallPrompt />
+                          <TourSpotlightOverlay />
+                          <TourTargetBeacon />
+                          <TourFloatingHUD />
+                          <TourActionWatcher />
+                          <TourCelebrationModal />
+                          <TourMissionHubModal />
+                          <TourAutoPromptBanner />
+                        </TourProvider>
                       </SidebarProvider>
                     </SmoothScrollProvider>
                   </ExperienceFXProvider>

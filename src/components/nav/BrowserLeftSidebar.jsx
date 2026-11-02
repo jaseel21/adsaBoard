@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Settings,
   BellRing,
+  Compass,
 } from 'lucide-react';
 import {
   NAV_CATEGORIES,
@@ -23,6 +24,7 @@ import {
 import { useSidebar } from './SidebarContext';
 import { AuthContext } from '../../store/AuthContext';
 import { DataOfOne } from '../../store/StudentData';
+import { useTourEngine } from '../tour/TourEngineContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { dialog } from '../../utils/dialog';
@@ -43,6 +45,7 @@ export default function BrowserLeftSidebar() {
   const { t, language } = useLanguage();
   const { feedback } = useFeedback();
   const { sidebarOpen, closeSidebar, toggleSidebar, isDesktop } = useSidebar();
+  const { openMissionHub } = useTourEngine();
 
   const {
     user,
@@ -324,6 +327,34 @@ export default function BrowserLeftSidebar() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Live Tour Quest Launcher */}
+      <div className="px-3 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            feedback('pop');
+            closeSidebar();
+            openMissionHub();
+          }}
+          className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-emerald-600/15 via-teal-600/10 to-emerald-600/15 border border-emerald-500/30 hover:border-emerald-500/50 flex items-center justify-between text-left transition-all group cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+              <Compass className="w-4 h-4 animate-spin-slow" />
+            </span>
+            <div>
+              <span className="text-xs font-black text-gray-900 dark:text-white block group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                {language === 'ml' ? 'ഇന്ററാക്ടീവ് ടൂർ' : 'Interactive Tour'}
+              </span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                {language === 'ml' ? 'ദൗത്യങ്ങൾ & പരിശീലനം' : 'Quests, tokens & rules'}
+              </span>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+        </button>
       </div>
 
       {/* 4. Categorized Navigation Groups */}

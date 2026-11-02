@@ -672,7 +672,7 @@ function StudentPort() {
 
   if (!stdata || !stdata.tokenNo) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+      <div data-tour="portal-auth-dock" className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-3xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
           <Clock className="w-8 h-8" />
         </div>
@@ -949,6 +949,7 @@ function StudentPort() {
                   </div> */}
                   <button
                     type="button"
+                    data-tour="dietary-request-badge"
                     onClick={() => {
                       feedback('tick');
                       setRequestModalOpen(true);
@@ -1124,6 +1125,7 @@ function StudentPort() {
       <div className="fixed bottom-2 xs:bottom-4 sm:bottom-6 inset-x-0 z-40 flex justify-center px-2 xs:px-4 pointer-events-none pb-safe">
         <motion.div
           layout
+          data-tour="total-tokens-dock"
           className="pointer-events-auto w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 border border-emerald-500/30 dark:border-emerald-500/20 shadow-2xl backdrop-blur-xl p-2 xs:p-2.5 sm:p-3 flex items-center justify-between gap-1.5 xs:gap-2 sm:gap-4 transition-all"
         >
           {/* Status Badge */}
@@ -1199,6 +1201,7 @@ function StudentPort() {
                 {/* Save Preferences Primary Button */}
                 <button
                   type="button"
+                  data-tour="save-preferences-cta"
                   onClick={() => handleSave(false)}
                   disabled={saving || !isDirty}
                   className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 xs:px-5 sm:px-6 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-white shadow-lg transition-all transform active:scale-95 whitespace-nowrap ${

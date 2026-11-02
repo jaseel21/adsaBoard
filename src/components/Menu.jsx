@@ -725,7 +725,7 @@ const MenuTable = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
           
           {/* Left: 5-View Perspective Switcher (Day, Week, Month, Year, List) */}
-          <div className="inline-flex p-0.5 rounded-2xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 shadow-xs backdrop-blur-md overflow-x-auto shrink-0">
+          <div data-tour="menu-day-tabs" className="inline-flex p-0.5 rounded-2xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/70 dark:border-white/10 shadow-xs backdrop-blur-md overflow-x-auto shrink-0">
             {[
               { id: 'day', label: t('viewDay', 'Day'), icon: Clock },
               { id: 'week', label: t('viewWeek', 'Week'), icon: CalendarDays },
@@ -1126,6 +1126,7 @@ const MenuTable = () => {
               
               {/* 1. Breakfast Slot */}
               <div
+                data-tour="menu-meal-card"
                 className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all flex flex-col justify-between ${
                   activeDayData.breakfast?.isArchived || activeDayData.breakfast?.isAvailable === false
                     ? 'bg-gray-50/50 dark:bg-white/5 border-dashed border-gray-200 dark:border-white/10 opacity-70'

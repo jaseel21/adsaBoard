@@ -271,6 +271,7 @@ export default function SchedulePatternModal({
               {/* Preset: Weekend Off */}
               <button
                 type="button"
+                data-tour="pattern-preset-sundays"
                 onClick={() => {
                   feedback('tick');
                   setSelectedPreset('weekend_off');
@@ -422,6 +423,7 @@ export default function SchedulePatternModal({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
+                data-tour="pattern-scope-selector"
                 onClick={() => {
                   feedback('tick');
                   setScope('month');

@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&amp;family=Noto+Sans+Malayalam:wght@400;500;600;700;800;900&amp;display=swap');
+      
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      position: relative;
+    }
+    body {
+      background: radial-gradient(circle at 50% 15%, #0c382b 0%, #06221a 45%, #03120d 100%);
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', sans-serif;
+      color: #f1f5f9;
+    }
+    .glow-top {
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.05) 60%, transparent 80%);
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .glow-gold {
+      position: absolute;
+      bottom: 200px;
+      right: -100px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+    }
+    .pattern-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.035;
+      background-image: radial-gradient(#10b981 1.5px, transparent 1.5px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+    .slide-container {
+      width: 1080px;
+      height: 1920px;
+      padding: 80px 70px 70px 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      z-index: 2;
+    }
+    .top-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1.5px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+    }
+    .badge-pill .dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 12px #34d399; }
+    .slide-indexer {
+      font-size: 22px;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 8px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .slide-indexer span { color: #f59e0b; font-weight: 900; }
+    .title-block { margin-bottom: 36px; }
+    .main-title {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .main-subtitle { font-size: 26px; font-weight: 600; color: #94a3b8; line-height: 1.45; }
+    .mockup-wrapper {
+      position: relative;
+      border-radius: 28px;
+      background: #0f172a;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
+      overflow: hidden;
+      margin-bottom: 30px;
+    }
+    .mockup-header {
+      height: 48px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .mockup-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .mockup-dot.red { background: #ef4444; }
+    .mockup-dot.yellow { background: #f59e0b; }
+    .mockup-dot.green { background: #10b981; }
+    .mockup-address {
+      margin-left: 20px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 6px 24px;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #38bdf8;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .mockup-address::before { content: '🔒'; font-size: 12px; }
+    .mockup-content {
+      width: 100%;
+      height: 420px;
+      background: #02120b;
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    /* Vector Token Board Grid UI */
+    .board-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .search-mock {
+      flex: 1;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .filter-chips {
+      display: flex;
+      gap: 8px;
+    }
+    .chip {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+    .chip.green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .chip.red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .chip.yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .token-grid-mock {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .token-card-mock {
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border: 1.5px solid transparent;
+    }
+    .token-card-mock.c-green {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .token-card-mock.c-red {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .token-card-mock.c-yellow {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .token-card-mock.c-gray {
+      background: rgba(100, 116, 139, 0.12);
+      border-color: rgba(100, 116, 139, 0.4);
+    }
+    .tc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 900;
+      font-family: monospace;
+    }
+    .c-green .tc-header { color: #34d399; }
+    .c-red .tc-header { color: #f87171; }
+    .c-yellow .tc-header { color: #fbbf24; }
+    .c-gray .tc-header { color: #94a3b8; }
+    .tc-name { font-size: 13px; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tc-status { font-size: 11px; font-weight: 800; }
+    .c-green .tc-status { color: #a7f3d0; }
+    .c-red .tc-status { color: #fca5a5; }
+    .c-yellow .tc-status { color: #fde68a; }
+    .c-gray .tc-status { color: #cbd5e1; }
+
+    /* Legend List Cards */
+    .legend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .legend-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .legend-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px currentColor;
+    }
+    .legend-title { font-size: 20px; font-weight: 900; color: #ffffff; margin-bottom: 2px; }
+    .legend-sub { font-size: 15px; font-weight: 700; color: #34d399; margin-bottom: 4px; }
+    .legend-desc { font-size: 16px; color: #cbd5e1; line-height: 1.4; }
+
+    .tip-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 18px;
+      padding: 18px 24px;
+      font-size: 21px;
+      font-weight: 600;
+      color: #fde68a;
+      line-height: 1.4;
+    }
+    .bottom-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-id { display: flex; align-items: center; gap: 16px; }
+    .brand-logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .brand-text-name { font-size: 20px; font-weight: 800; color: #ffffff; }
+    .brand-text-sub { font-size: 15px; color: #64748b; font-weight: 600; }
+    .portal-domain {
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: 800;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 8px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+  
+    </style>
+  </defs>
+  <foreignObject width="1080" height="1920">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width: 1080px; height: 1920px; overflow: hidden; position: relative;">
+      
+  <div class="pattern-overlay"></div>
+  <div class="glow-top"></div>
+  <div class="glow-gold"></div>
+
+  <div class="slide-container">
+    <div class="top-meta">
+      <div class="badge-pill">
+        <span class="dot"></span>
+        <span>സിസ്റ്റം കളർ കോഡുകൾ • COLOR LEGEND</span>
+      </div>
+      <div class="slide-indexer">
+        <span>09</span> / 10
+      </div>
+    </div>
+
+    <div>
+      <div class="title-block">
+        <h2 class="main-title">ബോർഡിലെ നിറങ്ങൾ തിരിച്ചറിയുക</h2>
+        <div class="main-subtitle">ഹോം ബോർഡിൽ നിങ്ങളുടെ ടോക്കൺ കാണിക്കുന്നത് എന്തിനെയാണെന്ന് മനസ്സിലാക്കുക</div>
+      </div>
+
+      <!-- Device Mockup Frame -->
+      <div class="mockup-wrapper">
+        <div class="mockup-header">
+          <span class="mockup-dot red"></span>
+          <span class="mockup-dot yellow"></span>
+          <span class="mockup-dot green"></span>
+          <div class="mockup-address">canteen.alathurpadidars.in/board</div>
+        </div>
+        <div class="mockup-content">
+          <div class="board-filter-bar">
+            <div class="search-mock">
+              <span>🔍</span>
+              <span>ടോക്കൺ അല്ലെങ്കിൽ പേര് തിരയുക...</span>
+            </div>
+            <div class="filter-chips">
+              <span class="chip green">● സജീവം</span>
+              <span class="chip red">● അവധി</span>
+              <span class="chip yellow">● ഭാഗികം</span>
+            </div>
+          </div>
+          <div class="token-grid-mock">
+            <!-- Sample 1 Green -->
+            <div class="token-card-mock c-green">
+              <div class="tc-header"><span>#042</span><span>🟢</span></div>
+              <div class="tc-name">അഹ്‌മദ് അലി</div>
+              <div class="tc-status">3/3 സജീവം</div>
+            </div>
+            <!-- Sample 2 Red -->
+            <div class="token-card-mock c-red">
+              <div class="tc-header"><span>#018</span><span>🔴</span></div>
+              <div class="tc-name">സാഹിദ് ടി.കെ</div>
+              <div class="tc-status">പൂർണ്ണ അവധി</div>
+            </div>
+            <!-- Sample 3 Yellow -->
+            <div class="token-card-mock c-yellow">
+              <div class="tc-header"><span>#077</span><span>🟡</span></div>
+              <div class="tc-name">ഫൈസൽ റഹ്മാൻ</div>
+              <div class="tc-status">പ്രഭാതഭക്ഷണം മാത്രം</div>
+            </div>
+            <!-- Sample 4 Gray -->
+            <div class="token-card-mock c-gray">
+              <div class="tc-header"><span>#105</span><span>🔒</span></div>
+              <div class="tc-name">റഷീദ് അലി</div>
+              <div class="tc-status">സമയം കഴിഞ്ഞു (Locked)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend List -->
+      <div class="legend-list">
+        <div class="legend-card">
+          <div class="legend-indicator" style="background: #10b981; color: #10b981;"></div>
+          <div>
+            <div class="legend-title">എമറാൾഡ് പച്ച (Active Serving • Confirmed)</div>
+            <div class="legend-sub">ഭക്ഷണം ആവശ്യമുണ്ട് (കഴിക്കുന്നു)</div>
+            <div class="legend-desc">വിദ്യാർത്ഥിക്ക് ഭക്ഷണം ഉറപ്പുവരുത്തിയിരിക്കുന്നു. കിച്ചൺ ഇവർക്കുള്ള വിഭവം പാകം ചെയ്യും.</div>
+          </div>
+        </div>
+
+        <div class="legend-card">
+          <div class="legend-indicator" style="background: #f43f5e; color: #f43f5e;"></div>
+          <div>
+            <div class="legend-title">റോസ് ചുവപ്പ് (Skipped / Full Leave)</div>
+            <div class="legend-sub">ഭക്ഷണം ആവശ്യമില്ല (ലീവ്)</div>
+            <div class="legend-desc">വിദ്യാർത്ഥി ഭക്ഷണം ഒഴിവാക്കി അല്ലെങ്കിൽ ലീവിലാണ്. കിച്ചൺ കണക്കുകളിൽ നിന്ന് ഈ ടോക്കൺ ഒഴിവാക്കപ്പെടുന്നു.</div>
+          </div>
+        </div>
+
+        <div class="legend-card">
+          <div class="legend-indicator" style="background: #f59e0b; color: #f59e0b;"></div>
+          <div>
+            <div class="legend-title">ആംബർ മഞ്ഞ (Partial Meals / ഭാഗികം)</div>
+            <div class="legend-sub">ചില ഭക്ഷണങ്ങൾ മാത്രം കഴിക്കുന്നു</div>
+            <div class="legend-desc">ഏതെങ്കിലും ഒന്നോ രണ്ടോ ഭക്ഷണങ്ങൾ മാത്രം കഴിക്കുന്ന വിദ്യാർത്ഥികളെ സൂചിപ്പിക്കുന്നു (ഉദാ: പ്രഭാതഭക്ഷണം മാത്രം).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        💡 ബോർഡിലെ കളർ കോഡുകൾ നോക്കി ഒറ്റനോട്ടത്തിൽ നിങ്ങളുടെ അന്നത്തെ ഭക്ഷണാവസ്ഥ മനസ്സിലാക്കാം.
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="brand-id">
+        <div class="brand-logo-icon">A</div>
+        <div>
+          <div class="brand-text-name">ADSA T-Board</div>
+          <div class="brand-text-sub">Alathurpadi Dars Students Association</div>
+        </div>
+      </div>
+      <div class="portal-domain">canteen.alathurpadidars.in</div>
+    </div>
+  </div>
+
+    </div>
+  </foreignObject>
+</svg>

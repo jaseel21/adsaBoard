@@ -7,6 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Noto+Sans+Malayalam:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Vendor Libraries for Dynamic Client-Side Export -->
+  <script src="assets/vendor/html2canvas.min.js"></script>
+  <script src="assets/vendor/jspdf.umd.min.js"></script>
+  <!-- Fallback CDNs if vendor script fails -->
+  <script>
+    if (typeof html2canvas === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
+    }
+  </script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -17,12 +28,12 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 20px;
+      padding: 40px 20px 80px 20px;
     }
     header {
       text-align: center;
-      margin-bottom: 30px;
-      max-width: 800px;
+      margin-bottom: 26px;
+      max-width: 840px;
     }
     .badge {
       display: inline-flex;
@@ -37,52 +48,96 @@
       font-weight: 700;
       text-transform: uppercase;
       margin-bottom: 12px;
+      letter-spacing: 0.5px;
     }
     h1 {
       font-size: 32px;
       font-weight: 900;
       color: #ffffff;
       margin-bottom: 8px;
+      letter-spacing: -0.5px;
     }
     p.sub {
       font-size: 16px;
       color: #94a3b8;
       line-height: 1.5;
     }
-    .carousel-container {
+
+    /* Live Export Engine Banner */
+    .engine-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #a7f3d0;
+      margin-bottom: 24px;
+    }
+    .engine-banner span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #34d399;
+    }
+
+    /* Interactive Carousel Wrapper */
+    .carousel-wrapper {
       position: relative;
       width: 100%;
       max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Scaled Viewport Container (Aspect Ratio 9:16) */
+    .carousel-container {
+      position: relative;
+      width: 100%;
       aspect-ratio: 9 / 16;
-      background: #000;
+      background: #000000;
       border-radius: 32px;
       overflow: hidden;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(16, 185, 129, 0.2);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.12);
     }
-    .slide-img {
+
+    /* Scaled Iframe that loads the 1080x1920 HTML slide */
+    .slide-iframe-container {
       width: 100%;
       height: 100%;
-      object-fit: contain;
-      display: none;
-      transition: opacity 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .slide-img.active {
-      display: block;
-      animation: fadeIn 0.3s ease forwards;
+    .slide-iframe {
+      width: 1080px;
+      height: 1920px;
+      border: none;
+      transform-origin: top left;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #020f0a;
+      transition: opacity 0.2s ease;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.98); }
-      to { opacity: 1; transform: scale(1); }
-    }
+
+    /* Nav Buttons */
     .nav-btn {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      width: 48px;
-      height: 48px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: white;
@@ -92,29 +147,32 @@
       justify-content: center;
       cursor: pointer;
       transition: all 0.2s ease;
-      z-index: 10;
+      z-index: 20;
     }
     .nav-btn:hover {
       background: #10b981;
       border-color: #34d399;
       transform: translateY(-50%) scale(1.1);
     }
-    .nav-btn.prev { left: 16px; }
-    .nav-btn.next { right: 16px; }
+    .nav-btn.prev { left: 14px; }
+    .nav-btn.next { right: 14px; }
 
-    /* Thumbnails and controls */
+    /* Controls Bar */
     .controls {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-top: 24px;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 18px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
     .index-indicator {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: #94a3b8;
       background: rgba(255, 255, 255, 0.05);
-      padding: 6px 18px;
+      padding: 8px 16px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -122,23 +180,161 @@
       color: #f59e0b;
       font-weight: 900;
     }
-    .dl-btn {
+    .refresh-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 20px;
-      border-radius: 12px;
-      background: #10b981;
-      color: white;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 700;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    /* Multi-Format Export Action Bar */
+    .export-card {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .export-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .export-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    @media (min-width: 480px) {
+      .export-buttons-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    .export-btn {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 12px 10px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid transparent;
       transition: all 0.2s ease;
+      text-decoration: none;
+      text-align: center;
+    }
+    .export-btn .btn-icon {
+      font-size: 18px;
+    }
+    .export-btn.png {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border-color: #34d399;
       box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
     }
-    .dl-btn:hover {
+    .export-btn.png:hover {
       background: #059669;
       transform: translateY(-2px);
+    }
+    .export-btn.pdf {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .export-btn.pdf:hover {
+      background: rgba(239, 68, 68, 0.25);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+    .export-btn.svg {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .export-btn.svg:hover {
+      background: rgba(245, 158, 11, 0.25);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+    .export-btn.html {
+      background: rgba(56, 189, 248, 0.15);
+      color: #7dd3fc;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+    .export-btn.html:hover {
+      background: rgba(56, 189, 248, 0.25);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    /* All Slides Zip Link */
+    .zip-all-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .zip-all-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    /* Loading Status Toast */
+    .status-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(2, 20, 14, 0.95);
+      border: 1.5px solid #10b981;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(16, 185, 129, 0.4);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+    .status-toast.show {
+      transform: translateX(-50%) translateY(0);
     }
 
     /* Dots bar */
@@ -146,9 +342,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 20px;
+      margin-top: 18px;
     }
-    .dot {
+    .carousel-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
@@ -156,29 +352,40 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    .dot.active {
+    .carousel-dot.active {
       background: #10b981;
       width: 28px;
       border-radius: 9999px;
     }
 
     /* Grid of all slides */
-    .all-slides-grid {
-      margin-top: 50px;
-      max-width: 1200px;
+    .gallery-section {
+      margin-top: 60px;
+      max-width: 1100px;
       width: 100%;
+    }
+    .gallery-heading {
+      font-size: 20px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .all-slides-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 16px;
     }
     .grid-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
+      border-radius: 18px;
       padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -187,11 +394,36 @@
       transform: translateY(-4px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
-    .grid-card img {
+    .grid-card.active {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .grid-card-preview {
       width: 100%;
       aspect-ratio: 9 / 16;
-      border-radius: 12px;
-      object-fit: cover;
+      border-radius: 10px;
+      background: #03120d;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .grid-card-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    .grid-card-badge {
+      font-size: 11px;
+      font-weight: 800;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.15);
+      padding: 3px 8px;
+      border-radius: 6px;
     }
     .grid-card .title {
       font-size: 13px;
@@ -200,6 +432,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -213,111 +446,191 @@
     <p class="sub">ലോഗിൻ, ലീവ് അപ്‌ഡേറ്റ്, സേവിങ്, ലോഗ് ഔട്ട് തുടങ്ങി എല്ലാ ഘട്ടങ്ങളും വ്യക്തമായി പ്രതിപാദിക്കുന്ന സ്ലൈഡ് പോസ്റ്റ് കാരൗസൽ.</p>
   </header>
 
+  <div class="engine-banner">
+    <span class="dot"></span>
+    <span>ഡൈനാമിക് എക്‌സ്‌പോർട്ട് എഞ്ചിൻ സജീവം: നിങ്ങൾക്ക് HTML ഫയലിൽ മാറ്റം വരുത്താം, ഇവിടെ തത്സമയം PNG ആയി ഡൗൺലോഡ് ചെയ്യാം!</span>
+  </div>
+
   <!-- Interactive Portrait Carousel Container -->
-  <div class="carousel-container">
-    <button class="nav-btn prev" onclick="prevSlide()">❮</button>
-    <button class="nav-btn next" onclick="nextSlide()">❯</button>
+  <div class="carousel-wrapper">
+    <div class="carousel-container" id="carouselContainer">
+      <button class="nav-btn prev" onclick="prevSlide()" title="Previous Slide">❮</button>
+      <button class="nav-btn next" onclick="nextSlide()" title="Next Slide">❯</button>
 
-    <img class="slide-img active" src="assets/1080x1920/slide_01.png" alt="Slide 1">
-    <img class="slide-img" src="assets/1080x1920/slide_02.png" alt="Slide 2">
-    <img class="slide-img" src="assets/1080x1920/slide_03.png" alt="Slide 3">
-    <img class="slide-img" src="assets/1080x1920/slide_04.png" alt="Slide 4">
-    <img class="slide-img" src="assets/1080x1920/slide_05.png" alt="Slide 5">
-    <img class="slide-img" src="assets/1080x1920/slide_06.png" alt="Slide 6">
-    <img class="slide-img" src="assets/1080x1920/slide_07.png" alt="Slide 7">
-    <img class="slide-img" src="assets/1080x1920/slide_08.png" alt="Slide 8">
-    <img class="slide-img" src="assets/1080x1920/slide_09.png" alt="Slide 9">
-    <img class="slide-img" src="assets/1080x1920/slide_10.png" alt="Slide 10">
+      <div class="slide-iframe-container" id="frameContainer">
+        <iframe
+          id="slideFrame"
+          class="slide-iframe"
+          src="assets/slides/slide_01.html"
+          title="ADSA Guide Slide"
+          scrolling="no"
+        ></iframe>
+      </div>
+    </div>
+
+    <!-- Navigation & Refresh Controls -->
+    <div class="controls">
+      <div class="index-indicator">സ്ലൈഡ് <span id="currentIdx">01</span> / 10</div>
+      <button class="refresh-btn" onclick="reloadCurrentSlide()" title="Reload after editing HTML">
+        <span>🔄</span>
+        <span>സ്ലൈഡ് റീലോഡ്</span>
+      </button>
+    </div>
+
+    <!-- Multi-Format Dynamic Export Box -->
+    <div class="export-card">
+      <div class="export-label">
+        <span>ഡൗൺലോഡ് ഫോർമാറ്റ് തിരഞ്ഞെടുക്കുക:</span>
+        <span id="exportingStatus" style="color: #34d399; font-size: 11px;">തയ്യാറാണ്</span>
+      </div>
+      <div class="export-buttons-grid">
+        <!-- Dynamic PNG from live HTML DOM -->
+        <button class="export-btn png" onclick="downloadCurrentPNG()" title="Render live HTML to 1080x1920 PNG">
+          <span class="btn-icon">🖼️</span>
+          <span>.PNG (1080x1920)</span>
+        </button>
+
+        <!-- Dynamic PDF from live HTML DOM -->
+        <button class="export-btn pdf" onclick="downloadCurrentPDF()" title="Export as 1080x1920 PDF">
+          <span class="btn-icon">📄</span>
+          <span>.PDF ഡോക്യുമെന്റ്</span>
+        </button>
+
+        <!-- Direct SVG Vector download -->
+        <a id="svgDownloadLink" class="export-btn svg" href="assets/slides_svg/slide_01.svg" download="ADSA_Guide_Slide_01.svg" title="Vector Editable SVG">
+          <span class="btn-icon">📐</span>
+          <span>.SVG വെക്ടർ</span>
+        </a>
+
+        <!-- Direct HTML Source download -->
+        <a id="htmlDownloadLink" class="export-btn html" href="assets/slides/slide_01.html" download="slide_01.html" title="Editable HTML Source">
+          <span class="btn-icon">🌐</span>
+          <span>.HTML സോഴ്സ്</span>
+        </a>
+      </div>
+
+      <!-- Download All Vector SVGs as ZIP -->
+      <a class="zip-all-btn" href="assets/adsa_guide_slides_svg_vector_editable.zip" download="adsa_guide_slides_svg_vector_editable.zip">
+        <span>📦</span>
+        <span>എല്ലാ 10 സ്ലൈഡുകളും .SVG വെക്ടർ ആർക്കൈവായി ഡൗൺലോഡ് ചെയ്യുക (.ZIP)</span>
+      </a>
+    </div>
+
+    <!-- Dots bar -->
+    <div class="dots" id="dotsContainer"></div>
   </div>
-
-  <div class="controls">
-    <div class="index-indicator">സ്ലൈഡ് <span id="currentIdx">01</span> / 10</div>
-    <a id="downloadLink" class="dl-btn" href="assets/1080x1920/slide_01.png" download="ADSA_Guide_Slide_01.png">
-      📥 സ്ലൈഡ് ഡൗൺലോഡ് (1080x1920)
-    </a>
-  </div>
-
-  <div class="dots" id="dotsContainer"></div>
 
   <!-- All Slides Gallery Grid -->
-  <div class="all-slides-grid">
-    <div class="grid-card" onclick="goToSlide(0)">
-      <img src="assets/1080x1920/slide_01.png" alt="Slide 1">
-      <div class="title">01 • കവർ പേജ്</div>
+  <div class="gallery-section">
+    <div class="gallery-heading">
+      <span>📚</span>
+      <span>എല്ലാ സ്ലൈഡുകളും (Gallery View)</span>
     </div>
-    <div class="grid-card" onclick="goToSlide(1)">
-      <img src="assets/1080x1920/slide_02.png" alt="Slide 2">
-      <div class="title">02 • ഘട്ടം 1: ലിങ്ക് തുറക്കുക</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(2)">
-      <img src="assets/1080x1920/slide_03.png" alt="Slide 3">
-      <div class="title">03 • ഘട്ടം 2: ലോഗിൻ</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(3)">
-      <img src="assets/1080x1920/slide_04.png" alt="Slide 4">
-      <div class="title">04 • ഘട്ടം 3: ഡാഷ്‌ബോർഡ്</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(4)">
-      <img src="assets/1080x1920/slide_05.png" alt="Slide 5">
-      <div class="title">05 • ഘട്ടം 4: ഭക്ഷണം അപ്‌ഡേറ്റ്</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(5)">
-      <img src="assets/1080x1920/slide_06.png" alt="Slide 6">
-      <div class="title">06 • ഘട്ടം 5: സേവ് ചെയ്യുക</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(6)">
-      <img src="assets/1080x1920/slide_07.png" alt="Slide 7">
-      <div class="title">07 • ഘട്ടം 6: ലോഗ് ഔട്ട്</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(7)">
-      <img src="assets/1080x1920/slide_08.png" alt="Slide 8">
-      <div class="title">08 • കട്ട്-ഓഫും നിയമങ്ങളും</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(8)">
-      <img src="assets/1080x1920/slide_09.png" alt="Slide 9">
-      <div class="title">09 • കളർ കോഡുകൾ</div>
-    </div>
-    <div class="grid-card" onclick="goToSlide(9)">
-      <img src="assets/1080x1920/slide_10.png" alt="Slide 10">
-      <div class="title">10 • ഹെൽപ്പ് & സപ്പോർട്ട്</div>
-    </div>
+    <div class="all-slides-grid" id="galleryGrid"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="status-toast" id="statusToast">
+    <span id="toastIcon">⏳</span>
+    <span id="toastMsg">ഡൗൺലോഡ് തയ്യാറാകുന്നു...</span>
   </div>
 
   <script>
+    const totalSlides = 10;
     let currentIndex = 0;
-    const slides = document.querySelectorAll('.slide-img');
-    const currentIdxEl = document.getElementById('currentIdx');
-    const downloadLink = document.getElementById('downloadLink');
-    const dotsContainer = document.getElementById('dotsContainer');
 
-    // Create dots
-    slides.forEach((_, i) => {
+    const slideTitles = [
+      { num: '01', icon: '🍽️', title: 'കവർ പേജ്' },
+      { num: '02', icon: '🌐', title: 'ഘട്ടം 1: ലിങ്ക് തുറക്കുക' },
+      { num: '03', icon: '🔑', title: 'ഘട്ടം 2: ലോഗിൻ ചെയ്യുക' },
+      { num: '04', icon: '👤', title: 'ഘട്ടം 3: ഡാഷ്‌ബോർഡ്' },
+      { num: '05', icon: '🍲', title: 'ഘട്ടം 4: ഭക്ഷണം അപ്‌ഡേറ്റ്' },
+      { num: '06', icon: '💾', title: 'ഘട്ടം 5: സേവ് ചെയ്യുക' },
+      { num: '07', icon: '🚪', title: 'ഘട്ടം 6: ലോഗ് ഔട്ട്' },
+      { num: '08', icon: '⏰', title: 'കട്ട്-ഓഫും നിയമങ്ങളും' },
+      { num: '09', icon: '🎨', title: 'കളർ കോഡുകൾ' },
+      { num: '10', icon: '💬', title: 'ഹെൽപ്പ് & സപ്പോർട്ട്' },
+    ];
+
+    const carouselContainer = document.getElementById('carouselContainer');
+    const slideFrame = document.getElementById('slideFrame');
+    const currentIdxEl = document.getElementById('currentIdx');
+    const dotsContainer = document.getElementById('dotsContainer');
+    const galleryGrid = document.getElementById('galleryGrid');
+    const svgDownloadLink = document.getElementById('svgDownloadLink');
+    const htmlDownloadLink = document.getElementById('htmlDownloadLink');
+    const statusToast = document.getElementById('statusToast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastMsg = document.getElementById('toastMsg');
+    const exportingStatus = document.getElementById('exportingStatus');
+
+    // Dynamically scale iframe to fill container with exact 1080x1920 ratio
+    function resizeIframe() {
+      const containerWidth = carouselContainer.clientWidth;
+      const scale = containerWidth / 1080;
+      slideFrame.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', resizeIframe);
+
+    // Build Dots
+    for (let i = 0; i < totalSlides; i++) {
       const dot = document.createElement('div');
-      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
       dot.onclick = () => goToSlide(i);
       dotsContainer.appendChild(dot);
+    }
+
+    // Build Gallery Grid Cards
+    slideTitles.forEach((item, i) => {
+      const card = document.createElement('div');
+      card.className = 'grid-card' + (i === 0 ? ' active' : '');
+      card.onclick = () => goToSlide(i);
+      card.innerHTML = `
+        <div class="grid-card-preview">
+          <div class="grid-card-icon">${item.icon}</div>
+          <div class="grid-card-badge">Slide ${item.num}</div>
+        </div>
+        <div class="title">${item.num} • ${item.title}</div>
+      `;
+      galleryGrid.appendChild(card);
     });
 
+    function getSlideNumStr(idx) {
+      return String(idx + 1).padStart(2, '0');
+    }
+
     function updateSlide() {
-      slides.forEach((s, i) => {
-        s.classList.toggle('active', i === currentIndex);
-      });
-      document.querySelectorAll('.dot').forEach((d, i) => {
+      const numStr = getSlideNumStr(currentIndex);
+      currentIdxEl.innerText = numStr;
+
+      // Update iframe source
+      slideFrame.src = `assets/slides/slide_${numStr}.html`;
+
+      // Update download links
+      svgDownloadLink.href = `assets/slides_svg/slide_${numStr}.svg`;
+      svgDownloadLink.download = `ADSA_Guide_Slide_${numStr}.svg`;
+
+      htmlDownloadLink.href = `assets/slides/slide_${numStr}.html`;
+      htmlDownloadLink.download = `slide_${numStr}.html`;
+
+      // Update active dot
+      document.querySelectorAll('.carousel-dot').forEach((d, i) => {
         d.classList.toggle('active', i === currentIndex);
       });
-      const numStr = String(currentIndex + 1).padStart(2, '0');
-      currentIdxEl.innerText = numStr;
-      downloadLink.href = 'assets/1080x1920/slide_' + numStr + '.png';
-      downloadLink.download = 'ADSA_Guide_Slide_' + numStr + '.png';
+
+      // Update active grid card
+      document.querySelectorAll('.grid-card').forEach((c, i) => {
+        c.classList.toggle('active', i === currentIndex);
+      });
     }
 
     function nextSlide() {
-      currentIndex = (currentIndex + 1) % slides.length;
+      currentIndex = (currentIndex + 1) % totalSlides;
       updateSlide();
     }
 
     function prevSlide() {
-      currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+      currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
       updateSlide();
     }
 
@@ -326,11 +639,150 @@
       updateSlide();
     }
 
+    function reloadCurrentSlide() {
+      const numStr = getSlideNumStr(currentIndex);
+      slideFrame.src = `assets/slides/slide_${numStr}.html?t=` + Date.now();
+      showToast('🔄', `സ്ലൈഡ് ${numStr} റീലോഡ് ചെയ്തു!`);
+    }
+
+    function showToast(icon, message, duration = 3000) {
+      toastIcon.innerText = icon;
+      toastMsg.innerText = message;
+      statusToast.classList.add('show');
+      setTimeout(() => {
+        statusToast.classList.remove('show');
+      }, duration);
+    }
+
+    // Dynamic PNG Generation from Live HTML DOM via html2canvas
+    async function downloadCurrentPNG() {
+      const numStr = getSlideNumStr(currentIndex);
+      showToast('⏳', `സ്ലൈഡ് ${numStr} PNG റെൻഡർ ചെയ്യുന്നു (1080x1920)...`, 6000);
+      exportingStatus.innerText = 'റെൻഡറിങ്...';
+
+      try {
+        let targetElement = null;
+        try {
+          if (slideFrame.contentDocument && slideFrame.contentDocument.body) {
+            targetElement = slideFrame.contentDocument.body;
+          }
+        } catch (e) {
+          console.warn('Iframe cross-origin guard, fallback to fetch', e);
+        }
+
+        if (!targetElement) {
+          // Fallback if iframe access is restricted: fetch html into hidden container
+          const res = await fetch(`assets/slides/slide_${numStr}.html`);
+          const htmlText = await res.text();
+          const tempDiv = document.createElement('div');
+          tempDiv.style.position = 'fixed';
+          tempDiv.style.left = '-9999px';
+          tempDiv.style.top = '0';
+          tempDiv.style.width = '1080px';
+          tempDiv.style.height = '1920px';
+          tempDiv.style.overflow = 'hidden';
+          tempDiv.innerHTML = htmlText;
+          document.body.appendChild(tempDiv);
+          targetElement = tempDiv;
+        }
+
+        // Render at true 1080x1920 resolution
+        const canvas = await html2canvas(targetElement, {
+          width: 1080,
+          height: 1920,
+          scale: 1,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#020f0a',
+          logging: false
+        });
+
+        // Trigger download
+        const imgData = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `ADSA_Guide_Slide_${numStr}.png`;
+        link.href = imgData;
+        link.click();
+
+        exportingStatus.innerText = 'ഡൗൺലോഡ് പൂർത്തിയായി!';
+        showToast('✅', `ADSA_Guide_Slide_${numStr}.png ഡൗൺലോഡ് ചെയ്തു!`);
+      } catch (err) {
+        console.error('PNG Export Error:', err);
+        exportingStatus.innerText = 'പരാജയപ്പെട്ടു';
+        showToast('❌', 'PNG ജനറേഷൻ പരാജയപ്പെട്ടു. ദയവായി വീണ്ടും ശ്രമിക്കുക.');
+      }
+    }
+
+    // Dynamic PDF Generation from Live HTML DOM via jsPDF
+    async function downloadCurrentPDF() {
+      const numStr = getSlideNumStr(currentIndex);
+      showToast('⏳', `സ്ലൈഡ് ${numStr} PDF തയ്യാറാക്കുന്നു...`, 6000);
+      exportingStatus.innerText = 'PDF തയ്യാറാക്കുന്നു...';
+
+      try {
+        let targetElement = null;
+        try {
+          if (slideFrame.contentDocument && slideFrame.contentDocument.body) {
+            targetElement = slideFrame.contentDocument.body;
+          }
+        } catch (e) {
+          console.warn('Iframe access', e);
+        }
+
+        if (!targetElement) {
+          const res = await fetch(`assets/slides/slide_${numStr}.html`);
+          const htmlText = await res.text();
+          const tempDiv = document.createElement('div');
+          tempDiv.style.position = 'fixed';
+          tempDiv.style.left = '-9999px';
+          tempDiv.style.top = '0';
+          tempDiv.style.width = '1080px';
+          tempDiv.style.height = '1920px';
+          tempDiv.style.overflow = 'hidden';
+          tempDiv.innerHTML = htmlText;
+          document.body.appendChild(tempDiv);
+          targetElement = tempDiv;
+        }
+
+        const canvas = await html2canvas(targetElement, {
+          width: 1080,
+          height: 1920,
+          scale: 1,
+          useCORS: true,
+          backgroundColor: '#020f0a',
+          logging: false
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        // 1080x1920 pt portrait PDF
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'pt',
+          format: [1080, 1920]
+        });
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, 1080, 1920);
+        pdf.save(`ADSA_Guide_Slide_${numStr}.pdf`);
+
+        exportingStatus.innerText = 'ഡൗൺലോഡ് പൂർത്തിയായി!';
+        showToast('✅', `ADSA_Guide_Slide_${numStr}.pdf ഡൗൺലോഡ് ചെയ്തു!`);
+      } catch (err) {
+        console.error('PDF Export Error:', err);
+        exportingStatus.innerText = 'പരാജയപ്പെട്ടു';
+        showToast('❌', 'PDF ജനറേഷൻ പരാജയപ്പെട്ടു.');
+      }
+    }
+
     // Keyboard navigation
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
     });
+
+    // Initial scale on load
+    slideFrame.onload = resizeIframe;
+    resizeIframe();
   </script>
 </body>
 </html>

@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&amp;family=Noto+Sans+Malayalam:wght@400;500;600;700;800;900&amp;display=swap');
+      
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      position: relative;
+    }
+    body {
+      background: radial-gradient(circle at 50% 15%, #0c382b 0%, #06221a 45%, #03120d 100%);
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', sans-serif;
+      color: #f1f5f9;
+    }
+    .glow-top {
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.05) 60%, transparent 80%);
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .glow-gold {
+      position: absolute;
+      bottom: 200px;
+      right: -100px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+    }
+    .pattern-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.035;
+      background-image: radial-gradient(#10b981 1.5px, transparent 1.5px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+    .slide-container {
+      width: 1080px;
+      height: 1920px;
+      padding: 80px 70px 70px 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      z-index: 2;
+    }
+    .top-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1.5px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+    }
+    .badge-pill .dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 12px #34d399; }
+    .slide-indexer {
+      font-size: 22px;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 8px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .slide-indexer span { color: #f59e0b; font-weight: 900; }
+    .title-block { margin-bottom: 36px; }
+    .main-title {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .main-subtitle { font-size: 26px; font-weight: 600; color: #94a3b8; line-height: 1.45; }
+    .mockup-wrapper {
+      position: relative;
+      border-radius: 28px;
+      background: #0f172a;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
+      overflow: hidden;
+      margin-bottom: 36px;
+    }
+    .mockup-header {
+      height: 48px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .mockup-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .mockup-dot.red { background: #ef4444; }
+    .mockup-dot.yellow { background: #f59e0b; }
+    .mockup-dot.green { background: #10b981; }
+    .mockup-address {
+      margin-left: 20px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 6px 24px;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #38bdf8;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+    .mockup-address::before { content: '🔒'; font-size: 12px; }
+    .mockup-content {
+      width: 100%;
+      height: 520px;
+      background: #02120b;
+      position: relative;
+      overflow: hidden;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    /* Vector Meal Selection UI */
+    .date-select-banner {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .date-text { font-size: 17px; font-weight: 800; color: #ffffff; }
+    .time-left-tag {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.15);
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+    .meal-toggle-item {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .meal-toggle-item.active { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.05); }
+    .meal-toggle-item.leave { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); }
+    .meal-info { display: flex; align-items: center; gap: 16px; }
+    .meal-icon { font-size: 28px; }
+    .meal-title { font-size: 18px; font-weight: 800; color: #ffffff; }
+    .meal-sub { font-size: 13px; color: #94a3b8; }
+    .toggle-ui {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-status-text { font-size: 14px; font-weight: 800; }
+    .toggle-status-text.green { color: #34d399; }
+    .toggle-status-text.red { color: #f87171; }
+    .switch-track {
+      width: 56px;
+      height: 32px;
+      border-radius: 9999px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .switch-track.on { background: #10b981; }
+    .switch-track.off { background: #475569; }
+    .switch-thumb {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ffffff;
+      position: absolute;
+      top: 3px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+    .switch-track.on .switch-thumb { right: 4px; }
+    .switch-track.off .switch-thumb { left: 4px; }
+
+    .callout-box {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.25) 100%);
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+      border-radius: 20px;
+      padding: 22px 28px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #a7f3d0;
+      line-height: 1.45;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    .callout-box .icon { font-size: 32px; flex-shrink: 0; }
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-bottom: 30px;
+    }
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 20px 24px;
+      backdrop-filter: blur(10px);
+    }
+    .step-item .index-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+    .step-item .text {
+      font-size: 24px;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.45;
+      padding-top: 4px;
+    }
+    .tip-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 18px;
+      padding: 18px 24px;
+      font-size: 21px;
+      font-weight: 600;
+      color: #fde68a;
+      line-height: 1.4;
+    }
+    .bottom-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-id { display: flex; align-items: center; gap: 16px; }
+    .brand-logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .brand-text-name { font-size: 20px; font-weight: 800; color: #ffffff; }
+    .brand-text-sub { font-size: 15px; color: #64748b; font-weight: 600; }
+    .portal-domain {
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: 800;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 8px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+  
+    </style>
+  </defs>
+  <foreignObject width="1080" height="1920">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width: 1080px; height: 1920px; overflow: hidden; position: relative;">
+      
+  <div class="pattern-overlay"></div>
+  <div class="glow-top"></div>
+  <div class="glow-gold"></div>
+
+  <div class="slide-container">
+    <div class="top-meta">
+      <div class="badge-pill">
+        <span class="dot"></span>
+        <span>ഘട്ടം 04 • ഭക്ഷണം അപ്‌ഡേറ്റ്</span>
+      </div>
+      <div class="slide-indexer">
+        <span>05</span> / 10
+      </div>
+    </div>
+
+    <div>
+      <div class="title-block">
+        <h2 class="main-title">ഭക്ഷണങ്ങൾ ക്രമീകരിക്കുക</h2>
+        <div class="main-subtitle">വേണ്ട ഭക്ഷണങ്ങൾ സെലക്ട് ചെയ്യുകയോ ഒഴിവാക്കുകയോ ചെയ്യുക</div>
+      </div>
+
+      <div class="mockup-wrapper">
+        <div class="mockup-header">
+          <span class="mockup-dot red"></span>
+          <span class="mockup-dot yellow"></span>
+          <span class="mockup-dot green"></span>
+          <div class="mockup-address">canteen.alathurpadidars.in/meals</div>
+        </div>
+        <div class="mockup-content">
+          <div class="date-select-banner">
+            <span class="date-text">📅 നാളെ • 2026 നവംബർ 03 (ചൊവ്വ)</span>
+            <span class="time-left-tag">⏳ കട്ട്-ഓഫിന് ഇനി 3 മണിക്കൂർ</span>
+          </div>
+
+          <!-- Breakfast ON -->
+          <div class="meal-toggle-item active">
+            <div class="meal-info">
+              <span class="meal-icon">☕</span>
+              <div>
+                <div class="meal-title">പ്രഭാതഭക്ഷണം (Breakfast)</div>
+                <div class="meal-sub">രാവിലെ 07:00 - 08:30</div>
+              </div>
+            </div>
+            <div class="toggle-ui">
+              <span class="toggle-status-text green">കഴിക്കുന്നു (ON)</span>
+              <div class="switch-track on"><div class="switch-thumb"></div></div>
+            </div>
+          </div>
+
+          <!-- Lunch ON -->
+          <div class="meal-toggle-item active">
+            <div class="meal-info">
+              <span class="meal-icon">🍛</span>
+              <div>
+                <div class="meal-title">ഉച്ചഭക്ഷണം (Lunch)</div>
+                <div class="meal-sub">ഉച്ചയ്ക്ക് 12:30 - 02:00</div>
+              </div>
+            </div>
+            <div class="toggle-ui">
+              <span class="toggle-status-text green">കഴിക്കുന്നു (ON)</span>
+              <div class="switch-track on"><div class="switch-thumb"></div></div>
+            </div>
+          </div>
+
+          <!-- Dinner OFF (Leave) -->
+          <div class="meal-toggle-item leave">
+            <div class="meal-info">
+              <span class="meal-icon">🍲</span>
+              <div>
+                <div class="meal-title">അത്താഴം (Dinner)</div>
+                <div class="meal-sub">രാത്രി 08:00 - 09:30</div>
+              </div>
+            </div>
+            <div class="toggle-ui">
+              <span class="toggle-status-text red">അവധി (OFF)</span>
+              <div class="switch-track off"><div class="switch-thumb"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout-box">
+        <span class="icon">👉</span>
+        <span>ആവശ്യമുള്ള ഭക്ഷണങ്ങൾ 'ഓൺ' ചെയ്യുക; ആവശ്യമില്ലാത്തവ 'ഓഫ്' ചെയ്ത് അവധി രേഖപ്പെടുത്തുക.</span>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="index-badge">A</div>
+          <div class="text">ഡാഷ്‌ബോർഡിൽ തീയതി തിരഞ്ഞെടുക്കുക (നാളെ അല്ലെങ്കിൽ ഭാവി തീയതികൾ).</div>
+        </div>
+        <div class="step-item">
+          <div class="index-badge">B</div>
+          <div class="text">പ്രഭാതഭക്ഷണം, ഉച്ചഭക്ഷണം, അത്താഴം എന്നിവയിൽ ആവശ്യമില്ലാത്തവ ഓഫ് ആക്കുക.</div>
+        </div>
+        <div class="step-item">
+          <div class="index-badge">C</div>
+          <div class="text">മാറ്റങ്ങൾ വരുത്തിയ ശേഷം അടിയിലുള്ള 'Save Changes' ബട്ടൺ അമർത്തുക.</div>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        💡 നാളത്തെ ഭക്ഷണത്തിൽ മാറ്റം വരുത്താൻ രാത്രി 11:00 മണി വരെ മാത്രമേ സാധിക്കൂ.
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="brand-id">
+        <div class="brand-logo-icon">A</div>
+        <div>
+          <div class="brand-text-name">ADSA T-Board</div>
+          <div class="brand-text-sub">Alathurpadi Dars Students Association</div>
+        </div>
+      </div>
+      <div class="portal-domain">canteen.alathurpadidars.in</div>
+    </div>
+  </div>
+
+    </div>
+  </foreignObject>
+</svg>

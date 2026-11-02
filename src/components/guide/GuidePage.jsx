@@ -27,13 +27,14 @@ import {
 } from './GuideModules';
 import WalkthroughTour from './WalkthroughTour';
 import useSEO from '../../hooks/useSEO';
+import { useTourEngine } from '../tour/TourEngineContext';
 
 const GuidePage = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
+  const { openMissionHub } = useTourEngine();
   const [activeTab, setActiveTab] = useState('color-system');
-  const [isTourOpen, setIsTourOpen] = useState(false);
 
   useSEO({
     title: 'System Guide & Visual User Manual',
@@ -83,8 +84,8 @@ const GuidePage = () => {
           </button>
           <button
             onClick={() => {
-              feedback('tick');
-              setIsTourOpen(true);
+              feedback('pop');
+              openMissionHub();
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition-all active:scale-95"
           >
@@ -146,9 +147,6 @@ const GuidePage = () => {
         {activeTab === 'kitchen-sheets' && <KitchenAndSheets />}
         {activeTab === 'shortcuts' && <ShortcutsAndGestures />}
       </div>
-
-      {/* Spotlight Tour Trigger */}
-      <WalkthroughTour isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} />
     </div>
   );
 };

@@ -353,6 +353,7 @@ export default function DiningCalendarHeader({
         <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-end">
           <button
             type="button"
+            data-tour="bulk-pattern-button"
             onClick={() => setIsExpanded((prev) => !prev)}
             aria-expanded={isExpanded}
             className={`w-full sm:w-auto px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 select-none cursor-pointer shadow-xs ${

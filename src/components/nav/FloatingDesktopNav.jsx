@@ -11,12 +11,14 @@ import {
   KeyRound,
   Sparkles,
   Settings,
+  Compass,
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
 import { usePreferences } from '../../store/PreferencesContext';
 import { useSidebar } from './SidebarContext';
+import { useTourEngine } from '../tour/TourEngineContext';
 import LanguageSwitch from '../LanguageSwitch';
 import ThemeSwitch from '../ThemeSwitch';
 import NotificationBell from '../notifications/NotificationBell';
@@ -89,6 +91,7 @@ export default function FloatingDesktopNav({
   const { t, lang } = useLanguage();
   const { feedback } = useFeedback();
   const { preferences } = usePreferences();
+  const { openMissionHub } = useTourEngine();
   const { nowDate, timeParts, formatTime, dayFull } = useWorldTime('Asia/Kolkata');
   const { sidebarOpen, isDesktop } = useSidebar();
 
@@ -238,6 +241,17 @@ export default function FloatingDesktopNav({
           active={false}
           icon={Search}
           tooltip="Search pages (⌘K)"
+        />
+
+        {/* 6.5 Interactive Tour Hub */}
+        <NavTabButton
+          onClick={() => {
+            feedback('pop');
+            openMissionHub();
+          }}
+          active={false}
+          icon={Compass}
+          tooltip="Interactive Live Tour & Quests"
         />
 
         {/* 7. Notification Bell */}

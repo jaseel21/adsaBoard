@@ -549,6 +549,26 @@ export const NAV_ITEMS = [
     showInDesktopBar: false,
     keywords: ['about studio', 'faculty crud', 'mudarrisun', 'committee manager', 'tenure', 'canteen wing crud', 'അബൗട്ട്'],
   },
+  {
+    id: 'admin_tour_campaign',
+    path: '/admin/tour',
+    aliases: ['/admin/campaign', '/admin/onboarding'],
+    labelEn: 'Tour & Campaign Studio',
+    labelMl: 'ലൈവ് ടൂർ കാമ്പെയ്ൻ',
+    shortLabelEn: 'Tour Studio',
+    shortLabelMl: 'ടൂർ സ്റ്റുഡിയോ',
+    category: NAV_CATEGORIES.GOVERNANCE.id,
+    icon: Compass,
+    descriptionEn: 'Configure automated walkthrough campaigns, audience targeting, active dates & time windows',
+    descriptionMl: 'ഓട്ടോമേറ്റഡ് ടൂർ കാമ്പെയ്നുകൾ, തീയതികൾ, സമയപരിധികൾ എന്നിവ ക്രമീകരിക്കൽ',
+    allowedRoles: [
+      ROLES.CENTRAL_COMMITTEE,
+      ROLES.CANTEEN_COMMITTEE,
+      ROLES.DEVELOPER,
+    ],
+    showInDesktopBar: false,
+    keywords: ['tour studio', 'onboarding', 'campaigns', 'walkthrough', 'live tour', 'ടൂർ'],
+  },
 
   // ================= 5. CAMPUS DINING & RESIDENTS =================
   {

@@ -302,6 +302,7 @@ export default function DietaryChangeRequestModal({
                     <button
                       type="button"
                       key={pref.id}
+                      data-tour="dietary-option-grid"
                       onClick={() => handleTogglePref(pref.id)}
                       className={`p-3 rounded-2xl border text-left transition-all relative flex items-center justify-between gap-3 ${
                         isDraftIncluded
@@ -429,6 +430,7 @@ export default function DietaryChangeRequestModal({
                 </span>
               </div>
               <textarea
+                data-tour="dietary-reason-input"
                 value={reasonText}
                 onChange={(e) => setReasonText(e.target.value)}
                 placeholder={t(
@@ -468,6 +470,7 @@ export default function DietaryChangeRequestModal({
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
+                data-tour="dietary-submit-btn"
                 onClick={handleSubmit}
                 disabled={submitting || changes.length === 0}
                 className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black text-white shadow-md transition-all ${

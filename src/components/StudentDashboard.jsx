@@ -47,6 +47,7 @@ import {
   Ban,
   Receipt,
   PowerOff,
+  Compass,
 } from 'lucide-react';
 
 import { useLanguage } from '../store/LanguageContext';
@@ -85,6 +86,7 @@ import ExportActionMenu from './export/ExportActionMenu';
 import TokenBoardGuideModal from './guide/TokenBoardGuideModal';
 import { getCategoryIcon } from './avoiders/dietaryIcons';
 import useSEO from '../hooks/useSEO';
+import { useTourEngine } from './tour/TourEngineContext';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -93,6 +95,7 @@ export default function StudentDashboard() {
   const portalStatus = usePortalStatus();
   const { user, role } = useContext(AuthContext);
   const { stdata } = useContext(DataOfOne);
+  const { openMissionHub, startTour } = useTourEngine();
 
   // Synchronize dynamic SEO metadata
   useSEO({
@@ -602,7 +605,7 @@ export default function StudentDashboard() {
       {/* ========================================================================= */}
       {/* 2. HERO DINING OVERVIEW: LEFT (TITLE & DATE) | RIGHT (3D FLIP CARDS)      */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden rounded-3xl p-5 sm:p-7 md:p-9 bg-gradient-to-br from-emerald-900 via-emerald-950 to-[#07130e] text-white border border-emerald-500/30 shadow-2xl">
+      <section data-tour="hero-ist-clock" className="relative overflow-hidden rounded-3xl p-5 sm:p-7 md:p-9 bg-gradient-to-br from-emerald-900 via-emerald-950 to-[#07130e] text-white border border-emerald-500/30 shadow-2xl">
         
         {/* Ambient background glows */}
         <div className="absolute top-0 right-0 -mt-16 -mr-16 w-96 h-96 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
@@ -776,7 +779,7 @@ export default function StudentDashboard() {
               </p>
             </div>
 
-            {/* Cutoff Info Badge */}
+            {/* Cutoff Info Badge & Quick Actions */}
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-emerald-200/90 font-medium">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-[11px]">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
@@ -792,6 +795,32 @@ export default function StudentDashboard() {
                     : (portalStatus.isUpdationWindowOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Closed'))}
                 </strong>
               </span>
+
+              {/* Portal CTA with Tour Anchor */}
+              <Link
+                to="/student"
+                data-tour="update-token-cta"
+                onClick={() => feedback('tick')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-[11px] shadow-md border border-emerald-400/40 transition-all active:scale-95"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>{t('updateMyToken', 'Update My Token')}</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+
+              {/* Live Tour Quick Launcher */}
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('pop');
+                  openMissionHub();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] border border-white/15 transition-all active:scale-95 cursor-pointer"
+                title={t('startTour', 'Start Interactive Guide')}
+              >
+                <Compass className="w-3.5 h-3.5 text-emerald-300 animate-spin-slow" />
+                <span>{t('liveTour', 'Live Tour')}</span>
+              </button>
             </div>
           </div>
 
@@ -917,7 +946,7 @@ export default function StudentDashboard() {
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             
             {/* Breakfast ↔ Lunch Active Board Switcher */}
-            <div className="inline-flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 shrink-0">
+            <div data-tour="meal-switcher-toggle" className="inline-flex p-1 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -964,7 +993,7 @@ export default function StudentDashboard() {
             </div>
 
             {/* Instant Search Box */}
-            <div className="relative flex-1 min-w-0">
+            <div data-tour="search-filter-input" className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
@@ -991,7 +1020,7 @@ export default function StudentDashboard() {
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 self-stretch lg:self-auto shrink-0">
               
               {/* Category Segmented Control (All / By Batch / By Section) */}
-              <div className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-semibold overflow-x-auto max-w-full scrollbar-none flex-1 sm:flex-none">
+              <div data-tour="board-view-tabs" className="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-semibold overflow-x-auto max-w-full scrollbar-none flex-1 sm:flex-none">
                 <button
                   type="button"
                   onClick={() => {
@@ -1749,7 +1778,7 @@ export default function StudentDashboard() {
             </div>
           ) : (
             /* Default: Tactile Square Matrix View (Consistent with Master Board) */
-            <div className="flex flex-wrap justify-center gap-2 min-[380px]:gap-2.5 sm:gap-3 py-2">
+            <div data-tour="token-grid" className="flex flex-wrap justify-center gap-2 min-[380px]:gap-2.5 sm:gap-3 py-2">
               {filteredDocuments.map((doc) => {
                 const isOn = getEffectiveStudentMealStatus(
                   doc,
@@ -2155,6 +2184,10 @@ export default function StudentDashboard() {
       <TokenBoardGuideModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
+        onStartTour={() => {
+          setIsGuideOpen(false);
+          openMissionHub();
+        }}
       />
 
       {/* ========================================================================= */}

@@ -32,6 +32,7 @@ import {
   VisualSlidePostModule,
 } from './GuideModules';
 import { guideSprings } from './guideAnimations';
+import { useTourEngine } from '../tour/TourEngineContext';
 
 const TABS = [
   { id: 'visual-slides', label: 'Slide Guide', labelMl: 'സ്ലൈഡ് ഗൈഡ്', icon: Sparkles },
@@ -47,8 +48,14 @@ const TABS = [
 const TokenBoardGuideModal = ({ isOpen, onClose, onStartTour }) => {
   const { t, lang } = useLanguage();
   const { feedback, soundEnabled, setSoundEnabled, hapticsEnabled, setHapticsEnabled } = useFeedback();
+  const { openMissionHub } = useTourEngine();
   const [activeTab, setActiveTab] = useState('color-system');
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleTourLaunch = onStartTour || (() => {
+    onClose();
+    openMissionHub();
+  });
 
   // Close on Escape key
   useEffect(() => {
@@ -120,19 +127,17 @@ const TokenBoardGuideModal = ({ isOpen, onClose, onStartTour }) => {
             {/* Header Right Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               {/* Guided Tour Trigger Button */}
-              {onStartTour && (
-                <button
-                  onClick={() => {
-                    feedback('tick');
-                    onStartTour();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold text-xs border border-white/20 transition-all active:scale-95 shadow-sm"
-                  title={t('liveTour', 'Live Tour')}
-                >
-                  <Compass className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('liveTour', 'Live Tour')}</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  feedback('tick');
+                  handleTourLaunch();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold text-xs border border-white/20 transition-all active:scale-95 shadow-sm"
+                title={t('liveTour', 'Live Tour')}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('liveTour', 'Live Tour')}</span>
+              </button>
 
               {/* Fullscreen Toggle (Desktop) */}
               <button
