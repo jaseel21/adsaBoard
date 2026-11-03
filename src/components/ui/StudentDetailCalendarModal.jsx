@@ -1496,6 +1496,7 @@ export default function StudentDetailCalendarModal({
                 ) : (
                   <button
                     type="button"
+                    data-tour="token-modal-login-btn"
                     onClick={() => {
                       feedback('tick');
                       onClose();

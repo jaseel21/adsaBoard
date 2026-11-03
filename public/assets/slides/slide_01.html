@@ -5,13 +5,9 @@
   <title>Slide 1 - ADSA കാന്റീൻ ടോക്കൺ ബോർഡ്</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Noto+Sans+Malayalam:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Arima:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 1080px;
       height: 1920px;
@@ -19,12 +15,10 @@
       position: relative;
     }
     body {
-      background: radial-gradient(circle at 50% 15%, #0c382b 0%, #06221a 45%, #03120d 100%);
-      font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', sans-serif;
+      background: radial-gradient(circle at 50% 12%, #0c382b 0%, #06221a 40%, #020f0a 100%);
+      font-family: 'Plus Jakarta Sans', 'Arima', sans-serif;
       color: #f1f5f9;
     }
-
-    /* Ambient background glow layers */
     .glow-top {
       position: absolute;
       top: -120px;
@@ -32,36 +26,32 @@
       transform: translateX(-50%);
       width: 900px;
       height: 600px;
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.05) 60%, transparent 80%);
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(5, 150, 105, 0.08) 60%, transparent 80%);
       filter: blur(80px);
       pointer-events: none;
     }
     .glow-gold {
       position: absolute;
-      bottom: 200px;
-      right: -100px;
+      bottom: 150px;
+      right: -80px;
       width: 600px;
       height: 600px;
-      background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
       filter: blur(90px);
       pointer-events: none;
     }
-
-    /* Islamic Geometric Pattern Accent */
     .pattern-overlay {
       position: absolute;
       inset: 0;
-      opacity: 0.035;
+      opacity: 0.04;
       background-image: radial-gradient(#10b981 1.5px, transparent 1.5px);
       background-size: 32px 32px;
       pointer-events: none;
     }
-
-    /* Outer Wrapper with Safe Padding */
     .slide-container {
       width: 1080px;
       height: 1920px;
-      padding: 80px 70px 70px 70px;
+      padding: 70px 70px 60px 70px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -69,208 +59,212 @@
       z-index: 2;
     }
 
-    /* Header Bar */
+    /* Top Metadata */
     .top-meta {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       margin-bottom: 24px;
     }
-    .badge-pill {
+    .step-pill {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 24px;
+      padding: 10px 22px;
       border-radius: 9999px;
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(16, 185, 129, 0.18);
       border: 1.5px solid rgba(16, 185, 129, 0.4);
-      color: #6ee7b7;
+      color: #34d399;
       font-size: 20px;
       font-weight: 800;
       letter-spacing: 0.5px;
-      text-transform: uppercase;
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
     }
-    .badge-pill .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 12px #34d399;
-    }
-    .slide-indexer {
-      font-size: 22px;
+    .step-counter {
+      font-size: 20px;
       font-weight: 800;
       color: #94a3b8;
-      letter-spacing: 1px;
-      background: rgba(255, 255, 255, 0.06);
-      padding: 8px 20px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .slide-indexer span {
-      color: #f59e0b;
-      font-weight: 900;
     }
 
-    /* Title Section */
-    .title-block {
-      margin-bottom: 36px;
+    /* Grand Hero Section */
+    .hero-section {
+      text-align: center;
+      margin-top: 10px;
     }
-    .main-title {
-      font-size: 52px;
+    .hero-crest {
+      width: 110px;
+      height: 110px;
+      border-radius: 32px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      box-shadow: 0 16px 40px rgba(16, 185, 129, 0.45);
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: 58px;
       font-weight: 900;
-      line-height: 1.25;
-      color: #ffffff;
-      margin-bottom: 14px;
-      letter-spacing: -0.5px;
-      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 30%, #a7f3d0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
     }
-    .main-subtitle {
-      font-size: 26px;
-      font-weight: 600;
-      color: #94a3b8;
+    .hero-subtitle {
+      font-size: 25px;
+      color: #fde68a;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .hero-desc {
+      font-size: 21px;
+      color: #cbd5e1;
       line-height: 1.45;
+      max-width: 860px;
+      margin: 0 auto;
     }
 
-    /* Device Mockup Frame */
-    .mockup-wrapper {
-      position: relative;
-      border-radius: 28px;
-      background: #0f172a;
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
-      overflow: hidden;
-      margin-bottom: 36px;
+    /* 4 Feature Highlights Grid */
+    .feature-highlights-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 24px 0;
     }
-    .mockup-header {
-      height: 44px;
-      background: #1e293b;
+    .feat-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 22px 24px;
       display: flex;
       align-items: center;
-      padding: 0 20px;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 18px;
     }
-    .mockup-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
+    .feat-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
     }
-    .mockup-dot.red { background: #ef4444; }
-    .mockup-dot.yellow { background: #f59e0b; }
-    .mockup-dot.green { background: #10b981; }
-    .mockup-address {
-      margin-left: 20px;
-      background: rgba(0, 0, 0, 0.35);
-      padding: 4px 24px;
-      border-radius: 8px;
+    .feat-text h4 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+    .feat-text p {
       font-size: 15px;
       color: #94a3b8;
-      font-family: monospace;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .mockup-address::before {
-      content: '🔒';
-      font-size: 12px;
-    }
-    .mockup-content {
-      width: 100%;
-      height: 540px;
-      overflow: hidden;
-      background: #090e0d;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .mockup-content img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: top center;
+      line-height: 1.35;
     }
 
-    /* Callout Banner */
-    .callout-box {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.25) 100%);
-      border: 1.5px solid rgba(16, 185, 129, 0.35);
-      border-radius: 20px;
-      padding: 22px 28px;
-      font-size: 24px;
-      font-weight: 700;
-      color: #a7f3d0;
-      line-height: 1.45;
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      margin-bottom: 30px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    /* 6 Steps Roadmap Row */
+    .roadmap-wrapper {
+      background: rgba(6, 35, 26, 0.8);
+      border: 1.5px solid rgba(16, 185, 129, 0.3);
+      border-radius: 24px;
+      padding: 24px 28px;
     }
-    .callout-box .icon {
-      font-size: 32px;
-      flex-shrink: 0;
+    .roadmap-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+      text-align: center;
     }
-
-    /* Action Steps List */
-    .step-list {
+    .roadmap-steps-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+    .roadmap-step {
       display: flex;
       flex-direction: column;
-      gap: 18px;
-      margin-bottom: 30px;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
     }
-    .step-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 20px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 20px 24px;
-      backdrop-blur: 10px;
-    }
-    .step-item .index-badge {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #ffffff;
-      font-size: 22px;
-      font-weight: 900;
+    .step-number-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #059669);
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+      font-size: 18px;
+      font-weight: 900;
+      color: white;
     }
-    .step-item .text {
-      font-size: 24px;
-      font-weight: 600;
+    .step-label {
+      font-size: 14px;
+      font-weight: 700;
       color: #e2e8f0;
-      line-height: 1.45;
-      padding-top: 4px;
+      line-height: 1.3;
     }
 
-    /* Pro Tip Box */
-    .tip-box {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      border-radius: 18px;
-      padding: 18px 24px;
-      font-size: 21px;
-      font-weight: 600;
-      color: #fde68a;
-      line-height: 1.4;
+    /* Verified Demo User Banner */
+    .demo-user-banner {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+      border-radius: 20px;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .demo-user-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .demo-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+    }
+    .demo-info-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .demo-info-sub {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .demo-status-pill {
+      font-size: 14px;
+      font-weight: 800;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.2);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      border: 1px solid rgba(16, 185, 129, 0.35);
     }
 
     /* Bottom Brand Bar */
     .bottom-bar {
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
       padding-top: 24px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
     }
     .brand-id {
       display: flex;
@@ -278,332 +272,131 @@
       gap: 16px;
     }
     .brand-logo-icon {
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      background: linear-gradient(135deg, #10b981, #047857);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 20px;
+      font-size: 24px;
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.2);
     }
     .brand-text-name {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 800;
       color: #ffffff;
     }
     .brand-text-sub {
       font-size: 15px;
-      color: #64748b;
-      font-weight: 600;
+      color: #94a3b8;
     }
     .portal-domain {
+      font-size: 19px;
+      font-weight: 700;
+      color: #34d399;
       font-family: monospace;
-      font-size: 20px;
-      font-weight: 800;
-      color: #34d399;
-      background: rgba(16, 185, 129, 0.1);
-      padding: 8px 20px;
-      border-radius: 12px;
-      border: 1px solid rgba(16, 185, 129, 0.25);
-    }
-
-    /* COVER SLIDE SPECIFICS */
-    .cover-hero {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      margin: 40px 0;
-    }
-    .cover-crest {
-      width: 140px;
-      height: 140px;
-      border-radius: 36px;
-      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 64px;
-      box-shadow: 0 20px 50px rgba(16, 185, 129, 0.35);
-      border: 3px solid rgba(255, 255, 255, 0.25);
-      margin-bottom: 30px;
-    }
-    .cover-title {
-      font-size: 64px;
-      font-weight: 900;
-      line-height: 1.2;
-      color: #ffffff;
-      margin-bottom: 20px;
-    }
-    .cover-subtitle {
-      font-size: 32px;
-      font-weight: 700;
-      color: #34d399;
-      margin-bottom: 24px;
-    }
-    .cover-desc {
-      font-size: 24px;
-      font-weight: 500;
-      color: #94a3b8;
-      max-width: 860px;
-      line-height: 1.55;
-      margin-bottom: 40px;
-    }
-    .cover-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      width: 100%;
-      margin-bottom: 40px;
-    }
-    .cover-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      border-radius: 24px;
-      padding: 30px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      text-align: left;
-      gap: 12px;
-    }
-    .cover-card .icon {
-      font-size: 40px;
-    }
-    .cover-card .card-title {
-      font-size: 26px;
-      font-weight: 800;
-      color: #ffffff;
-    }
-    .cover-card .card-desc {
-      font-size: 20px;
-      color: #94a3b8;
-      font-weight: 500;
-      line-height: 1.4;
-    }
-    .cover-user-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      background: rgba(245, 158, 11, 0.12);
-      border: 1.5px solid rgba(245, 158, 11, 0.35);
-      padding: 14px 28px;
-      border-radius: 16px;
-      font-size: 22px;
-      font-weight: 700;
-      color: #fde68a;
-    }
-
-    /* RULES SLIDE SPECIFICS */
-    .rules-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      margin-bottom: 30px;
-    }
-    .rule-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1.5px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      padding: 28px 32px;
-      display: flex;
-      align-items: flex-start;
-      gap: 26px;
-    }
-    .rule-card.highlight {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(153, 27, 27, 0.2) 100%);
-      border-color: rgba(239, 68, 68, 0.35);
-    }
-    .rule-icon {
-      font-size: 44px;
-      flex-shrink: 0;
-    }
-    .rule-title {
-      font-size: 28px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 8px;
-    }
-    .rule-desc {
-      font-size: 22px;
-      font-weight: 500;
-      color: #cbd5e1;
-      line-height: 1.5;
-    }
-
-    /* LEGEND SLIDE SPECIFICS */
-    .legend-list {
-      display: flex;
-      flex-direction: column;
-      gap: 22px;
-      margin-bottom: 30px;
-    }
-    .legend-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 22px;
-      padding: 24px 28px;
-      display: flex;
-      align-items: flex-start;
-      gap: 24px;
-    }
-    .legend-indicator {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      flex-shrink: 0;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-    .legend-title {
-      font-size: 26px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 4px;
-    }
-    .legend-sub {
-      font-size: 20px;
-      font-weight: 700;
-      color: #38bdf8;
-      margin-bottom: 6px;
-    }
-    .legend-desc {
-      font-size: 21px;
-      font-weight: 500;
-      color: #94a3b8;
-      line-height: 1.45;
-    }
-
-    /* SUPPORT SLIDE SPECIFICS */
-    .support-block {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      margin: 30px 0;
-    }
-    .support-item {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 24px 30px;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-    }
-    .support-item .icon {
-      font-size: 38px;
-      flex-shrink: 0;
-    }
-    .support-item .lbl {
-      font-size: 20px;
-      color: #94a3b8;
-      font-weight: 600;
-    }
-    .support-item .val {
-      font-size: 24px;
-      color: #ffffff;
-      font-weight: 800;
-    }
-    .quote-box {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 78, 59, 0.25) 100%);
-      border-left: 6px solid #10b981;
-      border-radius: 16px;
-      padding: 30px;
-      font-size: 26px;
-      font-weight: 700;
-      font-style: italic;
-      color: #e2e8f0;
-      line-height: 1.55;
-      margin: 30px 0;
-    }
-    .association-box {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .association-title {
-      font-size: 28px;
-      font-weight: 900;
-      color: #ffffff;
-      margin-bottom: 8px;
-    }
-    .association-loc {
-      font-size: 22px;
-      color: #34d399;
-      font-weight: 700;
     }
   </style>
 </head>
 <body>
-  <div class="pattern-overlay"></div>
   <div class="glow-top"></div>
   <div class="glow-gold"></div>
+  <div class="pattern-overlay"></div>
 
   <div class="slide-container">
-    <!-- Top Header -->
+    <!-- Top Metadata -->
     <div class="top-meta">
-      <div class="badge-pill">
-        <span class="dot"></span>
+      <span class="step-pill">
+        <span>📖</span>
         <span>ഔദ്യോഗിക വിദ്യാർത്ഥി ഗൈഡ്</span>
+      </span>
+      <span class="step-counter">Slide 01 / 10</span>
+    </div>
+
+    <!-- Grand Hero -->
+    <div class="hero-section">
+      <div class="hero-crest">🍽️</div>
+      <h1 class="hero-title">ADSA കാന്റീൻ ടോക്കൺ ബോർഡ്</h1>
+      <div class="hero-subtitle">ഭക്ഷണ ക്രമീകരണങ്ങൾ എങ്ങനെ എളുപ്പത്തിൽ നിയന്ത്രിക്കാം?</div>
+      <p class="hero-desc">ലോഗിൻ ചെയ്യുന്നത് മുതൽ ലീവുകൾ രേഖപ്പെടുത്തുന്നതും സേവ് ചെയ്യുന്നതും വരെയുള്ള സമ്പൂർണ്ണ ഘട്ടങ്ങൾ വിശദമായി മനസ്സിലാക്കാം.</p>
+    </div>
+
+    <!-- 4 Features Highlight Matrix -->
+    <div class="feature-highlights-grid">
+      <div class="feat-card">
+        <div class="feat-icon-box">⏰</div>
+        <div class="feat-text">
+          <h4>11:00 PM കട്ട്-ഓഫ്</h4>
+          <p>നാളെത്തേക്കുള്ള മാറ്റങ്ങൾ ഇന്ന് രാത്രി 11 മണിക്ക് മുമ്പ് സേവ് ചെയ്യാം</p>
+        </div>
       </div>
-      <div class="slide-indexer">
-        <span>01</span> / 10
+      <div class="feat-card">
+        <div class="feat-icon-box">⚡</div>
+        <div class="feat-text">
+          <h4>തത്സമയ സിങ്കിംഗ്</h4>
+          <p>നിങ്ങൾ മാറ്റിയ ഓരോ നേരവും ലൈവായി ടോക്കൺ ബോർഡിൽ കാണാം</p>
+        </div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-box">🔒</div>
+        <div class="feat-text">
+          <h4>ഓട്ടോ ലോഗ്ഔട്ട്</h4>
+          <p>5 മിനിറ്റ് ഇൻആക്ടീവ് ആയാൽ സിസ്റ്റം സ്വയം സുരക്ഷിതമാകും</p>
+        </div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon-box">📅</div>
+        <div class="feat-text">
+          <h4>ഭാവി തീയതികൾ</h4>
+          <p>വരാനിരിക്കുന്ന ഏതൊരു ദിവസത്തെയും അവധികൾ 24/7 രേഖപ്പെടുത്താം</p>
+        </div>
       </div>
     </div>
 
-    <!-- MAIN BODY BASED ON SLIDE TYPE -->
-    
-      <!-- COVER CONTENT -->
-      <div class="cover-hero">
-        <div class="cover-crest">🍽️</div>
-        <h1 class="cover-title">ADSA കാന്റീൻ ടോക്കൺ ബോർഡ്</h1>
-        <div class="cover-subtitle">ഭക്ഷണ ക്രമീകരണങ്ങൾ എങ്ങനെ എളുപ്പത്തിൽ നിയന്ത്രിക്കാം?</div>
-        <p class="cover-desc">ലോഗിൻ ചെയ്യുന്നത് മുതൽ ലീവുകൾ രേഖപ്പെടുത്തുന്നതും സേവ് ചെയ്യുന്നതും വരെയുള്ള സമ്പൂർണ്ണ ഘട്ടങ്ങൾ വിശദമായി മനസ്സിലാക്കാം.</p>
-
-        <div class="cover-grid">
-          
-            <div class="cover-card">
-              <span class="icon">🌐</span>
-              <div class="card-title">24/7 പോർട്ടൽ ലഭ്യത</div>
-              <div class="card-desc">ഏതു സമയത്തും മൊബൈലിലും കമ്പ്യൂട്ടറിലും</div>
-            </div>
-          
-            <div class="cover-card">
-              <span class="icon">⏰</span>
-              <div class="card-title">11:00 PM കട്ട്-ഓഫ്</div>
-              <div class="card-desc">അടുത്ത ദിവസത്തെ മാറ്റങ്ങൾക്കുള്ള അവസാന സമയം</div>
-            </div>
-          
-            <div class="cover-card">
-              <span class="icon">🔒</span>
-              <div class="card-title">5 മിനിറ്റ് ഓട്ടോ ലോഗൗട്ട്</div>
-              <div class="card-desc">പബ്ലിക് സിസ്റ്റങ്ങളിൽ വിദ്യാർത്ഥി ഡാറ്റാ സുരക്ഷ</div>
-            </div>
-          
-            <div class="cover-card">
-              <span class="icon">📅</span>
-              <div class="card-title">മുൻകൂട്ടിയുള്ള അവധികൾ</div>
-              <div class="card-desc">ഭാവി തീയതികളിലെ ലീവുകൾ എപ്പോൾ വേണമെങ്കിലും</div>
-            </div>
-          
+    <!-- 6-Steps Roadmap Matrix -->
+    <div class="roadmap-wrapper">
+      <div class="roadmap-title">പ്രധാന 6 ഘട്ടങ്ങൾ ഒറ്റനോട്ടത്തിൽ:</div>
+      <div class="roadmap-steps-row">
+        <div class="roadmap-step">
+          <div class="step-number-circle">1</div>
+          <div class="step-label">വെബ്സൈറ്റ് തുറക്കുക</div>
         </div>
-
-        <div class="cover-user-badge">
-          <span>👤 ഉദാഹരണ ഡെമോ: <strong>Token #042 (അഹ്‌മദ് അലി - Ahmed Ali)</strong></span>
+        <div class="roadmap-step">
+          <div class="step-number-circle">2</div>
+          <div class="step-label">ലോഗിൻ ചെയ്യുക</div>
+        </div>
+        <div class="roadmap-step">
+          <div class="step-number-circle">3</div>
+          <div class="step-label">ഡാഷ്‌ബോർഡ് കാണുക</div>
+        </div>
+        <div class="roadmap-step">
+          <div class="step-number-circle">4</div>
+          <div class="step-label">ഭക്ഷണം അപ്‌ഡേറ്റ്</div>
+        </div>
+        <div class="roadmap-step">
+          <div class="step-number-circle">5</div>
+          <div class="step-label">സേവ് ചെയ്യുക</div>
+        </div>
+        <div class="roadmap-step">
+          <div class="step-number-circle">6</div>
+          <div class="step-label">ലോഗ് ഔട്ട്</div>
         </div>
       </div>
-    
+    </div>
 
-    
-
-    
-
-    
-
-    
+    <!-- Verified Demo User Banner -->
+    <div class="demo-user-banner">
+      <div class="demo-user-left">
+        <div class="demo-avatar">AA</div>
+        <div>
+          <div class="demo-info-title">ഉദാഹരണ ഡെമോ: അഹ്‌മദ് അലി (Ahmed Ali)</div>
+          <div class="demo-info-sub">Token #042 • Batch 1 • സുരക്ഷിത ഡെമോ പ്രൊഫൈൽ</div>
+        </div>
+      </div>
+      <span class="demo-status-pill">● Verified Demo</span>
+    </div>
 
     <!-- Bottom Brand Bar -->
     <div class="bottom-bar">

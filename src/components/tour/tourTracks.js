@@ -16,6 +16,7 @@ import {
   HelpCircle,
   PhoneCall,
   UserCheck,
+  KeyRound,
 } from 'lucide-react';
 
 export const TOUR_TRACKS = [
@@ -104,16 +105,17 @@ export const TOUR_TRACKS = [
       },
       {
         id: 'portal-entry-point',
-        target: 'update-token-cta',
+        target: 'nav-login-btn',
+        fallbackTargets: ['sidebar-login-btn', 'token-modal-login-btn', 'token-grid'],
         route: '/',
-        icon: ArrowRight,
+        icon: KeyRound,
         accent: 'emerald',
-        titleEn: 'Student Portal Gateway',
-        titleMl: 'സ്റ്റുഡന്റ് പോർട്ടൽ പ്രവേശനം',
-        descEn: 'Ready to manage your own dining token? Tap the student portal button to head into your personal scheduling dashboard.',
-        descMl: 'സ്വന്തം ടോക്കൺ ഷെഡ്യൂൾ മാറ്റാൻ സ്റ്റുഡന്റ് പോർട്ടലിലേക്ക് പ്രവേശിക്കാം.',
-        actionPromptEn: 'Click "Update My Token" to navigate into the Student Portal.',
-        actionPromptMl: '"Update My Token" ബട്ടണിൽ ക്ലിക്ക് ചെയ്ത് പോർട്ടലിലേക്ക് പോകുക.',
+        titleEn: 'Access Student Portal & Sign In',
+        titleMl: 'സ്റ്റുഡന്റ് ലോഗിൻ & പോർട്ടൽ പ്രവേശനം',
+        descEn: 'Sign in to manage your dining routine. You can access the student portal 3 convenient ways: tap the Login button in the navigation bar (top or bottom dock), open the sidebar menu, or simply click your token tile on the board!',
+        descMl: 'നിങ്ങളുടെ മീൽ മാറ്റങ്ങൾ വരുത്താൻ ലോഗിൻ ചെയ്യാം. 3 വഴികളിലൂടെ പ്രവേശിക്കാം: നാവിഗേഷൻ ബാറിലെ Login ബട്ടൺ, സൈഡ്ബാർ മെനു, അല്ലെങ്കിൽ ബോർഡിലെ നിങ്ങളുടെ ടോക്കൺ നമ്പറിൽ നേരിട്ട് ക്ലിക്ക് ചെയ്തും ലോഗിൻ ചെയ്യാം.',
+        actionPromptEn: 'Tap the Login button in the navigation bar, sidebar, or click any token tile.',
+        actionPromptMl: 'നാവിഗേഷൻ ബാറിലെ ലോഗിൻ ബട്ടണിലോ, സൈഡ്ബാറിലോ, അല്ലെങ്കിൽ ടോക്കൺ ടൈലിലോ ക്ലിക്ക് ചെയ്യുക.',
         actionType: 'click',
       },
     ],
@@ -134,7 +136,8 @@ export const TOUR_TRACKS = [
       {
         id: 'student-auth',
         target: 'portal-auth-dock',
-        route: '/student',
+        fallbackTargets: ['portal-auth-dock', 'nav-login-btn', 'token-modal-login-btn'],
+        route: '/login',
         icon: UserCheck,
         accent: 'emerald',
         titleEn: 'Authentic Student Sign-In',
@@ -149,6 +152,7 @@ export const TOUR_TRACKS = [
       {
         id: 'single-day-toggle',
         target: 'calendar-single-day-cell',
+        fallbackTargets: ['calendar-single-day-cell', 'calendar-grid-cell'],
         route: '/student',
         icon: Coffee,
         accent: 'amber',

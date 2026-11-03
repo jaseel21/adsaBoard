@@ -19,8 +19,8 @@ export default {
         'safe-right': 'env(safe-area-inset-right, 0px)',
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
-        malayalam: ['"Anek Malayalam"', '"Noto Sans Malayalam"', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', '"Arima"', 'system-ui', 'sans-serif'],
+        malayalam: ['"Arima"', 'system-ui', 'sans-serif'],
       },
       colors: {
         dars: {

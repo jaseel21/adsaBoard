@@ -652,7 +652,7 @@ export default function StudentDashboard() {
                     </span>
 
                     {/* Contextual Status Badge */}
-                    {isToday ? (
+                    {/* {isToday ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-[10px] font-extrabold uppercase tracking-wide shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         {t('today', 'Today')}
@@ -672,7 +672,7 @@ export default function StudentDashboard() {
                         <Clock className="w-2.5 h-2.5" />
                         <span>{relativeDateMeta?.relativeLabel || t('scheduledDate', 'Scheduled Date')}</span>
                       </span>
-                    )}
+                    )} */}
 
                     {/* Event Notice Badge */}
                     {controller.activeNoticeForDate && (
@@ -795,32 +795,6 @@ export default function StudentDashboard() {
                     : (portalStatus.isUpdationWindowOpen ? t('orderWindowOpen', 'Open') : t('orderWindowClosed', 'Closed'))}
                 </strong>
               </span>
-
-              {/* Portal CTA with Tour Anchor */}
-              <Link
-                to="/student"
-                data-tour="update-token-cta"
-                onClick={() => feedback('tick')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-[11px] shadow-md border border-emerald-400/40 transition-all active:scale-95"
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>{t('updateMyToken', 'Update My Token')}</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-
-              {/* Live Tour Quick Launcher */}
-              <button
-                type="button"
-                onClick={() => {
-                  feedback('pop');
-                  openMissionHub();
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] border border-white/15 transition-all active:scale-95 cursor-pointer"
-                title={t('startTour', 'Start Interactive Guide')}
-              >
-                <Compass className="w-3.5 h-3.5 text-emerald-300 animate-spin-slow" />
-                <span>{t('liveTour', 'Live Tour')}</span>
-              </button>
             </div>
           </div>
 

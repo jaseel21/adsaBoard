@@ -10,3 +10,9 @@
   overflow-x: hidden;
   position: relative;
 }
+
+/* Live Interactive Tour Target Elevation & Interaction Guard */
+.tour-active-target {
+  z-index: 126 !important;
+  pointer-events: auto !important;
+}

@@ -309,6 +309,7 @@ export default function BrowserLeftSidebar() {
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 type="button"
+                data-tour="sidebar-login-btn"
                 onClick={() => handleNavigate('/login')}
                 className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-xs flex items-center gap-1"
               >
@@ -330,7 +331,7 @@ export default function BrowserLeftSidebar() {
       </div>
 
       {/* Live Tour Quest Launcher */}
-      <div className="px-3 pt-2">
+      {/* <div className="px-3 pt-2">
         <button
           type="button"
           onClick={() => {
@@ -355,7 +356,7 @@ export default function BrowserLeftSidebar() {
           </div>
           <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
         </button>
-      </div>
+      </div> */}
 
       {/* 4. Categorized Navigation Groups */}
       <div data-lenis-prevent className="flex-1 overflow-y-auto p-3 space-y-4">
@@ -491,21 +492,21 @@ export default function BrowserLeftSidebar() {
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => handleNavigate('/settings')}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-            location.pathname.startsWith('/settings') || location.pathname.startsWith('/preferences')
-              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs'
-              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-emerald-500" />
-            <span>{language === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings & Preferences'}</span>
-          </div>
-          <span className="text-[10px] font-mono text-gray-400">⌘,</span>
-        </button>
+          {/* <button
+            type="button"
+            onClick={() => handleNavigate('/settings')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              location.pathname.startsWith('/settings') || location.pathname.startsWith('/preferences')
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-emerald-500" />
+              <span>{language === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings & Preferences'}</span>
+            </div>
+            <span className="text-[10px] font-mono text-gray-400">⌘,</span>
+          </button> */}
       </div>
     </div>
   );

@@ -99,7 +99,7 @@
 
   /* Malayalam specific typographical adjustments */
   [lang="ml"], .font-malayalam {
-    font-family: 'Anek Malayalam', 'Noto Sans Malayalam', sans-serif;
+    font-family: 'Arima', system-ui, sans-serif;
     line-height: 1.75;
     letter-spacing: 0.01em;
   }

@@ -22,65 +22,77 @@ export default function TourActionWatcher() {
   useEffect(() => {
     if (status !== 'running' || !currentStep || tourMode !== 'interactive') return;
 
-    // Check if step can be auto-completed (e.g. Student Portal auth if already signed in)
-    if (currentStep.skipIfAuthenticated) {
-      try {
-        const studentSession = sessionStorage.getItem('adsa_student_session');
-        if (studentSession) {
-          const parsed = JSON.parse(studentSession);
-          if (parsed && (parsed.tokenNo || parsed.id)) {
-            // Student is already authenticated! Advance automatically.
-            const timer = setTimeout(() => {
-              if (!stepCompletedRef.current) {
-                stepCompletedRef.current = true;
-                completeCurrentStep();
-              }
-            }, 600);
-            return () => clearTimeout(timer);
-          }
-        }
-      } catch (_) {}
-    }
-
-    const targetEl = document.querySelector(`[data-tour="${currentStep.target}"]`);
-    if (!targetEl) return;
-
-    const handleActionFired = (e) => {
+    const handleActionFired = () => {
       if (stepCompletedRef.current) return;
       stepCompletedRef.current = true;
       feedback('success');
       completeCurrentStep();
     };
 
-    // Attach listeners based on action type
-    if (currentStep.actionType === 'click') {
-      targetEl.addEventListener('click', handleActionFired, { capture: true, once: true });
-    } else if (currentStep.actionType === 'input' || currentStep.actionType === 'change') {
-      targetEl.addEventListener('input', handleActionFired, { capture: true, once: true });
-      targetEl.addEventListener('change', handleActionFired, { capture: true, once: true });
-    } else if (currentStep.actionType === 'custom') {
-      // Listen for custom login or state change events
-      const handleStorageUpdate = (e) => {
-        if (e.key === 'adsa_student_session' && e.newValue) {
-          handleActionFired(e);
+    // Check if student is already authenticated
+    const checkAuthStatus = () => {
+      try {
+        const studentSession = sessionStorage.getItem('adsa_student_session');
+        if (studentSession) {
+          const parsed = JSON.parse(studentSession);
+          if (parsed && (parsed.tokenNo || parsed.id)) {
+            handleActionFired();
+            return true;
+          }
         }
-      };
-      window.addEventListener('storage', handleStorageUpdate);
-      targetEl.addEventListener('click', handleActionFired, { capture: true, once: true });
+      } catch (_) {}
+      return false;
+    };
 
-      return () => {
-        window.removeEventListener('storage', handleStorageUpdate);
-        targetEl.removeEventListener('click', handleActionFired, { capture: true });
-      };
+    if (currentStep.skipIfAuthenticated || currentStep.id === 'student-auth') {
+      if (checkAuthStatus()) return;
     }
 
+    // Monitor for student authentication state changes (handles instant login completion)
+    let sessionInterval = null;
+    if (currentStep.id === 'student-auth' || currentStep.skipIfAuthenticated) {
+      sessionInterval = setInterval(() => {
+        if (checkAuthStatus()) {
+          clearInterval(sessionInterval);
+        }
+      }, 350);
+    }
+
+    // Dynamically track all matching primary and fallback targets (even if mounted inside modals)
+    const watchedNodes = new Set();
+    const syncAndAttach = () => {
+      const keys = [currentStep.target, ...(currentStep.fallbackTargets || [])];
+      keys.forEach((key) => {
+        document.querySelectorAll(`[data-tour="${key}"]`).forEach((node) => {
+          if (!watchedNodes.has(node)) {
+            watchedNodes.add(node);
+            if (currentStep.actionType === 'click' || currentStep.actionType === 'custom') {
+              node.addEventListener('click', handleActionFired, { capture: true });
+            } else if (currentStep.actionType === 'input' || currentStep.actionType === 'change') {
+              node.addEventListener('input', handleActionFired, { capture: true });
+              node.addEventListener('change', handleActionFired, { capture: true });
+            }
+          }
+        });
+      });
+    };
+
+    syncAndAttach();
+    const scanInterval = setInterval(syncAndAttach, 250);
+
     return () => {
-      targetEl.removeEventListener('click', handleActionFired, { capture: true });
-      targetEl.removeEventListener('input', handleActionFired, { capture: true });
-      targetEl.removeEventListener('change', handleActionFired, { capture: true });
+      clearInterval(scanInterval);
+      if (sessionInterval) clearInterval(sessionInterval);
+      watchedNodes.forEach((node) => {
+        try {
+          node.removeEventListener('click', handleActionFired, { capture: true });
+          node.removeEventListener('input', handleActionFired, { capture: true });
+          node.removeEventListener('change', handleActionFired, { capture: true });
+        } catch (_) {}
+      });
+      watchedNodes.clear();
     };
   }, [status, currentStep, tourMode, isTargetFound, completeCurrentStep, feedback]);
 
   return null;
 }
-

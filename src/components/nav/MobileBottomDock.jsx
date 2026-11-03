@@ -106,6 +106,7 @@ export default function MobileBottomDock({
         {/* 3. Student / Portal or Staff Primary Console */}
         <button
           type="button"
+          data-tour="nav-login-btn"
           onClick={() => {
             if (user && isCook) {
               handleNav('/kitchen');

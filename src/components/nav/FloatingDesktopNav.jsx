@@ -40,11 +40,13 @@ function NavTabButton({
   pulseDot = false,
   badgeCount = null,
   layoutId = 'activeFloatingPill',
+  ...rest
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      {...rest}
       className={`relative rounded-full ${
         label ? 'px-3 py-1.5 gap-1.5' : 'w-7 h-7 p-1.5'
       } transition-all duration-150 select-none flex items-center justify-center cursor-pointer text-xs font-semibold flex-shrink-0 ${
@@ -188,6 +190,7 @@ export default function FloatingDesktopNav({
         {/* 3. Student Dining Portal Tab */}
         {isStudentLoggedIn ? (
           <NavTabButton
+            data-tour="nav-login-btn"
             onClick={() => handleNav('/student')}
             active={isActive('/student')}
             icon={UserCheck}
@@ -198,6 +201,7 @@ export default function FloatingDesktopNav({
         ) : (
           !user && (
             <NavTabButton
+              data-tour="nav-login-btn"
               onClick={() => handleNav('/login')}
               active={isActive('/login')}
               icon={KeyRound}
@@ -244,7 +248,7 @@ export default function FloatingDesktopNav({
         />
 
         {/* 6.5 Interactive Tour Hub */}
-        <NavTabButton
+        {/* <NavTabButton
           onClick={() => {
             feedback('pop');
             openMissionHub();
@@ -252,7 +256,7 @@ export default function FloatingDesktopNav({
           active={false}
           icon={Compass}
           tooltip="Interactive Live Tour & Quests"
-        />
+        /> */}
 
         {/* 7. Notification Bell */}
         <NotificationBell variant="pill" />

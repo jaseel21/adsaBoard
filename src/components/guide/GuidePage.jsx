@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -31,10 +31,12 @@ import { useTourEngine } from '../tour/TourEngineContext';
 
 const GuidePage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
   const { feedback } = useFeedback();
   const { openMissionHub } = useTourEngine();
-  const [activeTab, setActiveTab] = useState('color-system');
+  const initialTab = searchParams.get('tab') || 'visual-slides';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useSEO({
     title: 'System Guide & Visual User Manual',
@@ -122,6 +124,7 @@ const GuidePage = () => {
               onClick={() => {
                 feedback('tick');
                 setActiveTab(tab.id);
+                setSearchParams({ tab: tab.id });
               }}
               className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
                 isActive

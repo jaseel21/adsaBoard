@@ -50,6 +50,49 @@ export function TourProvider({ children }) {
   // Admin Campaign Governance Config
   const [campaignConfig, setCampaignConfig] = useState(null);
 
+  // Active elevated target elements ref (tracks target and parent containers for clean restoration)
+  const elevatedRecordsRef = useRef([]);
+
+  const cleanupActiveElements = useCallback(() => {
+    if (elevatedRecordsRef.current && elevatedRecordsRef.current.length > 0) {
+      elevatedRecordsRef.current.forEach(({ element, position, zIndex, pointerEvents }) => {
+        try {
+          if (element) {
+            element.style.position = position;
+            element.style.zIndex = zIndex;
+            element.style.pointerEvents = pointerEvents;
+            element.classList.remove('tour-active-target');
+          }
+        } catch (_) {}
+      });
+      elevatedRecordsRef.current = [];
+    }
+  }, []);
+
+  // Helper to find the first visible matching tour element (handling responsive mobile vs desktop elements)
+  const findVisibleTourElement = useCallback((targetKey) => {
+    if (!targetKey) return null;
+    const matches = document.querySelectorAll(`[data-tour="${targetKey}"]`);
+    if (!matches || matches.length === 0) return null;
+
+    for (let i = 0; i < matches.length; i++) {
+      const node = matches[i];
+      const rect = node.getBoundingClientRect();
+      const style = window.getComputedStyle(node);
+      const isVisible =
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0' &&
+        (rect.width > 0 || rect.height > 0 || node.getClientRects().length > 0);
+
+      if (isVisible) {
+        return node;
+      }
+    }
+
+    return matches[0];
+  }, []);
+
   // Subscribe to real-time Tour Campaign Governance
   useEffect(() => {
     const unsub = subscribeToTourCampaign((cfg) => {
@@ -78,13 +121,78 @@ export function TourProvider({ children }) {
   // Update target bounding box
   const updateTargetRect = useCallback(() => {
     if (status !== 'running' || !currentStep) {
+      cleanupActiveElements();
       setTargetRect(null);
       setIsTargetFound(false);
       return;
     }
 
-    const el = document.querySelector(`[data-tour="${currentStep.target}"]`);
+    // Resolve primary target or any fallback target
+    let el = findVisibleTourElement(currentStep.target);
+    if (!el && currentStep.fallbackTargets) {
+      for (const fb of currentStep.fallbackTargets) {
+        const candidate = findVisibleTourElement(fb);
+        if (candidate) {
+          el = candidate;
+          break;
+        }
+      }
+    }
+
     if (el) {
+      // Re-elevate elements if target changed or elements are fresh
+      cleanupActiveElements();
+
+      const targetsToElevate = [el];
+      if (currentStep.fallbackTargets) {
+        currentStep.fallbackTargets.forEach((fbKey) => {
+          const fbEl = findVisibleTourElement(fbKey);
+          if (fbEl && !targetsToElevate.includes(fbEl)) {
+            targetsToElevate.push(fbEl);
+          }
+        });
+      }
+
+      targetsToElevate.forEach((targetNode) => {
+        if (!elevatedRecordsRef.current.some((r) => r.element === targetNode)) {
+          elevatedRecordsRef.current.push({
+            element: targetNode,
+            position: targetNode.style.position || '',
+            zIndex: targetNode.style.zIndex || '',
+            pointerEvents: targetNode.style.pointerEvents || '',
+          });
+          targetNode.classList.add('tour-active-target');
+
+          const computedPos = window.getComputedStyle(targetNode).position;
+          if (computedPos === 'static') {
+            targetNode.style.position = 'relative';
+          }
+          targetNode.style.zIndex = '126';
+          targetNode.style.pointerEvents = 'auto';
+
+          // Ascend parent tree and elevate any fixed/absolute/sticky containers having z-index < 126
+          let curr = targetNode.parentElement;
+          while (curr && curr !== document.body) {
+            const comp = window.getComputedStyle(curr);
+            if (['fixed', 'absolute', 'sticky', 'relative'].includes(comp.position)) {
+              const z = parseInt(comp.zIndex, 10);
+              if (!isNaN(z) && z < 126) {
+                if (!elevatedRecordsRef.current.some((r) => r.element === curr)) {
+                  elevatedRecordsRef.current.push({
+                    element: curr,
+                    position: curr.style.position || '',
+                    zIndex: curr.style.zIndex || '',
+                    pointerEvents: curr.style.pointerEvents || '',
+                  });
+                  curr.style.zIndex = '125';
+                }
+              }
+            }
+            curr = curr.parentElement;
+          }
+        }
+      });
+
       const rect = el.getBoundingClientRect();
       const style = window.getComputedStyle(el);
       const borderRadius = parseFloat(style.borderRadius) || 16;
@@ -111,17 +219,26 @@ export function TourProvider({ children }) {
         }
       }
     } else {
+      cleanupActiveElements();
       setTargetRect(null);
       setIsTargetFound(false);
     }
-  }, [status, currentStep, scrollTo]);
+  }, [status, currentStep, scrollTo, cleanupActiveElements, findVisibleTourElement]);
 
   // Recalculate target rect on step change, resize, scroll, or DOM mutation
   useEffect(() => {
     if (status !== 'running' || !currentStep) return;
 
-    // If step requires a different route, navigate there first
+    // If step requires a different route, navigate there first (unless already authenticated)
     if (currentStep.route && location.pathname !== currentStep.route) {
+      if (currentStep.skipIfAuthenticated) {
+        try {
+          const session = sessionStorage.getItem('adsa_student_session');
+          if (session && JSON.parse(session)?.tokenNo) {
+            return;
+          }
+        } catch (_) {}
+      }
       navigate(currentStep.route);
       return;
     }
@@ -156,8 +273,9 @@ export function TourProvider({ children }) {
       clearInterval(interval);
       window.removeEventListener('resize', updateTargetRect);
       window.removeEventListener('scroll', updateTargetRect);
+      cleanupActiveElements();
     };
-  }, [status, currentStep, currentStepIndex, activeTrack, location.pathname, navigate, updateTargetRect, lang]);
+  }, [status, currentStep, currentStepIndex, activeTrack, location.pathname, navigate, updateTargetRect, lang, cleanupActiveElements]);
 
   // Start a specific track
   const startTour = useCallback(
@@ -215,19 +333,21 @@ export function TourProvider({ children }) {
   // Skip or close tour
   const skipTour = useCallback(() => {
     feedback('tick');
+    cleanupActiveElements();
     setStatus('idle');
     setActiveTrackId(null);
     setCurrentStepIndex(0);
     setTargetRect(null);
-  }, [feedback]);
+  }, [feedback, cleanupActiveElements]);
 
   // Close celebration modal
   const closeCelebration = useCallback(() => {
+    cleanupActiveElements();
     setIsCelebrationOpen(false);
     setStatus('idle');
     setActiveTrackId(null);
     setCelebratedTrack(null);
-  }, []);
+  }, [cleanupActiveElements]);
 
   // Dismiss auto-prompt banner
   const dismissAutoPrompt = useCallback(() => {

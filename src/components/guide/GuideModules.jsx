@@ -434,7 +434,6 @@ export const VisualSlidePostModule = () => {
 
   const currentNumberStr = String(activeSlide + 1).padStart(2, '0');
   const slideHtmlSrc = `/assets/slides/slide_${currentNumberStr}.html`;
-  const slideSvgSrc = `/assets/slides_svg/slide_${currentNumberStr}.svg`;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -444,9 +443,56 @@ export const VisualSlidePostModule = () => {
       }
     };
     updateScale();
+    const observer = new ResizeObserver(() => {
+      updateScale();
+    });
+    observer.observe(containerRef.current);
     window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
   }, []);
+
+  // Dynamic SVG generation on the fly from the live slide HTML
+  const handleDownloadLiveSVG = async () => {
+    try {
+      const res = await fetch(`/assets/slides/slide_${currentNumberStr}.html?t=${Date.now()}`);
+      const htmlText = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+      const styles = Array.from(doc.querySelectorAll('style')).map((s) => s.innerHTML).join('\n');
+      const bodyContent = doc.body ? doc.body.innerHTML : '';
+
+      const svgString = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <style type="text/css">
+      <![CDATA[
+        ${styles}
+      ]]>
+    </style>
+  </defs>
+  <foreignObject width="1080" height="1920" x="0" y="0">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:1080px;height:1920px;overflow:hidden;margin:0;padding:0;">
+      ${bodyContent}
+    </div>
+  </foreignObject>
+</svg>`;
+
+      const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ADSA_Guide_Slide_${currentNumberStr}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error('Failed to generate live SVG', e);
+    }
+  };
 
   return (
     <motion.div variants={guideStaggerVariants} initial="hidden" animate="show" className="space-y-6">
@@ -465,15 +511,14 @@ export const VisualSlidePostModule = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          <a
-            href={slideSvgSrc}
-            download={`ADSA_Guide_Slide_${currentNumberStr}.svg`}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all active:scale-95"
-            title="Download Vector SVG"
+          <button
+            onClick={handleDownloadLiveSVG}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all active:scale-95 cursor-pointer"
+            title="Download Live Dynamic Vector SVG"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{isMl ? 'SVG സേവ് ചെയ്യുക' : 'Save SVG'}</span>
-          </a>
+            <span>{isMl ? 'SVG ഡൗൺലോഡ് (Dynamic)' : 'Save Live SVG'}</span>
+          </button>
           <a
             href="/guide-carousel.html"
             target="_blank"
@@ -492,7 +537,7 @@ export const VisualSlidePostModule = () => {
         <div className="w-full flex items-center justify-between text-xs">
           <button
             onClick={() => setActiveSlide((prev) => (prev > 0 ? prev - 1 : 9))}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold transition-all active:scale-95"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold transition-all active:scale-95 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>{isMl ? 'മുമ്പത്തേത്' : 'Prev'}</span>
@@ -509,7 +554,7 @@ export const VisualSlidePostModule = () => {
 
           <button
             onClick={() => setActiveSlide((prev) => (prev < 9 ? prev + 1 : 0))}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold transition-all active:scale-95"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold transition-all active:scale-95 cursor-pointer"
           >
             <span>{isMl ? 'അടുത്തത്' : 'Next'}</span>
             <ChevronRight className="w-4 h-4" />
@@ -525,10 +570,12 @@ export const VisualSlidePostModule = () => {
             key={currentNumberStr}
             src={slideHtmlSrc}
             title={slideTitles[activeSlide].en}
-            className="border-none origin-top-left pointer-events-none select-none"
+            className="absolute top-0 left-0 border-none origin-top-left pointer-events-none select-none max-w-none"
             style={{
               width: '1080px',
               height: '1920px',
+              maxWidth: 'none',
+              maxHeight: 'none',
               transform: `scale(${scale})`,
             }}
             scrolling="no"
@@ -541,7 +588,7 @@ export const VisualSlidePostModule = () => {
             <button
               key={idx}
               onClick={() => setActiveSlide(idx)}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-all cursor-pointer ${
                 activeSlide === idx
                   ? 'w-6 bg-emerald-500'
                   : 'w-2 bg-gray-300 dark:bg-white/20 hover:bg-gray-400'

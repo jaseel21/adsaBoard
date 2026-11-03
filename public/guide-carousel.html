@@ -6,11 +6,12 @@
   <title>ADSA Canteen Token Board - How To Use Guide Carousel (1080x1920)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Noto+Sans+Malayalam:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Arima:wght@100..700&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- Vendor Libraries for Dynamic Client-Side Export -->
   <script src="assets/vendor/html2canvas.min.js"></script>
   <script src="assets/vendor/jspdf.umd.min.js"></script>
+  <script src="assets/vendor/jszip.min.js"></script>
   <!-- Fallback CDNs if vendor script fails -->
   <script>
     if (typeof html2canvas === 'undefined') {
@@ -23,7 +24,7 @@
     body {
       background: #020f0a;
       color: #f1f5f9;
-      font-family: 'Plus Jakarta Sans', 'Noto Sans Malayalam', sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Arima', system-ui, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -496,24 +497,24 @@
           <span>.PDF ഡോക്യുമെന്റ്</span>
         </button>
 
-        <!-- Direct SVG Vector download -->
-        <a id="svgDownloadLink" class="export-btn svg" href="assets/slides_svg/slide_01.svg" download="ADSA_Guide_Slide_01.svg" title="Vector Editable SVG">
+        <!-- Dynamic Live SVG Vector download -->
+        <button id="svgDownloadBtn" class="export-btn svg" onclick="downloadCurrentSVG()" title="Export live HTML to editable vector SVG">
           <span class="btn-icon">📐</span>
           <span>.SVG വെക്ടർ</span>
-        </a>
+        </button>
 
-        <!-- Direct HTML Source download -->
-        <a id="htmlDownloadLink" class="export-btn html" href="assets/slides/slide_01.html" download="slide_01.html" title="Editable HTML Source">
+        <!-- Dynamic Live HTML Source download -->
+        <button id="htmlDownloadBtn" class="export-btn html" onclick="downloadCurrentHTML()" title="Download Editable HTML Source">
           <span class="btn-icon">🌐</span>
           <span>.HTML സോഴ്സ്</span>
-        </a>
+        </button>
       </div>
 
-      <!-- Download All Vector SVGs as ZIP -->
-      <a class="zip-all-btn" href="assets/adsa_guide_slides_svg_vector_editable.zip" download="adsa_guide_slides_svg_vector_editable.zip">
+      <!-- Download All Vector SVGs as dynamic ZIP -->
+      <button class="zip-all-btn" onclick="downloadAllSVGsZip()" title="Download dynamic archive of all 10 slides (.ZIP)" style="cursor: pointer; width: 100%;">
         <span>📦</span>
-        <span>എല്ലാ 10 സ്ലൈഡുകളും .SVG വെക്ടർ ആർക്കൈവായി ഡൗൺലോഡ് ചെയ്യുക (.ZIP)</span>
-      </a>
+        <span>എല്ലാ 10 സ്ലൈഡുകളും ഡൗൺലോഡ് ചെയ്യുക (.ZIP)</span>
+      </button>
     </div>
 
     <!-- Dots bar -->
@@ -557,8 +558,6 @@
     const currentIdxEl = document.getElementById('currentIdx');
     const dotsContainer = document.getElementById('dotsContainer');
     const galleryGrid = document.getElementById('galleryGrid');
-    const svgDownloadLink = document.getElementById('svgDownloadLink');
-    const htmlDownloadLink = document.getElementById('htmlDownloadLink');
     const statusToast = document.getElementById('statusToast');
     const toastIcon = document.getElementById('toastIcon');
     const toastMsg = document.getElementById('toastMsg');
@@ -605,13 +604,6 @@
 
       // Update iframe source
       slideFrame.src = `assets/slides/slide_${numStr}.html`;
-
-      // Update download links
-      svgDownloadLink.href = `assets/slides_svg/slide_${numStr}.svg`;
-      svgDownloadLink.download = `ADSA_Guide_Slide_${numStr}.svg`;
-
-      htmlDownloadLink.href = `assets/slides/slide_${numStr}.html`;
-      htmlDownloadLink.download = `slide_${numStr}.html`;
 
       // Update active dot
       document.querySelectorAll('.carousel-dot').forEach((d, i) => {
@@ -771,6 +763,143 @@
         console.error('PDF Export Error:', err);
         exportingStatus.innerText = 'പരാജയപ്പെട്ടു';
         showToast('❌', 'PDF ജനറേഷൻ പരാജയപ്പെട്ടു.');
+      }
+    }
+
+    // Helper to get live HTML text from either iframe or network fetch
+    async function getSlideHTMLText(numStr) {
+      try {
+        if (slideFrame.contentDocument && slideFrame.contentDocument.documentElement) {
+          return slideFrame.contentDocument.documentElement.outerHTML;
+        }
+      } catch (e) {
+        console.warn('Iframe DOM access guard, fallback to fetch', e);
+      }
+      const res = await fetch(`assets/slides/slide_${numStr}.html?t=` + Date.now());
+      return await res.text();
+    }
+
+    // Dynamic Live Vector SVG Generation on the Fly
+    async function downloadCurrentSVG() {
+      const numStr = getSlideNumStr(currentIndex);
+      showToast('⏳', `സ്ലൈഡ് ${numStr} ലൈവ് SVG തയ്യാറാക്കുന്നു...`, 4000);
+      exportingStatus.innerText = 'SVG തയ്യാറാക്കുന്നു...';
+
+      try {
+        const htmlText = await getSlideHTMLText(numStr);
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+
+        const styles = Array.from(doc.querySelectorAll('style')).map((s) => s.innerHTML).join('\n');
+        const bodyContent = doc.body ? doc.body.innerHTML : '';
+
+        const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <style type="text/css">
+      <![CDATA[
+        ${styles}
+      ]]>
+    </style>
+  </defs>
+  <foreignObject width="1080" height="1920" x="0" y="0">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:1080px;height:1920px;overflow:hidden;margin:0;padding:0;">
+      ${bodyContent}
+    </div>
+  </foreignObject>
+</svg>`;
+
+        const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+        const link = document.createElement('a');
+        link.download = `ADSA_Guide_Slide_${numStr}.svg`;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+        exportingStatus.innerText = 'ഡൗൺലോഡ് പൂർത്തിയായി!';
+        showToast('✅', `ADSA_Guide_Slide_${numStr}.svg ലൈവായി സേവ് ചെയ്തു!`);
+      } catch (err) {
+        console.error('SVG Export Error:', err);
+        exportingStatus.innerText = 'പരാജയപ്പെട്ടു';
+        showToast('❌', 'SVG നിർമ്മാണം പരാജയപ്പെട്ടു.');
+      }
+    }
+
+    // Dynamic Live HTML Source Download
+    async function downloadCurrentHTML() {
+      const numStr = getSlideNumStr(currentIndex);
+      try {
+        const htmlText = await getSlideHTMLText(numStr);
+        const blob = new Blob([htmlText], { type: 'text/html;charset=utf-8' });
+        const link = document.createElement('a');
+        link.download = `slide_${numStr}.html`;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        showToast('✅', `slide_${numStr}.html ഡൗൺലോഡ് ചെയ്തു!`);
+      } catch (err) {
+        console.error('HTML Download Error', err);
+      }
+    }
+
+    // Dynamic Bundle ZIP of all 10 live slides on the fly
+    async function downloadAllSVGsZip() {
+      showToast('⏳', 'എല്ലാ 10 സ്ലൈഡുകളും ശേഖരിച്ച് ZIP തയ്യാറാക്കുന്നു...', 8000);
+      exportingStatus.innerText = 'ZIP തയ്യാറാക്കുന്നു...';
+
+      try {
+        if (typeof JSZip === 'undefined') {
+          throw new Error('JSZip library not available');
+        }
+        const zip = new JSZip();
+        for (let i = 1; i <= totalSlides; i++) {
+          const numStr = String(i).padStart(2, '0');
+          const res = await fetch(`assets/slides/slide_${numStr}.html?t=` + Date.now());
+          const htmlText = await res.text();
+
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlText, 'text/html');
+          const styles = Array.from(doc.querySelectorAll('style')).map((s) => s.innerHTML).join('\n');
+          const bodyContent = doc.body ? doc.body.innerHTML : '';
+
+          const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <style type="text/css">
+      <![CDATA[
+        ${styles}
+      ]]>
+    </style>
+  </defs>
+  <foreignObject width="1080" height="1920" x="0" y="0">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:1080px;height:1920px;overflow:hidden;margin:0;padding:0;">
+      ${bodyContent}
+    </div>
+  </foreignObject>
+</svg>`;
+          zip.file(`ADSA_Guide_Slide_${numStr}.svg`, svgContent);
+          zip.file(`slide_${numStr}.html`, htmlText);
+        }
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.download = 'adsa_guide_slides_live_bundle.zip';
+        link.href = URL.createObjectURL(zipBlob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+
+        exportingStatus.innerText = 'ZIP പൂർത്തിയായി!';
+        showToast('✅', 'എല്ലാ സ്ലൈഡുകളുടെയും ലൈവ് ZIP ഡൗൺലോഡ് ചെയ്തു!');
+      } catch (err) {
+        console.error('ZIP Error:', err);
+        exportingStatus.innerText = 'പരാജയപ്പെട്ടു';
+        showToast('❌', 'ZIP നിർമ്മാണം പരാജയപ്പെട്ടു.');
       }
     }
 
