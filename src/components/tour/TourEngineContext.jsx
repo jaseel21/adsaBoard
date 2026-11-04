@@ -36,6 +36,21 @@ export function TourProvider({ children }) {
   const [celebratedTrack, setCelebratedTrack] = useState(null);
   const [showAutoPromptBanner, setShowAutoPromptBanner] = useState(false);
 
+  // Viewport / Device sensing
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updateDevice = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', updateDevice);
+    return () => window.removeEventListener('resize', updateDevice);
+  }, []);
+
   // Completed Missions Tracking
   const [completedTracks, setCompletedTracks] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -377,6 +392,7 @@ export function TourProvider({ children }) {
       isFirstTime,
       completedCount: completedTracks.length,
       lastDismissedAt: dismissedAt,
+      isMobile,
     });
 
     if (shouldPrompt) {
@@ -385,7 +401,7 @@ export function TourProvider({ children }) {
       }, (campaignConfig.triggerRule?.delaySeconds || 2) * 1000);
       return () => clearTimeout(timer);
     }
-  }, [campaignConfig, status, location.pathname, completedTracks.length]);
+  }, [campaignConfig, status, location.pathname, completedTracks.length, isMobile]);
 
   const value = {
     // State
@@ -405,6 +421,7 @@ export function TourProvider({ children }) {
     celebratedTrack,
     showAutoPromptBanner,
     campaignConfig,
+    isMobile,
 
     // Controls
     startTour,

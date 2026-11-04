@@ -53,14 +53,14 @@ export default function TourFloatingHUD() {
   const StepIcon = currentStep.icon || Compass;
 
   return (
-    <div className="fixed inset-x-0 bottom-4 sm:bottom-6 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[130] w-full max-w-lg px-3 sm:px-4 pointer-events-auto">
+    <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[130] w-full max-w-lg px-3 sm:px-4 pointer-events-auto">
       <motion.div
         key={`${activeTrack.id}-${currentStep.id}`}
         initial={{ opacity: 0, y: 24, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.95 }}
         transition={{ type: 'spring', damping: 30, stiffness: 400, mass: 0.8 }}
-        className="rounded-[28px] sm:rounded-3xl bg-white/95 dark:bg-[#0c1613]/95 border border-emerald-500/30 dark:border-emerald-500/20 shadow-2xl backdrop-blur-2xl p-5 sm:p-6 text-gray-900 dark:text-white flex flex-col gap-4 overflow-hidden relative"
+        className="rounded-2xl sm:rounded-3xl bg-white/95 dark:bg-[#0c1613]/95 border border-emerald-500/30 dark:border-emerald-500/20 shadow-2xl backdrop-blur-2xl p-4 sm:p-6 text-gray-900 dark:text-white flex flex-col gap-3 sm:gap-4 overflow-hidden relative"
       >
         {/* Top Progress Track */}
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gray-100 dark:bg-white/5 overflow-hidden">

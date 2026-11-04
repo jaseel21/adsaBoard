@@ -14,6 +14,7 @@ import {
   AlertCircle,
   UtensilsCrossed,
   MapPin,
+  ChevronDown,
 } from 'lucide-react';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
@@ -66,6 +67,8 @@ export default function NextMealSpotlight({
   lunchOrdersCount = 0,
   breakfastOrdersCount = 0,
   showSpotlightBanner = true,
+  collapsible = true,
+  defaultExpanded = false,
 }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -73,6 +76,21 @@ export default function NextMealSpotlight({
   const { timeHms, dayShort } = useWorldTime('Asia/Kolkata');
   const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
   const effectiveSwitchTime = rawBoardSwitchTime || '14:00';
+
+  const [isExpanded, setIsExpanded] = useState(collapsible ? defaultExpanded : true);
+
+  const toggleExpand = () => {
+    if (!collapsible) return;
+    feedback('pop');
+    setIsExpanded((prev) => !prev);
+  };
+
+  const handleHeaderClick = (e) => {
+    if (!collapsible) return;
+    // Do not toggle if the user clicked directly on an interactive button or anchor
+    if (e.target.closest('button, a')) return;
+    toggleExpand();
+  };
 
   const [weeklyMenu, setWeeklyMenu] = useState(DEFAULT_WEEKLY_MENU);
   const [overrides, setOverrides] = useState({});
@@ -304,26 +322,40 @@ export default function NextMealSpotlight({
   };
 
   return (
-    <div className="spotlight-card relative overflow-hidden w-full max-w-full min-w-0 p-4 xs:p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl transition-all duration-300">
-      
+    <div
+      className={`spotlight-card relative overflow-hidden w-full max-w-full min-w-0 rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#0f1715]/90 border border-gray-200/80 dark:border-white/10 shadow-sm backdrop-blur-xl transition-all duration-300 ${
+        isExpanded ? 'p-4 xs:p-5 sm:p-6' : 'p-3.5 sm:p-4'
+      }`}
+    >
       {/* Decorative ambient gradient */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-gradient-to-br from-emerald-500/10 via-amber-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
 
       {/* Header Bar */}
-      <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div
+        onClick={handleHeaderClick}
+        className={`relative z-10 flex items-center justify-between gap-3 ${
+          collapsible ? 'cursor-pointer select-none' : ''
+        } ${isExpanded ? 'mb-3 sm:mb-4' : ''}`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-sm shadow-emerald-500/30 shrink-0">
             <ChefHat className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
-                {t('nextMealSpotlight') || 'Canteen Meal Radar'}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white tracking-tight truncate">
+                {t('nextMealSpotlight') || 'Canteen Menu'}
               </h2>
               {displayedDayData?.occasion && !displayedDayData?.isClosed && (
                 <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
                   <Sparkles className="w-2.5 h-2.5 text-purple-500" />
                   <span>{displayedDayData.occasion}</span>
+                </span>
+              )}
+              {isDayArchived && (
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                  <UtensilsCrossed className="w-2.5 h-2.5 text-amber-500" />
+                  <span>{t('canteenClosed', 'Canteen Closed')}</span>
                 </span>
               )}
             </div>
@@ -337,231 +369,277 @@ export default function NextMealSpotlight({
           </div>
         </div>
 
-        {/* Master Contextual Badge & Quick Menu Action (Synced with Token Board Top Switcher) */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-          {/* <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100/90 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-gray-300">
-            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{friendlyTargetDate || formatFriendlyDate(effectiveTargetDate)}</span>
-            {isShowingToday && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
-            )}
-          </div> */}
+        {/* Master Contextual Badge, Quick Menu Action & Collapsible Toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Quick preview of upcoming dish when collapsed on wide screens */}
+          {collapsible && !isExpanded && !isDayArchived && spotlightMeal?.title && (
+            <div className="hidden lg:flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-100/70 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 px-2.5 py-1 rounded-xl max-w-[200px] truncate">
+              <Sparkles className="w-3 h-3 text-emerald-500 shrink-0" />
+              <span className="truncate font-semibold">{spotlightMeal.title}</span>
+            </div>
+          )}
 
-          {/* <button
+          {/* Quick link to Full Menu (Visible on desktop) */}
+          <button
             type="button"
-            onClick={() => navigate('/menu')}
-            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1"
-            title="Open Full Campus Menu"
+            onClick={(e) => {
+              e.stopPropagation();
+              feedback('tick');
+              navigate('/menu');
+            }}
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gray-100/90 hover:bg-gray-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200/80 dark:border-white/10 text-xs font-bold transition-all cursor-pointer"
+            title={t('viewFullMenu', 'View Full Menu')}
           >
             <span>{t('viewFullMenu', 'Full Menu')}</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button> */}
-        </div>
-      </div>
+            <ChevronRight className="w-3 h-3 text-gray-400" />
+          </button>
 
-      {/* If Displayed Day is Closed / Routine Off: Render Clean Notice Banner */}
-      {isDayArchived ? (
-        <div className="relative z-10 p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700/50 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <UtensilsCrossed className="w-5 h-5 text-amber-500" />
-              <h3 className="font-extrabold text-base text-amber-900 dark:text-amber-200">
-                {t(`daysFull.${displayedDayKey}`) || displayedDayData.dayName} — {t('canteenClosed', 'Canteen Closed')}
-              </h3>
-            </div>
-            <p className="text-xs text-amber-800 dark:text-amber-300">
-              {displayedDayData.archiveReason || t('canteenClosedRoutine', 'Canteen routine off. No meals scheduled for this day.')}
-            </p>
-          </div>
-
-          {!isShowingTomorrow && (
+          {/* Expand/Collapse Toggle Button */}
+          {collapsible && (
             <button
-              onClick={() => {
-                feedback('tick');
-                setActiveTab('tomorrow');
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpand();
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition-colors"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                isExpanded
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
+                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+              }`}
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? t('collapseMenu', 'Collapse Menu') : t('expandMenu', 'Expand Menu')}
             >
-              {t('viewTomorrowsMeals', "View Tomorrow's Meals →")}
+              {/* <span>{isExpanded ? t('collapse', 'Collapse') : t('expand', 'Expand')}</span> */}
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 transition-transform duration-300 ${
+                  isExpanded ? 'rotate-180' : ''
+                }`}
+              />
             </button>
           )}
         </div>
-      ) : showSpotlightBanner && spotlightMeal ? (
-        /* Main Spotlight Banner (Rendered ONLY when there is actual dish content) */
-        <div className="relative z-10 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-green-50/60 dark:from-emerald-950/30 dark:via-[#121f1c]/40 dark:to-emerald-950/20 border border-emerald-300/60 dark:border-emerald-500/20 shadow-xs mb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
-                  <Sparkles className="w-3 h-3" />
-                  <span>{getLocalizedStatusLabel(spotlightMeal.statusLabel)}</span>
-                </span>
-
-                {/* Only render category badge if category actually exists */}
-                {spotlightMeal.category && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                      CATEGORY_TAGS[spotlightMeal.category]?.badgeClass || CATEGORY_TAGS.Veg.badgeClass
-                    }`}
-                  >
-                    {spotlightMeal.category === 'Veg' ? (t('catVeg') || 'Veg') : spotlightMeal.category === 'Non-Veg' ? (t('catNonVeg') || 'Non-Veg') : spotlightMeal.category === 'Egg' ? (t('catEgg') || 'Egg') : spotlightMeal.category === 'Special' ? (t('catSpecial') || 'Special') : spotlightMeal.category}
-                  </span>
-                )}
-
-                {spotlightMeal.specialTag && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
-                    {spotlightMeal.specialTag}
-                  </span>
-                )}
-              </div>
-
-              {/* Real title only - never fallback to 'todaysSpecial' */}
-              <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">
-                {spotlightMeal.title}
-              </h3>
-
-              {spotlightMeal.items.length > 0 && (
-                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
-                  {spotlightMeal.items.join(' • ')}
-                </p>
-              )}
-            </div>
-
-            {/* Timing & Headcount Meta */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between md:justify-center gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-emerald-200/50 dark:border-white/5 w-full md:w-auto">
-              {spotlightMeal.timing && (
-                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  <Clock className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                  <span>{spotlightMeal.timing}</span>
-                </div>
-              )}
-
-              {/* Exact Meal-Specific Headcount */}
-              {spotlightMeal.slotKey === 'lunch' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-emerald-200 dark:border-emerald-500/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-                  <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>{displayedLunchCount} {t('bookedOrdersForLunch', 'booked orders for Lunch')}</span>
-                </span>
-              )}
-
-              {spotlightMeal.slotKey === 'breakfast' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-amber-200 dark:border-amber-500/20 text-[11px] font-bold text-amber-700 dark:text-amber-400">
-                  <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>{displayedBreakfastCount} {t('bookedOrdersForBreakfast', 'booked orders for Breakfast')}</span>
-                </span>
-              )}
-
-              {(spotlightMeal.slotKey === 'evening' || spotlightMeal.slotKey === 'dinner') && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-[11px] font-medium text-gray-600 dark:text-gray-400">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{t('openDiningNoToken', 'Open Dining (No Token Required)')}</span>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : showSpotlightBanner ? (
-        /* Empty State Banner: Rendered cleanly when menu has no active dishes set */
-        <div className="relative z-10 p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.02] border border-dashed border-gray-300 dark:border-white/10 mb-4 text-center">
-          <div className="w-10 h-10 mx-auto mb-2 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
-            <UtensilsCrossed className="w-5 h-5" />
-          </div>
-          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
-            {isShowingTomorrow
-              ? `${t('noMealsScheduledTomorrow', 'No meals scheduled yet for tomorrow')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('tomorrow', 'Tomorrow')})`
-              : `${t('noMealsScheduledToday', 'No meals scheduled yet for today')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('today', 'Today')})`}
-          </h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {t('menuEmptyNotice', 'Menu is currently empty. Dishes will appear once updated by Canteen Management.')}
-          </p>
-        </div>
-      ) : null}
-
-      {/* Day Overview Strip: Render ONLY ACTIVE slots */}
-      {!isDayArchived && activeSlots.length > 0 && (
-        <div
-          className={`relative z-10 grid gap-2.5 min-w-0 ${
-            activeSlots.length === 1
-              ? 'grid-cols-1'
-              : 'grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4'
-          }`}
-        >
-          {activeSlots.map((slot) => {
-            const Icon = slot.icon;
-            const slotData = slot.data;
-            const hasContent = hasDishContent(slotData);
-
-            return (
-              <div
-                key={slot.key}
-                className="p-3 rounded-2xl border bg-gray-50/80 dark:bg-white/[0.03] border-gray-200/70 dark:border-white/5 transition-all space-y-1.5 min-w-0"
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${slot.iconColor}`}
-                  >
-                    <Icon className="w-3 h-3" />
-                    <span>{slot.label}</span>
-                  </span>
-                  {slotData.timing && (
-                    <span className="text-[10px] text-gray-400 font-mono">
-                      {slotData.timing}
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                  {slotData.title || (hasContent ? slotData.items?.[0] : t('noDishSet', 'No dish set'))}
-                </p>
-
-                {slotData.items?.length > 0 && (
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate block">
-                    {slotData.items.join(' • ')}
-                  </span>
-                )}
-
-                <div className="pt-1">
-                  {slot.hasToken ? (
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${slot.badgeBg}`}
-                    >
-                      {slot.key === 'breakfast' ? (
-                        <Coffee className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                      ) : (
-                        <Utensils className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                      )}
-                      <span>{slot.count} {t('booked', 'Booked')}</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-gray-200/60 dark:border-white/5">
-                      {t('openNoToken', 'Open (No token)')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Footer link to Weekly Schedule */}
-      <div className="relative z-10 mt-3 pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-xs">
-        <span className="text-[11px] text-gray-500 dark:text-gray-400 inline-flex items-center gap-1">
-          <MapPin className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-          <span>{t('diningHallLoc', 'Alathurpadi Dars Dining Hall')}</span>
-        </span>
-
-        <button
-          onClick={() => {
-            feedback('tick');
-            navigate('/menu');
-          }}
-          className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-        >
-          <span>{t('viewFullMenu') || 'View Full Menu'}</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
       </div>
+
+      {/* Collapsible Content */}
+      <AnimatePresence initial={false}>
+        {(!collapsible || isExpanded) && (
+          <motion.div
+            key="canteen-menu-collapsible-content"
+            initial={collapsible ? { opacity: 0, height: 0 } : false}
+            animate={collapsible ? { opacity: 1, height: 'auto' } : false}
+            exit={collapsible ? { opacity: 0, height: 0 } : undefined}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden space-y-3.5 pt-1"
+          >
+            {/* If Displayed Day is Closed / Routine Off: Render Clean Notice Banner */}
+            {isDayArchived ? (
+              <div className="relative z-10 p-4 sm:p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <UtensilsCrossed className="w-5 h-5 text-amber-500 shrink-0" />
+                    <h3 className="font-extrabold text-sm sm:text-base text-amber-900 dark:text-amber-200">
+                      {t(`daysFull.${displayedDayKey}`) || displayedDayData.dayName} — {t('canteenClosed', 'Canteen Closed')}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                    {displayedDayData.archiveReason || t('canteenClosedRoutine', 'Canteen routine off. No meals scheduled for this day.')}
+                  </p>
+                </div>
+
+                {!isShowingTomorrow && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      feedback('tick');
+                      setActiveTab('tomorrow');
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
+                  >
+                    {t('viewTomorrowsMeals', "View Tomorrow's Meals →")}
+                  </button>
+                )}
+              </div>
+            ) : showSpotlightBanner && spotlightMeal ? (
+              /* Main Spotlight Banner (Rendered ONLY when there is actual dish content) */
+              <div className="relative z-10 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-green-50/60 dark:from-emerald-950/30 dark:via-[#121f1c]/40 dark:to-emerald-950/20 border border-emerald-300/60 dark:border-emerald-500/20 shadow-xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
+                        <Sparkles className="w-3 h-3" />
+                        <span>{getLocalizedStatusLabel(spotlightMeal.statusLabel)}</span>
+                      </span>
+
+                      {/* Only render category badge if category actually exists */}
+                      {spotlightMeal.category && (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            CATEGORY_TAGS[spotlightMeal.category]?.badgeClass || CATEGORY_TAGS.Veg.badgeClass
+                          }`}
+                        >
+                          {spotlightMeal.category === 'Veg' ? (t('catVeg') || 'Veg') : spotlightMeal.category === 'Non-Veg' ? (t('catNonVeg') || 'Non-Veg') : spotlightMeal.category === 'Egg' ? (t('catEgg') || 'Egg') : spotlightMeal.category === 'Special' ? (t('catSpecial') || 'Special') : spotlightMeal.category}
+                        </span>
+                      )}
+
+                      {spotlightMeal.specialTag && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                          {spotlightMeal.specialTag}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Real title only - never fallback to 'todaysSpecial' */}
+                    <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">
+                      {spotlightMeal.title}
+                    </h3>
+
+                    {spotlightMeal.items.length > 0 && (
+                      <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                        {spotlightMeal.items.join(' • ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Timing & Headcount Meta */}
+                  <div className="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between md:justify-center gap-1.5 pt-2 md:pt-0 border-t md:border-t-0 border-emerald-200/50 dark:border-white/5 w-full md:w-auto">
+                    {spotlightMeal.timing && (
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        <Clock className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <span>{spotlightMeal.timing}</span>
+                      </div>
+                    )}
+
+                    {/* Exact Meal-Specific Headcount */}
+                    {spotlightMeal.slotKey === 'lunch' && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-emerald-200 dark:border-emerald-500/20 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                        <Utensils className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{displayedLunchCount} {t('bookedOrdersForLunch', 'booked orders for Lunch')}</span>
+                      </span>
+                    )}
+
+                    {spotlightMeal.slotKey === 'breakfast' && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-amber-200 dark:border-amber-500/20 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                        <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>{displayedBreakfastCount} {t('bookedOrdersForBreakfast', 'booked orders for Breakfast')}</span>
+                      </span>
+                    )}
+
+                    {(spotlightMeal.slotKey === 'evening' || spotlightMeal.slotKey === 'dinner') && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-black/30 border border-gray-200 dark:border-white/10 text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{t('openDiningNoToken', 'Open Dining (No Token Required)')}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : showSpotlightBanner ? (
+              /* Empty State Banner: Rendered cleanly when menu has no active dishes set */
+              <div className="relative z-10 p-5 rounded-2xl bg-gray-50/80 dark:bg-white/[0.02] border border-dashed border-gray-300 dark:border-white/10 text-center">
+                <div className="w-10 h-10 mx-auto mb-2 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                  <UtensilsCrossed className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                  {isShowingTomorrow
+                    ? `${t('noMealsScheduledTomorrow', 'No meals scheduled yet for tomorrow')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('tomorrow', 'Tomorrow')})`
+                    : `${t('noMealsScheduledToday', 'No meals scheduled yet for today')} (${t(`daysFull.${displayedDayKey}`) || displayedDayData?.dayName || t('today', 'Today')})`}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {t('menuEmptyNotice', 'Menu is currently empty. Dishes will appear once updated by Canteen Management.')}
+                </p>
+              </div>
+            ) : null}
+
+            {/* Day Overview Strip: Render ONLY ACTIVE slots */}
+            {!isDayArchived && activeSlots.length > 0 && (
+              <div
+                className={`relative z-10 grid gap-2.5 min-w-0 ${
+                  activeSlots.length === 1
+                    ? 'grid-cols-1'
+                    : 'grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4'
+                }`}
+              >
+                {activeSlots.map((slot) => {
+                  const Icon = slot.icon;
+                  const slotData = slot.data;
+                  const hasContent = hasDishContent(slotData);
+
+                  return (
+                    <div
+                      key={slot.key}
+                      className="p-3 rounded-2xl border bg-gray-50/80 dark:bg-white/[0.03] border-gray-200/70 dark:border-white/5 transition-all space-y-1.5 min-w-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${slot.iconColor}`}
+                        >
+                          <Icon className="w-3 h-3" />
+                          <span>{slot.label}</span>
+                        </span>
+                        {slotData.timing && (
+                          <span className="text-[10px] text-gray-400 font-mono">
+                            {slotData.timing}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                        {slotData.title || (hasContent ? slotData.items?.[0] : t('noDishSet', 'No dish set'))}
+                      </p>
+
+                      {slotData.items?.length > 0 && (
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate block">
+                          {slotData.items.join(' • ')}
+                        </span>
+                      )}
+
+                      <div className="pt-1">
+                        {slot.hasToken ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${slot.badgeBg}`}
+                          >
+                            {slot.key === 'breakfast' ? (
+                              <Coffee className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            ) : (
+                              <Utensils className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            )}
+                            <span>{slot.count} {t('booked', 'Booked')}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-gray-200/60 dark:border-white/5">
+                            {t('openNoToken', 'Open (No token)')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Footer link to Weekly Schedule */}
+            <div className="relative z-10 pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-xs">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 inline-flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                <span>{t('diningHallLoc', 'Alathurpadi Dars Dining Hall')}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedback('tick');
+                  navigate('/menu');
+                }}
+                className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                <span>{t('viewFullMenu') || 'View Full Menu'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

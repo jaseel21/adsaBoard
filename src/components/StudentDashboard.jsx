@@ -701,9 +701,9 @@ export default function StudentDashboard() {
 
               {/* Template / Preset Buttons Below Switch */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-semibold text-emerald-200/60 uppercase tracking-wider pl-0.5">
+                {/* <span className="text-[11px] font-semibold text-emerald-200/60 uppercase tracking-wider pl-0.5">
                   {t('presets', 'Templates')}:
-                </span>
+                </span> */}
 
                 {/* Today Preset Button */}
                 <button
@@ -889,7 +889,7 @@ export default function StudentDashboard() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. CANTEEN MEAL RADAR (Embedded without bulky highlight banner)          */}
+      {/* 3. Canteen Menu (Embedded expandable card, collapsed by default)          */}
       {/* ========================================================================= */}
       <NextMealSpotlight
         documents={documents}
@@ -900,6 +900,8 @@ export default function StudentDashboard() {
         lunchOrdersCount={metrics.lunchCount}
         breakfastOrdersCount={metrics.breakfastCount}
         showSpotlightBanner={false}
+        collapsible={true}
+        defaultExpanded={false}
       />
 
       {/* ========================================================================= */}

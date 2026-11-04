@@ -4,6 +4,7 @@ import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger
 export const DEFAULT_TOUR_CAMPAIGN = {
   enabled: true,
   targetAudience: 'first_time', // 'first_time' | 'all' | 'students_only' | 'disabled'
+  targetDevice: 'all', // 'all' | 'desktop_only' | 'mobile_only'
   dateRange: {
     enforceDateRange: false,
     startDate: '', // 'YYYY-MM-DD'
@@ -16,6 +17,7 @@ export const DEFAULT_TOUR_CAMPAIGN = {
   },
   triggerRule: {
     delaySeconds: 3,
+    autoCloseSeconds: 12, // 0 = disabled, >0 = auto-close prompt after N seconds
     repromptCooldownDays: 7,
     enforceUntilCompleted: false,
   },
@@ -69,6 +71,7 @@ export function subscribeToTourCampaign(onUpdate, onError) {
         const parsedCampaign = {
           ...DEFAULT_TOUR_CAMPAIGN,
           ...data,
+          targetDevice: data.targetDevice || DEFAULT_TOUR_CAMPAIGN.targetDevice,
           dateRange: {
             ...DEFAULT_TOUR_CAMPAIGN.dateRange,
             ...(data.dateRange || {}),
@@ -80,6 +83,10 @@ export function subscribeToTourCampaign(onUpdate, onError) {
           triggerRule: {
             ...DEFAULT_TOUR_CAMPAIGN.triggerRule,
             ...(data.triggerRule || {}),
+            autoCloseSeconds:
+              data.triggerRule?.autoCloseSeconds !== undefined
+                ? Number(data.triggerRule.autoCloseSeconds)
+                : DEFAULT_TOUR_CAMPAIGN.triggerRule.autoCloseSeconds,
           },
           bannerContent: {
             ...DEFAULT_TOUR_CAMPAIGN.bannerContent,
@@ -154,6 +161,8 @@ export async function updateTourCampaign(newConfig, actor = {}) {
       details: {
         enabled: payload.enabled,
         targetAudience: payload.targetAudience,
+        targetDevice: payload.targetDevice,
+        autoCloseSeconds: payload.triggerRule?.autoCloseSeconds,
         dateRange: payload.dateRange,
         timeWindow: payload.timeWindow,
       },
@@ -177,8 +186,17 @@ export function evaluateTourAutoPrompt({
   isFirstTime = true,
   completedCount = 0,
   lastDismissedAt = null,
+  isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false,
 }) {
   if (!campaign || !campaign.enabled || campaign.targetAudience === 'disabled') {
+    return false;
+  }
+
+  // 0. Device Targeting Check (All / Desktop Only / Mobile Only)
+  if (campaign.targetDevice === 'desktop_only' && isMobile) {
+    return false;
+  }
+  if (campaign.targetDevice === 'mobile_only' && !isMobile) {
     return false;
   }
 
