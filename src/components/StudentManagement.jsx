@@ -24,6 +24,7 @@ import {
   Ban,
   Check,
   Camera,
+  UserCheck,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { useWorldTime } from '../utils/time';
@@ -35,8 +36,10 @@ import BulkActionModal from './BulkActionModal';
 import CsvManagerModal from './CsvManagerModal';
 import BlockManagementModal from './admin/BlockManagementModal';
 import PhotoModerationDrawer from './admin/PhotoModerationDrawer';
+import ProfileRequestsDrawer from './admin/ProfileRequestsDrawer';
 import IslamicAvatar from './ui/IslamicAvatar';
 import { subscribePendingPhotoRequests } from '../utils/photoModerationService';
+import { subscribePendingProfileRequests } from '../utils/studentProfileRequestService';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { AuthContext } from '../store/AuthContext';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
@@ -84,11 +87,20 @@ export default function StudentManagement() {
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [pendingPhotosCount, setPendingPhotosCount] = useState(0);
+  const [profileRequestsModalOpen, setProfileRequestsModalOpen] = useState(false);
+  const [pendingProfileRequestsCount, setPendingProfileRequestsCount] = useState(0);
   const [preferences, setPreferences] = useState([]);
 
   useEffect(() => {
     const unsub = subscribePendingPhotoRequests((list) => {
       setPendingPhotosCount(list.length);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribePendingProfileRequests((list) => {
+      setPendingProfileRequestsCount(list.length);
     });
     return () => unsub();
   }, []);
@@ -470,6 +482,27 @@ export default function StudentManagement() {
             {pendingPhotosCount > 0 && (
               <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-mono text-[10px] flex items-center justify-center font-black">
                 {pendingPhotosCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              feedback('tick');
+              setProfileRequestsModalOpen(true);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer border ${
+              pendingProfileRequestsCount > 0
+                ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/40 shadow-xs animate-pulse'
+                : 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 border-gray-200/60 dark:border-white/10'
+            }`}
+            title="Review student contact and name change requests"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-amber-500" />
+            <span>Profile Requests</span>
+            {pendingProfileRequestsCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-mono text-[10px] flex items-center justify-center font-black">
+                {pendingProfileRequestsCount}
               </span>
             )}
           </button>
@@ -1133,6 +1166,12 @@ export default function StudentManagement() {
       <PhotoModerationDrawer
         isOpen={photoModalOpen}
         onClose={() => setPhotoModalOpen(false)}
+      />
+
+      {/* Central Committee Contact & Name Change Requests Queue */}
+      <ProfileRequestsDrawer
+        isOpen={profileRequestsModalOpen}
+        onClose={() => setProfileRequestsModalOpen(false)}
       />
     </div>
   );

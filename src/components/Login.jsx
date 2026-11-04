@@ -1,6 +1,22 @@
 import React, { useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clock, KeyRound, Lock, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, ArrowLeft, Info, Sparkles } from 'lucide-react';
+import {
+  Clock,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  ArrowRight,
+  ShieldCheck,
+  ArrowLeft,
+  Info,
+  Sparkles,
+  Hash,
+  AtSign,
+  Phone,
+  Mail,
+} from 'lucide-react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
@@ -58,19 +74,54 @@ function Login() {
 
   const loginWith = useCallback(async () => {
     try {
-      const cleanId = (token || '').trim().replace(/^@/, '');
-      if (!cleanId) {
-        setErr(t('enterTokenOrUsername') || 'Please enter your token number or username');
+      const rawInput = (token || '').trim();
+      if (!rawInput) {
+        setErr(t('enterLoginIdentifier', 'Please enter your token number, username, phone, or email'));
         return;
       }
 
       const studentsRef = firebase.firestore().collection('students');
       let matchedDoc = null;
 
-      // 1. If numeric, first search by tokenNo
-      if (/^\d+$/.test(cleanId)) {
+      // 1. Email Lookup (contains @ and .)
+      if (rawInput.includes('@') && rawInput.includes('.')) {
+        const normalizedEmail = rawInput.toLowerCase();
+        const emailQuery = await studentsRef.where('email', '==', normalizedEmail).limit(1).get();
+        if (!emailQuery.empty) {
+          matchedDoc = emailQuery.docs[0];
+        }
+      }
+
+      // 2. Phone Lookup (starts with + or digits >= 10)
+      if (!matchedDoc) {
+        const digits = rawInput.replace(/\D/g, '');
+        if (digits.length >= 10) {
+          const last10 = digits.slice(-10);
+          const formattedDisplay = `+91 ${last10.slice(0, 5)} ${last10.slice(5)}`;
+          const withPlus = `+91${last10}`;
+
+          const [exactQ, normQ, displayQ, plusQ, last10Q] = await Promise.all([
+            studentsRef.where('phone', '==', rawInput).limit(1).get(),
+            studentsRef.where('phoneNormalized', '==', last10).limit(1).get(),
+            studentsRef.where('phone', '==', formattedDisplay).limit(1).get(),
+            studentsRef.where('phone', '==', withPlus).limit(1).get(),
+            studentsRef.where('phone', '==', last10).limit(1).get(),
+          ]);
+
+          matchedDoc =
+            exactQ.docs[0] ||
+            normQ.docs[0] ||
+            displayQ.docs[0] ||
+            plusQ.docs[0] ||
+            last10Q.docs[0] ||
+            null;
+        }
+      }
+
+      // 3. Numeric Token Number Lookup (if numeric and short)
+      if (!matchedDoc && /^\d+$/.test(rawInput) && rawInput.length <= 6) {
         const tokenQuery = await studentsRef
-          .where('tokenNo', '==', parseInt(cleanId, 10))
+          .where('tokenNo', '==', parseInt(rawInput, 10))
           .limit(1)
           .get();
 
@@ -79,40 +130,42 @@ function Login() {
         }
       }
 
-      // 2. If not found or if input has letters, search by username & uname
+      // 4. Username / Handle Lookup (@username or username or uname)
       if (!matchedDoc) {
-        const normalizedUname = cleanId.toLowerCase();
-        const usernameQuery = await studentsRef
-          .where('username', '==', normalizedUname)
-          .limit(1)
-          .get();
+        const cleanUname = rawInput.replace(/^@/, '').toLowerCase();
+        const [usernameQuery, unameQuery] = await Promise.all([
+          studentsRef.where('username', '==', cleanUname).limit(1).get(),
+          studentsRef.where('uname', '==', cleanUname).limit(1).get(),
+        ]);
 
         if (!usernameQuery.empty) {
           matchedDoc = usernameQuery.docs[0];
+        } else if (!unameQuery.empty) {
+          matchedDoc = unameQuery.docs[0];
         } else {
-          const unameQuery = await studentsRef
-            .where('uname', '==', normalizedUname)
+          // Exact case-sensitive fallback
+          const exactQuery = await studentsRef
+            .where('username', '==', rawInput)
             .limit(1)
             .get();
-
-          if (!unameQuery.empty) {
-            matchedDoc = unameQuery.docs[0];
-          } else {
-            // Case-sensitive exact fallback lookup
-            const exactQuery = await studentsRef
-              .where('username', '==', cleanId)
-              .limit(1)
-              .get();
-            if (!exactQuery.empty) {
-              matchedDoc = exactQuery.docs[0];
-            }
+          if (!exactQuery.empty) {
+            matchedDoc = exactQuery.docs[0];
           }
+        }
+      }
+
+      // 5. Ultimate Fallback: Try tokenNo or phone directly if numeric
+      if (!matchedDoc && /^\d+$/.test(rawInput)) {
+        const num = parseInt(rawInput, 10);
+        const tokenQuery = await studentsRef.where('tokenNo', '==', num).limit(1).get();
+        if (!tokenQuery.empty) {
+          matchedDoc = tokenQuery.docs[0];
         }
       }
 
       if (!matchedDoc) {
         feedback('warning');
-        setErr(t('studentNotFound') || 'Token number or username not found. Please check and try again.');
+        setErr(t('studentNotFound') || 'Account not found. Please verify your token, username, phone, or email.');
         return;
       }
 
@@ -220,8 +273,31 @@ function Login() {
               {t('studentPortalLogin', 'Student Portal')}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('enterTokenNumberOrUsername', 'Enter your token number or @username and password to manage meal selections')}
+              {t(
+                'enterAnyIdentifierHint',
+                'Sign in with your Token Number, @username, Phone Number, or Email'
+              )}
             </p>
+
+            {/* Omnichannel Credential Indicators */}
+            <div className="pt-2 flex items-center justify-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                <Hash className="w-3 h-3 text-emerald-500" />
+                <span>Token</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                <AtSign className="w-3 h-3 text-emerald-500" />
+                <span>Username</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                <Phone className="w-3 h-3 text-emerald-500" />
+                <span>Phone</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                <Mail className="w-3 h-3 text-emerald-500" />
+                <span>Email</span>
+              </span>
+            </div>
           </div>
 
           {/* Emergency Lockdown Notice */}
@@ -302,13 +378,13 @@ function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Token or Username Input */}
+            {/* Multi-Identifier Input (Token, Username, Phone, Email) */}
             <div className="space-y-1.5">
               <label
                 htmlFor="token"
                 className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
               >
-                {t('tokenNumberOrUsername', 'Token Number or Username')}
+                {t('omnichannelLoginLabel', 'Login ID')}
               </label>
               <input
                 id="token"
@@ -321,7 +397,7 @@ function Login() {
                   setToken(e.target.value);
                   setErr('');
                 }}
-                placeholder="Enter your token or username"
+                placeholder="Token #, @username, phone, or email"
                 className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 required
               />

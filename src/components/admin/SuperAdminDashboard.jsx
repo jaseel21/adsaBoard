@@ -54,6 +54,7 @@ import StaffManagementModal from '../StaffManagementModal';
 import TokenLockManagerModal from '../TokenLockManagerModal';
 import BlockManagementModal from './BlockManagementModal';
 import CanteenOpsActivityDrawer from './CanteenOpsActivityDrawer';
+import GlobalSecurityPolicyModal from './security/GlobalSecurityPolicyModal';
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ export default function SuperAdminDashboard() {
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [opsLogOpen, setOpsLogOpen] = useState(false);
+  const [securityPolicyModalOpen, setSecurityPolicyModalOpen] = useState(false);
 
   // Real-time Firestore Listeners
   useEffect(() => {
@@ -619,17 +621,32 @@ export default function SuperAdminDashboard() {
 
               <button
                 type="button"
-                onClick={() => navigate('/admin/about')}
-                className="w-full p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-left transition-colors flex items-center justify-between group"
+                onClick={() => setSecurityPolicyModalOpen(true)}
+                className="w-full p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-left transition-colors flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <div>
-                    <div className="text-xs font-bold text-purple-900 dark:text-purple-200">Institutional About Studio</div>
-                    <div className="text-[10px] text-purple-700/80 dark:text-purple-300/80">Mudarrisun & committees CRUD</div>
+                    <div className="text-xs font-bold text-purple-900 dark:text-purple-200">Campus Fleet Security Policy</div>
+                    <div className="text-[10px] text-purple-700/80 dark:text-purple-300/80">Global timeout, persona & override lock</div>
                   </div>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-purple-600 transition-colors" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/admin/about')}
+                className="w-full p-2.5 rounded-xl bg-gray-50/80 dark:bg-white/5 hover:bg-purple-50 dark:hover:bg-purple-950/30 text-left transition-colors flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <GraduationCap className="w-4 h-4 text-purple-500" />
+                  <div>
+                    <div className="text-xs font-bold text-gray-900 dark:text-white">Institutional About Studio</div>
+                    <div className="text-[10px] text-gray-400">Mudarrisun & committees CRUD</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-purple-500 transition-colors" />
               </button>
             </div>
           </div>
@@ -935,6 +952,13 @@ export default function SuperAdminDashboard() {
       <CanteenOpsActivityDrawer
         isOpen={opsLogOpen}
         onClose={() => setOpsLogOpen(false)}
+      />
+
+      <GlobalSecurityPolicyModal
+        isOpen={securityPolicyModalOpen}
+        onClose={() => setSecurityPolicyModalOpen(false)}
+        user={user}
+        role={role}
       />
     </div>
   );

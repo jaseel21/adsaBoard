@@ -16,7 +16,7 @@ export default function StudentRoute({ children }) {
         to="/login"
         state={{
           from: location.pathname,
-          notice: 'Please enter your token number and password to access the dining portal.',
+          notice: 'Please enter your Login ID to access the dining portal.',
         }}
         replace
       />

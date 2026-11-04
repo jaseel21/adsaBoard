@@ -4,10 +4,26 @@
  * and persistent local hardware configuration.
  */
 
+import { getCachedGlobalSecurityPolicy } from './securityPolicyService';
+
 const STORAGE_KEY = 'adsa_device_profile';
 const REMOTE_POLICY_KEY = 'adsa_sentinel_remote_idle_policy';
 
 export const DEVICE_PERSONAS = [
+  {
+    id: 'inherit_global',
+    labelEn: 'Inherit Campus Policy',
+    labelMl: 'ക്ലൗഡ് പോളിസി പിന്തുടരുക',
+    descEn: 'Track centralized Campus Fleet Security Policy set by Central Committee',
+    descMl: 'സെൻട്രൽ കമ്മിറ്റി നിശ്ചയിച്ച പൊതുവായ സമയവും പോളിസിയും പിന്തുടരുക',
+    icon: 'Radio',
+    defaultTimeoutMs: 60000,
+    defaultWarningMs: 15000,
+    wakeLockEnabled: true,
+    soundAlertsEnabled: true,
+    countdownTickEnabled: true,
+    enabled: true,
+  },
   {
     id: 'public_kiosk',
     labelEn: 'Public Kiosk Tablet',
@@ -155,6 +171,9 @@ export function getDeviceProfile() {
     soundAlertsEnabled: true,
     countdownTickEnabled: true,
     wakeLockEnabled: true,
+    adminConfigured: false,
+    adminConfiguredAt: null,
+    adminConfiguredBy: null,
     lastModifiedAt: new Date().toISOString(),
   };
 
@@ -170,8 +189,13 @@ export function getDeviceProfile() {
       deviceId, // ensure ID never drifts
     };
 
-    // Auto-migrate legacy profiles that defaulted to 'public_kiosk' on mobile phones
-    if (profile.persona === 'public_kiosk' && !parsed.isUserExplicitPersona && detectHardwarePersona() === 'personal_mobile') {
+    // Auto-migrate legacy profiles that defaulted to 'public_kiosk' on mobile phones (unless admin configured)
+    if (
+      profile.persona === 'public_kiosk' &&
+      !parsed.isUserExplicitPersona &&
+      !parsed.adminConfigured &&
+      detectHardwarePersona() === 'personal_mobile'
+    ) {
       profile.persona = 'auto_detect';
     }
 
@@ -194,6 +218,9 @@ export function updateDeviceProfile(updates) {
       ...current,
       ...updates,
       isUserExplicitPersona: updates.persona ? true : current.isUserExplicitPersona,
+      adminConfigured: updates.adminConfigured !== undefined ? updates.adminConfigured : current.adminConfigured,
+      adminConfiguredAt: updates.adminConfiguredAt !== undefined ? updates.adminConfiguredAt : current.adminConfiguredAt,
+      adminConfiguredBy: updates.adminConfiguredBy !== undefined ? updates.adminConfiguredBy : current.adminConfiguredBy,
       lastModifiedAt: new Date().toISOString(),
     };
 
@@ -204,6 +231,47 @@ export function updateDeviceProfile(updates) {
     return updated;
   } catch (err) {
     console.error('Failed to update device profile:', err);
+    return getDeviceProfile();
+  }
+}
+
+/**
+ * Check if the device profile is configured by an administrator
+ */
+export function isDeviceProfileAdminConfigured() {
+  const profile = getDeviceProfile();
+  return Boolean(profile && profile.adminConfigured);
+}
+
+/**
+ * Reset terminal profile back to default auto-detection (Admin action)
+ */
+export function resetDeviceProfileToDefaults() {
+  if (typeof window === 'undefined') return getDeviceProfile();
+
+  try {
+    const deviceId = getOrCreateDeviceId();
+    const defaultProfile = {
+      deviceId,
+      deviceName: `Terminal ${deviceId.slice(-4).toUpperCase()}`,
+      campusZone: 'canteen_hall',
+      persona: 'auto_detect',
+      customTimeoutMs: null,
+      customWarningMs: null,
+      soundAlertsEnabled: true,
+      countdownTickEnabled: true,
+      wakeLockEnabled: true,
+      adminConfigured: false,
+      adminConfiguredAt: null,
+      adminConfiguredBy: null,
+      lastModifiedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProfile));
+    window.dispatchEvent(new CustomEvent('adsa:device_profile_updated', { detail: defaultProfile }));
+    return defaultProfile;
+  } catch (err) {
+    console.error('Failed to reset device profile to defaults:', err);
     return getDeviceProfile();
   }
 }
@@ -242,18 +310,20 @@ export function getRemoteIdlePolicy() {
 /**
  * Resolves the effective Idle Guard configuration using the Resolution Waterfall:
  * 1. Sentinel Remote Fleet Override (Emergency / Admin Lock)
- * 2. Device Hardware Profile (LocalStorage adsa_device_profile)
- * 3. User / Account Preferences (if applicable)
- * 4. Automatic Hardware Heuristics Fallback
+ * 2. Central Committee Fleet Override Gate (If allowDeviceOverrides === false, forces global policy)
+ * 3. Device Hardware Profile (LocalStorage adsa_device_profile, if allowed and not inherit_global)
+ * 4. Campus Global Cloud Policy (Firestore settings/security_policy)
+ * 5. Automatic Hardware Heuristics Fallback (detectHardwarePersona)
  *
  * @param {Object} [overrideProfile] - Optional explicit profile
- * @returns {{ timeoutMs: number, warningMs: number, enabled: boolean, persona: string, soundAlerts: boolean, countdownTick: boolean, wakeLock: boolean }}
+ * @returns {{ timeoutMs: number, warningMs: number, enabled: boolean, persona: string, soundAlerts: boolean, countdownTick: boolean, wakeLock: boolean, isRemoteOverride: boolean, isGlobalPolicyForced: boolean, isInheritedGlobal: boolean, isLocalDeviceOverride: boolean, allowDeviceOverrides: boolean }}
  */
 export function resolveEffectiveIdleConfig(overrideProfile = null) {
   const remotePolicy = getRemoteIdlePolicy();
   const profile = overrideProfile || getDeviceProfile();
+  const globalPolicy = getCachedGlobalSecurityPolicy();
 
-  // 1. Sentinel Remote Override takes top priority
+  // 1. Sentinel Remote Override takes top priority (Emergency Incident / Broadcast Lock)
   if (remotePolicy && remotePolicy.timeoutMs) {
     return {
       timeoutMs: Number(remotePolicy.timeoutMs),
@@ -264,20 +334,119 @@ export function resolveEffectiveIdleConfig(overrideProfile = null) {
       countdownTick: remotePolicy.countdownTickEnabled ?? true,
       wakeLock: remotePolicy.wakeLockEnabled ?? true,
       isRemoteOverride: true,
-      remoteReason: remotePolicy.reason || 'Central Committee policy',
+      isGlobalPolicyForced: false,
+      isInheritedGlobal: false,
+      isLocalDeviceOverride: false,
+      allowDeviceOverrides: globalPolicy?.allowDeviceOverrides !== false,
+      remoteReason: remotePolicy.reason || 'Central Committee emergency override',
+      source: 'sentinel_remote',
+      deviceName: profile.deviceName,
+      campusZone: profile.campusZone,
     };
   }
 
-  // Resolve target persona
+  // 2. Central Committee Fleet Lock: Are local device overrides blocked campus-wide?
+  const isLocalOverrideBlocked = globalPolicy && globalPolicy.allowDeviceOverrides === false;
+
+  if (isLocalOverrideBlocked) {
+    const effectivePersona = globalPolicy.defaultPersona || 'public_kiosk';
+    const personaMeta = DEVICE_PERSONAS.find((p) => p.id === effectivePersona) || DEVICE_PERSONAS[1] || DEVICE_PERSONAS[0];
+    const timeoutMs = Number(globalPolicy.defaultTimeoutMs) || personaMeta.defaultTimeoutMs;
+    const warningMs = Number(globalPolicy.defaultWarningMs) || personaMeta.defaultWarningMs;
+    const enabled = effectivePersona === 'kitchen_wallboard' ? false : (personaMeta.enabled && timeoutMs < 86400000);
+
+    return {
+      timeoutMs,
+      warningMs: Math.min(warningMs, Math.floor(timeoutMs / 2)),
+      enabled,
+      persona: effectivePersona,
+      soundAlerts: globalPolicy.soundAlertsEnabled ?? personaMeta.soundAlertsEnabled,
+      countdownTick: globalPolicy.countdownTickEnabled ?? personaMeta.countdownTickEnabled,
+      wakeLock: globalPolicy.wakeLockEnabled ?? personaMeta.wakeLockEnabled,
+      isRemoteOverride: false,
+      isGlobalPolicyForced: true,
+      isInheritedGlobal: false,
+      isLocalDeviceOverride: false,
+      allowDeviceOverrides: false,
+      policyReason: globalPolicy.policyReason || 'Central Committee fleet lock: Device-specific overrides blocked',
+      source: 'global_fleet_forced',
+      deviceName: profile.deviceName,
+      campusZone: profile.campusZone,
+    };
+  }
+
+  // 3. Local Device Override: If allowed and terminal has an explicit non-inherit configuration
+  const isLocalConfigured = Boolean(profile.adminConfigured || profile.isUserExplicitPersona);
+  const isExplicitInherit = profile.persona === 'inherit_global';
+
+  if (isLocalConfigured && !isExplicitInherit && profile.persona && profile.persona !== 'auto_detect') {
+    const effectivePersona = profile.persona;
+    const personaMeta = DEVICE_PERSONAS.find((p) => p.id === effectivePersona) || DEVICE_PERSONAS[1] || DEVICE_PERSONAS[0];
+    const timeoutMs = profile.customTimeoutMs && profile.customTimeoutMs > 0
+      ? Number(profile.customTimeoutMs)
+      : personaMeta.defaultTimeoutMs;
+    const warningMs = profile.customWarningMs && profile.customWarningMs > 0
+      ? Number(profile.customWarningMs)
+      : personaMeta.defaultWarningMs;
+    const enabled = effectivePersona === 'kitchen_wallboard' ? false : (personaMeta.enabled && timeoutMs < 86400000);
+
+    return {
+      timeoutMs,
+      warningMs: Math.min(warningMs, Math.floor(timeoutMs / 2)),
+      enabled,
+      persona: effectivePersona,
+      soundAlerts: profile.soundAlertsEnabled ?? personaMeta.soundAlertsEnabled,
+      countdownTick: profile.countdownTickEnabled ?? personaMeta.countdownTickEnabled,
+      wakeLock: profile.wakeLockEnabled ?? personaMeta.wakeLockEnabled,
+      isRemoteOverride: false,
+      isGlobalPolicyForced: false,
+      isInheritedGlobal: false,
+      isLocalDeviceOverride: true,
+      allowDeviceOverrides: true,
+      source: 'local_device_override',
+      deviceName: profile.deviceName,
+      campusZone: profile.campusZone,
+    };
+  }
+
+  // 4. Inheriting Campus Global Cloud Policy (Explicit 'inherit_global' or general campus default)
+  if (isExplicitInherit || (globalPolicy && globalPolicy.defaultTimeoutMs)) {
+    let effectivePersona = isExplicitInherit
+      ? (globalPolicy.defaultPersona || 'public_kiosk')
+      : (profile.persona === 'auto_detect' ? detectHardwarePersona() : (globalPolicy.defaultPersona || 'public_kiosk'));
+
+    const personaMeta = DEVICE_PERSONAS.find((p) => p.id === effectivePersona) || DEVICE_PERSONAS[1] || DEVICE_PERSONAS[0];
+    const timeoutMs = Number(globalPolicy.defaultTimeoutMs) || personaMeta.defaultTimeoutMs;
+    const warningMs = Number(globalPolicy.defaultWarningMs) || personaMeta.defaultWarningMs;
+    const enabled = effectivePersona === 'kitchen_wallboard' ? false : (personaMeta.enabled && timeoutMs < 86400000);
+
+    return {
+      timeoutMs,
+      warningMs: Math.min(warningMs, Math.floor(timeoutMs / 2)),
+      enabled,
+      persona: effectivePersona,
+      soundAlerts: globalPolicy.soundAlertsEnabled ?? personaMeta.soundAlertsEnabled,
+      countdownTick: globalPolicy.countdownTickEnabled ?? personaMeta.countdownTickEnabled,
+      wakeLock: globalPolicy.wakeLockEnabled ?? personaMeta.wakeLockEnabled,
+      isRemoteOverride: false,
+      isGlobalPolicyForced: false,
+      isInheritedGlobal: true,
+      isLocalDeviceOverride: false,
+      allowDeviceOverrides: true,
+      policyReason: globalPolicy.policyReason,
+      source: 'global_fleet_inherited',
+      deviceName: profile.deviceName,
+      campusZone: profile.campusZone,
+    };
+  }
+
+  // 5. Automatic Hardware Heuristics Fallback
   let effectivePersona = profile.persona;
   if (!effectivePersona || effectivePersona === 'auto_detect') {
     effectivePersona = detectHardwarePersona();
   }
 
-  // Find baseline persona configuration
-  const personaMeta = DEVICE_PERSONAS.find((p) => p.id === effectivePersona) || DEVICE_PERSONAS[0];
-
-  // Apply custom fine-tuning overrides if configured
+  const personaMeta = DEVICE_PERSONAS.find((p) => p.id === effectivePersona) || DEVICE_PERSONAS[1] || DEVICE_PERSONAS[0];
   const timeoutMs = profile.customTimeoutMs && profile.customTimeoutMs > 0
     ? Number(profile.customTimeoutMs)
     : personaMeta.defaultTimeoutMs;
@@ -290,13 +459,18 @@ export function resolveEffectiveIdleConfig(overrideProfile = null) {
 
   return {
     timeoutMs,
-    warningMs: Math.min(warningMs, Math.floor(timeoutMs / 2)), // warning never exceeds half of total
+    warningMs: Math.min(warningMs, Math.floor(timeoutMs / 2)),
     enabled,
     persona: effectivePersona,
     soundAlerts: profile.soundAlertsEnabled ?? personaMeta.soundAlertsEnabled,
     countdownTick: profile.countdownTickEnabled ?? personaMeta.countdownTickEnabled,
     wakeLock: profile.wakeLockEnabled ?? personaMeta.wakeLockEnabled,
     isRemoteOverride: false,
+    isGlobalPolicyForced: false,
+    isInheritedGlobal: false,
+    isLocalDeviceOverride: false,
+    allowDeviceOverrides: true,
+    source: 'hardware_heuristics',
     deviceName: profile.deviceName,
     campusZone: profile.campusZone,
   };

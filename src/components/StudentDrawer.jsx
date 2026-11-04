@@ -33,6 +33,7 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { AuthContext } from '../store/AuthContext';
 import { cleanPastDateExceptions, syncStudentDiningHistory, getTodayISTDate, addDaysToDate, cleanRedundantDateExceptions } from '../utils/studentExceptionService';
+import { checkIdentifierUniqueness, normalizePhone, formatPhoneDisplay } from '../utils/studentProfileRequestService';
 import { logAuditEvent, calculateObjectDiff, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import { checkActivePrintsForDates } from '../utils/manifestPrintService';
 import { subscribeToPreferences } from '../utils/preferenceService';
@@ -272,6 +273,28 @@ export default function StudentDrawer({
           return;
         }
       }
+
+      // Check global uniqueness for phone, email, and username
+      try {
+        const uCheck = await checkIdentifierUniqueness({
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+          username: uname.trim() || null,
+          tokenNo: !student ? tokenNum : null,
+          excludeStudentId: student?.id || student?.documentId || null,
+        });
+
+        if (!uCheck.isUnique) {
+          dialog.alert({
+            type: 'warning',
+            title: 'Duplicate Credential',
+            message: uCheck.message,
+          });
+          return;
+        }
+      } catch (checkErr) {
+        console.warn('Uniqueness check error:', checkErr);
+      }
     }
 
     setSaving(true);
@@ -322,7 +345,8 @@ export default function StudentDrawer({
           username: finalUname,
           password: password.trim(),
           batch: batch.trim() || 'General',
-          phone: phone.trim(),
+          phone: phone.trim() ? formatPhoneDisplay(phone.trim()) : '',
+          phoneNormalized: normalizePhone(phone.trim()),
           email: email.trim().toLowerCase(),
           block: Boolean(block),
           blockReason: block ? blockReason.trim() : '',

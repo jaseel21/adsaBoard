@@ -25,6 +25,7 @@ import { directPrintPdf, shareDocument, createPdfBlob } from '../utils/documentH
 import UniversalDocumentModal from './export/UniversalDocumentModal';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
+import { normalizePhone, formatPhoneDisplay } from '../utils/studentProfileRequestService';
 
 export default function CsvManagerModal({
   isOpen,
@@ -69,6 +70,8 @@ export default function CsvManagerModal({
         const rows = results.data;
         const issues = [];
         const validated = [];
+        const seenPhonesInCsv = new Map();
+        const seenEmailsInCsv = new Map();
 
         rows.forEach((row, idx) => {
           // Normalize column names
@@ -97,6 +100,30 @@ export default function CsvManagerModal({
             issues.push({ rowIdx: idx + 1, message: 'Missing or invalid token number' });
           } else if (isNameMissing) {
             issues.push({ rowIdx: idx + 1, message: `Token ${tokenNo} is missing student name` });
+          }
+
+          // Uniqueness in CSV file check
+          const normPhone = normalizePhone(phone);
+          if (normPhone) {
+            if (seenPhonesInCsv.has(normPhone)) {
+              issues.push({
+                rowIdx: idx + 1,
+                message: `Duplicate phone number '${phone}' also used by Token ${seenPhonesInCsv.get(normPhone)} in this CSV`,
+              });
+            } else {
+              seenPhonesInCsv.set(normPhone, tokenNo);
+            }
+          }
+
+          if (email) {
+            if (seenEmailsInCsv.has(email)) {
+              issues.push({
+                rowIdx: idx + 1,
+                message: `Duplicate email '${email}' also used by Token ${seenEmailsInCsv.get(email)} in this CSV`,
+              });
+            } else {
+              seenEmailsInCsv.set(email, tokenNo);
+            }
           }
 
           validated.push({
@@ -185,7 +212,8 @@ export default function CsvManagerModal({
             username: finalUname,
             password: row.password || (existing ? existing.password : 'pass123'),
             batch: row.batch || (existing ? existing.batch : 'General'),
-            phone: row.phone || (existing ? existing.phone || '' : ''),
+            phone: row.phone ? formatPhoneDisplay(row.phone) : (existing ? existing.phone || '' : ''),
+            phoneNormalized: normalizePhone(row.phone || existing?.phone || ''),
             email: row.email || (existing ? existing.email || '' : ''),
             block: existing ? Boolean(existing.block) : false,
             blockReason: existing ? existing.blockReason || '' : '',

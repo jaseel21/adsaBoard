@@ -124,6 +124,8 @@ export default function SettingsPage() {
             preferences={preferences}
             setPreference={setPreference}
             user={user}
+            isAdmin={isAdmin}
+            role={role}
             stdata={stdata}
           />
         );

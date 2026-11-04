@@ -889,7 +889,7 @@ export default function StudentDashboard() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. Canteen Menu (Embedded expandable card, collapsed by default)          */}
+      {/* 3. Canteen Menu (Expandable: collapsed on mobile, expanded on desktop)     */}
       {/* ========================================================================= */}
       <NextMealSpotlight
         documents={documents}
@@ -901,7 +901,6 @@ export default function StudentDashboard() {
         breakfastOrdersCount={metrics.breakfastCount}
         showSpotlightBanner={false}
         collapsible={true}
-        defaultExpanded={false}
       />
 
       {/* ========================================================================= */}

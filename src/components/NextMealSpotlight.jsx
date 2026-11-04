@@ -68,7 +68,7 @@ export default function NextMealSpotlight({
   breakfastOrdersCount = 0,
   showSpotlightBanner = true,
   collapsible = true,
-  defaultExpanded = false,
+  defaultExpanded = null,
 }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -77,11 +77,50 @@ export default function NextMealSpotlight({
   const { activeWindow, rawBoardSwitchTime } = useTokenLockStatus();
   const effectiveSwitchTime = rawBoardSwitchTime || '14:00';
 
-  const [isExpanded, setIsExpanded] = useState(collapsible ? defaultExpanded : true);
+  const [hasUserToggled, setHasUserToggled] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (!collapsible) return true;
+    if (defaultExpanded !== null && defaultExpanded !== undefined) {
+      return Boolean(defaultExpanded);
+    }
+    // Responsive default: collapsed in mobile (<768px), expanded in desktop (>=768px)
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768;
+    }
+    return false;
+  });
+
+  // Keep responsive default synced with media queries unless user manually toggled
+  useEffect(() => {
+    if (!collapsible || (defaultExpanded !== null && defaultExpanded !== undefined)) return;
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const handleMediaChange = (e) => {
+      if (!hasUserToggled) {
+        setIsExpanded(e.matches);
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleMediaChange);
+    } else {
+      mediaQuery.addListener(handleMediaChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleMediaChange);
+      } else {
+        mediaQuery.removeListener(handleMediaChange);
+      }
+    };
+  }, [collapsible, defaultExpanded, hasUserToggled]);
 
   const toggleExpand = () => {
     if (!collapsible) return;
     feedback('pop');
+    setHasUserToggled(true);
     setIsExpanded((prev) => !prev);
   };
 

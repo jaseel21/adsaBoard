@@ -143,6 +143,21 @@ service cloud.firestore {
             'templates',
             'diningHistory',
             'pendingPhotoRequest',
+            'pendingPhoneRequest',
+            'pendingEmailRequest',
+            'pendingNameRequest',
+            'phone',
+            'phoneNormalized',
+            'phoneVerifiedAt',
+            'email',
+            'emailVerifiedAt',
+            'password',
+            'pinUpdatedAt',
+            'username',
+            'uname',
+            'usernameUpdatedAt',
+            'photoURL',
+            'photoApprovedAt',
             'lastUpdatedBy',
             'updatedAt'
           ]) &&
@@ -299,6 +314,27 @@ service cloud.firestore {
       allow create: if request.resource.data.studentId is string &&
         request.resource.data.tokenNo is number &&
         request.resource.data.photoURL is string &&
+        request.resource.data.status == 'pending';
+
+      // Central Committee can approve, reject, or update request status
+      allow update: if isCentralCommittee() ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        );
+
+      allow delete: if isCentralCommittee();
+    }
+
+    // ==========================================
+    // 11B. PROFILE & CONTACT CHANGE REQUESTS
+    // ==========================================
+    match /contact_requests/{requestId} {
+      // Public read so student can track their submission status and admins can moderate
+      allow read: if true;
+
+      // Students can submit a profile/contact moderation request
+      allow create: if request.resource.data.studentId is string &&
+        request.resource.data.tokenNo is number &&
         request.resource.data.status == 'pending';
 
       // Central Committee can approve, reject, or update request status
