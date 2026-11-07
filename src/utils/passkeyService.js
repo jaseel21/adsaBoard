@@ -115,15 +115,15 @@ export async function registerPasskey({
   const enc = new TextEncoder();
   const userHandleBuffer = enc.encode(String(userId));
 
-  // Determine relying party origin
+  // Determine relying party origin safely without WebIDL 'undefined' dictionary member serialization
   const rpName = 'ADSA Dining Board';
-  const rpId = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
+  const hostname = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
 
   const publicKeyCredentialCreationOptions = {
     challenge,
     rp: {
       name: rpName,
-      id: rpId === 'localhost' ? undefined : rpId,
+      ...(hostname && hostname !== 'localhost' ? { id: hostname } : {}),
     },
     user: {
       id: userHandleBuffer,
@@ -131,8 +131,8 @@ export async function registerPasskey({
       displayName: String(userDisplayName || userName),
     },
     pubKeyCredParams: [
-      { alg: -7, type: 'public-key' }, // ES256 (ECDSA w/ SHA-256 - most common on iOS/Android/Mac)
-      { alg: -257, type: 'public-key' }, // RS256 (RSA w/ SHA-256 - common on Windows Hello)
+      { alg: -7, type: 'public-key' }, // ES256 (ECDSA w/ SHA-256 - iOS / Mac Touch ID / Android)
+      { alg: -257, type: 'public-key' }, // RS256 (RSA w/ SHA-256 - Windows Hello)
     ],
     timeout: 60000,
     attestation: 'none',
@@ -188,11 +188,11 @@ export async function authenticateWithPasskey({
   }
 
   const challenge = generateChallenge();
-  const rpId = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
+  const hostname = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
 
   const publicKeyCredentialRequestOptions = {
     challenge,
-    rpId: rpId === 'localhost' ? undefined : rpId,
+    ...(hostname && hostname !== 'localhost' ? { rpId: hostname } : {}),
     timeout: 60000,
     userVerification: 'preferred',
   };

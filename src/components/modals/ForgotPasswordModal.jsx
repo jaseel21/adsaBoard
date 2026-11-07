@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,22 +14,33 @@ import {
   EyeOff,
   HelpCircle,
   Clock,
-  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import firebase from '../../firebase/config';
-import { dialog } from '../../utils/dialog';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { hashPassword, generateSalt } from '../../utils/cryptoAuthService';
+import {
+  dispatchPasswordResetEmail,
+  verifyPasswordResetOtp,
+  consumePasswordResetTicket,
+} from '../../utils/emailDispatchService';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../utils/auditLogger';
 
 export default function ForgotPasswordModal({ isOpen, onClose }) {
   const { t, language } = useLanguage();
   const { feedback } = useFeedback();
 
-  const [step, setStep] = useState(1); // 1: identify, 2: verify & set new password, 3: success
+  // Steps:
+  // 1 = Account Lookup
+  // 1.5 = No email registered (Desk guidance)
+  // 2 = Enter 6-digit Code (Verification ONLY)
+  // 3 = Set New Password (Unlocked ONLY after Step 2 succeeds)
+  // 4 = Success confirmation
+  const [step, setStep] = useState(1);
+
   const [identifier, setIdentifier] = useState('');
   const [matchedStudent, setMatchedStudent] = useState(null);
   const [maskedEmail, setMaskedEmail] = useState('');
@@ -39,7 +50,19 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState(''); // Retained for immediate verification
+
+  // Resend countdown timer
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer = null;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [resendCooldown]);
 
   if (!isOpen || typeof document === 'undefined') return null;
 
@@ -52,6 +75,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
     setNewPassword('');
     setConfirmPassword('');
     setErrorMsg('');
+    setResendCooldown(0);
     onClose();
   };
 
@@ -64,8 +88,8 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
     return `${local[0]}${'*'.repeat(Math.min(local.length - 2, 5))}${local[local.length - 1]}@${domain}`;
   };
 
-  // Step 1: Look up student account
-  const handleLookup = async (e) => {
+  // STEP 1: Look up student account & dispatch verification email
+  const handleLookupAndSendCode = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     const raw = (identifier || '').trim();
@@ -133,69 +157,99 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
 
       if (!sData.email || !sData.email.includes('@')) {
         // No email registered: direct to Canteen Committee desk
-        setStep(1.5); // Special desk guidance step
+        setStep(1.5);
         setIsLoading(false);
         return;
       }
 
-      // Email exists: prepare OTP
       const masked = maskEmailAddress(sData.email);
       setMaskedEmail(masked);
 
-      // Generate random 6-digit OTP
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(otpCode);
-
-      // Save OTP to Firestore with 10-minute expiry
-      const expiry = new Date(Date.now() + 10 * 60 * 1000);
-      await firebase.firestore().collection('password_resets').doc(doc.id).set({
-        tokenNo: sData.tokenNo || null,
+      // Securely dispatch email with salted hash in Firestore (Plaintext OTP is NEVER stored in client state)
+      await dispatchPasswordResetEmail({
+        studentDocId: doc.id,
+        tokenNo: sData.tokenNo,
         email: sData.email,
-        otp: otpCode,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        expiresAt: expiry.toISOString(),
+        name: sData.name || sData.nameEn,
       });
 
-      // Optionally queue email if Trigger Email extension is configured
-      try {
-        await firebase.firestore().collection('mail').add({
-          to: sData.email,
-          message: {
-            subject: 'ADSA Dining Board - Password Reset Verification Code',
-            text: `Your password reset code is: ${otpCode}. It expires in 10 minutes. If you did not request this, please ignore this email.`,
-            html: `<div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-              <h2 style="color: #059669;">ADSA Dining Board</h2>
-              <p>Your password reset verification code is:</p>
-              <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; padding: 12px 24px; background: #f0fdf4; border: 1px solid #bbf7d0; display: inline-block; border-radius: 8px; color: #065f46;">
-                ${otpCode}
-              </div>
-              <p style="color: #64748b; font-size: 13px; margin-top: 20px;">This code expires in 10 minutes.</p>
-            </div>`,
-          },
-        });
-      } catch (_) {}
-
-      soundEngine.playPop();
+      setResendCooldown(60); // 60s cooldown before resend
+      soundEngine.playSoftChime();
       hapticEngine.lightTap();
-      setStep(2);
+      setStep(2); // Advance to code verification step ONLY
     } catch (err) {
       console.error('Password reset lookup error:', err);
-      setErrorMsg('Error processing request. Please try again.');
+      setErrorMsg(err.message || 'Error processing request. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Step 2: Verify OTP and save new password
-  const handleResetSubmit = async (e) => {
+  // Resend code handler
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || !matchedStudent) return;
+    setIsLoading(true);
+    setErrorMsg('');
+    feedback('tick');
+
+    try {
+      await dispatchPasswordResetEmail({
+        studentDocId: matchedStudent.id || matchedStudent.documentId,
+        tokenNo: matchedStudent.tokenNo,
+        email: matchedStudent.email,
+        name: matchedStudent.name || matchedStudent.nameEn,
+      });
+      setResendCooldown(60);
+      soundEngine.playSoftChime();
+      hapticEngine.lightTap();
+    } catch (err) {
+      setErrorMsg('Failed to resend code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // STEP 2: Verify candidate 6-digit OTP (NO password inputs on this screen!)
+  const handleVerifyCodeSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    const cleanOtp = enteredOtp.trim();
-    if (!cleanOtp) {
+    const cleanOtp = enteredOtp.trim().replace(/\D/g, '');
+    if (cleanOtp.length !== 6) {
       setErrorMsg(language === 'ml' ? '6 അക്ക കോഡ് നൽകുക' : 'Please enter the 6-digit verification code');
       return;
     }
+
+    setIsLoading(true);
+    feedback('tick');
+
+    try {
+      const docId = matchedStudent.id || matchedStudent.documentId;
+      const result = await verifyPasswordResetOtp(docId, cleanOtp);
+
+      if (!result.isValid) {
+        feedback('warning');
+        setErrorMsg(result.error || (language === 'ml' ? 'കോഡ് തെറ്റാണ് അല്ലെങ്കിൽ കാലാവധി കഴിഞ്ഞു' : 'Invalid or expired code'));
+        setIsLoading(false);
+        return;
+      }
+
+      // CODE IS VERIFIED! ONLY NOW advance to Step 3 (Set New Password)
+      soundEngine.playSuccessBoop();
+      hapticEngine.successPulse();
+      setStep(3);
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      setErrorMsg('Failed to verify code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // STEP 3: Set and save New Password (Unlocked ONLY after Step 2 verification)
+  const handleSaveNewPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
 
     if (newPassword.length < 4) {
       setErrorMsg(
@@ -216,35 +270,8 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
 
     try {
       const docId = matchedStudent.id || matchedStudent.documentId;
-      const resetRef = firebase.firestore().collection('password_resets').doc(docId);
-      const resetSnap = await resetRef.get();
 
-      let isOtpValid = false;
-      if (resetSnap.exists) {
-        const rData = resetSnap.data();
-        const isNotExpired = new Date(rData.expiresAt).getTime() > Date.now();
-        if (isNotExpired && String(rData.otp).trim() === cleanOtp) {
-          isOtpValid = true;
-        }
-      }
-
-      // Also check local generatedOtp fallback
-      if (!isOtpValid && cleanOtp === generatedOtp) {
-        isOtpValid = true;
-      }
-
-      if (!isOtpValid) {
-        feedback('warning');
-        setErrorMsg(
-          language === 'ml'
-            ? 'കോഡ് തെറ്റാണ് അല്ലെങ്കിൽ കാലാവധി കഴിഞ്ഞു'
-            : 'Invalid or expired verification code'
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      // Hash new password using PBKDF2
+      // Cryptographically hash new password with PBKDF2 & unique salt
       const salt = generateSalt();
       const hash = await hashPassword(newPassword, salt);
 
@@ -254,13 +281,13 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
         passwordSalt: salt,
         passwordAlgorithm: 'PBKDF2-SHA256',
         pinUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        password: firebase.firestore.FieldValue.delete(), // Purge legacy plaintext
+        password: firebase.firestore.FieldValue.delete(), // Invalidate any legacy plaintext
       });
 
-      // Invalidate reset OTP
-      await resetRef.delete().catch(() => {});
+      // Invalidate and delete reset ticket
+      await consumePasswordResetTicket(docId);
 
-      // Audit log
+      // Permanent audit log
       logAuditEvent({
         action: 'STUDENT_PASSWORD_RESET_SUCCESS',
         category: AUDIT_CATEGORIES.SECURITY,
@@ -274,10 +301,10 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
 
       soundEngine.playCelebrationFanfare();
       hapticEngine.successPulse();
-      setStep(3);
+      setStep(4); // Advance to Success Screen
     } catch (err) {
-      console.error('Password reset submit error:', err);
-      setErrorMsg('Failed to update password. Please try again.');
+      console.error('Password reset save error:', err);
+      setErrorMsg('Failed to save new password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -313,7 +340,10 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                   {language === 'ml' ? 'പാസ്‌വേഡ് വീണ്ടെടുക്കുക' : 'Forgot Password'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {language === 'ml' ? 'സ്റ്റുഡൻ്റ് അക്കൗണ്ട് റിക്കവറി' : 'Student Account Recovery'}
+                  {step === 1 && (language === 'ml' ? 'ഘട്ടം 1: അക്കൗണ്ട് കണ്ടെത്തുക' : 'Step 1: Account Lookup')}
+                  {step === 2 && (language === 'ml' ? 'ഘട്ടം 2: ഇമെയിൽ വെരിഫിക്കേഷൻ' : 'Step 2: Email Verification')}
+                  {step === 3 && (language === 'ml' ? 'ഘട്ടം 3: പുതിയ പാസ്‌വേഡ് നൽകുക' : 'Step 3: Set New Password')}
+                  {step === 4 && (language === 'ml' ? 'പൂർത്തിയായി' : 'Completed')}
                 </p>
               </div>
             </div>
@@ -338,9 +368,9 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
             </motion.div>
           )}
 
-          {/* STEP 1: Identification */}
+          {/* STEP 1: Identification & Send Email */}
           {step === 1 && (
-            <form onSubmit={handleLookup} className="mt-5 space-y-4">
+            <form onSubmit={handleLookupAndSendCode} className="mt-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   {language === 'ml' ? 'ടോക്കൺ നമ്പർ / യൂസർനെയിം' : 'Token Number, Username, Phone or Email'}
@@ -358,8 +388,8 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
                   {language === 'ml'
-                    ? 'രജിസ്റ്റർ ചെയ്ത ഇമെയിലിലേക്ക് ഒരു വെരിഫിക്കേഷൻ കോഡ് അയക്കും.'
-                    : 'A verification code will be sent to your registered email address.'}
+                    ? 'ഒരു 6 അക്ക വെരിഫിക്കേഷൻ കോഡ് നിങ്ങളുടെ രജിസ്റ്റർ ചെയ്ത ഇമെയിലിലേക്ക് അയക്കും.'
+                    : 'A 6-digit verification code will be dispatched to your registered email address.'}
                 </p>
               </div>
 
@@ -369,11 +399,11 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                 className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
               >
                 {isLoading ? (
-                  <span>{language === 'ml' ? 'പരിശോധിക്കുന്നു...' : 'Checking Account...'}</span>
+                  <span>{language === 'ml' ? 'ഇമെയിൽ അയക്കുന്നു...' : 'Sending Email...'}</span>
                 ) : (
                   <>
-                    <span>{language === 'ml' ? 'തുടരുക' : 'Continue'}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <Mail className="w-4 h-4" />
+                    <span>{language === 'ml' ? 'ഇമെയിലിലേക്ക് കോഡ് അയക്കുക' : 'Send Code to Email'}</span>
                   </>
                 )}
               </button>
@@ -410,44 +440,93 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* STEP 2: Enter OTP & Set New Password */}
+          {/* STEP 2: Enter & Verify Code (NO PASSWORD FIELDS!) */}
           {step === 2 && (
-            <form onSubmit={handleResetSubmit} className="mt-5 space-y-4">
-              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2.5">
-                <Mail className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <span>
-                  {language === 'ml'
-                    ? `കോഡ് അയച്ചു: ${maskedEmail}`
-                    : `Code sent to: ${maskedEmail}`}
-                </span>
+            <form onSubmit={handleVerifyCodeSubmit} className="mt-5 space-y-4">
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5">
+                <Mail className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block">
+                    {language === 'ml' ? 'ഇമെയിൽ പരിശോധിക്കുക' : 'Check Your Email Inbox'}
+                  </span>
+                  <span>
+                    {language === 'ml'
+                      ? `6 അക്ക വെരിഫിക്കേഷൻ കോഡ് ${maskedEmail} എന്ന വിലാസത്തിലേക്ക് അയച്ചിട്ടുണ്ട്.`
+                      : `A 6-digit code has been sent to ${maskedEmail}. Check spam/junk if not received.`}
+                  </span>
+                </div>
               </div>
 
-              {/* Development helper tip if testing */}
-              {generatedOtp && (
-                <div className="text-[10px] font-mono text-emerald-600/80 dark:text-emerald-400/80 text-center">
-                  Verification Code: <span className="font-bold tracking-widest">{generatedOtp}</span>
-                </div>
-              )}
-
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'ml' ? '6 അക്ക വെരിഫിക്കേഷൻ കോഡ്' : '6-Digit Verification Code'}
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 text-center">
+                  {language === 'ml' ? 'ഇമെയിലിൽ ലഭിച്ച 6 അക്ക കോഡ് നൽകുക' : 'Enter the 6-Digit Code from Email'}
                 </label>
                 <input
                   type="text"
                   maxLength={6}
                   value={enteredOtp}
                   onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="123456"
+                  placeholder="••••••"
                   autoFocus
                   required
-                  className="w-full px-3.5 py-2.5 rounded-xl text-center text-lg font-mono tracking-widest bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-3 rounded-2xl text-center text-2xl font-mono font-bold tracking-[0.5em] bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resendCooldown > 0 || isLoading}
+                  className="text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 disabled:no-underline font-medium flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>
+                    {resendCooldown > 0
+                      ? `Resend code in ${resendCooldown}s`
+                      : (language === 'ml' ? 'കോഡ് വീണ്ടും അയക്കുക' : 'Resend Code')}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  {language === 'ml' ? 'ഐഡി മാറ്റുക' : 'Change ID'}
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || enteredOtp.length !== 6}
+                className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <span>{language === 'ml' ? 'പരിശോധിക്കുന്നു...' : 'Verifying Code...'}</span>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>{language === 'ml' ? 'കോഡ് സ്ഥിരീകരിക്കുക' : 'Verify Code'}</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* STEP 3: Set New Password (UNLOCKED ONLY AFTER CODE IS VERIFIED!) */}
+          {step === 3 && (
+            <form onSubmit={handleSaveNewPasswordSubmit} className="mt-5 space-y-4">
+              <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-500/20 text-xs text-teal-800 dark:text-teal-300 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400" />
+                <span className="font-semibold">
+                  {language === 'ml' ? 'ഇമെയിൽ സ്ഥിരീകരിച്ചു! പുതിയ പാസ്‌വേഡ് നൽകുക:' : 'Identity verified! Choose your new password:'}
+                </span>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'ml' ? 'പുതിയ പാസ്‌വേഡ്' : 'New Password / PIN'}
+                  {language === 'ml' ? 'പുതിയ പാസ്‌വേഡ് / പിൻ' : 'New Password / PIN'}
                 </label>
                 <div className="relative">
                   <input
@@ -455,8 +534,9 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min 4 characters"
+                    autoFocus
                     required
-                    className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-xl text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                   />
                   <button
                     type="button"
@@ -478,7 +558,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
                   required
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
 
@@ -492,15 +572,15 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                 ) : (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>{language === 'ml' ? 'പാസ്‌വേഡ് മാറ്റുക' : 'Update Password & Sign In'}</span>
+                    <span>{language === 'ml' ? 'പാസ്‌വേഡ് സേവ് ചെയ്യുക' : 'Save New Password & Sign In'}</span>
                   </>
                 )}
               </button>
             </form>
           )}
 
-          {/* STEP 3: Success Screen */}
-          {step === 3 && (
+          {/* STEP 4: Success Screen */}
+          {step === 4 && (
             <div className="mt-6 text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <Check className="w-7 h-7" />
@@ -512,7 +592,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {language === 'ml'
                     ? 'ഇനി നിങ്ങളുടെ പുതിയ പാസ്‌വേഡ് ഉപയോഗിച്ച് ലോഗിൻ ചെയ്യാം.'
-                    : 'You can now sign in using your new credentials.'}
+                    : 'You can now sign in using your new password.'}
                 </p>
               </div>
               <button

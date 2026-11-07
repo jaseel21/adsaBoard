@@ -315,7 +315,7 @@ export default function FloatingDesktopNav({
         <LiveCloudStatusBadge />
 
         {/* 12. Desktop App Install CTA or Tools Trigger */}
-        {isInstalled ? (
+        {/* {isInstalled ? (
           <NavTabButton
             onClick={() => {
               feedback('tick');
@@ -338,7 +338,7 @@ export default function FloatingDesktopNav({
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </button>
-        )}
+        )} */}
 
         {/* Vertical Divider before Date & Time */}
         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0" />

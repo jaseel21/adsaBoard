@@ -83,6 +83,7 @@ export default function PasskeySetupModal({
         userId: docId,
         userName,
         userDisplayName: userData?.name || userName,
+        authenticatorAttachment: hasBiometrics ? 'platform' : undefined,
       });
 
       // Default label if empty

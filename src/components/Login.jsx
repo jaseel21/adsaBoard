@@ -309,26 +309,77 @@ function Login() {
     [pending2FA, useBackupCode, backupCodeInput, totpCode, completeStudentLogin, feedback, t]
   );
 
-  // Handle Passkey Sign-In (Biometric or QR code)
+  // Handle Passkey Sign-In (Biometric Touch ID or Cross-Device QR)
   const handlePasskeyLogin = useCallback(async () => {
     try {
       setIsPasskeyLoading(true);
       setErr('');
       feedback('tick');
 
-      const assertion = await authenticateWithPasskey();
+      const rawInput = (token || '').trim();
+      let targetedCredentials = [];
+      let targetedDoc = null;
+
+      // If user typed their Token No, Username, Phone, or Email, look up their registered credentials first
+      if (rawInput) {
+        const studentsRef = firebase.firestore().collection('students');
+        // 1. Numeric Token
+        if (/^\d+$/.test(rawInput) && rawInput.length <= 6) {
+          const snap = await studentsRef.where('tokenNo', '==', parseInt(rawInput, 10)).limit(1).get();
+          if (!snap.empty) targetedDoc = snap.docs[0];
+        }
+        // 2. Email
+        if (!targetedDoc && rawInput.includes('@')) {
+          const snap = await studentsRef.where('email', '==', rawInput.toLowerCase()).limit(1).get();
+          if (!snap.empty) targetedDoc = snap.docs[0];
+        }
+        // 3. Username
+        if (!targetedDoc) {
+          const cleanUname = rawInput.replace(/^@/, '').toLowerCase();
+          const snap = await studentsRef.where('username', '==', cleanUname).limit(1).get();
+          if (!snap.empty) targetedDoc = snap.docs[0];
+        }
+
+        if (targetedDoc) {
+          const tData = targetedDoc.data();
+          if (!tData.passkeys || tData.passkeys.length === 0) {
+            feedback('warning');
+            setErr(
+              t(
+                'noPasskeyRegisteredForAccount',
+                'No Passkey or Touch ID is registered for this account yet. Please sign in with your Password first, then register Touch ID in Settings.'
+              )
+            );
+            return;
+          }
+          targetedCredentials = tData.passkeys;
+        }
+      }
+
+      // Authenticate with WebAuthn (Touch ID or discoverable credential)
+      const assertion = await authenticateWithPasskey({
+        allowCredentials: targetedCredentials,
+      });
+
       if (!assertion || !assertion.id) {
         throw new Error('No passkey assertion returned');
       }
 
-      // Lookup student by registered passkey ID
-      const studentsRef = firebase.firestore().collection('students');
-      const querySnap = await studentsRef
-        .where('passkeyIds', 'array-contains', assertion.id)
-        .limit(1)
-        .get();
+      // If we already targeted this doc, use it; otherwise lookup by assertion ID
+      let matchedDoc = targetedDoc;
+      if (!matchedDoc) {
+        const studentsRef = firebase.firestore().collection('students');
+        const querySnap = await studentsRef
+          .where('passkeyIds', 'array-contains', assertion.id)
+          .limit(1)
+          .get();
 
-      if (querySnap.empty) {
+        if (!querySnap.empty) {
+          matchedDoc = querySnap.docs[0];
+        }
+      }
+
+      if (!matchedDoc) {
         feedback('warning');
         setErr(
           t(
@@ -339,24 +390,31 @@ function Login() {
         return;
       }
 
-      const doc = querySnap.docs[0];
-      const sData = doc.data();
+      const sData = matchedDoc.data();
       const studentData = {
-        id: doc.id,
-        documentId: doc.id,
+        id: matchedDoc.id,
+        documentId: matchedDoc.id,
         ...sData,
       };
 
       completeStudentLogin(studentData);
     } catch (err) {
       console.error('Passkey login error:', err);
-      if (err.name !== 'NotAllowedError') {
+      feedback('warning');
+      if (err.name === 'NotAllowedError') {
+        setErr(
+          t(
+            'passkeyNoCredentialsOnDevice',
+            'No Passkey found on this device for ADSA Board, or verification was cancelled. If you haven’t registered this Mac yet, please sign in with your Token & Password and open Settings → Passkey.'
+          )
+        );
+      } else {
         setErr(err.message || 'Passkey authentication failed.');
       }
     } finally {
       setIsPasskeyLoading(false);
     }
-  }, [completeStudentLogin, feedback, t]);
+  }, [token, completeStudentLogin, feedback, t]);
 
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
@@ -730,7 +788,7 @@ function Login() {
                     ) : (
                       <>
                         <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        <span>{t('signInWithPasskey', 'Sign In with Passkey / Phone QR')}</span>
+                        <span>{t('signInWithPasskey', 'Sign In with Passkey')}</span>
                       </>
                     )}
                   </button>
