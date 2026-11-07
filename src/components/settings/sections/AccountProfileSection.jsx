@@ -35,6 +35,7 @@ import ChangePinModal from '../modals/ChangePinModal';
 import EditUsernameModal from '../modals/EditUsernameModal';
 import TwoFactorSetupModal from '../modals/TwoFactorSetupModal';
 import PasskeySetupModal from '../modals/PasskeySetupModal';
+import EmailSmtpConfigModal from '../modals/EmailSmtpConfigModal';
 import { getBatchTheme } from '../../../utils/batchTheme';
 import IslamicAvatar from '../../ui/IslamicAvatar';
 
@@ -66,6 +67,7 @@ export default function AccountProfileSection({
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
   const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false);
   const [passkeyModalOpen, setPasskeyModalOpen] = useState(false);
+  const [emailConfigModalOpen, setEmailConfigModalOpen] = useState(false);
   const [targetAuthUserType, setTargetAuthUserType] = useState('student'); // 'student' | 'staff'
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [photoUploadOpen, setPhotoUploadOpen] = useState(false);
@@ -789,6 +791,16 @@ export default function AccountProfileSection({
 
               <button
                 type="button"
+                onClick={() => setEmailConfigModalOpen(true)}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 shadow-xs transition-all flex items-center justify-center gap-1.5"
+                title="Configure Gmail SMTP / Google Apps Script Webhook delivery"
+              >
+                <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                <span>SMTP / Email</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleLogoutAdmin}
                 className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-1.5"
               >
@@ -942,6 +954,12 @@ export default function AccountProfileSection({
             setStdata({ ...stdata, passkeys: newList });
           }
         }}
+      />
+
+      {/* Email / SMTP Configuration Modal (Admin Only) */}
+      <EmailSmtpConfigModal
+        isOpen={emailConfigModalOpen}
+        onClose={() => setEmailConfigModalOpen(false)}
       />
     </div>
   );
