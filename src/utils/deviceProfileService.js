@@ -5,6 +5,7 @@
  */
 
 import { getCachedGlobalSecurityPolicy } from './securityPolicyService';
+import { safeLocalStorage } from './storage';
 
 const STORAGE_KEY = 'adsa_device_profile';
 const REMOTE_POLICY_KEY = 'adsa_sentinel_remote_idle_policy';
@@ -113,14 +114,14 @@ export const TIMEOUT_PRESETS = [
 export function getOrCreateDeviceId() {
   if (typeof window === 'undefined') return 'dev_ssr_placeholder';
   try {
-    let id = localStorage.getItem('adsa_device_id');
+    let id = safeLocalStorage.getItem('adsa_device_id');
     if (!id) {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         id = 'dev_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
       } else {
         id = 'dev_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
       }
-      localStorage.setItem('adsa_device_id', id);
+      safeLocalStorage.setItem('adsa_device_id', id);
     }
     return id;
   } catch (_) {
@@ -180,9 +181,8 @@ export function getDeviceProfile() {
   if (typeof window === 'undefined') return defaultProfile;
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultProfile;
-    const parsed = JSON.parse(raw);
+    const parsed = safeLocalStorage.getJSON(STORAGE_KEY, null);
+    if (!parsed) return defaultProfile;
     const profile = {
       ...defaultProfile,
       ...parsed,
@@ -224,7 +224,7 @@ export function updateDeviceProfile(updates) {
       lastModifiedAt: new Date().toISOString(),
     };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    safeLocalStorage.setJSON(STORAGE_KEY, updated);
 
     // Dispatch global event for live reactive subscribers
     window.dispatchEvent(new CustomEvent('adsa:device_profile_updated', { detail: updated }));
@@ -267,7 +267,7 @@ export function resetDeviceProfileToDefaults() {
       lastModifiedAt: new Date().toISOString(),
     };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProfile));
+    safeLocalStorage.setJSON(STORAGE_KEY, defaultProfile);
     window.dispatchEvent(new CustomEvent('adsa:device_profile_updated', { detail: defaultProfile }));
     return defaultProfile;
   } catch (err) {
@@ -283,12 +283,12 @@ export function setRemoteIdlePolicy(policy) {
   if (typeof window === 'undefined') return;
   try {
     if (policy) {
-      localStorage.setItem(REMOTE_POLICY_KEY, JSON.stringify({
+      safeLocalStorage.setJSON(REMOTE_POLICY_KEY, {
         ...policy,
         receivedAt: new Date().toISOString(),
-      }));
+      });
     } else {
-      localStorage.removeItem(REMOTE_POLICY_KEY);
+      safeLocalStorage.removeItem(REMOTE_POLICY_KEY);
     }
     window.dispatchEvent(new CustomEvent('adsa:device_profile_updated'));
   } catch (_) {}
@@ -299,12 +299,7 @@ export function setRemoteIdlePolicy(policy) {
  */
 export function getRemoteIdlePolicy() {
   if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(REMOTE_POLICY_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (_) {
-    return null;
-  }
+  return safeLocalStorage.getJSON(REMOTE_POLICY_KEY, null);
 }
 
 /**

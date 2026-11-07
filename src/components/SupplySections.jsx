@@ -437,6 +437,7 @@ export default function SupplySections({ defaultMeal }) {
         sort: 'ascending',
         chunkSize: Number(customChunkSize) || 25,
         mealFilter: 'both',
+        statusFilter: 'canceled_only',
       });
       feedback('success');
     } catch (err) {

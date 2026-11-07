@@ -5,6 +5,7 @@ import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { liveSyncManager } from '../utils/liveSyncManager';
 import { getDeviceProfile, resolveEffectiveIdleConfig } from '../utils/deviceProfileService';
+import { safeSessionStorage } from '../utils/storage';
 
 /**
  * Helper to generate or restore persistent session ID
@@ -12,14 +13,14 @@ import { getDeviceProfile, resolveEffectiveIdleConfig } from '../utils/devicePro
 function getOrCreateSessionId() {
   if (typeof window === 'undefined') return 'sess_ssr_placeholder';
   try {
-    let sessId = sessionStorage.getItem('adsa_sentinel_session_id');
+    let sessId = safeSessionStorage.getItem('adsa_sentinel_session_id');
     if (!sessId) {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         sessId = 'sess_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
       } else {
         sessId = 'sess_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
       }
-      sessionStorage.setItem('adsa_sentinel_session_id', sessId);
+      safeSessionStorage.setItem('adsa_sentinel_session_id', sessId);
     }
     return sessId;
   } catch (_) {
@@ -146,10 +147,8 @@ export function useLivePresenceTracker() {
     // Check authenticated student
     let studentObj = stdata;
     if (!studentObj && typeof window !== 'undefined') {
-      try {
-        const stored = sessionStorage.getItem('adsa_student_session');
-        if (stored) studentObj = JSON.parse(stored);
-      } catch (_) {}
+      const stored = safeSessionStorage.getJSON('adsa_student_session', null);
+      if (stored) studentObj = stored;
     }
 
     if (studentObj && (studentObj.tokenNo || studentObj.token)) {

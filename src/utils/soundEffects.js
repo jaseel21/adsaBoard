@@ -3,6 +3,8 @@
  * Generates zero-latency, high-fidelity tactile sounds without requiring external audio assets.
  */
 
+import { safeLocalStorage } from './storage';
+
 class AudioSynthesizer {
   constructor() {
     this.ctx = null;
@@ -10,12 +12,10 @@ class AudioSynthesizer {
 
     // Load user sound preference from localStorage
     if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('adsa_sound_enabled');
-        if (stored !== null) {
-          this.enabled = stored === 'true';
-        }
-      } catch (_) {}
+      const stored = safeLocalStorage.getItem('adsa_sound_enabled');
+      if (stored !== null) {
+        this.enabled = stored === 'true';
+      }
     }
   }
 
@@ -34,9 +34,7 @@ class AudioSynthesizer {
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('adsa_sound_enabled', String(this.enabled));
-      } catch (_) {}
+      safeLocalStorage.setItem('adsa_sound_enabled', String(this.enabled));
     }
   }
 

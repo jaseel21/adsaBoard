@@ -15,7 +15,12 @@ import {
   Settings,
   BellRing,
   Compass,
+  Monitor,
+  Download,
+  Activity,
+  Laptop,
 } from 'lucide-react';
+import { isStandaloneMode, openDesktopInstallModal, detectOS } from '../../utils/pwaManager';
 import {
   NAV_CATEGORIES,
   getGroupedNavItems,
@@ -474,7 +479,47 @@ export default function BrowserLeftSidebar() {
       </div>
 
       {/* Persistent Settings & Alarms Footer Utility */}
-      <div className="p-2 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex-shrink-0 space-y-1">
+      <div className="p-2 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex-shrink-0 space-y-2">
+        {/* Desktop App PWA Hub Card */}
+        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Monitor className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-[11px] font-black text-gray-900 dark:text-white">
+                {isStandaloneMode() ? 'Desktop App' : 'ADSA Desktop'}
+              </span>
+            </div>
+            <span className="text-[9px] font-mono font-bold px-1 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              v2.5
+            </span>
+          </div>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+            {isStandaloneMode()
+              ? 'Dedicated desktop window with offline sync.'
+              : 'Install on Windows, Mac, or Linux for instant zero-lag access.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              feedback('tick');
+              openDesktopInstallModal();
+            }}
+            className="w-full py-1.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            {isStandaloneMode() ? (
+              <>
+                <Activity className="w-3 h-3" />
+                <span>Desktop Tools</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3 h-3" />
+                <span>Install Desktop App</span>
+              </>
+            )}
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={() => {

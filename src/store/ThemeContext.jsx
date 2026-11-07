@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { safeLocalStorage } from '../utils/storage';
 
 export const ThemeContext = createContext({
   theme: 'system',
@@ -10,17 +11,17 @@ export const ThemeContext = createContext({
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('adsatboard-theme') || 'system';
+      return safeLocalStorage.getItem('adsatboard-theme', 'system');
     }
     return 'system';
   });
 
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem('adsatboard-theme') || 'system';
+    const saved = safeLocalStorage.getItem('adsatboard-theme', 'system');
     if (saved === 'dark') return true;
     if (saved === 'light') return false;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   const applyTheme = (targetTheme) => {
@@ -33,7 +34,9 @@ export const ThemeProvider = ({ children }) => {
       effectiveDark = false;
     } else {
       // system
-      effectiveDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      effectiveDark = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : false;
     }
 
     if (effectiveDark) {
@@ -47,9 +50,7 @@ export const ThemeProvider = ({ children }) => {
 
   const setTheme = (newTheme) => {
     setThemeState(newTheme);
-    try {
-      localStorage.setItem('adsatboard-theme', newTheme);
-    } catch (_) {}
+    safeLocalStorage.setItem('adsatboard-theme', newTheme);
     applyTheme(newTheme);
   };
 

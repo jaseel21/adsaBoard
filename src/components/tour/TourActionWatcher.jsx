@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useTourEngine } from './TourEngineContext';
 import { useFeedback } from '../../utils/useFeedback';
+import { safeSessionStorage } from '../../utils/storage';
 
 export default function TourActionWatcher() {
   const {
@@ -31,16 +32,11 @@ export default function TourActionWatcher() {
 
     // Check if student is already authenticated
     const checkAuthStatus = () => {
-      try {
-        const studentSession = sessionStorage.getItem('adsa_student_session');
-        if (studentSession) {
-          const parsed = JSON.parse(studentSession);
-          if (parsed && (parsed.tokenNo || parsed.id)) {
-            handleActionFired();
-            return true;
-          }
-        }
-      } catch (_) {}
+      const parsed = safeSessionStorage.getJSON('adsa_student_session', null);
+      if (parsed && (parsed.tokenNo || parsed.id)) {
+        handleActionFired();
+        return true;
+      }
       return false;
     };
 

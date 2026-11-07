@@ -273,7 +273,7 @@ export default function ProfileRequestsDrawer({ isOpen, onClose }) {
                           <span className="capitalize">{req.reason.replace(/_/g, ' ')}</span>
                           {req.notes && (
                             <p className="mt-0.5 italic text-gray-600 dark:text-gray-400">
-                              "{req.notes}"
+                              &ldquo;{req.notes}&rdquo;
                             </p>
                           )}
                         </div>

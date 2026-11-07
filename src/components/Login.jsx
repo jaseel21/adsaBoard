@@ -16,6 +16,10 @@ import {
   AtSign,
   Phone,
   Mail,
+  Fingerprint,
+  QrCode,
+  Shield,
+  RotateCcw,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
@@ -23,7 +27,12 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
 import { dialog } from '../utils/dialog';
+import { safeLocalStorage } from '../utils/storage';
 import useSEO from '../hooks/useSEO';
+import { verifyPassword, migrateStudentToSaltedHash } from '../utils/cryptoAuthService';
+import { verifyTOTP, verifyAndConsumeBackupCode } from '../utils/totpService';
+import { isPasskeySupported, authenticateWithPasskey } from '../utils/passkeyService';
+import ForgotPasswordModal from './modals/ForgotPasswordModal';
 
 function Login() {
   const [token, setToken] = useState('');
@@ -31,6 +40,16 @@ function Login() {
   const [err, setErr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Next-Level Security & Auth States
+  const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+  const [pending2FA, setPending2FA] = useState(null); // { docId, sData, studentData }
+  const [totpCode, setTotpCode] = useState('');
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [backupCodeInput, setBackupCodeInput] = useState('');
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [passkeySupported] = useState(() => isPasskeySupported());
 
   useSEO({
     title: 'Student Sign-In Portal',
@@ -71,6 +90,27 @@ function Login() {
       }, 100);
     }
   }, [location.search]);
+
+  const completeStudentLogin = useCallback(
+    (studentData) => {
+      // Explicitly initialize fresh activity timestamp in storage so all listeners start now
+      safeLocalStorage.setItem('adsa_last_activity_timestamp', String(Date.now()));
+
+      setStdata(studentData);
+      feedback('success');
+      if (studentData.block) {
+        dialog.toast.info(
+          t('tokenLockedByAdmin') || 'Token Locked by Admin',
+          t('tokenLockedPortalNotice') ||
+            'Your dining token is currently locked. You are viewing your details in Read-Only mode.',
+          4000
+        );
+      }
+      const returnUrl = location.state?.from;
+      navigate((returnUrl && returnUrl !== '/login') ? returnUrl : '/student');
+    },
+    [setStdata, feedback, location.state?.from, navigate, t]
+  );
 
   const loginWith = useCallback(async () => {
     try {
@@ -170,7 +210,20 @@ function Login() {
       }
 
       const sData = matchedDoc.data();
-      if (sData.password !== pass) {
+
+      // Advanced Cryptographic Password Verification with PBKDF2 & Auto-Migration
+      let isPassValid = false;
+      if (sData.passwordHash && sData.passwordSalt) {
+        isPassValid = await verifyPassword(pass, sData.passwordHash, sData.passwordSalt);
+      } else if (sData.password) {
+        isPassValid = sData.password === pass;
+        if (isPassValid) {
+          // Asynchronously auto-migrate legacy password to salted PBKDF2 hash
+          migrateStudentToSaltedHash(matchedDoc.id, pass, sData.tokenNo).catch(console.warn);
+        }
+      }
+
+      if (!isPassValid) {
         feedback('warning');
         setErr(t('invalidPassword') || 'Incorrect password for this student account.');
         return;
@@ -182,29 +235,128 @@ function Login() {
         ...sData,
       };
 
-      // Explicitly initialize fresh activity timestamp in storage so all listeners start now
-      try {
-        localStorage.setItem('adsa_last_activity_timestamp', String(Date.now()));
-      } catch (_) {}
-
-      setStdata(studentData);
-      feedback('success');
-      if (studentData.block) {
-        dialog.toast.info(
-          t('tokenLockedByAdmin') || 'Token Locked by Admin',
-          t('tokenLockedPortalNotice') ||
-            'Your dining token is currently locked. You are viewing your details in Read-Only mode.',
-          4000
-        );
+      // Check for Optional 2FA Challenge (if student opted into 2FA in settings)
+      if (sData.totpEnabled) {
+        setPending2FA({
+          docId: matchedDoc.id,
+          sData,
+          studentData,
+        });
+        feedback('tick');
+        return;
       }
-      const returnUrl = location.state?.from;
-      navigate((returnUrl && returnUrl !== '/login') ? returnUrl : '/student');
+
+      // Default: Direct, instantaneous sign-in with 0 extra steps
+      completeStudentLogin(studentData);
     } catch (error) {
       console.error('Login error:', error);
       feedback('warning');
       setErr('Failed to login. Please try again.');
     }
-  }, [token, pass, setStdata, navigate, feedback, location.state?.from, t]);
+  }, [token, pass, completeStudentLogin, feedback, t]);
+
+  // Handle Optional 2FA Verification
+  const handleVerify2FA = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!pending2FA) return;
+      setIsVerifying2FA(true);
+      setErr('');
+
+      try {
+        const { docId, sData, studentData } = pending2FA;
+
+        if (useBackupCode) {
+          const cleanBackup = (backupCodeInput || '').trim();
+          const { isValid, remainingHashedCodes } = await verifyAndConsumeBackupCode(
+            cleanBackup,
+            sData.totpBackupCodes || []
+          );
+
+          if (!isValid) {
+            feedback('warning');
+            setErr(t('invalidBackupCode', 'Invalid or already used backup recovery code.'));
+            setIsVerifying2FA(false);
+            return;
+          }
+
+          // Update remaining backup codes in Firestore
+          await firebase.firestore().collection('students').doc(docId).update({
+            totpBackupCodes: remainingHashedCodes,
+          });
+
+          completeStudentLogin({ ...studentData, totpBackupCodes: remainingHashedCodes });
+        } else {
+          const cleanTotp = (totpCode || '').trim();
+          const isValid = await verifyTOTP(cleanTotp, sData.totpSecret);
+
+          if (!isValid) {
+            feedback('warning');
+            setErr(t('invalidTotpCode', 'Invalid 6-digit authenticator code. Check your clock.'));
+            setIsVerifying2FA(false);
+            return;
+          }
+
+          completeStudentLogin(studentData);
+        }
+      } catch (err) {
+        console.error('2FA verification error:', err);
+        setErr('Error verifying 2FA code. Please try again.');
+      } finally {
+        setIsVerifying2FA(false);
+      }
+    },
+    [pending2FA, useBackupCode, backupCodeInput, totpCode, completeStudentLogin, feedback, t]
+  );
+
+  // Handle Passkey Sign-In (Biometric or QR code)
+  const handlePasskeyLogin = useCallback(async () => {
+    try {
+      setIsPasskeyLoading(true);
+      setErr('');
+      feedback('tick');
+
+      const assertion = await authenticateWithPasskey();
+      if (!assertion || !assertion.id) {
+        throw new Error('No passkey assertion returned');
+      }
+
+      // Lookup student by registered passkey ID
+      const studentsRef = firebase.firestore().collection('students');
+      const querySnap = await studentsRef
+        .where('passkeyIds', 'array-contains', assertion.id)
+        .limit(1)
+        .get();
+
+      if (querySnap.empty) {
+        feedback('warning');
+        setErr(
+          t(
+            'passkeyNotFound',
+            'This passkey is not linked to any active student account. Please sign in with your Token and Password, then register this passkey in Settings.'
+          )
+        );
+        return;
+      }
+
+      const doc = querySnap.docs[0];
+      const sData = doc.data();
+      const studentData = {
+        id: doc.id,
+        documentId: doc.id,
+        ...sData,
+      };
+
+      completeStudentLogin(studentData);
+    } catch (err) {
+      console.error('Passkey login error:', err);
+      if (err.name !== 'NotAllowedError') {
+        setErr(err.message || 'Passkey authentication failed.');
+      }
+    } finally {
+      setIsPasskeyLoading(false);
+    }
+  }, [completeStudentLogin, feedback, t]);
 
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
@@ -377,89 +529,215 @@ function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Multi-Identifier Input (Token, Username, Phone, Email) */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="token"
-                className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
-              >
-                {t('omnichannelLoginLabel', 'Login ID')}
-              </label>
-              <input
-                id="token"
-                type="text"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck="false"
-                value={token}
-                onChange={(e) => {
-                  setToken(e.target.value);
-                  setErr('');
-                }}
-                placeholder="Token #, @username, phone, or email"
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                required
-              />
-            </div>
+          {/* 2FA Verification Flow (If student opted into 2FA) */}
+          {pending2FA ? (
+            <form onSubmit={handleVerify2FA} className="space-y-4">
+              <div className="p-3.5 rounded-2xl bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-500/20 text-xs text-teal-800 dark:text-teal-200 flex items-start gap-2.5">
+                <Shield className="w-4 h-4 shrink-0 text-teal-600 dark:text-teal-400 mt-0.5" />
+                <div>
+                  <span className="font-bold block">{t('twoFactorRequired', 'Two-Factor Authentication')}</span>
+                  <span>{t('enterTwoFactorDesc', 'Please enter the 6-digit rolling code from your authenticator app.')}</span>
+                </div>
+              </div>
 
-            {/* Password Input */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
-              >
-                {t('password') || 'Password'}
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  ref={passwordRef}
-                  type={showPassword ? 'text' : 'password'}
-                  value={pass}
-                  onChange={(e) => {
-                    setPass(e.target.value);
-                    setErr('');
-                  }}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 pr-11 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  required
-                />
+              {!useBackupCode ? (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    {t('authenticatorCode', '6-Digit Authenticator Code')}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    autoFocus
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-center font-mono text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    {t('backupRecoveryCode', 'Backup Recovery Code')}
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={backupCodeInput}
+                    onChange={(e) => setBackupCodeInput(e.target.value)}
+                    placeholder="e.g. ABCD-EFGH"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-center font-mono text-base tracking-widest focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setErr('');
+                  }}
+                  className="text-teal-600 dark:text-teal-400 hover:underline font-medium"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {useBackupCode
+                    ? t('useAuthenticatorInstead', 'Use 6-digit authenticator code')
+                    : t('useBackupRecoveryCode', 'Use backup recovery code')}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPending2FA(null);
+                    setTotpCode('');
+                    setBackupCodeInput('');
+                    setErr('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  {t('cancel', 'Cancel')}
                 </button>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || !isPortalAccessible}
-              className={`w-full mt-2 inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-sm shadow-md transition-all transform active:scale-95 ${
-                isPortalAccessible
-                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-600/20'
-                  : 'bg-gray-300 dark:bg-white/10 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-80'
-              }`}
-            >
-              {isLoading ? (
-                <span>{t('verifying', 'Verifying...')}</span>
-              ) : !isPortalAccessible ? (
-                <>
-                  <Lock className="w-4 h-4 text-rose-500" />
-                  <span>{t('tokenPortalFrozen', 'Token Portal Frozen')} ({statusBadge})</span>
-                </>
-              ) : (
-                <>
-                  <span>{t('signInToPortal', 'Sign In to Portal')}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
+              <button
+                type="submit"
+                disabled={isVerifying2FA}
+                className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-teal-600 hover:bg-teal-700 text-white shadow-md shadow-teal-600/20 transition-all flex items-center justify-center gap-2"
+              >
+                {isVerifying2FA ? (
+                  <span>{t('verifying2FA', 'Verifying...')}</span>
+                ) : (
+                  <span>{t('confirmAndSignIn', 'Confirm & Sign In')}</span>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* Primary Login Form (Token ID + Password) */
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Multi-Identifier Input (Token, Username, Phone, Email) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="token"
+                  className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+                >
+                  {t('omnichannelLoginLabel', 'Login ID')}
+                </label>
+                <input
+                  id="token"
+                  type="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  value={token}
+                  onChange={(e) => {
+                    setToken(e.target.value);
+                    setErr('');
+                  }}
+                  placeholder="Token #, @username, phone, or email"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  required
+                />
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    {t('password') || 'Password'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setForgotModalOpen(true)}
+                    className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    {t('forgotPassword', 'Forgot Password?')}
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    id="password"
+                    ref={passwordRef}
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={pass}
+                    onChange={(e) => {
+                      setPass(e.target.value);
+                      setErr('');
+                    }}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 pr-11 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading || !isPortalAccessible}
+                className={`w-full mt-2 inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-sm shadow-md transition-all transform active:scale-95 ${
+                  isPortalAccessible
+                    ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-emerald-600/20'
+                    : 'bg-gray-300 dark:bg-white/10 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-80'
+                }`}
+              >
+                {isLoading ? (
+                  <span>{t('verifying', 'Verifying...')}</span>
+                ) : !isPortalAccessible ? (
+                  <>
+                    <Lock className="w-4 h-4 text-rose-500" />
+                    <span>{t('tokenPortalFrozen', 'Token Portal Frozen')} ({statusBadge})</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t('signInToPortal', 'Sign In to Portal')}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              {/* Alternative Passkey / Phone QR Sign-In */}
+              {passkeySupported && (
+                <div className="pt-1">
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                    <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
+                      {t('or', 'or')}
+                    </span>
+                    <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handlePasskeyLogin}
+                    disabled={isPasskeyLoading || !isPortalAccessible}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20 transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    {isPasskeyLoading ? (
+                      <span>{t('waitingForPasskey', 'Waiting for Biometrics / Phone QR...')}</span>
+                    ) : (
+                      <>
+                        <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        <span>{t('signInWithPasskey', 'Sign In with Passkey / Phone QR')}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
-            </button>
-          </form>
+            </form>
+          )}
 
           <div className="pt-3 flex flex-col items-center gap-2 border-t border-gray-100 dark:border-white/5">
             <button
@@ -481,6 +759,12 @@ function Login() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={forgotModalOpen}
+        onClose={() => setForgotModalOpen(false)}
+      />
     </div>
   );
 }

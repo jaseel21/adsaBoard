@@ -1,4 +1,5 @@
 import firebase from '../firebase/config';
+import { safeSessionStorage, safeLocalStorage } from './storage';
 
 /**
  * ADSA T-Board Centralized Audit Logging Service
@@ -145,15 +146,12 @@ export async function logAuditEvent({
           role: 'admin',
         };
       } else {
-        // Check student session in localStorage if present
+        // Check student session in session / local storage if present
         let studentToken = null;
-        try {
-          const stSession = localStorage.getItem('adsa_student_session');
-          if (stSession) {
-            const parsed = JSON.parse(stSession);
-            studentToken = parsed.tokenNo || parsed.token;
-          }
-        } catch (_) {}
+        const parsed = safeSessionStorage.getJSON('adsa_student_session', null) || safeLocalStorage.getJSON('adsa_student_session', null);
+        if (parsed) {
+          studentToken = parsed.tokenNo || parsed.token;
+        }
 
         if (studentToken) {
           resolvedActor = {

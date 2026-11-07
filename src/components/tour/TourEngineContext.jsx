@@ -5,6 +5,7 @@ import { useFeedback } from '../../utils/useFeedback';
 import { useLanguage } from '../../store/LanguageContext';
 import { useSmoothScroll } from '../scroll/SmoothScrollProvider';
 import { subscribeToTourCampaign, evaluateTourAutoPrompt } from '../../utils/tourCampaignService';
+import { safeLocalStorage, safeSessionStorage } from '../../utils/storage';
 
 const STORAGE_PROGRESS_KEY = 'adsatboard-tour-progress-v3';
 const STORAGE_SEEN_KEY = 'adsatboard-tour-seen-v3';
@@ -54,12 +55,7 @@ export function TourProvider({ children }) {
   // Completed Missions Tracking
   const [completedTracks, setCompletedTracks] = useState(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(STORAGE_PROGRESS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (_) {
-      return [];
-    }
+    return safeLocalStorage.getJSON(STORAGE_PROGRESS_KEY, []);
   });
 
   // Admin Campaign Governance Config
@@ -125,10 +121,8 @@ export function TourProvider({ children }) {
     setCompletedTracks((prev) => {
       if (prev.includes(trackId)) return prev;
       const updated = [...prev, trackId];
-      try {
-        localStorage.setItem(STORAGE_PROGRESS_KEY, JSON.stringify(updated));
-        localStorage.setItem(STORAGE_SEEN_KEY, 'true');
-      } catch (_) {}
+      safeLocalStorage.setJSON(STORAGE_PROGRESS_KEY, updated);
+      safeLocalStorage.setItem(STORAGE_SEEN_KEY, 'true');
       return updated;
     });
   }, []);
@@ -247,12 +241,10 @@ export function TourProvider({ children }) {
     // If step requires a different route, navigate there first (unless already authenticated)
     if (currentStep.route && location.pathname !== currentStep.route) {
       if (currentStep.skipIfAuthenticated) {
-        try {
-          const session = sessionStorage.getItem('adsa_student_session');
-          if (session && JSON.parse(session)?.tokenNo) {
-            return;
-          }
-        } catch (_) {}
+        const session = safeSessionStorage.getJSON('adsa_student_session', null);
+        if (session && session.tokenNo) {
+          return;
+        }
       }
       navigate(currentStep.route);
       return;
@@ -368,9 +360,7 @@ export function TourProvider({ children }) {
   const dismissAutoPrompt = useCallback(() => {
     feedback('tick');
     setShowAutoPromptBanner(false);
-    try {
-      localStorage.setItem(STORAGE_DISMISSED_KEY, String(Date.now()));
-    } catch (_) {}
+    safeLocalStorage.setItem(STORAGE_DISMISSED_KEY, String(Date.now()));
   }, [feedback]);
 
   // Evaluate auto-prompt condition when campaign config or route changes
@@ -379,12 +369,10 @@ export function TourProvider({ children }) {
 
     let dismissedAt = null;
     let isFirstTime = true;
-    try {
-      const storedDismiss = localStorage.getItem(STORAGE_DISMISSED_KEY);
-      if (storedDismiss) dismissedAt = Number(storedDismiss);
-      const storedSeen = localStorage.getItem(STORAGE_SEEN_KEY);
-      if (storedSeen === 'true') isFirstTime = false;
-    } catch (_) {}
+    const storedDismiss = safeLocalStorage.getItem(STORAGE_DISMISSED_KEY);
+    if (storedDismiss) dismissedAt = Number(storedDismiss);
+    const storedSeen = safeLocalStorage.getItem(STORAGE_SEEN_KEY);
+    if (storedSeen === 'true') isFirstTime = false;
 
     const shouldPrompt = evaluateTourAutoPrompt({
       campaign: campaignConfig,

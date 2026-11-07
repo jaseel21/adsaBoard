@@ -4,6 +4,7 @@ import { useTheme } from './ThemeContext';
 import { useLanguage } from './LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { dialog } from '../utils/dialog';
+import { safeLocalStorage } from '../utils/storage';
 
 export const DEFAULT_PREFERENCES_CONTEXT_VALUE = {
   preferences: DEFAULT_PREFERENCES,
@@ -27,17 +28,12 @@ export function PreferencesProvider({ children }) {
   const { setLangPref: setAppLangPref } = useLanguage();
   const { setSoundEnabled: setFeedbackSoundEnabled, setHapticsEnabled: setFeedbackHapticsEnabled, feedback } = useFeedback();
 
-  // Load baseline persisted preferences
+  // Load baseline persisted preferences safely
   const [persisted, setPersisted] = useState(() => {
     if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          return { ...DEFAULT_PREFERENCES, ...parsed };
-        }
-      } catch (err) {
-        console.warn('Could not parse persisted preferences, falling back to defaults:', err);
+      const parsed = safeLocalStorage.getJSON(STORAGE_KEY, null);
+      if (parsed) {
+        return { ...DEFAULT_PREFERENCES, ...parsed };
       }
     }
     return { ...DEFAULT_PREFERENCES };
@@ -80,7 +76,7 @@ export function PreferencesProvider({ children }) {
   // Save changes to localStorage & trigger active environmental changes
   const savePreferences = useCallback(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      safeLocalStorage.setJSON(STORAGE_KEY, draft);
       setPersisted(draft);
 
       // Harmonize with ThemeContext
@@ -130,9 +126,7 @@ export function PreferencesProvider({ children }) {
       feedback('pop');
       setDraft(DEFAULT_PREFERENCES);
       setPersisted(DEFAULT_PREFERENCES);
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (_) {}
+      safeLocalStorage.removeItem(STORAGE_KEY);
       dialog.toast.success('Reset Complete', 'System preferences returned to factory defaults.');
     }
   }, [feedback]);
@@ -142,9 +136,14 @@ export function PreferencesProvider({ children }) {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
+    // Detect 3GB or lower RAM / low-spec CPU devices for automatic GPU acceleration protection
+    const isLowMemoryDevice =
+      (typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 3) ||
+      (typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+
     // Font Scale & Motion Fidelity
     root.setAttribute('data-font-scale', draft.fontSizeScale || 'balanced');
-    root.setAttribute('data-motion-fidelity', draft.motionFidelity || 'cinematic');
+    root.setAttribute('data-motion-fidelity', isLowMemoryDevice && draft.motionFidelity === 'cinematic' ? 'ergonomic' : (draft.motionFidelity || 'cinematic'));
 
     // Accessibility Attributes
     root.setAttribute('data-high-contrast', draft.highContrastMode || 'standard');
@@ -155,8 +154,8 @@ export function PreferencesProvider({ children }) {
     root.setAttribute('data-underline-links', String(Boolean(draft.underlineLinks)));
     root.setAttribute('data-big-cursor', String(Boolean(draft.bigCursor)));
 
-    // Glassmorphism
-    if (draft.glassmorphismLevel === 'off') {
+    // Glassmorphism (Automatically disable heavy backdrop blurs on 3GB RAM or low-GPU devices)
+    if (draft.glassmorphismLevel === 'off' || (isLowMemoryDevice && draft.glassmorphismLevel !== 'high')) {
       root.classList.add('low-gpu-perf');
     } else {
       root.classList.remove('low-gpu-perf');

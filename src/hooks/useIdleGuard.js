@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { resolveEffectiveIdleConfig, getDeviceProfile } from '../utils/deviceProfileService';
+import { safeLocalStorage } from '../utils/storage';
 
 const SHARED_STORAGE_KEY = 'adsa_last_activity_timestamp';
 const BROADCAST_CHANNEL_NAME = 'adsa_kiosk_idle_sync';
@@ -77,21 +78,15 @@ export function useIdleGuard({
   const syncStorageActivity = useCallback(
     (timestamp) => {
       if (!storageKey || typeof window === 'undefined') return;
-      try {
-        localStorage.setItem(storageKey, String(timestamp));
-      } catch (_) {}
+      safeLocalStorage.setItem(storageKey, String(timestamp));
     },
     [storageKey]
   );
 
   const getStoredActivity = useCallback(() => {
     if (!storageKey || typeof window === 'undefined') return 0;
-    try {
-      const val = localStorage.getItem(storageKey);
-      return val ? parseInt(val, 10) || 0 : 0;
-    } catch (_) {
-      return 0;
-    }
+    const val = safeLocalStorage.getItem(storageKey);
+    return val ? parseInt(val, 10) || 0 : 0;
   }, [storageKey]);
 
   // 5. Reset timer handler

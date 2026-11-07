@@ -35,15 +35,16 @@ const syncState = {
   error: null,
 };
 
+import { safeSessionStorage } from './storage';
+
 const listeners = new Set();
 let isSyncing = false;
 
 // Attempt to restore verified server anchor from sessionStorage for zero-latency initial render
 if (typeof window !== 'undefined') {
   try {
-    const cached = sessionStorage.getItem('adsa_server_time_anchor');
-    if (cached) {
-      const parsed = JSON.parse(cached);
+    const parsed = safeSessionStorage.getJSON('adsa_server_time_anchor', null);
+    if (parsed) {
       const nowClient = Date.now();
       const elapsedClient = nowClient - (parsed.savedAtClientEpoch || 0);
 
@@ -156,16 +157,11 @@ function notifyListeners() {
 
 function persistSyncAnchor() {
   if (typeof window !== 'undefined' && syncState.baseServerMs != null && syncState.basePerfMs != null) {
-    try {
-      const currentServer = getSyncedServerTimeMs();
-      sessionStorage.setItem(
-        'adsa_server_time_anchor',
-        JSON.stringify({
-          baseServerMs: currentServer,
-          savedAtClientEpoch: Date.now(),
-        })
-      );
-    } catch (_) {}
+    const currentServer = getSyncedServerTimeMs();
+    safeSessionStorage.setJSON('adsa_server_time_anchor', {
+      baseServerMs: currentServer,
+      savedAtClientEpoch: Date.now(),
+    });
   }
 }
 

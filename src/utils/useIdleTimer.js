@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { safeLocalStorage } from './storage';
 
 const SHARED_STORAGE_KEY = 'adsa_last_activity_timestamp';
 
@@ -52,9 +53,7 @@ export function useIdleTimer({
   const syncStorageActivity = useCallback(
     (ts) => {
       if (!storageKey || typeof window === 'undefined') return;
-      try {
-        localStorage.setItem(storageKey, String(ts));
-      } catch (_) {}
+      safeLocalStorage.setItem(storageKey, String(ts));
     },
     [storageKey]
   );
@@ -62,12 +61,8 @@ export function useIdleTimer({
   // Safely read shared timestamp
   const getStoredActivity = useCallback(() => {
     if (!storageKey || typeof window === 'undefined') return 0;
-    try {
-      const val = localStorage.getItem(storageKey);
-      return val ? parseInt(val, 10) || 0 : 0;
-    } catch (_) {
-      return 0;
-    }
+    const val = safeLocalStorage.getItem(storageKey);
+    return val ? parseInt(val, 10) || 0 : 0;
   }, [storageKey]);
 
   const resetTimer = useCallback(() => {

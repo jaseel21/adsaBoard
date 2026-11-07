@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { safeLocalStorage, safeSessionStorage } from '../../utils/storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -56,6 +57,17 @@ import {
 } from '../../utils/studentExceptionService';
 
 const BATCH_OPTIONS = ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5', 'Batch 6', 'Batch 7'];
+
+export const KITCHEN_MANIFEST_DEFAULTS = {
+  category: 'sections',
+  sort: 'ascending',
+  mealFilter: 'both',            // Both Meals (Default Kitchen Standard)
+  statusFilter: 'canceled_only', // Canceled Tokens (Default Kitchen Standard)
+  format: 'pdf',                 // PDF Master Sheet (Default Kitchen Standard)
+  dateMode: 'auto',              // Auto (Follows 2 PM IST Cutoff Schedule)
+  dietaryAttendanceScope: 'active_diners',
+  dietaryMealFilter: 'both',
+};
 
 export default function AdvancedExportModal({
   isOpen,
@@ -154,44 +166,122 @@ export default function AdvancedExportModal({
     }
   }, [preferences]);
 
-  // Load saved preferences if available (while preserving defaults if none)
+  // Clean up any legacy localStorage so non-default settings never get permanently stuck
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('adsa_export_prefs');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.category) setCategory(parsed.category);
-        if (parsed.sort) setSort(parsed.sort);
-        if (parsed.mealFilter) setMealFilter(parsed.mealFilter);
-        if (parsed.statusFilter) setStatusFilter(parsed.statusFilter);
-        if (parsed.format) setFormat(parsed.format);
-        if (parsed.dietaryAttendanceScope) setDietaryAttendanceScope(parsed.dietaryAttendanceScope);
-        if (parsed.dietaryMealFilter) setDietaryMealFilter(parsed.dietaryMealFilter);
-      }
-    } catch (e) {
-      // Ignore storage errors
-    }
+    safeLocalStorage.removeItem('adsa_export_prefs');
   }, []);
+
+  // When modal is opened fresh, ensure standard kitchen defaults are always active
+  useEffect(() => {
+    if (isOpen) {
+      setCategory(KITCHEN_MANIFEST_DEFAULTS.category);
+      setSort(KITCHEN_MANIFEST_DEFAULTS.sort);
+      setMealFilter(KITCHEN_MANIFEST_DEFAULTS.mealFilter);
+      setStatusFilter(KITCHEN_MANIFEST_DEFAULTS.statusFilter);
+      setFormat(KITCHEN_MANIFEST_DEFAULTS.format);
+      setDietaryAttendanceScope(KITCHEN_MANIFEST_DEFAULTS.dietaryAttendanceScope);
+      setDietaryMealFilter(KITCHEN_MANIFEST_DEFAULTS.dietaryMealFilter);
+      setSelectedBatches(BATCH_OPTIONS);
+      if (preferences && preferences.length > 0) {
+        setSelectedDietaryCategories(preferences.filter((p) => p.isActive !== false).map((p) => p.id));
+      }
+    }
+  }, [isOpen, preferences]);
 
   const handleResetDefaults = () => {
     feedback('pop');
-    setDateMode('auto');
+    setDateMode(KITCHEN_MANIFEST_DEFAULTS.dateMode);
     setCustomDate('');
-    setCategory('sections');
-    setSort('ascending');
-    setMealFilter('both');
-    setStatusFilter('canceled_only');
-    setFormat('pdf');
-    setDietaryAttendanceScope('active_diners');
-    setDietaryMealFilter('both');
+    setCategory(KITCHEN_MANIFEST_DEFAULTS.category);
+    setSort(KITCHEN_MANIFEST_DEFAULTS.sort);
+    setMealFilter(KITCHEN_MANIFEST_DEFAULTS.mealFilter);
+    setStatusFilter(KITCHEN_MANIFEST_DEFAULTS.statusFilter);
+    setFormat(KITCHEN_MANIFEST_DEFAULTS.format);
+    setDietaryAttendanceScope(KITCHEN_MANIFEST_DEFAULTS.dietaryAttendanceScope);
+    setDietaryMealFilter(KITCHEN_MANIFEST_DEFAULTS.dietaryMealFilter);
     setSelectedBatches(BATCH_OPTIONS);
     if (preferences && preferences.length > 0) {
       setSelectedDietaryCategories(preferences.filter((p) => p.isActive !== false).map((p) => p.id));
     }
-    try {
-      localStorage.removeItem('adsa_export_prefs');
-    } catch (e) {}
+    safeLocalStorage.removeItem('adsa_export_prefs');
+    safeSessionStorage.removeItem('adsa_export_prefs');
   };
+
+  // Real-time detection of modified configuration versus standard kitchen defaults
+  const modifiedItems = useMemo(() => {
+    const items = [];
+    if (exportType === 'supply') {
+      if (mealFilter !== KITCHEN_MANIFEST_DEFAULTS.mealFilter) {
+        items.push({
+          id: 'mealFilter',
+          label: mealFilter === 'breakfast' ? 'Breakfast Only' : 'Lunch Only',
+          field: 'Meal Scope',
+        });
+      }
+      if (statusFilter !== KITCHEN_MANIFEST_DEFAULTS.statusFilter) {
+        items.push({
+          id: 'statusFilter',
+          label: statusFilter === 'active_only' ? 'Active Diners' : 'Full Roster',
+          field: 'Token Listing Mode',
+        });
+      }
+      if (format !== KITCHEN_MANIFEST_DEFAULTS.format) {
+        items.push({
+          id: 'format',
+          label: 'CSV Spreadsheet',
+          field: 'Export Format',
+        });
+      }
+      if (category !== KITCHEN_MANIFEST_DEFAULTS.category) {
+        items.push({
+          id: 'category',
+          label: 'Academic Batches',
+          field: 'Grouping',
+        });
+      }
+      if (sort !== KITCHEN_MANIFEST_DEFAULTS.sort) {
+        items.push({
+          id: 'sort',
+          label: 'Descending (200 → 1)',
+          field: 'Sort Order',
+        });
+      }
+    } else {
+      if (dietaryAttendanceScope !== KITCHEN_MANIFEST_DEFAULTS.dietaryAttendanceScope) {
+        items.push({
+          id: 'dietaryAttendanceScope',
+          label: 'All Enrolled Diners',
+          field: 'Attendance Scope',
+        });
+      }
+      if (dietaryMealFilter !== KITCHEN_MANIFEST_DEFAULTS.dietaryMealFilter) {
+        items.push({
+          id: 'dietaryMealFilter',
+          label: dietaryMealFilter === 'breakfast' ? 'Breakfast Shift' : 'Lunch Shift',
+          field: 'Meal Shift',
+        });
+      }
+      if (format !== KITCHEN_MANIFEST_DEFAULTS.format) {
+        items.push({
+          id: 'format',
+          label: 'CSV Spreadsheet',
+          field: 'Export Format',
+        });
+      }
+    }
+    return items;
+  }, [
+    exportType,
+    mealFilter,
+    statusFilter,
+    format,
+    category,
+    sort,
+    dietaryAttendanceScope,
+    dietaryMealFilter,
+  ]);
+
+  const isConfigModified = modifiedItems.length > 0;
 
   // Live Reactive Headcounts dynamically computed for activeTargetDateIST
   const liveDateMetrics = useMemo(() => {
@@ -381,22 +471,6 @@ export default function AdvancedExportModal({
     feedback('pop');
     setIsExporting(true);
 
-    // Save preferences
-    try {
-      localStorage.setItem(
-        'adsa_export_prefs',
-        JSON.stringify({
-          category,
-          sort,
-          mealFilter,
-          statusFilter,
-          format,
-          dietaryAttendanceScope,
-          dietaryMealFilter,
-        })
-      );
-    } catch (e) {}
-
     try {
       if (exportType === 'supply') {
         if (format === 'csv') {
@@ -525,6 +599,48 @@ export default function AdvancedExportModal({
           {/* Form Content (Scrollable) */}
           <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-gray-800 dark:text-gray-100 text-xs sm:text-sm">
             
+            {/* HIGH-VISIBILITY CONFIGURATION MODIFIED NOTIFICATION BANNER */}
+            {isConfigModified && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 sm:p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 backdrop-blur-md"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/30">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-extrabold text-xs text-amber-950 dark:text-amber-200">
+                        Custom Configuration Active (Modified from Kitchen Standard)
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-0.5 flex flex-wrap gap-1 items-center">
+                      <span>Changed:</span>
+                      {modifiedItems.map((item, i) => (
+                        <span
+                          key={i}
+                          className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-900 dark:text-amber-200 font-bold font-mono text-[10px]"
+                        >
+                          {item.field}: {item.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleResetDefaults}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset to Standard Defaults</span>
+                </button>
+              </motion.div>
+            )}
+
             {/* ================= OPTION 0: TARGET SERVICE DATE & SCHEDULE ================= */}
             <div className="space-y-2.5 p-3.5 sm:p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-500/20">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -785,9 +901,20 @@ export default function AdvancedExportModal({
               <div className="space-y-4 pt-1 border-t border-gray-100 dark:border-white/5">
                 {/* Meal Filter */}
                 <div className="space-y-2">
-                  <label className="font-bold text-gray-700 dark:text-gray-200 block">
-                    Meal Scope:
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-gray-700 dark:text-gray-200">
+                      Meal Scope:
+                    </label>
+                    {mealFilter !== 'both' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                        Custom: {mealFilter === 'breakfast' ? 'Breakfast Only' : 'Lunch Only'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        Kitchen Standard (Default)
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -797,7 +924,7 @@ export default function AdvancedExportModal({
                       }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                         mealFilter === 'both'
-                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold'
+                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold ring-2 ring-emerald-500/20'
                           : 'border-gray-200 dark:border-white/10'
                       }`}
                     >
@@ -805,7 +932,9 @@ export default function AdvancedExportModal({
                         <Sparkles className="w-3 h-3 text-emerald-500 fill-emerald-500/20" />
                         Both Meals
                       </span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Strictly 1 Page</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                        (Default • 1 Page)
+                      </span>
                     </button>
 
                     <button
@@ -816,12 +945,12 @@ export default function AdvancedExportModal({
                       }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                         mealFilter === 'breakfast'
-                          ? 'border-amber-500 bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 font-bold'
+                          ? 'border-amber-500 bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 font-bold ring-2 ring-amber-500/20'
                           : 'border-gray-200 dark:border-white/10'
                       }`}
                     >
                       <span className="text-xs font-bold block">Breakfast Only</span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Morning Shift</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Morning Shift</span>
                     </button>
 
                     <button
@@ -832,21 +961,32 @@ export default function AdvancedExportModal({
                       }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                         mealFilter === 'lunch'
-                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold'
+                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold ring-2 ring-emerald-500/20'
                           : 'border-gray-200 dark:border-white/10'
                       }`}
                     >
                       <span className="text-xs font-bold block">Lunch Only</span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Noon Shift</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Noon Shift</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Status Filter */}
                 <div className="space-y-2">
-                  <label className="font-bold text-gray-700 dark:text-gray-200 block">
-                    Column Token Listing Mode:
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-gray-700 dark:text-gray-200">
+                      Column Token Listing Mode:
+                    </label>
+                    {statusFilter !== 'canceled_only' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                        Custom: {statusFilter === 'active_only' ? 'Active Diners' : 'Full Roster'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        Kitchen Standard (Default)
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -856,7 +996,7 @@ export default function AdvancedExportModal({
                       }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                         statusFilter === 'canceled_only'
-                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold'
+                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold ring-2 ring-emerald-500/20'
                           : 'border-gray-200 dark:border-white/10'
                       }`}
                     >
@@ -864,7 +1004,9 @@ export default function AdvancedExportModal({
                         <Sparkles className="w-3 h-3 text-emerald-500 fill-emerald-500/20" />
                         Canceled Tokens
                       </span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Kitchen Standard</span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                        (Default • Kitchen)
+                      </span>
                     </button>
 
                     <button
@@ -875,12 +1017,12 @@ export default function AdvancedExportModal({
                       }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                         statusFilter === 'active_only'
-                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold'
+                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold ring-2 ring-emerald-500/20'
                           : 'border-gray-200 dark:border-white/10'
                       }`}
                     >
                       <span className="text-xs font-bold block">Active Diners</span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Serving Tokens</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Serving Tokens</span>
                     </button>
 
                     <button
@@ -891,12 +1033,12 @@ export default function AdvancedExportModal({
                       }}
                       className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
                         statusFilter === 'all'
-                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold'
+                          ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-bold ring-2 ring-emerald-500/20'
                           : 'border-gray-200 dark:border-white/10'
                       }`}
                     >
                       <span className="text-xs font-bold block">Full Roster</span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">Audit Status (Active / Inactive)</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">Audit Status (ON/OFF)</span>
                     </button>
                   </div>
                 </div>
@@ -1070,9 +1212,20 @@ export default function AdvancedExportModal({
 
             {/* ================= OPTION 5: OUTPUT FORMAT ================= */}
             <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-white/5">
-              <label className="font-bold text-gray-700 dark:text-gray-200 block">
-                Export File Format:
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-gray-700 dark:text-gray-200">
+                  Export File Format:
+                </label>
+                {format !== 'pdf' ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                    Custom: CSV Spreadsheet
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    Master Print (Default)
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1086,12 +1239,17 @@ export default function AdvancedExportModal({
                       : 'border-gray-200 dark:border-white/10'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span className="font-bold">PDF Document (.pdf)</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="font-bold">PDF Document (.pdf)</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                      (Default)
+                    </span>
                   </div>
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-                    Print-ready A4 master sheet. Clipboard and kitchen display optimized.
+                    Print-ready A4 master sheet. Large tokens, clipboard &amp; kitchen board optimized.
                   </p>
                 </button>
 
@@ -1134,7 +1292,11 @@ export default function AdvancedExportModal({
                 <span className="px-2 py-0.5 rounded-md bg-white dark:bg-black/40 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10">
                   Sort: {previewMetrics.sortDisplay}
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-white dark:bg-black/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                <span className={`px-2 py-0.5 rounded-md border font-bold ${
+                  isConfigModified
+                    ? 'bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/30'
+                    : 'bg-white dark:bg-black/40 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                }`}>
                   {previewMetrics.estimatedPages}
                 </span>
               </div>
@@ -1147,10 +1309,17 @@ export default function AdvancedExportModal({
             <button
               type="button"
               onClick={handleResetDefaults}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-all cursor-pointer"
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                isConfigModified
+                  ? 'bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30 hover:bg-amber-500/25'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10'
+              }`}
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset to Defaults</span>
+              {isConfigModified && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              )}
             </button>
 
             <div className="flex flex-wrap items-center gap-2">

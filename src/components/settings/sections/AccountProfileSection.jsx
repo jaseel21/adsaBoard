@@ -23,6 +23,8 @@ import {
   ShieldAlert,
   Smartphone,
   ExternalLink,
+  Fingerprint,
+  Shield,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../../store/LanguageContext';
@@ -31,6 +33,8 @@ import { dialog } from '../../../utils/dialog';
 import firebase from '../../../firebase/config';
 import ChangePinModal from '../modals/ChangePinModal';
 import EditUsernameModal from '../modals/EditUsernameModal';
+import TwoFactorSetupModal from '../modals/TwoFactorSetupModal';
+import PasskeySetupModal from '../modals/PasskeySetupModal';
 import { getBatchTheme } from '../../../utils/batchTheme';
 import IslamicAvatar from '../../ui/IslamicAvatar';
 
@@ -60,6 +64,9 @@ export default function AccountProfileSection({
   // Modals state
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false);
+  const [passkeyModalOpen, setPasskeyModalOpen] = useState(false);
+  const [targetAuthUserType, setTargetAuthUserType] = useState('student'); // 'student' | 'staff'
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [photoUploadOpen, setPhotoUploadOpen] = useState(false);
   const [addContactType, setAddContactType] = useState(null); // 'phone' | 'email' | null
@@ -291,21 +298,57 @@ export default function AccountProfileSection({
               </div>
             </div>
 
-            {/* Quick Actions (View Photo, Change PIN, Sign Out) */}
+            {/* Quick Actions (View Photo, Change PIN, 2FA, Passkeys, Sign Out) */}
             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               <button
                 type="button"
                 onClick={() => setPinModalOpen(true)}
-                className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 shadow-xs transition-all flex items-center justify-center gap-1.5"
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 shadow-xs transition-all flex items-center justify-center gap-1.5"
               >
                 <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
-                <span>{language === 'ml' ? 'പാസ്‌വേഡ് മാറ്റുക' : 'Change PIN'}</span>
+                <span>{language === 'ml' ? 'പാസ്‌വേഡ്' : 'PIN'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetAuthUserType('student');
+                  setTwoFactorModalOpen(true);
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border shadow-xs transition-all flex items-center justify-center gap-1.5 ${
+                  stdata.totpEnabled
+                    ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-500/30'
+                    : 'bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 text-teal-500" />
+                <span>2FA</span>
+                {stdata.totpEnabled && (
+                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-teal-500 text-white">ON</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetAuthUserType('student');
+                  setPasskeyModalOpen(true);
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 shadow-xs transition-all flex items-center justify-center gap-1.5"
+              >
+                <Fingerprint className="w-3.5 h-3.5 text-purple-500" />
+                <span>Passkey</span>
+                {stdata.passkeys?.length > 0 && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-500 text-white">
+                    {stdata.passkeys.length}
+                  </span>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={handleLogoutStudent}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-1.5"
+                className="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-1.5"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>{language === 'ml' ? 'പുറത്തിറങ്ങുക' : 'Sign Out'}</span>
@@ -707,14 +750,52 @@ export default function AccountProfileSection({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleLogoutAdmin}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-1.5"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{language === 'ml' ? 'അഡ്മിൻ ലോഗൗട്ട്' : 'Sign Out Staff'}</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetAuthUserType('staff');
+                  setTwoFactorModalOpen(true);
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border shadow-xs transition-all flex items-center justify-center gap-1.5 ${
+                  staffProfile?.totpEnabled
+                    ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-500/30'
+                    : 'bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 text-teal-500" />
+                <span>2FA</span>
+                {staffProfile?.totpEnabled && (
+                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-teal-500 text-white">ON</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetAuthUserType('staff');
+                  setPasskeyModalOpen(true);
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#1a2622] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 shadow-xs transition-all flex items-center justify-center gap-1.5"
+              >
+                <Fingerprint className="w-3.5 h-3.5 text-purple-500" />
+                <span>Passkey</span>
+                {staffProfile?.passkeys?.length > 0 && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-purple-500 text-white">
+                    {staffProfile.passkeys.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogoutAdmin}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{language === 'ml' ? 'അഡ്മിൻ ലോഗൗട്ട്' : 'Sign Out Staff'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -836,6 +917,32 @@ export default function AccountProfileSection({
           student={stdata}
         />
       )}
+
+      {/* Two-Factor Authentication (2FA) Modal */}
+      <TwoFactorSetupModal
+        isOpen={twoFactorModalOpen}
+        onClose={() => setTwoFactorModalOpen(false)}
+        userType={targetAuthUserType}
+        userData={targetAuthUserType === 'student' ? stdata : staffProfile}
+        onStatusUpdated={(updated) => {
+          if (targetAuthUserType === 'student' && setStdata) {
+            setStdata(updated);
+          }
+        }}
+      />
+
+      {/* Passkey / Biometrics Setup Modal */}
+      <PasskeySetupModal
+        isOpen={passkeyModalOpen}
+        onClose={() => setPasskeyModalOpen(false)}
+        userType={targetAuthUserType}
+        userData={targetAuthUserType === 'student' ? stdata : staffProfile}
+        onPasskeysUpdated={(newList) => {
+          if (targetAuthUserType === 'student' && setStdata) {
+            setStdata({ ...stdata, passkeys: newList });
+          }
+        }}
+      />
     </div>
   );
 }

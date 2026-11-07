@@ -17,6 +17,8 @@ import StaffManagementModal from './StaffManagementModal';
 import ShareActionModal from './ui/ShareActionModal';
 import BoardSupplySwitchModal from './board/BoardSupplySwitchModal';
 import NotificationTickerBanner from './notifications/NotificationTickerBanner';
+import WindowControlsTitlebar from './pwa/WindowControlsTitlebar';
+import { openDesktopInstallModal } from '../utils/pwaManager';
 
 const Navbar = ({ isAdmin }) => {
   const {
@@ -103,6 +105,7 @@ const Navbar = ({ isAdmin }) => {
       if (item.action === 'open_staff_modal') setStaffModalOpen(true);
       if (item.action === 'open_share_modal') setShareModalOpen(true);
       if (item.action === 'open_board_supply_modal') setSupplySwitchModalOpen(true);
+      if (item.action === 'open_desktop_install_modal') openDesktopInstallModal();
       return;
     }
     if (item.path) {
@@ -112,6 +115,9 @@ const Navbar = ({ isAdmin }) => {
 
   return (
     <>
+      {/* Native Desktop Window Controls Overlay Titlebar (Active when installed) */}
+      <WindowControlsTitlebar onOpenSearch={() => setSearchModalOpen(true)} />
+
       {/* Top Header Placeholder to give comfortable space for floating navbar */}
       <header id="nav-landmark" role="banner" aria-label="Primary Navigation" className="relative w-full">
         {/* Desktop Floating Dynamic Island Navbar */}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -12,7 +12,18 @@ import {
   Sparkles,
   Settings,
   Compass,
+  Download,
+  Laptop,
 } from 'lucide-react';
+import {
+  isStandaloneMode,
+  isWindowControlsOverlayActive,
+  subscribeWindowControlsOverlay,
+  detectOS,
+  canPromptNativeInstall,
+  triggerNativeInstallPrompt,
+  openDesktopInstallModal,
+} from '../../utils/pwaManager';
 import { useLanguage } from '../../store/LanguageContext';
 import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
@@ -100,6 +111,26 @@ export default function FloatingDesktopNav({
   // Directional scroll show/hide hook (glides out on scroll down, returns on scroll up)
   const isVisible = useScrollHeader({ threshold: 30, delta: 6 });
 
+  // PWA Desktop and Window Controls Overlay state
+  const [wcoActive, setWcoActive] = useState(false);
+  const isInstalled = isStandaloneMode();
+  const clientOS = detectOS();
+
+  useEffect(() => {
+    setWcoActive(isWindowControlsOverlayActive());
+    const unsub = subscribeWindowControlsOverlay((visible) => setWcoActive(visible));
+    return unsub;
+  }, []);
+
+  const handleDesktopInstall = async () => {
+    feedback('tick');
+    if (canPromptNativeInstall()) {
+      const res = await triggerNativeInstallPrompt();
+      if (res.outcome === 'accepted') return;
+    }
+    openDesktopInstallModal(clientOS === 'macos' ? 'macos' : clientOS === 'windows' ? 'windows' : 'linux');
+  };
+
   // Popover states for Calendar & Clock
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
@@ -158,7 +189,9 @@ export default function FloatingDesktopNav({
           y: { type: 'spring', damping: 28, stiffness: 360 },
           left: { type: 'spring', damping: 30, stiffness: 300 },
         }}
-        className="hidden md:flex fixed top-3.5 z-40 items-center gap-1 transition-colors duration-300 rounded-full px-2.5 py-1.5 bg-white/90 dark:bg-[#080d0b]/90 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-emerald-950/20 select-none"
+        className={`hidden md:flex fixed ${
+          wcoActive ? 'top-[44px]' : 'top-3.5'
+        } z-40 items-center gap-1 transition-colors duration-300 rounded-full px-2.5 py-1.5 bg-white/90 dark:bg-[#080d0b]/90 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-emerald-950/20 select-none`}
       >
         {/* 1. Home Tab */}
         <NavTabButton
@@ -280,6 +313,32 @@ export default function FloatingDesktopNav({
 
         {/* 11. Live Real-Time Cloud Status Badge */}
         <LiveCloudStatusBadge />
+
+        {/* 12. Desktop App Install CTA or Tools Trigger */}
+        {isInstalled ? (
+          <NavTabButton
+            onClick={() => {
+              feedback('tick');
+              openDesktopInstallModal('tools');
+            }}
+            active={false}
+            icon={Laptop}
+            tooltip="ADSA Desktop Edition (v2.5) • Tools & Shortcuts"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={handleDesktopInstall}
+            className="relative px-2.5 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 flex-shrink-0"
+            title={`Install ADSA T-Board for ${clientOS === 'macos' ? 'Mac' : clientOS === 'windows' ? 'Windows' : 'Linux'}`}
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] font-bold">
+              {lang === 'ml' ? 'ഇൻസ്റ്റാൾ' : 'Install'}
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </button>
+        )}
 
         {/* Vertical Divider before Date & Time */}
         <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0" />

@@ -4,7 +4,7 @@
  * Provides offline caching, background resilience, app shell caching, and push notification handling.
  */
 
-const CACHE_VERSION = 'v2.0.2';
+const CACHE_VERSION = 'v2.0.3';
 const STATIC_CACHE = `adsa-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `adsa-runtime-${CACHE_VERSION}`;
 const ASSET_CACHE = `adsa-assets-${CACHE_VERSION}`;
@@ -15,6 +15,7 @@ const PRECACHE_URLS = [
   '/index.html',
   '/offline.html',
   '/site.webmanifest',
+  '/manifest.json',
   '/favicon.svg',
   '/favicon-32x32.png',
   '/favicon-16x16.png',
@@ -193,10 +194,29 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// 4. Message Event: Support immediate skipWaiting on update trigger
+// 4. Message Event: Support immediate skipWaiting, badge updates, and client telemetry
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (!event.data) return;
+
+  if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+
+  if (event.data.type === 'SET_BADGE') {
+    if ('setAppBadge' in self.navigator) {
+      const count = Number(event.data.count) || 0;
+      if (count > 0) {
+        self.navigator.setAppBadge(count).catch(() => {});
+      } else {
+        self.navigator.clearAppBadge().catch(() => {});
+      }
+    }
+  }
+
+  if (event.data.type === 'CLEAR_BADGE') {
+    if ('clearAppBadge' in self.navigator) {
+      self.navigator.clearAppBadge().catch(() => {});
+    }
   }
 });
 

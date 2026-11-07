@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Info,
   GraduationCap,
+  Monitor,
 } from 'lucide-react';
 import { ROLES, hasRole } from '../../utils/rbac';
 
@@ -728,6 +729,21 @@ export const NAV_ITEMS = [
     isPublic: true,
     isModalAction: true,
     keywords: ['share', 'social', 'whatsapp', 'telegram', 'qr', 'ഷെയർ'],
+  },
+  {
+    id: 'desktop_app_install',
+    action: 'open_desktop_install_modal',
+    labelEn: 'Desktop App Edition (Mac, Windows, Linux)',
+    labelMl: 'ഡെസ്ക്ടോപ്പ് ആപ്ലിക്കേഷൻ (PWA)',
+    shortLabelEn: 'Desktop App',
+    shortLabelMl: 'ഡെസ്ക്ടോപ്പ് ആപ്പ്',
+    category: NAV_CATEGORIES.HELP.id,
+    icon: Monitor,
+    descriptionEn: 'Install ADSA T-Board as an official desktop app on Windows 11/10, macOS or Linux with offline sync',
+    descriptionMl: 'വിൻഡോസ്, മാക്, ലിനക്സ് കമ്പ്യൂട്ടറുകളിൽ ആപ്പായി ഇൻസ്റ്റാൾ ചെയ്യാൻ',
+    isPublic: true,
+    isModalAction: true,
+    keywords: ['desktop', 'install', 'app', 'pwa', 'mac', 'windows', 'linux', 'download', 'dock', 'taskbar', 'ഡെസ്ക്ടോപ്പ്', 'ഇൻസ്റ്റാൾ'],
   },
 ];
 

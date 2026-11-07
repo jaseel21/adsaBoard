@@ -65,6 +65,7 @@ import { MasterGovernanceProvider, useMasterGovernance } from './store/MasterGov
 import MasterMaintenanceScreen from './components/admin/governance/MasterMaintenanceScreen';
 import InstitutionalAlertRibbon from './components/admin/governance/InstitutionalAlertRibbon';
 import { TourProvider } from './components/tour/TourEngineContext';
+import { safeSessionStorage } from './utils/storage';
 import TourSpotlightOverlay from './components/tour/TourSpotlightOverlay';
 import TourTargetBeacon from './components/tour/TourTargetBeacon';
 import TourFloatingHUD from './components/tour/TourFloatingHUD';
@@ -104,14 +105,14 @@ function AppContent() {
   // Cold-Start Default Gateway Route handling
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const hasRedirected = sessionStorage.getItem('adsatboard-landing-routed');
+    const hasRedirected = safeSessionStorage.getItem('adsatboard-landing-routed');
     if (
       !hasRedirected &&
       location.pathname === '/' &&
       preferences?.defaultLandingRoute &&
       preferences.defaultLandingRoute !== '/'
     ) {
-      sessionStorage.setItem('adsatboard-landing-routed', 'true');
+      safeSessionStorage.setItem('adsatboard-landing-routed', 'true');
       navigate(preferences.defaultLandingRoute, { replace: true });
     }
   }, [location.pathname, preferences?.defaultLandingRoute, navigate]);
@@ -201,6 +202,9 @@ function AppContent() {
             {/* System Preferences & Personalization */}
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/preferences" element={<Navigate to="/settings" replace />} />
+            <Route path="/privacy" element={<Navigate to="/settings#privacy" replace />} />
+            <Route path="/cookies" element={<Navigate to="/settings#privacy" replace />} />
+            <Route path="/storage" element={<Navigate to="/settings#privacy" replace />} />
 
             {/* Student Dining Portal (Clean canonical route + backward-compatible alias) */}
             <Route

@@ -8,6 +8,7 @@ import {
   INTERNAL_ROUTE_PREVIEWS,
   getContactPreview,
 } from './linkRegistry';
+import { safeLocalStorage } from './storage';
 
 // In-Memory LRU Cache for instantaneous zero-latency access
 const memoryCache = new Map();
@@ -106,18 +107,13 @@ export function generateFallbackMetadata(urlStr) {
  */
 function getFromStorage(key) {
   if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(CACHE_PREFIX + key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) {
-      localStorage.removeItem(CACHE_PREFIX + key);
-      return null;
-    }
-    return parsed;
-  } catch (_) {
+  const parsed = safeLocalStorage.getJSON(CACHE_PREFIX + key, null);
+  if (!parsed) return null;
+  if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) {
+    safeLocalStorage.removeItem(CACHE_PREFIX + key);
     return null;
   }
+  return parsed;
 }
 
 /**
@@ -125,9 +121,7 @@ function getFromStorage(key) {
  */
 function saveToStorage(key, data) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(data));
-  } catch (_) {}
+  safeLocalStorage.setJSON(CACHE_PREFIX + key, data);
 }
 
 /**

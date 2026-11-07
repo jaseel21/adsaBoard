@@ -41,6 +41,14 @@ export function sortTokenList(tokens = [], sortOrder = 'ascending') {
  * Tokens are strictly paired into pairs of 2 ONLY IF the count exceeds maxAllowedRows
  * to prevent spilling onto a second page.
  */
+/**
+ * Formats tokens for table rows.
+ * Smart A4 Space Utilization:
+ * If tokens.length <= maxAllowedRows, DO NOT PAIR. Each token is rendered individually
+ * on its own row to fully utilize the vertical A4 sheet with maximum readability.
+ * Tokens are strictly paired into pairs of 2 ONLY IF the count exceeds maxAllowedRows
+ * to prevent spilling onto a second page.
+ */
 function packTokensForTable(tokens = [], maxAllowedRows = 30) {
   if (!tokens || tokens.length === 0) return ['-'];
 
@@ -253,17 +261,19 @@ export function generateSinglePageCombinedManifestDoc({
   const totalLunchActive = lunchColumnsData.reduce((acc, b) => acc + b.activeCount, 0);
 
   const numCols = Math.max(breakfastColumnsData.length, lunchColumnsData.length, 1);
-  const fontSizeByCols = numCols > 8 ? 6.5 : numCols > 6 ? 7 : 7.5;
-  const paddingByCols = numCols > 8 ? 0.9 : 1.2;
+  // High-legibility token typography requested by kitchen suppliers & cooks
+  const tokenFontSize = numCols > 8 ? 8.0 : numCols > 6 ? 8.8 : 9.2;
+  const headerFontSize = numCols > 8 ? 6.8 : 7.2;
 
-  // 1. TOP HEADER BANNER (y: 0 to 22mm)
+  // 1. STREAMLINED TOP HEADER BANNER (y: 0 to 16mm)
+  // Utilizes edge-to-edge emerald banner with reduced vertical footprint to reserve space for tokens
   doc.setFillColor(6, 78, 59); // Deep Emerald
-  doc.rect(0, 0, 210, 22, 'F');
+  doc.rect(0, 0, 210, 16, 'F');
 
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.text('ALATHURPADI DARS — DAILY KITCHEN SUPPLY MANIFEST', 14, 8.5);
+  doc.text('ALATHURPADI DARS — DAILY KITCHEN SUPPLY MANIFEST', 8, 6.5);
 
   // Revision Pill Badge in top right corner
   const revPillText = `REV ${revision}${isReprint ? ' (REPRINT)' : ''}`;
@@ -272,93 +282,85 @@ export function generateSinglePageCombinedManifestDoc({
   } else {
     doc.setFillColor(16, 185, 129); // Emerald-500
   }
-  doc.roundedRect(154, 4.5, 42, 6.5, 1.5, 1.5, 'F');
+  doc.roundedRect(166, 3, 36, 5.5, 1.5, 1.5, 'F');
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text(revPillText, 175, 9, { align: 'center' });
+  doc.text(revPillText, 184, 6.8, { align: 'center' });
 
-  doc.setFontSize(7.5);
+  // Crisp metadata subtitle line
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   const sortLabel = sort === 'descending' ? 'DESC (200 → 1)' : 'ASC (1 → 200)';
-  const catLabel = category === 'batches' ? 'Batches 1–7' : `Sections (${activeChunkSize} tokens/sec)`;
-  const adminLabel = printedByName ? `  |  Admin: ${printedByName}` : '';
+  const catLabel = category === 'batches' ? 'Batches 1–7' : `Sections (${activeChunkSize}/sec)`;
+  const adminLabel = printedByName ? `  •  Admin: ${printedByName}` : '';
+  doc.setTextColor(200, 235, 225);
   doc.text(
-    `Service Date: ${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()})  |  Grouping: ${catLabel}  |  Sort: ${sortLabel}${adminLabel}`,
-    14,
-    14.5
+    `Service Date: ${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()})  •  Grouping: ${catLabel}  •  Sort: ${sortLabel}${adminLabel}  •  Printed: ${printedAt || new Date().toLocaleTimeString('en-IN')}`,
+    8,
+    12.5
   );
 
-  doc.setFontSize(6.5);
-  doc.setTextColor(200, 230, 220);
-  doc.text(
-    `Timestamp: ${printedAt || new Date().toLocaleString('en-IN')}  |  Kitchen Master Sheet`,
-    14,
-    19
-  );
-
-  // 2. OPERATIONAL SUMMARY STRIP (y: 24 to 33mm)
+  // 2. HIGH-CONTRAST OPERATIONAL SUMMARY STRIP (y: 18 to 25mm)
+  // Full 194mm width (8mm side margins) giving maximum horizontal span
   doc.setFillColor(243, 246, 244);
-  doc.roundedRect(14, 24, 182, 8.5, 2, 2, 'F');
+  doc.roundedRect(8, 18, 194, 7, 1.5, 1.5, 'F');
 
-  doc.setFontSize(7.5);
-  doc.setTextColor(70, 70, 70);
+  doc.setFontSize(7.8);
+  doc.setTextColor(50, 50, 50);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Enrolled Diners: ${documents.length}`, 18, 29.5);
+  doc.text(`Enrolled Diners: ${documents.length}`, 12, 22.8);
 
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...breakfastColor);
-  doc.text(`Breakfast Prep: ${totalBreakfastActive} Meals`, 68, 29.5);
+  doc.text(`Breakfast Prep: ${totalBreakfastActive} Meals`, 68, 22.8);
 
   doc.setTextColor(...lunchColor);
-  doc.text(`Lunch Prep: ${totalLunchActive} Meals`, 128, 29.5);
+  doc.text(`Lunch Prep: ${totalLunchActive} Meals`, 130, 22.8);
 
-  let currentY = 35;
+  let currentY = 27;
 
   // Optional: Highlighted Delta Alert Strip when Revision > 1 or delta notes exist
   if (deltaNotes) {
     doc.setFillColor(254, 242, 242);
     doc.setDrawColor(248, 113, 113);
-    doc.roundedRect(14, 34, 182, 6, 1.5, 1.5, 'FD');
+    doc.roundedRect(8, currentY, 194, 5.5, 1.2, 1.2, 'FD');
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(185, 28, 28);
-    doc.text(`[ALERT] REV ${revision} UPDATE NOTE: ${String(deltaNotes).slice(0, 110)}`, 18, 38.2);
-    currentY = 42;
+    doc.text(`[ALERT] REV ${revision} UPDATE NOTE: ${String(deltaNotes).slice(0, 115)}`, 12, currentY + 3.8);
+    currentY += 7.5;
   }
 
   // -------------------------------------------------------------
-  // SMART VERTICAL SPACE BUDGETING & PAIRING DECISION ENGINE
+  // RECALIBRATED VERTICAL SPACE BUDGETING & PAIRING ENGINE
   // -------------------------------------------------------------
-  // Available vertical content window: y = 35mm to y = 282mm (Total: 247mm)
-  // Check un-paired row counts:
+  // Usable vertical window with compact banners: ~235mm
+  // Body row height: ~4.4mm at 8.8pt bold font
   const bRawMax = Math.max(...breakfastColumnsData.map((col) => col.tokensToDisplay.length), 1);
   const lRawMax = Math.max(...lunchColumnsData.map((col) => col.tokensToDisplay.length), 1);
 
-  let maxAllowedRowsB = 35;
-  let maxAllowedRowsL = 35;
+  let maxAllowedRowsB = 32;
+  let maxAllowedRowsL = 32;
 
   if (mealFilter === 'both') {
-    // Both tables combined:
-    // Overhead = Banner 1 (6mm) + Table 1 Head (8mm) + Gap & Banner 2 (12mm) + Table 2 Head (8mm) = ~34mm.
-    // Usable row height = 247mm - 34mm = ~213mm.
-    // At ~4.1mm per table row, up to ~50 total rows fit comfortably across both meals without pairing!
     const totalRawRows = bRawMax + lRawMax;
-    if (totalRawRows <= 48) {
-      // PLENTY OF SPACE: DO NOT PAIR! Render single tokens per row.
-      maxAllowedRowsB = bRawMax + 5;
-      maxAllowedRowsL = lRawMax + 5;
+    // Up to 34 body rows fit un-paired comfortably across both meals without any page break risk
+    if (totalRawRows <= 34) {
+      // Plenty of vertical space: render single tokens per row for maximal supplier readability
+      maxAllowedRowsB = bRawMax + 2;
+      maxAllowedRowsL = lRawMax + 2;
     } else {
-      // Overflow risk: Allocate proportional row budget to each meal
-      const budgetB = Math.max(Math.floor((bRawMax / totalRawRows) * 44), 10);
-      const budgetL = Math.max(44 - budgetB, 10);
+      // Allocate proportional row budget guaranteeing strict single-page boundary
+      const budgetB = Math.max(Math.floor((bRawMax / totalRawRows) * 30), 8);
+      const budgetL = Math.max(30 - budgetB, 8);
       maxAllowedRowsB = budgetB;
       maxAllowedRowsL = budgetL;
     }
   } else {
-    // Single meal: up to 55 individual rows fit on page 1 without pairing!
-    maxAllowedRowsB = 55;
-    maxAllowedRowsL = 55;
+    // Single meal: up to 52 individual rows fit on page 1 without pairing!
+    maxAllowedRowsB = 52;
+    maxAllowedRowsL = 52;
   }
 
   // Status descriptor for section table banners
@@ -367,24 +369,25 @@ export function generateSinglePageCombinedManifestDoc({
       ? 'Lists Attending Diners'
       : statusFilter === 'all'
       ? 'Roster Status (ON: Served / OFF: Skip)'
-      : 'Numbers inside columns represent canceled/skipped tokens';
+      : 'Canceled / Skipped Tokens';
 
   // 3. SECTION 1: BREAKFAST SUPPLY MANIFEST
   if (mealFilter === 'both' || mealFilter === 'breakfast') {
     doc.setFillColor(...breakfastColor);
-    doc.roundedRect(14, currentY, 182, 5.5, 1.5, 1.5, 'F');
+    doc.roundedRect(8, currentY, 194, 5, 1.2, 1.2, 'F');
 
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
     doc.text(
       `1. BREAKFAST SUPPLY BREAKDOWN  •  Total To Prepare: ${totalBreakfastActive} Meals  (${statusNote})`,
-      18,
-      currentY + 3.8
+      12,
+      currentY + 3.5
     );
 
+    // 2-line streamlined header: [Name Range] on line 1, Served count on line 2
     const bColumns = breakfastColumnsData.map((col) => ({
-      header: `${col.fullName || col.name}\n${col.activeCount}/${col.total} Served\n[${col.range}]`,
+      header: `${col.fullName || col.name}  [${col.range}]\n${col.activeCount}/${col.total} Served`,
       dataKey: `col_${col.id}`,
     }));
 
@@ -404,50 +407,53 @@ export function generateSinglePageCombinedManifestDoc({
     doc.autoTable({
       columns: bColumns,
       body: bTableBody,
-      startY: currentY + 7,
-      margin: { left: 14, right: 14 },
+      startY: currentY + 6,
+      margin: { left: 8, right: 8 },
       theme: 'grid',
       pageBreak: 'avoid',
       styles: {
-        fontSize: fontSizeByCols,
+        fontSize: tokenFontSize,
+        fontStyle: 'bold',
         halign: 'center',
         valign: 'middle',
-        cellPadding: paddingByCols,
-        lineColor: [220, 220, 220],
+        cellPadding: { top: 1.0, bottom: 1.0, left: 0.5, right: 0.5 },
+        lineColor: [210, 218, 215],
         lineWidth: 0.15,
+        textColor: [17, 24, 39], // Rich dark ink for sharp token contrast
       },
       headStyles: {
         fillColor: breakfastColor,
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
-        fontSize: fontSizeByCols - 0.5,
-        cellPadding: paddingByCols,
+        fontSize: headerFontSize,
+        cellPadding: { top: 1.0, bottom: 1.0, left: 0.5, right: 0.5 },
       },
       alternateRowStyles: {
-        fillColor: [254, 251, 246],
+        fillColor: [254, 252, 248],
       },
     });
 
-    currentY = (doc.lastAutoTable?.finalY || 120) + 5;
+    currentY = (doc.lastAutoTable?.finalY || 120) + 3.5;
   }
 
   // 4. SECTION 2: LUNCH SUPPLY MANIFEST
   if (mealFilter === 'both' || mealFilter === 'lunch') {
     doc.setFillColor(...lunchColor);
-    doc.roundedRect(14, currentY, 182, 5.5, 1.5, 1.5, 'F');
+    doc.roundedRect(8, currentY, 194, 5, 1.2, 1.2, 'F');
 
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
     doc.text(
       `${mealFilter === 'both' ? '2' : '1'}. LUNCH SUPPLY BREAKDOWN  •  Total To Prepare: ${totalLunchActive} Meals  (${statusNote})`,
-      18,
-      currentY + 3.8
+      12,
+      currentY + 3.5
     );
 
+    // 2-line streamlined header: [Name Range] on line 1, Served count on line 2
     const lColumns = lunchColumnsData.map((col) => ({
-      header: `${col.fullName || col.name}\n${col.activeCount}/${col.total} Served\n[${col.range}]`,
+      header: `${col.fullName || col.name}  [${col.range}]\n${col.activeCount}/${col.total} Served`,
       dataKey: `col_${col.id}`,
     }));
 
@@ -467,25 +473,27 @@ export function generateSinglePageCombinedManifestDoc({
     doc.autoTable({
       columns: lColumns,
       body: lTableBody,
-      startY: currentY + 7,
-      margin: { left: 14, right: 14 },
+      startY: currentY + 6,
+      margin: { left: 8, right: 8 },
       theme: 'grid',
       pageBreak: 'avoid',
       styles: {
-        fontSize: fontSizeByCols,
+        fontSize: tokenFontSize,
+        fontStyle: 'bold',
         halign: 'center',
         valign: 'middle',
-        cellPadding: paddingByCols,
-        lineColor: [220, 220, 220],
+        cellPadding: { top: 1.0, bottom: 1.0, left: 0.5, right: 0.5 },
+        lineColor: [210, 218, 215],
         lineWidth: 0.15,
+        textColor: [17, 24, 39], // Rich dark ink for sharp token contrast
       },
       headStyles: {
         fillColor: lunchColor,
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
-        fontSize: fontSizeByCols - 0.5,
-        cellPadding: paddingByCols,
+        fontSize: headerFontSize,
+        cellPadding: { top: 1.0, bottom: 1.0, left: 0.5, right: 0.5 },
       },
       alternateRowStyles: {
         fillColor: [248, 252, 250],
@@ -499,13 +507,14 @@ export function generateSinglePageCombinedManifestDoc({
   doc.setFont('helvetica', 'italic');
   doc.text(
     `Alathurpadi Dars Food Management System • Official Single-Page Kitchen Master Sheet • Rev ${revision} • Printed ${printedAt || new Date().toLocaleString('en-IN')}`,
-    14,
-    290
+    8,
+    292
   );
 
-  // STRICT GUARANTEE: Delete any trailing page if created by accident
-  while (doc.getNumberOfPages() > 1) {
-    doc.deletePage(doc.getNumberOfPages());
+  // Safety verification: with mathematical space budgeting, single-page boundary is preserved.
+  // We NEVER delete pages containing dining data.
+  if (doc.getNumberOfPages() > 1) {
+    console.warn(`[KitchenManifest] Manifest generated ${doc.getNumberOfPages()} pages.`);
   }
 
   const fileSlug = `ADSA_Kitchen_Supply_Manifest_${targetDateIST}_${category}_${sort}_Rev${revision}.pdf`;

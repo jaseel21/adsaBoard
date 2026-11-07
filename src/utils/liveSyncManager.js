@@ -1,5 +1,6 @@
 import firebase from '../firebase/config';
 import { syncServerTime } from './time';
+import { safeSessionStorage } from './storage';
 
 /**
  * Isolated fetch helper with dedicated timeout and AbortController.
@@ -306,7 +307,7 @@ class LiveSyncManager {
     const { type, payload } = event.data || {};
     if (type === 'SESSION_PURGE') {
       if (typeof window !== 'undefined') {
-        sessionStorage.clear();
+        safeSessionStorage.clear();
         window.dispatchEvent(new CustomEvent('adsa:session_purged'));
       }
     } else if (type === 'STUDENT_MUTATION_OCCURRED') {

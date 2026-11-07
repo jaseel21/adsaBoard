@@ -10,6 +10,45 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
+    <!-- Storage Access Resilience Shield (Prevents SecurityError in Google Go / Privacy WebViews) -->
+    <script>
+      (function() {
+        function createFallbackStore() {
+          var store = {};
+          return {
+            getItem: function(k) { return Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null; },
+            setItem: function(k, v) { store[k] = String(v); },
+            removeItem: function(k) { delete store[k]; },
+            clear: function() { store = {}; },
+            key: function(i) { return Object.keys(store)[i] || null; },
+            get length() { return Object.keys(store).length; }
+          };
+        }
+        ['localStorage', 'sessionStorage'].forEach(function(type) {
+          var works = false;
+          try {
+            var s = window[type];
+            if (s) {
+              s.setItem('__adsa_ping__', '1');
+              s.removeItem('__adsa_ping__');
+              works = true;
+            }
+          } catch (e) {}
+          if (!works) {
+            try {
+              var fallback = createFallbackStore();
+              Object.defineProperty(window, type, {
+                value: fallback,
+                configurable: true,
+                writable: true,
+                enumerable: true
+              });
+            } catch (err) {}
+          }
+        });
+      })();
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>ADSA T-Board • Alathurpadi Dars Food Management System</title>
     <meta name="title" content="ADSA T-Board • Alathurpadi Dars Food Management System" />

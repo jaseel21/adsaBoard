@@ -33,6 +33,7 @@ import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { AuthContext } from '../store/AuthContext';
 import { cleanPastDateExceptions, syncStudentDiningHistory, getTodayISTDate, addDaysToDate, cleanRedundantDateExceptions } from '../utils/studentExceptionService';
+import { hashPassword, generateSalt } from '../utils/cryptoAuthService';
 import { checkIdentifierUniqueness, normalizePhone, formatPhoneDisplay } from '../utils/studentProfileRequestService';
 import { logAuditEvent, calculateObjectDiff, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import { checkActivePrintsForDates } from '../utils/manifestPrintService';
@@ -367,6 +368,27 @@ export default function StudentDrawer({
         };
 
     try {
+      // Hash password with PBKDF2 if provided
+      if (payload.password && payload.password.trim()) {
+        const rawPw = payload.password.trim();
+        const salt = generateSalt();
+        const hash = await hashPassword(rawPw, salt);
+        payload.passwordHash = hash;
+        payload.passwordSalt = salt;
+        payload.passwordAlgorithm = 'PBKDF2-SHA256';
+        payload.pinUpdatedAt = new Date().toISOString();
+        delete payload.password; // Do not store plaintext
+      } else if (!isEdit) {
+        // Fallback default password for newly created student if omitted
+        const salt = generateSalt();
+        const hash = await hashPassword('pass123', salt);
+        payload.passwordHash = hash;
+        payload.passwordSalt = salt;
+        payload.passwordAlgorithm = 'PBKDF2-SHA256';
+        payload.pinUpdatedAt = new Date().toISOString();
+        delete payload.password;
+      }
+
       const db = firebase.firestore();
       if (isEdit) {
         // Detect removed date exception keys so Firestore does not retain them via merge
@@ -374,6 +396,7 @@ export default function StudentDrawer({
         const deletedKeys = {
           room: firebase.firestore.FieldValue.delete(),
           roomNo: firebase.firestore.FieldValue.delete(),
+          password: firebase.firestore.FieldValue.delete(), // Purge legacy plaintext
         };
         Object.keys(prevExceptions).forEach((d) => {
           if (!cleanedExceptions[d]) {

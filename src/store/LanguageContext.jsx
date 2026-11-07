@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { translations } from '../i18n/translations';
+import { safeLocalStorage } from '../utils/storage';
 
 export const LanguageContext = createContext({
   langPref: 'system',
@@ -12,7 +13,7 @@ export const LanguageContext = createContext({
 export const LanguageProvider = ({ children }) => {
   const [langPref, setLangPrefState] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('adsatboard-lang') || 'system';
+      return safeLocalStorage.getItem('adsatboard-lang', 'system');
     }
     return 'system';
   });
@@ -30,12 +31,12 @@ export const LanguageProvider = ({ children }) => {
 
   const setLangPref = (newPref) => {
     setLangPrefState(newPref);
-    try {
-      localStorage.setItem('adsatboard-lang', newPref);
-    } catch (_) {}
+    safeLocalStorage.setItem('adsatboard-lang', newPref);
     const resolved = resolveEffectiveLang(newPref);
     setLang(resolved);
-    document.documentElement.setAttribute('lang', resolved);
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.setAttribute('lang', resolved);
+    }
   };
 
   useEffect(() => {

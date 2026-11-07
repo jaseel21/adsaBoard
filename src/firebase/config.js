@@ -25,6 +25,18 @@ try {
   }
 } catch (_) {}
 
+// Graceful Auth persistence fallback for browsers with storage restrictions (Google Go / Incognito)
+try {
+  if (typeof window !== 'undefined' && firebase.auth) {
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((err) => {
+      console.warn('[Firebase Auth] Local persistence unavailable, falling back to session/none:', err?.message);
+      return firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => {
+        return firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => {});
+      });
+    });
+  }
+} catch (_) {}
+
 // Export the firebase namespace so callers can use firebase.firestore()
 export default firebase;
 

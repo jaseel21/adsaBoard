@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
@@ -34,7 +34,10 @@ import {
   Info,
   Zap,
   Star,
+  Monitor,
+  Laptop,
 } from 'lucide-react';
+import { openDesktopInstallModal, isStandaloneMode, detectOS } from '../utils/pwaManager';
 import firebase from '../firebase/config';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
@@ -67,7 +70,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { user, role, homeRoute } = useContext(AuthContext);
   const { stdata } = useContext(DataOfOne);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { feedback } = useFeedback();
 
   // World Time and Cutoff
@@ -227,6 +230,7 @@ export default function LandingPage() {
       documents: studentsList,
       chunkSize: sectionChunkSize,
       mealFilter: 'both',
+      statusFilter: 'canceled_only',
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
   };
@@ -241,6 +245,7 @@ export default function LandingPage() {
         documents: studentsList,
         chunkSize: sectionChunkSize,
         mealFilter: 'both',
+      statusFilter: 'canceled_only',
       });
       const { blobUrl } = createPdfBlob(doc);
       await directPrintPdf(blobUrl);
@@ -259,6 +264,7 @@ export default function LandingPage() {
         documents: studentsList,
         chunkSize: sectionChunkSize,
         mealFilter: 'both',
+      statusFilter: 'canceled_only',
       });
       const { blob } = createPdfBlob(doc);
       await shareDocument({
@@ -281,6 +287,7 @@ export default function LandingPage() {
       documents: studentsList,
       chunkSize: sectionChunkSize,
       mealFilter: 'both',
+      statusFilter: 'canceled_only',
     });
     doc.save(filename);
   };
@@ -297,6 +304,7 @@ export default function LandingPage() {
       dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
       attendanceScope: 'active_diners',
       mealFilter: 'both',
+      statusFilter: 'canceled_only',
     });
     setUniversalDoc({ isOpen: true, data: { type: 'pdf', ...res } });
   };
@@ -312,6 +320,7 @@ export default function LandingPage() {
       dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
       attendanceScope: 'active_diners',
       mealFilter: 'both',
+      statusFilter: 'canceled_only',
     });
     doc.save(filename);
   };
@@ -328,6 +337,7 @@ export default function LandingPage() {
         dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
         attendanceScope: 'active_diners',
         mealFilter: 'both',
+      statusFilter: 'canceled_only',
       });
       const { blobUrl } = createPdfBlob(doc);
       await directPrintPdf(blobUrl);
@@ -348,6 +358,7 @@ export default function LandingPage() {
         dayFull: manifestDayOffset === 0 ? dayFull : 'Tomorrow',
         attendanceScope: 'active_diners',
         mealFilter: 'both',
+      statusFilter: 'canceled_only',
       });
       const { blob } = createPdfBlob(doc);
       await shareDocument({
@@ -1025,6 +1036,57 @@ export default function LandingPage() {
               <span>{t('shieldAntiTamperTime', 'Anti-Tamper Server Time: Network-synchronized IST prevent clock alteration.')}</span>
             </div>
           </div>
+
+          <div className="pt-3 border-t border-emerald-500/15 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <span className="text-gray-500 dark:text-gray-400">
+              {language === 'ml'
+                ? 'വാണിജ്യ പരസ്യ കുക്കികളോ തേർഡ് പാർട്ടി ട്രാക്കിംഗോ ഇല്ലാത്ത സ്വകാര്യതാ സുരക്ഷ.'
+                : '100% tracker-free architecture with zero commercial advertising cookies.'}
+            </span>
+            <Link
+              to="/settings#privacy"
+              className="inline-flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+            >
+              <span>{language === 'ml' ? 'കുക്കി & സ്റ്റോറേജ് നയം' : 'Storage & Cookie Disclosure'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </section>
+
+        {/* Desktop Application Native Edition Showcase Section */}
+        <section className="p-5 xs:p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#0c1412] to-[#041510] text-white border border-emerald-500/30 backdrop-blur-xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
+              <Monitor className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black tracking-tight text-white">
+                  ADSA T-Board Desktop Edition
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  macOS • Windows • Linux
+                </span>
+              </div>
+              <p className="text-xs text-gray-300 mt-1 max-w-xl leading-relaxed">
+                {language === 'ml'
+                  ? 'നിങ്ങളുടെ കമ്പ്യൂട്ടറിൽ നേരിട്ട് ആപ്പായി ഉപയോഗിക്കുക. ഓഫ്‌ലൈൻ ആക്സസ്, ടാസ്ക്ബാർ/ഡോക്ക് ബാഡ്ജുകൾ, വേഗത്തിലുള്ള സ്റ്റാർട്ടപ്പ്.'
+                  : 'Install ADSA T-Board natively on your desktop. Enjoy offline token matrices, Dock/Taskbar badging, keyboard-first navigation (⌘K), and zero Electron memory overhead.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              feedback('tick');
+              openDesktopInstallModal();
+            }}
+            className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 text-xs font-black shadow-lg transition-all flex items-center gap-2 cursor-pointer flex-shrink-0"
+          >
+            <Download className="w-4 h-4" />
+            <span>{isStandaloneMode() ? 'Desktop App Tools' : 'Install Desktop App'}</span>
+          </button>
         </section>
 
       </div>

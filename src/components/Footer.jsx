@@ -173,6 +173,15 @@ export default function Footer() {
                   <span>{t('userGuide', 'System Guide & Manual')}</span>
                 </Link>
               </ApexLinkPreview>
+
+              <Link
+                to="/settings#privacy"
+                onClick={() => feedback('tick')}
+                className="inline-flex items-center gap-2 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors py-0.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{lang === 'ml' ? 'സ്വകാര്യത & സ്റ്റോറേജ്' : 'Privacy & Cookie Policy'}</span>
+              </Link>
             </nav>
           </div>
 
@@ -287,22 +296,32 @@ export default function Footer() {
         {/* TIER 4: BOTTOM LEGAL ACCREDITATION, COPYRIGHT & DOCK SAFE AREA           */}
         {/* ========================================================================= */}
         <div className="mt-8 pt-6 border-t border-gray-200/60 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400">
-          {/* Legal Rights */}
-          <p className="text-center sm:text-left">
-            &copy; {currentYear}{' '}
-            <ApexLinkPreview url="https://alathurpadidars.in/">
-              <a
-                href="https://alathurpadidars.in/"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => feedback('pop')}
-                className="font-semibold text-gray-800 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 underline decoration-dotted transition-colors"
-              >
-                Alathurpadi Dars Students Association
-              </a>
-            </ApexLinkPreview>
-            . {t('allRightsReserved', 'All rights reserved.')}
-          </p>
+          {/* Legal Rights & Privacy Link */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-center sm:text-left">
+            <p>
+              &copy; {currentYear}{' '}
+              <ApexLinkPreview url="https://alathurpadidars.in/">
+                <a
+                  href="https://alathurpadidars.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => feedback('pop')}
+                  className="font-semibold text-gray-800 dark:text-gray-200 hover:text-emerald-600 dark:hover:text-emerald-400 underline decoration-dotted transition-colors"
+                >
+                  Alathurpadi Dars Students Association
+                </a>
+              </ApexLinkPreview>
+              . {t('allRightsReserved', 'All rights reserved.')}
+            </p>
+            <span className="hidden sm:inline text-gray-300 dark:text-gray-700">•</span>
+            <Link
+              to="/settings#privacy"
+              onClick={() => feedback('tick')}
+              className="font-medium text-emerald-700 dark:text-emerald-400 hover:underline transition-colors"
+            >
+              {lang === 'ml' ? 'സ്വകാര്യത & കുക്കീസ്' : 'Privacy & Cookie Disclosure'}
+            </Link>
+          </div>
 
           {/* Precision Tagline */}
           <p className="text-center sm:text-right text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">

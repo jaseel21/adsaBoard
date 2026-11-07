@@ -12,6 +12,7 @@ import {
 import { SACRED_ETHICS_DATA } from '../../data/diningEthicsContent';
 import { useFeedback } from '../../utils/useFeedback';
 import { dialog } from '../../utils/dialog';
+import { safeLocalStorage } from '../../utils/storage';
 
 export default function StudentAdabPledgeModal({ onPledgeStatusChange }) {
   const { pledgeCovenant } = SACRED_ETHICS_DATA;
@@ -22,14 +23,11 @@ export default function StudentAdabPledgeModal({ onPledgeStatusChange }) {
   const [pledgeData, setPledgeData] = useState(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('adsa-dining-pledge');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setPledgeData(parsed);
-        if (onPledgeStatusChange) onPledgeStatusChange(true);
-      }
-    } catch (_) {}
+    const parsed = safeLocalStorage.getJSON('adsa-dining-pledge', null);
+    if (parsed) {
+      setPledgeData(parsed);
+      if (onPledgeStatusChange) onPledgeStatusChange(true);
+    }
   }, [onPledgeStatusChange]);
 
   const handleTogglePromise = (id) => {
@@ -63,7 +61,7 @@ export default function StudentAdabPledgeModal({ onPledgeStatusChange }) {
       timestamp: Date.now(),
     };
 
-    localStorage.setItem('adsa-dining-pledge', JSON.stringify(newPledge));
+    safeLocalStorage.setJSON('adsa-dining-pledge', newPledge);
     setPledgeData(newPledge);
     if (onPledgeStatusChange) onPledgeStatusChange(true);
 
@@ -83,7 +81,7 @@ export default function StudentAdabPledgeModal({ onPledgeStatusChange }) {
     });
 
     if (confirmed) {
-      localStorage.removeItem('adsa-dining-pledge');
+      safeLocalStorage.removeItem('adsa-dining-pledge');
       setPledgeData(null);
       setCheckedPromises({});
       setStudentName('');

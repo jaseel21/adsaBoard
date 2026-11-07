@@ -1,6 +1,7 @@
 import firebase from '../firebase/config';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger';
 import { getEffectiveStudentMealStatus } from './studentExceptionService';
+import { safeLocalStorage } from './storage';
 
 /**
  * ADSA T-Board Meal Supply & Live Serving Sentinel Service
@@ -27,13 +28,7 @@ export function getMealServiceDocId(meal = 'lunch', targetDateIST) {
  */
 function getCachedServedMap(docId) {
   if (typeof window === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}${docId}`);
-    if (raw) return JSON.parse(raw);
-  } catch (err) {
-    console.warn('Failed to parse cached served map:', err);
-  }
-  return {};
+  return safeLocalStorage.getJSON(`${LOCAL_STORAGE_PREFIX}${docId}`, {});
 }
 
 /**
@@ -41,9 +36,7 @@ function getCachedServedMap(docId) {
  */
 function setCachedServedMap(docId, map) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${docId}`, JSON.stringify(map));
-  } catch (_) {}
+  safeLocalStorage.setJSON(`${LOCAL_STORAGE_PREFIX}${docId}`, map);
 }
 
 /**

@@ -6,6 +6,7 @@ import { dialog } from '../../../utils/dialog';
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../../../utils/auditLogger';
+import { hashPassword, verifyPassword, generateSalt } from '../../../utils/cryptoAuthService';
 
 export default function ChangePinModal({ isOpen, onClose, studentData, onPinUpdated }) {
   const { t, language } = useLanguage();
@@ -39,7 +40,14 @@ export default function ChangePinModal({ isOpen, onClose, studentData, onPinUpda
       return;
     }
 
-    if (currentPin !== studentData?.password) {
+    let isCurrentValid = false;
+    if (studentData?.passwordHash && studentData?.passwordSalt) {
+      isCurrentValid = await verifyPassword(currentPin, studentData.passwordHash, studentData.passwordSalt);
+    } else {
+      isCurrentValid = currentPin === studentData?.password;
+    }
+
+    if (!isCurrentValid) {
       feedback('warning');
       setErrorMsg(language === 'ml' ? 'നിലവിലെ പാസ്‌വേഡ് തെറ്റാണ്' : 'Incorrect current PIN/password');
       return;
@@ -62,9 +70,15 @@ export default function ChangePinModal({ isOpen, onClose, studentData, onPinUpda
 
     try {
       const docId = studentData.documentId || studentData.id;
+      const salt = generateSalt();
+      const hash = await hashPassword(newPin, salt);
+
       await firebase.firestore().collection('students').doc(docId).update({
-        password: newPin,
+        passwordHash: hash,
+        passwordSalt: salt,
+        passwordAlgorithm: 'PBKDF2-SHA256',
         pinUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        password: firebase.firestore.FieldValue.delete(),
       });
 
       // Audit log

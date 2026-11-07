@@ -8,6 +8,8 @@ import { getSyncedServerTimeMs, getISTDateParts } from './time';
 import { soundEngine } from './soundEffects';
 import { hapticEngine } from './haptics';
 import { showLocalNotification, isPermissionGranted } from './webNotificationService';
+import { safeLocalStorage } from './storage';
+import { setDesktopBadge } from './pwaManager';
 
 const ALARM_CONFIG_STORAGE_KEY = 'adsa_meal_alarms_config_v1';
 const FIRED_HISTORY_STORAGE_KEY = 'adsa_meal_alarms_fired_v1';
@@ -23,19 +25,13 @@ export const DEFAULT_ALARM_CONFIG = {
 
 export function getMealAlarmConfig() {
   if (typeof window === 'undefined') return DEFAULT_ALARM_CONFIG;
-  try {
-    const raw = localStorage.getItem(ALARM_CONFIG_STORAGE_KEY);
-    return raw ? { ...DEFAULT_ALARM_CONFIG, ...JSON.parse(raw) } : DEFAULT_ALARM_CONFIG;
-  } catch (_) {
-    return DEFAULT_ALARM_CONFIG;
-  }
+  const raw = safeLocalStorage.getJSON(ALARM_CONFIG_STORAGE_KEY, null);
+  return raw ? { ...DEFAULT_ALARM_CONFIG, ...raw } : DEFAULT_ALARM_CONFIG;
 }
 
 export function saveMealAlarmConfig(config) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(ALARM_CONFIG_STORAGE_KEY, JSON.stringify(config));
-  } catch (_) {}
+  safeLocalStorage.setJSON(ALARM_CONFIG_STORAGE_KEY, config);
 }
 
 /**
@@ -82,11 +78,7 @@ export async function checkAndTriggerMealAlarms() {
   const cutoffs = getTodayCutoffMinutes(istParts.dayOfWeekIndex);
 
   // Load fired alarms map
-  let firedMap = {};
-  try {
-    const raw = localStorage.getItem(FIRED_HISTORY_STORAGE_KEY);
-    if (raw) firedMap = JSON.parse(raw);
-  } catch (_) {}
+  let firedMap = safeLocalStorage.getJSON(FIRED_HISTORY_STORAGE_KEY, {});
 
   const mealsToCheck = [];
   if (config.breakfastReminder) mealsToCheck.push({ id: 'breakfast', data: cutoffs.breakfast });
@@ -100,9 +92,7 @@ export async function checkAndTriggerMealAlarms() {
     if (diff > 0 && diff <= config.advanceMinutes && !firedMap[fireKey]) {
       // Mark as fired immediately
       firedMap[fireKey] = true;
-      try {
-        localStorage.setItem(FIRED_HISTORY_STORAGE_KEY, JSON.stringify(firedMap));
-      } catch (_) {}
+      safeLocalStorage.setJSON(FIRED_HISTORY_STORAGE_KEY, firedMap);
 
       // 1. Play synthesized cutoff alarm arpeggio
       if (config.soundEnabled) {
@@ -114,7 +104,8 @@ export async function checkAndTriggerMealAlarms() {
         hapticEngine.urgentAlert();
       }
 
-      // 3. Dispatch native browser notification
+      // 3. Dispatch native browser notification & taskbar badge
+      setDesktopBadge(1).catch(() => {});
       if (isPermissionGranted()) {
         showLocalNotification(`Meal Cutoff in ${diff} Minutes! (${data.label})`, {
           body: `ADSA Canteen ${data.mealName} blocking closes at ${data.label}. Update your token now to prevent penalty fines.`,

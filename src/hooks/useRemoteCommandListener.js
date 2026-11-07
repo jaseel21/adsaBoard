@@ -6,6 +6,7 @@ import { DataOfOne } from '../store/StudentData';
 import { soundEngine } from '../utils/soundEffects';
 import { hapticEngine } from '../utils/haptics';
 import { dialog } from '../utils/dialog';
+import { safeSessionStorage } from '../utils/storage';
 import { setRemoteIdlePolicy } from '../utils/deviceProfileService';
 
 /**
@@ -83,7 +84,7 @@ export function useRemoteCommandListener({ sessionId, identity }) {
                   if (logoutStudent) {
                     logoutStudent();
                   } else if (typeof window !== 'undefined') {
-                    sessionStorage.removeItem('adsa_student_session');
+                    safeSessionStorage.removeItem('adsa_student_session');
                   }
 
                   if (user && firebase.auth) {

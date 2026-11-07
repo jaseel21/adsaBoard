@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { safeLocalStorage, safeSessionStorage } from '../../../utils/storage';
 import {
   Shield,
   ShieldCheck,
@@ -177,14 +178,11 @@ export default function SecuritySessionsSection({
     }
 
     // Persist directly to preferences in localStorage for synchronization
-    try {
-      const prefsRaw = localStorage.getItem('adsatboard-app-preferences');
-      if (prefsRaw) {
-        const p = JSON.parse(prefsRaw);
-        p.kioskTimeoutMode = personaId;
-        localStorage.setItem('adsatboard-app-preferences', JSON.stringify(p));
-      }
-    } catch (_) {}
+    const p = safeLocalStorage.getJSON('adsatboard-app-preferences', null);
+    if (p) {
+      p.kioskTimeoutMode = personaId;
+      safeLocalStorage.setJSON('adsatboard-app-preferences', p);
+    }
 
     dialog.toast.success(
       language === 'ml' ? 'ഡിവൈസ് പെർസോണ സേവ് ചെയ്തു' : 'Device Persona Saved',
@@ -324,7 +322,7 @@ export default function SecuritySessionsSection({
     });
 
     if (confirmed) {
-      sessionStorage.clear();
+      safeSessionStorage.clear();
       liveSyncManager.broadcast('SESSION_PURGE');
       window.dispatchEvent(new CustomEvent('adsa:session_purged'));
       feedback('pop');

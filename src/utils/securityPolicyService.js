@@ -1,5 +1,6 @@
 import firebase from '../firebase/config';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger';
+import { safeLocalStorage } from './storage';
 
 export const DEFAULT_SECURITY_POLICY = {
   // Master Fleet Override Gate
@@ -29,12 +30,10 @@ const LOCAL_STORAGE_CACHE_KEY = 'adsa_cached_global_security_policy';
 
 let cachedPolicy = (() => {
   if (typeof window !== 'undefined') {
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
-      if (raw) {
-        return { ...DEFAULT_SECURITY_POLICY, ...JSON.parse(raw) };
-      }
-    } catch (_) {}
+    const raw = safeLocalStorage.getJSON(LOCAL_STORAGE_CACHE_KEY, null);
+    if (raw) {
+      return { ...DEFAULT_SECURITY_POLICY, ...raw };
+    }
   }
   return { ...DEFAULT_SECURITY_POLICY };
 })();
@@ -67,10 +66,8 @@ export function subscribeToGlobalSecurityPolicy(onUpdate, onError) {
         cachedPolicy = parsedPolicy;
 
         if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(parsedPolicy));
-            window.dispatchEvent(new CustomEvent('adsa:global_security_policy_updated', { detail: parsedPolicy }));
-          } catch (_) {}
+          safeLocalStorage.setJSON(LOCAL_STORAGE_CACHE_KEY, parsedPolicy);
+          window.dispatchEvent(new CustomEvent('adsa:global_security_policy_updated', { detail: parsedPolicy }));
         }
 
         if (typeof onUpdate === 'function') {
@@ -113,12 +110,10 @@ export function subscribeToGlobalSecurityPolicy(onUpdate, onError) {
  */
 export function getCachedGlobalSecurityPolicy() {
   if (typeof window !== 'undefined' && (!cachedPolicy || !cachedPolicy.defaultTimeoutMs)) {
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
-      if (raw) {
-        cachedPolicy = { ...DEFAULT_SECURITY_POLICY, ...JSON.parse(raw) };
-      }
-    } catch (_) {}
+    const raw = safeLocalStorage.getJSON(LOCAL_STORAGE_CACHE_KEY, null);
+    if (raw) {
+      cachedPolicy = { ...DEFAULT_SECURITY_POLICY, ...raw };
+    }
   }
   return cachedPolicy || { ...DEFAULT_SECURITY_POLICY };
 }
@@ -154,11 +149,9 @@ export async function updateGlobalSecurityPolicy(updates, actor = {}) {
   cachedPolicy = merged;
 
   if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(merged));
-      window.dispatchEvent(new CustomEvent('adsa:global_security_policy_updated', { detail: merged }));
-      window.dispatchEvent(new CustomEvent('adsa:device_profile_updated'));
-    } catch (_) {}
+    safeLocalStorage.setJSON(LOCAL_STORAGE_CACHE_KEY, merged);
+    window.dispatchEvent(new CustomEvent('adsa:global_security_policy_updated', { detail: merged }));
+    window.dispatchEvent(new CustomEvent('adsa:device_profile_updated'));
   }
 
   // Record structured audit trail entry

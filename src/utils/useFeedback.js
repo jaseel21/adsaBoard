@@ -1,15 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
+import { safeLocalStorage } from './storage';
 
 const PREFS_STORAGE_KEY = 'adsatboard-app-preferences';
 
 function getStoredAppPrefs() {
   if (typeof window === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (_) {
-    return {};
-  }
+  return safeLocalStorage.getJSON(PREFS_STORAGE_KEY, {});
 }
 
 export function useFeedback() {
@@ -18,7 +14,7 @@ export function useFeedback() {
     if (typeof window !== 'undefined') {
       const prefs = getStoredAppPrefs();
       if (typeof prefs.soundEnabled === 'boolean') return prefs.soundEnabled;
-      const val = localStorage.getItem('adsatboard-sound');
+      const val = safeLocalStorage.getItem('adsatboard-sound', 'true');
       return val !== 'false'; // default true
     }
     return true;
@@ -28,7 +24,7 @@ export function useFeedback() {
     if (typeof window !== 'undefined') {
       const prefs = getStoredAppPrefs();
       if (typeof prefs.hapticsEnabled === 'boolean') return prefs.hapticsEnabled;
-      const val = localStorage.getItem('adsatboard-haptics');
+      const val = safeLocalStorage.getItem('adsatboard-haptics', 'true');
       return val !== 'false'; // default true
     }
     return true;
@@ -36,20 +32,16 @@ export function useFeedback() {
 
   const setSoundEnabled = (val) => {
     setSoundEnabledState(val);
-    try {
-      localStorage.setItem('adsatboard-sound', String(val));
-      const prefs = getStoredAppPrefs();
-      localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ ...prefs, soundEnabled: val }));
-    } catch (_) {}
+    safeLocalStorage.setItem('adsatboard-sound', String(val));
+    const prefs = getStoredAppPrefs();
+    safeLocalStorage.setJSON(PREFS_STORAGE_KEY, { ...prefs, soundEnabled: val });
   };
 
   const setHapticsEnabled = (val) => {
     setHapticsEnabledState(val);
-    try {
-      localStorage.setItem('adsatboard-haptics', String(val));
-      const prefs = getStoredAppPrefs();
-      localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify({ ...prefs, hapticsEnabled: val }));
-    } catch (_) {}
+    safeLocalStorage.setItem('adsatboard-haptics', String(val));
+    const prefs = getStoredAppPrefs();
+    safeLocalStorage.setJSON(PREFS_STORAGE_KEY, { ...prefs, hapticsEnabled: val });
   };
 
   const getAudioContext = () => {

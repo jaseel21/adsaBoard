@@ -1,5 +1,6 @@
 import firebase from '../firebase/config';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger';
+import { safeLocalStorage } from './storage';
 
 /**
  * ADSA T-Board Centralized Support, Feedback & Care Concierge Service
@@ -167,12 +168,7 @@ const LOCAL_STORAGE_KEY = 'adsa_care_recent_tickets';
  */
 export function getLocalRecentTickets() {
   if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (_) {
-    return [];
-  }
+  return safeLocalStorage.getJSON(LOCAL_STORAGE_KEY, []);
 }
 
 /**
@@ -180,20 +176,18 @@ export function getLocalRecentTickets() {
  */
 export function saveLocalRecentTicket(ticket) {
   if (typeof window === 'undefined' || !ticket?.ticketNumber) return;
-  try {
-    const list = getLocalRecentTickets().filter((t) => t.ticketNumber !== ticket.ticketNumber);
-    const updated = [
-      {
-        id: ticket.id,
-        ticketNumber: ticket.ticketNumber,
-        subject: ticket.subject || 'Support Ticket',
-        category: ticket.category,
-        createdAt: new Date().toISOString(),
-      },
-      ...list,
-    ].slice(0, 10);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-  } catch (_) {}
+  const list = getLocalRecentTickets().filter((t) => t.ticketNumber !== ticket.ticketNumber);
+  const updated = [
+    {
+      id: ticket.id,
+      ticketNumber: ticket.ticketNumber,
+      subject: ticket.subject || 'Support Ticket',
+      category: ticket.category,
+      createdAt: new Date().toISOString(),
+    },
+    ...list,
+  ].slice(0, 10);
+  safeLocalStorage.setJSON(LOCAL_STORAGE_KEY, updated);
 }
 
 /**

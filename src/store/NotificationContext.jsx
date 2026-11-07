@@ -9,6 +9,7 @@ import {
 } from '../utils/notificationService';
 import { soundEngine } from '../utils/soundEffects';
 import { hapticEngine } from '../utils/haptics';
+import { safeLocalStorage } from '../utils/storage';
 
 export const NotificationContext = createContext({
   notifications: [],
@@ -48,32 +49,17 @@ export const NotificationProvider = ({ children }) => {
   // Persistent Read IDs, Dismissed Banners, and Acknowledged Dialogs
   const [readIds, setReadIds] = useState(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(READ_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (_) {
-      return [];
-    }
+    return safeLocalStorage.getJSON(READ_STORAGE_KEY, []);
   });
 
   const [dismissedBannerIds, setDismissedBannerIds] = useState(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(DISMISSED_BANNERS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (_) {
-      return [];
-    }
+    return safeLocalStorage.getJSON(DISMISSED_BANNERS_KEY, []);
   });
 
   const [acknowledgedDialogIds, setAcknowledgedDialogIds] = useState(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(ACK_DIALOGS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (_) {
-      return [];
-    }
+    return safeLocalStorage.getJSON(ACK_DIALOGS_STORAGE_KEY, []);
   });
 
   // Track previous notification count to trigger alerts on fresh broadcasts
@@ -173,9 +159,7 @@ export const NotificationProvider = ({ children }) => {
     if (!id || readIds.includes(id)) return;
     const updated = [...readIds, id];
     setReadIds(updated);
-    try {
-      localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(updated));
-    } catch (_) {}
+    safeLocalStorage.setJSON(READ_STORAGE_KEY, updated);
     soundEngine.playPop();
     hapticEngine.lightTap();
     incrementNotificationAck(id);
@@ -186,9 +170,7 @@ export const NotificationProvider = ({ children }) => {
     if (!id) return;
     const updated = [...acknowledgedDialogIds, id];
     setAcknowledgedDialogIds(updated);
-    try {
-      localStorage.setItem(ACK_DIALOGS_STORAGE_KEY, JSON.stringify(updated));
-    } catch (_) {}
+    safeLocalStorage.setJSON(ACK_DIALOGS_STORAGE_KEY, updated);
     markAsRead(id);
     soundEngine.playDismissWhoosh();
     hapticEngine.lightTap();
@@ -199,9 +181,7 @@ export const NotificationProvider = ({ children }) => {
     const allIds = applicableNotifications.map((n) => n.id);
     const updated = Array.from(new Set([...readIds, ...allIds]));
     setReadIds(updated);
-    try {
-      localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(updated));
-    } catch (_) {}
+    safeLocalStorage.setJSON(READ_STORAGE_KEY, updated);
     soundEngine.playDismissWhoosh();
     hapticEngine.successPulse();
   };
@@ -211,9 +191,7 @@ export const NotificationProvider = ({ children }) => {
     if (!id || dismissedBannerIds.includes(id)) return;
     const updated = [...dismissedBannerIds, id];
     setDismissedBannerIds(updated);
-    try {
-      localStorage.setItem(DISMISSED_BANNERS_KEY, JSON.stringify(updated));
-    } catch (_) {}
+    safeLocalStorage.setJSON(DISMISSED_BANNERS_KEY, updated);
     soundEngine.playDismissWhoosh();
     hapticEngine.lightTap();
   };

@@ -3,16 +3,16 @@
  * Safe wrapper around Navigator Vibration API for physical touch feedback on supported devices.
  */
 
+import { safeLocalStorage } from './storage';
+
 class HapticController {
   constructor() {
     this.enabled = true;
     if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('adsatboard-haptics') || localStorage.getItem('adsa_haptics_enabled');
-        if (stored !== null) {
-          this.enabled = stored === 'true';
-        }
-      } catch (_) {}
+      const stored = safeLocalStorage.getItem('adsatboard-haptics') || safeLocalStorage.getItem('adsa_haptics_enabled');
+      if (stored !== null) {
+        this.enabled = stored === 'true';
+      }
     }
   }
 
@@ -23,10 +23,8 @@ class HapticController {
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('adsa_haptics_enabled', String(this.enabled));
-        localStorage.setItem('adsatboard-haptics', String(this.enabled));
-      } catch (_) {}
+      safeLocalStorage.setItem('adsa_haptics_enabled', String(this.enabled));
+      safeLocalStorage.setItem('adsatboard-haptics', String(this.enabled));
     }
   }
 

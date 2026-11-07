@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { safeLocalStorage } from '../../utils/storage';
 
 const SidebarContext = createContext({
   sidebarOpen: true,
@@ -23,7 +24,7 @@ export function SidebarProvider({ children }) {
       const isLargeScreen = window.innerWidth >= 1024;
       // On mobile viewports (< 1024px), sidebar MUST NEVER be open by default
       if (!isLargeScreen) return false;
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = safeLocalStorage.getItem(STORAGE_KEY);
       // By default open on desktop unless explicitly set to 'false'
       return saved !== 'false';
     }
@@ -49,11 +50,7 @@ export function SidebarProvider({ children }) {
     setSidebarOpenState((prev) => {
       const resolved = typeof open === 'function' ? open(prev) : open;
       if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-        try {
-          localStorage.setItem(STORAGE_KEY, resolved ? 'true' : 'false');
-        } catch (e) {
-          console.warn('Failed to save sidebar state to localStorage:', e);
-        }
+        safeLocalStorage.setItem(STORAGE_KEY, resolved ? 'true' : 'false');
       }
       return resolved;
     });

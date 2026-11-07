@@ -18,6 +18,8 @@ Allow: /feedback
 Allow: /contact
 Allow: /avoiders
 Allow: /login
+Allow: /settings
+Allow: /privacy
 
 # Disallow Internal Admin, Staff Consoles, and Authenticated Student Portals
 Disallow: /admin

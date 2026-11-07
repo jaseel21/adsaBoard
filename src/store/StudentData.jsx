@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import firebase from "../firebase/config";
+import { safeSessionStorage, safeLocalStorage } from "../utils/storage";
 
 export const DataOfOne = createContext(null);
 
@@ -8,12 +9,7 @@ const STORAGE_KEY = 'adsa_student_session';
 export function PersonInfo({ children }) {
   const [stdata, setStdataState] = useState(() => {
     if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem(STORAGE_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch (e) {
-        console.warn('Failed to parse student session:', e);
-      }
+      return safeSessionStorage.getJSON(STORAGE_KEY, null);
     }
     return null;
   });
@@ -51,9 +47,7 @@ export function PersonInfo({ children }) {
               if (JSON.stringify(prev) === JSON.stringify(fresh)) return prev;
               return fresh;
             });
-            try {
-              sessionStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-            } catch (_) {}
+            safeSessionStorage.setJSON(STORAGE_KEY, fresh);
           }
         },
         (error) => {
@@ -75,9 +69,7 @@ export function PersonInfo({ children }) {
               if (JSON.stringify(prev) === JSON.stringify(fresh)) return prev;
               return fresh;
             });
-            try {
-              sessionStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-            } catch (_) {}
+            safeSessionStorage.setJSON(STORAGE_KEY, fresh);
           }
         },
         (error) => {
@@ -106,9 +98,7 @@ export function PersonInfo({ children }) {
         activeListenerRef.current = null;
       }
       setStdataState(null);
-      try {
-        sessionStorage.removeItem(STORAGE_KEY);
-      } catch (_) {}
+      safeSessionStorage.removeItem(STORAGE_KEY);
     };
 
     window.addEventListener('adsa:session_purged', handleSessionPurge);
@@ -118,16 +108,12 @@ export function PersonInfo({ children }) {
   const setStdata = useCallback((data) => {
     setStdataState(data);
     if (typeof window !== 'undefined') {
-      try {
-        if (data) {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          localStorage.setItem('adsa_last_activity_timestamp', String(Date.now()));
-        } else {
-          sessionStorage.removeItem(STORAGE_KEY);
-          localStorage.removeItem('adsa_last_activity_timestamp');
-        }
-      } catch (e) {
-        console.warn('Failed to update student session storage:', e);
+      if (data) {
+        safeSessionStorage.setJSON(STORAGE_KEY, data);
+        safeLocalStorage.setItem('adsa_last_activity_timestamp', String(Date.now()));
+      } else {
+        safeSessionStorage.removeItem(STORAGE_KEY);
+        safeLocalStorage.removeItem('adsa_last_activity_timestamp');
       }
     }
   }, []);
@@ -139,10 +125,8 @@ export function PersonInfo({ children }) {
     }
     setStdata(null);
     if (typeof window !== 'undefined') {
-      try {
-        sessionStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem('adsa_last_activity_timestamp');
-      } catch (_) {}
+      safeSessionStorage.removeItem(STORAGE_KEY);
+      safeLocalStorage.removeItem('adsa_last_activity_timestamp');
     }
   }, [setStdata]);
 

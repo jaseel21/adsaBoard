@@ -53,6 +53,7 @@ import {
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { usePortalStatus } from '../utils/usePortalStatus';
+import { clearDesktopBadge } from '../utils/pwaManager';
 import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import {
@@ -170,6 +171,11 @@ export default function StudentDashboard() {
     timeHms,
     sectionChunkSize,
   } = controller;
+
+  // Clear dock / taskbar badge on dashboard review
+  useEffect(() => {
+    clearDesktopBadge().catch(() => {});
+  }, []);
 
   // Resilient batch list resolution: supports both array and object representations
   const batchList = useMemo(() => {
