@@ -228,12 +228,12 @@ export default function PasskeySetupModal({
           <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-900 dark:text-amber-200 space-y-1">
             <div className="font-bold flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-300">
               <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-              <span>{language === 'ml' ? 'ദർസ് ലാബ് കമ്പ്യൂട്ടറുകൾക്കുള്ള ശ്രദ്ധ' : 'Important for Dars Lab Shared PCs'}</span>
+              <span>{language === 'ml' ? 'ദർസ് ലാബ് കമ്പ്യൂട്ടറുകൾക്കുള്ള ശ്രദ്ധ' : 'Important for Shared PCs'}</span>
             </div>
             <p className="leading-relaxed text-[11px] text-amber-800 dark:text-amber-300">
               {language === 'ml'
-                ? 'നിങ്ങളുടെ സ്വന്തം മൊബൈൽ ഫോൺ അല്ലെങ്കിൽ സ്വകാര്യ ലാപ്ടോപ്പിൽ മാത്രമേ ബയോമെട്രിക്സ് രജിസ്റ്റർ ചെയ്യാവൂ. ലാബിലെ പൊതു കമ്പ്യൂട്ടറുകളിൽ ഐഡിയും പാസ്‌വേഡും ഉപയോഗിച്ച് ലോഗിൻ ചെയ്യുക.'
-                : 'Only register device biometrics on your personal mobile phone or laptop. On shared Dars lab PCs, continue using your Token ID and Password.'}
+                ? 'നിങ്ങളുടെ സ്വന്തം മൊബൈൽ ഫോൺ അല്ലെങ്കിൽ സ്വകാര്യ ലാപ്ടോപ്പിൽ മാത്രമേ ബയോമെട്രിക്സ് രജിസ്റ്റർ ചെയ്യാവൂ. പൊതു കമ്പ്യൂട്ടറുകളിൽ ഐഡിയും പാസ്‌വേഡും ഉപയോഗിച്ച് ലോഗിൻ ചെയ്യുക.'
+                : 'Only register device biometrics on your personal mobile phone or laptop. On shared PCs, continue using your Token ID and Password.'}
             </p>
           </div>
 
