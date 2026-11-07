@@ -20,6 +20,7 @@ import {
   QrCode,
   Shield,
   RotateCcw,
+  Check,
 } from 'lucide-react';
 import firebase from '../firebase/config';
 import { DataOfOne } from '../store/StudentData';
@@ -50,6 +51,8 @@ function Login() {
   const [backupCodeInput, setBackupCodeInput] = useState('');
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
   const [passkeySupported] = useState(() => isPasskeySupported());
+  const [matchedAccount, setMatchedAccount] = useState(null);
+  const [isDetectingAccount, setIsDetectingAccount] = useState(false);
 
   useSEO({
     title: 'Student Sign-In Portal',
@@ -90,6 +93,81 @@ function Login() {
       }, 100);
     }
   }, [location.search]);
+
+  // Google-Style Adaptive Passkey Detection:
+  // Dynamically checks whether the typed identifier belongs to an account with enrolled passkeys
+  useEffect(() => {
+    const rawInput = (token || '').trim();
+    if (!rawInput || rawInput.length < 1) {
+      setMatchedAccount(null);
+      setIsDetectingAccount(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsDetectingAccount(true);
+        const studentsRef = firebase.firestore().collection('students');
+        let doc = null;
+
+        // 1. Numeric Token
+        if (/^\d+$/.test(rawInput) && rawInput.length <= 6) {
+          const snap = await studentsRef.where('tokenNo', '==', parseInt(rawInput, 10)).limit(1).get();
+          if (!snap.empty) doc = snap.docs[0];
+        }
+
+        // 2. Email
+        if (!doc && rawInput.includes('@') && rawInput.includes('.')) {
+          const snap = await studentsRef.where('email', '==', rawInput.toLowerCase()).limit(1).get();
+          if (!snap.empty) doc = snap.docs[0];
+        }
+
+        // 3. Username
+        if (!doc) {
+          const cleanUname = rawInput.replace(/^@/, '').toLowerCase();
+          const snap = await studentsRef.where('username', '==', cleanUname).limit(1).get();
+          if (!snap.empty) doc = snap.docs[0];
+        }
+
+        // 4. Phone
+        if (!doc) {
+          const digits = rawInput.replace(/\D/g, '');
+          if (digits.length >= 10) {
+            const last10 = digits.slice(-10);
+            const snap = await studentsRef.where('phoneNormalized', '==', last10).limit(1).get();
+            if (!snap.empty) doc = snap.docs[0];
+          }
+        }
+
+        if (doc) {
+          const sData = doc.data();
+          const hasPasskeys = Boolean(
+            sData.passkeys && Array.isArray(sData.passkeys) && sData.passkeys.length > 0
+          );
+          setMatchedAccount({
+            exists: true,
+            docId: doc.id,
+            documentId: doc.id,
+            tokenNo: sData.tokenNo,
+            displayName: sData.name || sData.nameEn || `Token #${sData.tokenNo}`,
+            hasPasskeys,
+            passkeys: sData.passkeys || [],
+            sData,
+          });
+        } else {
+          setMatchedAccount({
+            exists: false,
+          });
+        }
+      } catch (_) {
+        setMatchedAccount(null);
+      } finally {
+        setIsDetectingAccount(false);
+      }
+    }, 320);
+
+    return () => clearTimeout(timer);
+  }, [token]);
 
   const completeStudentLogin = useCallback(
     (studentData) => {
@@ -309,112 +387,112 @@ function Login() {
     [pending2FA, useBackupCode, backupCodeInput, totpCode, completeStudentLogin, feedback, t]
   );
 
-  // Handle Passkey Sign-In (Biometric Touch ID or Cross-Device QR)
-  const handlePasskeyLogin = useCallback(async () => {
+  // 1. Targeted Passkey Sign-In (The Google Standard: account-specific allowCredentials)
+  const handleTargetedPasskeyLogin = useCallback(
+    async (targetAccount) => {
+      const account = targetAccount || matchedAccount;
+      if (!account || !account.passkeys || account.passkeys.length === 0) return;
+
+      try {
+        setIsPasskeyLoading(true);
+        setErr('');
+        feedback('tick');
+
+        // Targeted WebAuthn: only allows biometrics from credentials paired with this student account
+        const assertion = await authenticateWithPasskey({
+          allowCredentials: account.passkeys,
+        });
+
+        if (!assertion || !assertion.id) {
+          throw new Error('Biometric verification returned no assertion');
+        }
+
+        const studentData = {
+          id: account.docId,
+          documentId: account.docId,
+          ...account.sData,
+        };
+
+        // Fire-and-forget: update passkey lastUsedAt in background
+        try {
+          const updated = (account.passkeys || []).map((pk) =>
+            pk.id === assertion.id ? { ...pk, lastUsedAt: new Date().toISOString() } : pk
+          );
+          firebase.firestore().collection('students').doc(account.docId).update({
+            passkeys: updated,
+          });
+        } catch (_) {}
+
+        completeStudentLogin(studentData);
+      } catch (err) {
+        console.warn('Targeted passkey authentication cancelled or failed:', err);
+        // If user tapped "Cancel" or dismissed Touch ID, do not display a scary red error!
+        if (err.name === 'NotAllowedError') {
+          if (passwordRef.current) passwordRef.current.focus();
+        } else {
+          feedback('warning');
+          setErr(err.message || 'Passkey verification failed. Please enter your password.');
+        }
+      } finally {
+        setIsPasskeyLoading(false);
+      }
+    },
+    [matchedAccount, completeStudentLogin, feedback]
+  );
+
+  // 2. Discoverable Passkey Sign-In (Personal mobile / device 1-touch without typing ID)
+  const handleDiscoverablePasskeyLogin = useCallback(async () => {
     try {
       setIsPasskeyLoading(true);
       setErr('');
       feedback('tick');
 
-      const rawInput = (token || '').trim();
-      let targetedCredentials = [];
-      let targetedDoc = null;
-
-      // If user typed their Token No, Username, Phone, or Email, look up their registered credentials first
-      if (rawInput) {
-        const studentsRef = firebase.firestore().collection('students');
-        // 1. Numeric Token
-        if (/^\d+$/.test(rawInput) && rawInput.length <= 6) {
-          const snap = await studentsRef.where('tokenNo', '==', parseInt(rawInput, 10)).limit(1).get();
-          if (!snap.empty) targetedDoc = snap.docs[0];
-        }
-        // 2. Email
-        if (!targetedDoc && rawInput.includes('@')) {
-          const snap = await studentsRef.where('email', '==', rawInput.toLowerCase()).limit(1).get();
-          if (!snap.empty) targetedDoc = snap.docs[0];
-        }
-        // 3. Username
-        if (!targetedDoc) {
-          const cleanUname = rawInput.replace(/^@/, '').toLowerCase();
-          const snap = await studentsRef.where('username', '==', cleanUname).limit(1).get();
-          if (!snap.empty) targetedDoc = snap.docs[0];
-        }
-
-        if (targetedDoc) {
-          const tData = targetedDoc.data();
-          if (!tData.passkeys || tData.passkeys.length === 0) {
-            feedback('warning');
-            setErr(
-              t(
-                'noPasskeyRegisteredForAccount',
-                'No Passkey or Touch ID is registered for this account yet. Please sign in with your Password first, then register Touch ID in Settings.'
-              )
-            );
-            return;
-          }
-          targetedCredentials = tData.passkeys;
-        }
-      }
-
-      // Authenticate with WebAuthn (Touch ID or discoverable credential)
       const assertion = await authenticateWithPasskey({
-        allowCredentials: targetedCredentials,
+        allowCredentials: [],
       });
 
       if (!assertion || !assertion.id) {
         throw new Error('No passkey assertion returned');
       }
 
-      // If we already targeted this doc, use it; otherwise lookup by assertion ID
-      let matchedDoc = targetedDoc;
-      if (!matchedDoc) {
-        const studentsRef = firebase.firestore().collection('students');
-        const querySnap = await studentsRef
-          .where('passkeyIds', 'array-contains', assertion.id)
-          .limit(1)
-          .get();
+      const studentsRef = firebase.firestore().collection('students');
+      const querySnap = await studentsRef
+        .where('passkeyIds', 'array-contains', assertion.id)
+        .limit(1)
+        .get();
 
-        if (!querySnap.empty) {
-          matchedDoc = querySnap.docs[0];
-        }
-      }
-
-      if (!matchedDoc) {
+      if (querySnap.empty) {
         feedback('warning');
         setErr(
           t(
             'passkeyNotFound',
-            'This passkey is not linked to any active student account. Please sign in with your Token and Password, then register this passkey in Settings.'
+            'This passkey is not linked to any active student account. Please sign in with your Token and Password, then register Touch ID in Settings.'
           )
         );
         return;
       }
 
-      const sData = matchedDoc.data();
+      const doc = querySnap.docs[0];
+      const sData = doc.data();
       const studentData = {
-        id: matchedDoc.id,
-        documentId: matchedDoc.id,
+        id: doc.id,
+        documentId: doc.id,
         ...sData,
       };
 
       completeStudentLogin(studentData);
     } catch (err) {
-      console.error('Passkey login error:', err);
-      feedback('warning');
+      console.warn('Discoverable passkey login cancelled or failed:', err);
       if (err.name === 'NotAllowedError') {
-        setErr(
-          t(
-            'passkeyNoCredentialsOnDevice',
-            'No Passkey found on this device for ADSA Board, or verification was cancelled. If you haven’t registered this Mac yet, please sign in with your Token & Password and open Settings → Passkey.'
-          )
-        );
+        // User cancelled the prompt; no red error banner needed
       } else {
+        feedback('warning');
         setErr(err.message || 'Passkey authentication failed.');
       }
     } finally {
       setIsPasskeyLoading(false);
     }
-  }, [token, completeStudentLogin, feedback, t]);
+  }, [completeStudentLogin, feedback, t]);
 
   const checkTimeAndHandleClick = useCallback(async () => {
     try {
@@ -676,27 +754,47 @@ function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Multi-Identifier Input (Token, Username, Phone, Email) */}
               <div className="space-y-1.5">
-                <label
-                  htmlFor="token"
-                  className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
-                >
-                  {t('omnichannelLoginLabel', 'Login ID')}
-                </label>
-                <input
-                  id="token"
-                  type="text"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  value={token}
-                  onChange={(e) => {
-                    setToken(e.target.value);
-                    setErr('');
-                  }}
-                  placeholder="Token #, @username, phone, or email"
-                  className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                  required
-                />
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="token"
+                    className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    {t('omnichannelLoginLabel', 'Login ID')}
+                  </label>
+                  {isDetectingAccount ? (
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium animate-pulse">
+                      Checking...
+                    </span>
+                  ) : matchedAccount?.exists ? (
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-500" />
+                      <span>{matchedAccount.displayName}</span>
+                    </span>
+                  ) : null}
+                </div>
+                <div className="relative">
+                  <input
+                    id="token"
+                    type="text"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    value={token}
+                    onChange={(e) => {
+                      setToken(e.target.value);
+                      setErr('');
+                    }}
+                    placeholder="Token #, @username, phone, or email"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                    required
+                  />
+                  {/* {matchedAccount?.hasPasskeys && (
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/30">
+                      <Fingerprint className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                      <span>Passkey</span>
+                    </div>
+                  )} */}
+                </div>
               </div>
 
               {/* Password Input */}
@@ -766,10 +864,10 @@ function Login() {
                 )}
               </button>
 
-              {/* Alternative Passkey / Phone QR Sign-In */}
+              {/* Smart Passkey Section Below "OR" */}
               {passkeySupported && (
-                <div className="pt-1">
-                  <div className="relative flex py-2 items-center">
+                <div className="pt-1 space-y-2">
+                  <div className="relative flex py-1.5 items-center">
                     <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
                     <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
                       {t('or', 'or')}
@@ -777,18 +875,67 @@ function Login() {
                     <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
                   </div>
 
+                  {/* Dynamic Status / Helper Text */}
+                  <p className="text-center text-[11px] text-gray-500 dark:text-gray-400 px-2 leading-relaxed">
+                    {!token.trim()
+                      ? t(
+                          'enterIdForPasskey',
+                          'Enter your Login ID above to use Touch ID / Passkey'
+                        )
+                      : isDetectingAccount
+                      ? 'Verifying account credentials...'
+                      : matchedAccount?.hasPasskeys
+                      ? (
+                          t(
+                            'passkeyReadyForUser',
+                            'Touch ID / Passkey ready for {name}'
+                          ).replace('{name}', matchedAccount.displayName)
+                        )
+                      : matchedAccount?.exists
+                      ? t(
+                          'noPasskeyOnAccountHint',
+                          'No passkey registered for this ID. Sign in with password above.'
+                        )
+                      : t(
+                          'accountNotFoundHint',
+                          'Account not found. Please verify your Login ID above.'
+                        )}
+                  </p>
+
                   <button
                     type="button"
-                    onClick={handlePasskeyLogin}
-                    disabled={isPasskeyLoading || !isPortalAccessible}
-                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20 transition-all flex items-center justify-center gap-2 shadow-sm"
+                    onClick={() => {
+                      if (matchedAccount?.hasPasskeys) {
+                        handleTargetedPasskeyLogin(matchedAccount);
+                      }
+                    }}
+                    disabled={
+                      !matchedAccount?.hasPasskeys ||
+                      isPasskeyLoading ||
+                      !isPortalAccessible
+                    }
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs ${
+                      matchedAccount?.hasPasskeys
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/20 active:scale-[0.98] cursor-pointer'
+                        : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-white/10 cursor-not-allowed opacity-75'
+                    }`}
                   >
                     {isPasskeyLoading ? (
-                      <span>{t('waitingForPasskey', 'Waiting for Biometrics / Phone QR...')}</span>
+                      <span>{t('waitingForPasskey', 'Touch Sensor / Confirm Biometrics...')}</span>
                     ) : (
                       <>
-                        <Fingerprint className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        <span>{t('signInWithPasskey', 'Sign In with Passkey')}</span>
+                        <Fingerprint
+                          className={`w-4 h-4 ${
+                            matchedAccount?.hasPasskeys
+                              ? 'text-white'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`}
+                        />
+                        <span>
+                          {matchedAccount?.hasPasskeys
+                            ? t('signInWithPasskeyActive', 'Sign In with Touch ID / Passkey')
+                            : t('signInWithPasskeyInactive', 'Sign In with Passkey')}
+                        </span>
                       </>
                     )}
                   </button>

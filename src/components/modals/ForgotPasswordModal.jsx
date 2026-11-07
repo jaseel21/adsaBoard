@@ -230,17 +230,20 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
       if (!result.isValid) {
         feedback('warning');
         setErrorMsg(result.error || (language === 'ml' ? 'കോഡ് തെറ്റാണ് അല്ലെങ്കിൽ കാലാവധി കഴിഞ്ഞു' : 'Invalid or expired code'));
+        setResendCooldown(0);
         setIsLoading(false);
         return;
       }
 
       // CODE IS VERIFIED! ONLY NOW advance to Step 3 (Set New Password)
-      soundEngine.playSuccessBoop();
-      hapticEngine.successPulse();
+      try {
+        soundEngine.playSuccessBoop?.();
+        hapticEngine.successPulse?.();
+      } catch (_) {}
       setStep(3);
     } catch (err) {
       console.error('OTP verification error:', err);
-      setErrorMsg('Failed to verify code. Please try again.');
+      setErrorMsg(err.message || 'Failed to verify code. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -299,12 +302,14 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
         },
       }).catch(() => {});
 
-      soundEngine.playCelebrationFanfare();
-      hapticEngine.successPulse();
+      try {
+        soundEngine.playCelebrationFanfare?.();
+        hapticEngine.successPulse?.();
+      } catch (_) {}
       setStep(4); // Advance to Success Screen
     } catch (err) {
       console.error('Password reset save error:', err);
-      setErrorMsg('Failed to save new password. Please try again.');
+      setErrorMsg(err.message || 'Failed to save new password. Please try again.');
     } finally {
       setIsLoading(false);
     }

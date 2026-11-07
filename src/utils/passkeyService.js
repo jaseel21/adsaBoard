@@ -25,17 +25,27 @@ export function bufferToBase64URL(buffer) {
 }
 
 /**
- * Base64URL string to ArrayBuffer
+ * Base64URL string to ArrayBuffer (with robust type coercion)
  */
-export function base64URLToBuffer(base64url) {
-  const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
-  const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+export function base64URLToBuffer(input) {
+  if (!input) return new ArrayBuffer(0);
+  if (input instanceof ArrayBuffer) return input;
+  if (ArrayBuffer.isView(input)) return input.buffer;
+  try {
+    const str = String(input).trim();
+    const clean = str.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = '='.repeat((4 - (clean.length % 4)) % 4);
+    const base64 = clean + padding;
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray.buffer;
+  } catch (err) {
+    // Return empty buffer on decode failure
+    return new ArrayBuffer(0);
   }
-  return outputArray.buffer;
 }
 
 /**
@@ -198,11 +208,20 @@ export async function authenticateWithPasskey({
   };
 
   if (allowCredentials && allowCredentials.length > 0) {
-    publicKeyCredentialRequestOptions.allowCredentials = allowCredentials.map((cred) => ({
-      id: typeof cred === 'string' ? base64URLToBuffer(cred) : base64URLToBuffer(cred.id || cred.rawId),
-      type: 'public-key',
-      transports: cred.transports || ['internal', 'hybrid', 'usb', 'nfc'],
-    }));
+    publicKeyCredentialRequestOptions.allowCredentials = allowCredentials
+      .map((cred) => {
+        const rawBuf =
+          typeof cred === 'string'
+            ? base64URLToBuffer(cred)
+            : base64URLToBuffer(cred.rawId || cred.id);
+        if (!rawBuf || rawBuf.byteLength === 0) return null;
+        return {
+          id: rawBuf,
+          type: 'public-key',
+          transports: cred.transports || ['internal', 'hybrid', 'usb', 'nfc'],
+        };
+      })
+      .filter(Boolean);
   }
 
   const getOptions = {

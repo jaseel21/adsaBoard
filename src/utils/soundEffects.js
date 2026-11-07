@@ -378,7 +378,111 @@ class AudioSynthesizer {
       });
     } catch (_) {}
   }
+
+  /**
+   * 12. Success Boop
+   * Rapid, uplifting 2-tone jump (C5 -> G5) for successful verification
+   */
+  playSuccessBoop() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      [523.25, 783.99].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        const startAt = now + idx * 0.08;
+        osc.frequency.setValueAtTime(freq, startAt);
+
+        gain.gain.setValueAtTime(0.12, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.16);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startAt);
+        osc.stop(startAt + 0.17);
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * 13. Celebration Fanfare
+   * Triumphant 4-note ascending chord (C5 -> E5 -> G5 -> C6) for password setup & 2FA
+   */
+  playCelebrationFanfare() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        const startAt = now + idx * 0.06;
+        osc.frequency.setValueAtTime(freq, startAt);
+
+        gain.gain.setValueAtTime(0.14, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.0005, startAt + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startAt);
+        osc.stop(startAt + 0.36);
+      });
+    } catch (_) {}
+  }
+
+  /**
+   * 14. Trash / Removal Swoosh
+   * Descending tone for credential removal or item revocation
+   */
+  playTrashBin() {
+    if (!this.enabled) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.15);
+
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.17);
+    } catch (_) {}
+  }
 }
 
-export const soundEngine = new AudioSynthesizer();
+// Resilient Proxy: ensures any missing or future sound method never throws a TypeError
+const rawSoundEngine = new AudioSynthesizer();
+
+export const soundEngine = new Proxy(rawSoundEngine, {
+  get(target, prop) {
+    if (prop in target) {
+      const val = target[prop];
+      return typeof val === 'function' ? val.bind(target) : val;
+    }
+    // Safe no-op function for any unmapped sound method
+    return () => {};
+  },
+});
 
