@@ -74,7 +74,7 @@ export default function LiveCloudStatusBadge({ className = '' }) {
         }}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 h-7 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer select-none flex-shrink-0 ${
+        className={`relative inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 h-7 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer select-none flex-shrink-0 ${
           popoverOpen
             ? 'bg-emerald-500/15 dark:bg-emerald-500/25 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-xs'
             : !isOnline
@@ -95,21 +95,21 @@ export default function LiveCloudStatusBadge({ className = '' }) {
             {/* Live Activity Icon */}
             <Activity className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 animate-pulse" />
             {/* Latency RTT */}
-            <span className="font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
+            <span className="hidden sm:inline font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
               {formattedLatency}
             </span>
           </>
         ) : reconnecting || syncing ? (
           <>
             <RefreshCw className="w-3.5 h-3.5 text-amber-500 animate-spin flex-shrink-0" />
-            <span className="font-mono text-[11px] font-semibold text-amber-600 dark:text-amber-400 tracking-tight">
+            <span className="hidden sm:inline font-mono text-[11px] font-semibold text-amber-600 dark:text-amber-400 tracking-tight">
               {lang === 'ml' ? 'സിങ്ക്' : 'Sync'}
             </span>
           </>
         ) : (
           <>
             <WifiOff className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
-            <span className="font-mono text-[11px] font-semibold text-rose-600 dark:text-rose-400 tracking-tight">
+            <span className="hidden sm:inline font-mono text-[11px] font-semibold text-rose-600 dark:text-rose-400 tracking-tight">
               {lang === 'ml' ? 'ഓഫ്‌ലൈൻ' : 'Offline'}
             </span>
           </>

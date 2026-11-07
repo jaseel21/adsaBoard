@@ -43,6 +43,8 @@ import MasterGovernanceCockpitModal from '../admin/governance/MasterGovernanceCo
 import BackupVaultModal from '../admin/vault/BackupVaultModal';
 import TokenLockManagerModal from '../TokenLockManagerModal';
 import BoardSupplySwitchModal from '../board/BoardSupplySwitchModal';
+import ThemeSwitch from '../ThemeSwitch';
+import LanguageSwitch from '../LanguageSwitch';
 
 export default function BrowserLeftSidebar() {
   const location = useLocation();
@@ -478,47 +480,71 @@ export default function BrowserLeftSidebar() {
         )}
       </div>
 
-      {/* Persistent Settings & Alarms Footer Utility */}
-      <div className="p-2 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex-shrink-0 space-y-2">
-        {/* Desktop App PWA Hub Card */}
-        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Monitor className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="text-[11px] font-black text-gray-900 dark:text-white">
-                {isStandaloneMode() ? 'Desktop App' : 'ADSA Desktop'}
-              </span>
-            </div>
-            <span className="text-[9px] font-mono font-bold px-1 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-              v2.5
-            </span>
+      {/* Persistent Settings, Theme & Alarms Footer Utility */}
+      <div className="p-2.5 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] flex-shrink-0 space-y-2">
+        {/* Language, Theme & Settings Quick Controls Row */}
+        <div className="flex items-center justify-between gap-1.5 p-1 rounded-2xl bg-gray-100/70 dark:bg-white/5 border border-gray-200/50 dark:border-white/10">
+          <div className="flex items-center gap-1 min-w-0">
+            <LanguageSwitch />
+            <ThemeSwitch />
           </div>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
-            {isStandaloneMode()
-              ? 'Dedicated desktop window with offline sync.'
-              : 'Install on Windows, Mac, or Linux for instant zero-lag access.'}
-          </p>
           <button
             type="button"
-            onClick={() => {
-              feedback('tick');
-              openDesktopInstallModal();
-            }}
-            className="w-full py-1.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            onClick={() => handleNavigate('/settings')}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0 ${
+              location.pathname.startsWith('/settings') || location.pathname.startsWith('/preferences')
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-white/10'
+            }`}
+            title="Settings & Preferences"
+            aria-label="Settings"
           >
-            {isStandaloneMode() ? (
-              <>
-                <Activity className="w-3 h-3" />
-                <span>Desktop Tools</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-3 h-3" />
-                <span>Install Desktop App</span>
-              </>
-            )}
+            <Settings className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[10.5px] font-semibold">{language === 'ml' ? 'ക്രമീകരണം' : 'Settings'}</span>
           </button>
         </div>
+
+        {/* Desktop App PWA Hub Card (Only visible on Desktop OS) */}
+        {['Windows', 'macOS', 'Linux'].includes(detectOS()) && (
+          <div className="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Monitor className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-[11px] font-black text-gray-900 dark:text-white">
+                  {isStandaloneMode() ? 'Desktop App' : 'ADSA Desktop'}
+                </span>
+              </div>
+              <span className="text-[9px] font-mono font-bold px-1 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                v2.5
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+              {isStandaloneMode()
+                ? 'Dedicated desktop window with offline sync.'
+                : 'Install on Windows, Mac, or Linux for instant zero-lag access.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                feedback('tick');
+                openDesktopInstallModal();
+              }}
+              className="w-full py-1.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {isStandaloneMode() ? (
+                <>
+                  <Activity className="w-3 h-3" />
+                  <span>Desktop Tools</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3 h-3" />
+                  <span>Install Desktop App</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <button
           type="button"
@@ -536,22 +562,6 @@ export default function BrowserLeftSidebar() {
             IST
           </span>
         </button>
-
-          {/* <button
-            type="button"
-            onClick={() => handleNavigate('/settings')}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-              location.pathname.startsWith('/settings') || location.pathname.startsWith('/preferences')
-                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-xs'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-emerald-500" />
-              <span>{language === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings & Preferences'}</span>
-            </div>
-            <span className="text-[10px] font-mono text-gray-400">⌘,</span>
-          </button> */}
       </div>
     </div>
   );

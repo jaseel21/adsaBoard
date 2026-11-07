@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+  import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useFeedback } from '../../utils/useFeedback';
 import { useWorldTime } from '../../utils/time';
 import { usePreferences } from '../../store/PreferencesContext';
 import NotificationBell from '../notifications/NotificationBell';
+import ThemeSwitch from '../ThemeSwitch';
 import { useScrollHeader } from '../scroll/useScrollHeader';
 import FloatingCalendarPopover from './FloatingCalendarPopover';
 import FloatingClockPopover from './FloatingClockPopover';
@@ -92,26 +93,37 @@ export default function MobileTopBar({
               </span>
 
               {user && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 truncate max-w-[60px]">
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 truncate max-w-[52px]">
                   {roleBadge?.label || 'Staff'}
                 </span>
               )}
               {stdata?.tokenNo && !user && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  {stdata.tokenNo}
-                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    feedback('tick');
+                    window.dispatchEvent(new CustomEvent('open-student-profile'));
+                    navigate('/student');
+                  }}
+                  className="ml-0.5 px-1.5 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 truncate max-w-[52px] hover:bg-emerald-500/25 active:scale-95 transition-all cursor-pointer"
+                  title="Open My Student Profile"
+                  aria-label={`Student Profile #${stdata.tokenNo}`}
+                >
+                  #{stdata.tokenNo}
+                </button>
               )}
             </div>
           </div>
 
-          {/* Center: Interactive Date & Clock Dual Capsule (Matched from Desktop) */}
-          <div className="flex items-center rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10.5px] select-none flex-shrink p-0.5 gap-0.5 min-w-0">
+          {/* Center: Interactive Date & Clock Dual Capsule (Responsive & Clamped) */}
+          <div className="flex items-center rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[10px] sm:text-[10.5px] select-none flex-shrink p-0.5 gap-0.5 min-w-0 max-w-[190px] overflow-hidden">
             {/* Clickable Date Trigger */}
             <button
               ref={dateBtnRef}
               type="button"
               onClick={handleOpenCalendar}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all duration-150 cursor-pointer ${
+              className={`hidden xs:flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full transition-all duration-150 cursor-pointer min-w-0 truncate ${
                 calendarOpen
                   ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-xs'
                   : 'hover:bg-black/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300'
@@ -119,11 +131,11 @@ export default function MobileTopBar({
               title="Open complete calendar"
               aria-label="Open Calendar"
             >
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
+              <span className="hidden sm:inline font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
                 {dayFull ? dayFull.slice(0, 3) : ''}
               </span>
-              <span className="text-gray-300 dark:text-white/20 text-[8px]">•</span>
-              <span className="font-semibold tracking-tight whitespace-nowrap">
+              <span className="hidden sm:inline text-gray-300 dark:text-white/20 text-[8px]">•</span>
+              <span className="font-semibold tracking-tight whitespace-nowrap truncate">
                 {nowDate
                   ? `${nowDate.getUTCDate()} ${nowDate.toLocaleDateString('en-US', {
                       month: 'short',
@@ -134,14 +146,14 @@ export default function MobileTopBar({
             </button>
 
             {/* Micro divider */}
-            <span className="text-gray-300 dark:text-white/20 text-[8px]">•</span>
+            <span className="hidden xs:inline text-gray-300 dark:text-white/20 text-[8px] flex-shrink-0">•</span>
 
             {/* Clickable Clock Trigger */}
             <button
               ref={clockBtnRef}
               type="button"
               onClick={handleOpenClock}
-              className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 rounded-full transition-all duration-150 cursor-pointer min-w-0 truncate ${
                 clockOpen
                   ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-xs'
                   : 'hover:bg-black/5 dark:hover:bg-white/10 text-gray-900 dark:text-white'
@@ -149,7 +161,7 @@ export default function MobileTopBar({
               title="Open live clock & meal cutoff countdown"
               aria-label="Open Clock"
             >
-              <span className="font-mono font-bold tracking-tight whitespace-nowrap">
+              <span className="font-mono font-bold tracking-tight whitespace-nowrap truncate">
                 {formatTime
                   ? formatTime(preferences?.clockFormat || '12h', false).formattedString
                   : timeParts
@@ -160,9 +172,12 @@ export default function MobileTopBar({
           </div>
 
           {/* Right Action Island */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
             {/* Real-time Cloud Telemetry Badge */}
             <LiveCloudStatusBadge />
+
+            {/* Theme Switcher (Icon Only) */}
+            <ThemeSwitch iconOnly={true} />
 
             {/* Quick Search */}
             <button
@@ -171,7 +186,7 @@ export default function MobileTopBar({
                 feedback('pop');
                 onOpenSearch();
               }}
-              className="p-1.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/60 dark:border-white/10 active:scale-95 cursor-pointer"
+              className="w-7 h-7 rounded-full text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/60 dark:border-white/10 active:scale-95 cursor-pointer flex items-center justify-center transition-all flex-shrink-0"
               title="Search pages (⌘K)"
               aria-label="Search pages"
             >

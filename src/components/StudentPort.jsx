@@ -110,7 +110,17 @@ function StudentPort() {
   const [unblockDocStatus, setUnblockDocStatus] = useState(null);
   const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(true);
+  // Default profile open on desktop (docked side rail), closed on mobile (modal drawer) to prevent disturbing auto-popups
+  const [isProfileOpen, setIsProfileOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024);
+
+  // Global listener to trigger opening the student profile from MobileTopBar or MobileBottomDock
+  useEffect(() => {
+    const handleOpenProfileEvent = () => {
+      setIsProfileOpen(true);
+    };
+    window.addEventListener('open-student-profile', handleOpenProfileEvent);
+    return () => window.removeEventListener('open-student-profile', handleOpenProfileEvent);
+  }, []);
 
   const isBlocked = unblockDocStatus ? Boolean(unblockDocStatus.block) : Boolean(stdata?.block);
   const pendingUnblock = unblockDocStatus ? unblockDocStatus.pendingUnblockRequest : stdata?.pendingUnblockRequest;
@@ -691,13 +701,53 @@ function StudentPort() {
   }
 
   return (
-    <div className="max-w-[1536px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 pb-32 sm:pb-36">
+    <div className="max-w-[1536px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-48 md:pb-36">
 
       {/* ================= DUAL-RAIL FLEX LAYOUT ================= */}
       <div className="flex flex-col lg:flex-row items-start gap-6">
 
       {/* ================= PRIMARY FUNCTIONING OPERATIONAL CONSOLE ================= */}
       <div className="flex-1 min-w-0 w-full space-y-6">
+
+        {/* ================= MOBILE-FIRST STUDENT IDENTITY & PROFILE ACCESS BAR ================= */}
+        {/* <div className="p-3.5 sm:p-4 rounded-3xl bg-white/95 dark:bg-[#0c1412]/95 border border-emerald-500/25 dark:border-white/10 shadow-sm backdrop-blur-xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <IslamicAvatar student={activeStudentDoc} size={42} showStatusRing />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">
+                  #{stdata.tokenNo}
+                </span>
+                <span className="font-black text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                  {activeStudentDoc.nameEn || activeStudentDoc.name || `Student ${stdata.tokenNo}`}
+                </span>
+                {activeStudentDoc.batch && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                    {activeStudentDoc.batch}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                {activeStudentDoc.room ? `Room ${activeStudentDoc.room} • ` : ''}
+                {t('manageYourMealsAndLeaves', 'Manage your dining routine & date leaves')}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              feedback('tick');
+              setIsProfileOpen(true);
+            }}
+            className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs border border-emerald-300/60 dark:border-emerald-500/30 active:scale-95 transition-all cursor-pointer shadow-xs"
+            title="Open Complete Student Profile"
+          >
+            <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{t('viewProfile', 'My Profile')}</span>
+            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+          </button>
+        </div> */}
 
 
 
@@ -1102,7 +1152,7 @@ function StudentPort() {
         </aside>
       )}
 
-      {/* Desktop Floating Profile Re-Open Button (when collapsed) */}
+      {/* Floating Profile Re-Open Button (Available on both Mobile & Desktop when closed) */}
       {!isProfileOpen && (
         <button
           type="button"
@@ -1110,8 +1160,9 @@ function StudentPort() {
             feedback('tick');
             setIsProfileOpen(true);
           }}
-          className="hidden lg:flex fixed top-4 right-4 z-40 items-center gap-2 px-3 py-2 rounded-full bg-white/90 dark:bg-[#0c1412]/90 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-xl hover:scale-105 active:scale-95 text-gray-700 dark:text-gray-200 transition-all cursor-pointer font-bold text-xs"
+          className="fixed top-[max(4.25rem,calc(env(safe-area-inset-top,0px)+3.8rem))] lg:top-4 right-3 lg:right-4 z-40 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-white/95 dark:bg-[#0c1412]/95 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 shadow-xl hover:scale-105 active:scale-95 text-gray-700 dark:text-gray-200 transition-all cursor-pointer font-bold text-xs"
           title="Open My Profile"
+          aria-label="Open Student Profile"
         >
           <IslamicAvatar student={activeStudentDoc} size={22} />
           <span>#{stdata.tokenNo}</span>
@@ -1122,7 +1173,8 @@ function StudentPort() {
       </div>{/* End of DUAL-RAIL FLEX LAYOUT */}
 
       {/* ================= PERSISTENT FLOATING ACTION BAR (STICKY DOCK) ================= */}
-      <div className="fixed bottom-2 xs:bottom-4 sm:bottom-6 inset-x-0 z-40 flex justify-center px-2 xs:px-4 pointer-events-none pb-safe">
+      {/* On mobile, elevates above MobileBottomDock (bottom-[calc(4.75rem+safe-area)]); on desktop, rests at md:bottom-6 */}
+      <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 inset-x-0 z-30 flex justify-center px-2 xs:px-4 pointer-events-none pb-safe">
         <motion.div
           layout
           data-tour="total-tokens-dock"

@@ -113,7 +113,12 @@ export default function MobileBottomDock({
             } else if (user && isCanteenCommittee) {
               handleNav('/admin');
             } else {
-              handleNav(studentPath);
+              if (isStudentLoggedIn && (location.pathname === '/student' || location.pathname === '/student-portal')) {
+                feedback('tick');
+                window.dispatchEvent(new CustomEvent('open-student-profile'));
+              } else {
+                handleNav(studentPath);
+              }
             }
           }}
           className={`relative flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all cursor-pointer ${
