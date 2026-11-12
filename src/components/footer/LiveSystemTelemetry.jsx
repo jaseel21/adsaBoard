@@ -14,7 +14,7 @@ import {
 import { useLanguage } from '../../store/LanguageContext';
 import { usePreferences } from '../../store/PreferencesContext';
 import { useFeedback } from '../../utils/useFeedback';
-import { useWorldTime } from '../../utils/time';
+import { resolveClockFormat, useWorldTime } from '../../utils/time';
 import { getCalibratedHijriDate } from '../../utils/hijriCalendar';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
@@ -25,7 +25,7 @@ export default function LiveSystemTelemetry() {
   const { isOnline, latencyMs } = useNetworkStatus();
   const { timeParts, timeParts24, nowDate, dayFull } = useWorldTime('Asia/Kolkata');
 
-  const is24h = preferences?.clockFormat === '24h';
+  const is24h = resolveClockFormat(preferences?.clockFormat) === '24h';
   const activeTimeParts = is24h && timeParts24 ? timeParts24 : timeParts;
 
   const hijriData = useMemo(

@@ -17,6 +17,7 @@ import {
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
 import { dialog } from '../../../utils/dialog';
+import { ROLES } from '../../../utils/rbac';
 import {
   saveTenureCommittees,
   deleteTenure,
@@ -26,6 +27,7 @@ import {
 export default function AboutTenureEditor({ tenuresList = [], actor }) {
   const { lang } = useLanguage();
   const { feedback } = useFeedback();
+  const canManageAll = actor?.role !== ROLES.CANTEEN_COMMITTEE;
 
   const [selectedTenureId, setSelectedTenureId] = useState(
     tenuresList.find((t) => t.isCurrentTenure)?.id || tenuresList[0]?.id || 'tenure_2025_2026'
@@ -44,7 +46,7 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
       subCommittees: [],
     };
 
-  const [subTab, setSubTab] = useState('central'); // 'central' | 'canteen' | 'wings'
+  const [subTab, setSubTab] = useState(canManageAll ? 'central' : 'canteen'); // 'central' | 'canteen' | 'wings'
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState('central'); // 'central' | 'canteen'
   const [editingMember, setEditingMember] = useState(null);
@@ -63,6 +65,17 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageMode, setImageMode] = useState('url');
+
+  React.useEffect(() => {
+    if (!canManageAll) setSubTab('canteen');
+  }, [canManageAll]);
+
+  React.useEffect(() => {
+    if (!tenuresList.some((tenure) => tenure.id === selectedTenureId)) {
+      const initialTenure = tenuresList.find((tenure) => tenure.isCurrentTenure) || tenuresList[0];
+      if (initialTenure) setSelectedTenureId(initialTenure.id);
+    }
+  }, [tenuresList, selectedTenureId]);
 
   const openAddMember = (target) => {
     feedback('tick');
@@ -243,14 +256,14 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
             </p>
           </div>
 
-          <button
+          {canManageAll && <button
             type="button"
             onClick={handleCreateNewTenure}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 text-xs font-bold text-gray-700 dark:text-gray-300"
           >
             <Plus className="w-4 h-4 text-emerald-500" />
             <span>New Academic Year</span>
-          </button>
+          </button>}
         </div>
 
         {/* Tenure Switcher Pills */}
@@ -284,7 +297,7 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
           <span className="font-semibold text-emerald-600 dark:text-emerald-400">
             Editing Tenure: {activeTenure.academicYear}
           </span>
-          <button
+          {canManageAll && <button
             type="button"
             onClick={handleToggleCurrentTenure}
             className={`px-3 py-1 rounded-xl text-[11px] font-bold border transition-all ${
@@ -294,13 +307,13 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
             }`}
           >
             {activeTenure.isCurrentTenure ? '★ Currently Active Tenure' : 'Mark as Active Tenure'}
-          </button>
+          </button>}
         </div>
       </div>
 
       {/* Roster Tabs: Central Committee vs Canteen Wing */}
       <div className="flex items-center gap-2 border-b border-gray-200 dark:border-white/10 pb-2">
-        <button
+        {canManageAll && <button
           type="button"
           onClick={() => {
             feedback('tick');
@@ -314,8 +327,7 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
         >
           <Users className="w-3.5 h-3.5" />
           <span>Central Committee ({activeTenure.centralCommittee?.length || 0})</span>
-        </button>
-
+        </button>}
         <button
           type="button"
           onClick={() => {
@@ -339,14 +351,14 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
           <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">
             {subTab === 'central' ? 'Central Committee Roster' : 'Canteen Wing Roster'}
           </h4>
-          <button
+          {tenuresList.length > 0 && <button
             type="button"
             onClick={() => openAddMember(subTab)}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Member</span>
-          </button>
+          </button>}
         </div>
 
         {/* Member cards */}
@@ -394,6 +406,11 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
               </div>
             </div>
           ))}
+          {tenuresList.length === 0 && (
+            <p className="rounded-xl border border-dashed border-gray-300 dark:border-white/15 p-4 text-sm text-gray-500">
+              No committee tenure is stored yet. A Central Committee admin must create an academic year before members can be added.
+            </p>
+          )}
         </div>
       </div>
 
@@ -562,4 +579,3 @@ export default function AboutTenureEditor({ tenuresList = [], actor }) {
     </div>
   );
 }
-

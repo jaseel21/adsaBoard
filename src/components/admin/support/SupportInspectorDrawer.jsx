@@ -33,6 +33,7 @@ import { hapticEngine } from '../../../utils/haptics';
 import { useLanguage } from '../../../store/LanguageContext';
 import ApexLinkPreview from '../../preview/ApexLinkPreview';
 import firebase from '../../../firebase/config';
+import { formatISTDateTime } from '../../../utils/time';
 
 export default function SupportInspectorDrawer({
   isOpen = false,
@@ -367,7 +368,7 @@ export default function SupportInspectorDrawer({
                           <span>{msg.senderName}</span>
                         </span>
                         <span className="text-[10px] font-mono text-gray-400">
-                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {formatISTDateTime(msg.timestamp)}
                         </span>
                       </div>
                       <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>

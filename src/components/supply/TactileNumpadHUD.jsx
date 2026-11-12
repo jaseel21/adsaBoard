@@ -21,6 +21,7 @@ import IslamicAvatar from '../ui/IslamicAvatar';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { getEffectiveStudentMealStatus } from '../../utils/studentExceptionService';
+import { formatISTDateTime } from '../../utils/time';
 
 export default function TactileNumpadHUD({
   documents = [],
@@ -483,11 +484,7 @@ export default function TactileNumpadHUD({
                 <div className="p-4 rounded-2xl bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300/50 dark:border-amber-700/50 text-xs text-amber-900 dark:text-amber-200 mb-5 leading-relaxed space-y-1">
                   <div>
                     <strong>Served at:</strong>{' '}
-                    {new Date(tokenEvaluation.record.servedAtIso || Date.now()).toLocaleTimeString('en-IN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })}
+                    {formatISTDateTime(tokenEvaluation.record.servedAtIso || Date.now(), undefined, true)}
                   </div>
                   <div>
                     <strong>By Server:</strong> {tokenEvaluation.record.servedByName || 'Staff'}{' '}

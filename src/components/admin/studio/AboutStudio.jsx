@@ -16,7 +16,7 @@ import useSEO from '../../../hooks/useSEO';
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
 import { AuthContext } from '../../../store/AuthContext';
-import { ROLES, hasRole } from '../../../utils/rbac';
+import { ROLES } from '../../../utils/rbac';
 
 import {
   subscribeAboutMeta,
@@ -45,17 +45,27 @@ export default function AboutStudio() {
     description: 'Dynamic administrative control for Alathurpadi Dars About page, Mudarrisun faculty, and ADSA committees.',
   });
 
-  const [activeTab, setActiveTab] = useState('mudarrisun'); // 'meta' | 'mudarrisun' | 'committees'
+  const [activeTab, setActiveTab] = useState(
+    role === ROLES.CANTEEN_COMMITTEE ? 'committees' : 'mudarrisun'
+  ); // 'meta' | 'mudarrisun' | 'committees'
 
   // Subscriptions
   const [meta, setMeta] = useState(null);
   const [mudarrisun, setMudarrisun] = useState([]);
   const [tenures, setTenures] = useState([]);
+  const [readError, setReadError] = useState('');
 
   useEffect(() => {
-    const unsubMeta = subscribeAboutMeta(setMeta);
-    const unsubMudarrisun = subscribeMudarrisun(setMudarrisun);
-    const unsubTenures = subscribeTenures(setTenures);
+    const handleReadError = (err) => {
+      setReadError(err?.message || 'Unable to read About content from Firestore.');
+    };
+    const onSnapshot = (setter) => (data) => {
+      setReadError('');
+      setter(data);
+    };
+    const unsubMeta = subscribeAboutMeta(onSnapshot(setMeta), { useFallback: true, onError: handleReadError });
+    const unsubMudarrisun = subscribeMudarrisun(onSnapshot(setMudarrisun), { useFallback: false, onError: handleReadError });
+    const unsubTenures = subscribeTenures(onSnapshot(setTenures), { useFallback: false, onError: handleReadError });
 
     return () => {
       unsubMeta();
@@ -86,6 +96,15 @@ export default function AboutStudio() {
       icon: Settings,
     },
   ];
+  const visibleTabs = role === ROLES.CANTEEN_COMMITTEE
+    ? TABS.filter((tab) => tab.id === 'committees')
+    : TABS;
+
+  useEffect(() => {
+    if (role === ROLES.CANTEEN_COMMITTEE && activeTab !== 'committees') {
+      setActiveTab('committees');
+    }
+  }, [role, activeTab]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -135,9 +154,15 @@ export default function AboutStudio() {
         </button>
       </div>
 
+      {readError && (
+        <div role="alert" className="px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-500/30">
+          About content could not be loaded from Firestore: {readError}
+        </div>
+      )}
+
       {/* Main Tab Switcher */}
       <div className="flex flex-wrap items-center gap-2">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const IconComp = tab.icon;
           const isActive = tab.id === activeTab;
           return (
@@ -187,4 +212,3 @@ export default function AboutStudio() {
     </div>
   );
 }
-

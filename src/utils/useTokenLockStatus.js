@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import firebase from '../firebase/config';
-import { useWorldTime } from './time';
+import { getPreferredClockFormat, resolveClockFormat, useWorldTime } from './time';
+import { usePreferences } from '../store/PreferencesContext';
+import { useMasterGovernance } from '../store/MasterGovernanceContext';
 import {
   getTodayISTDate,
   addDaysToDate,
@@ -23,14 +25,17 @@ export {
 const TOKENBOARD_DOC_ID = 'g8iJVNn2RQkysjMAvX1h';
 
 /**
- * Format 24h time "HH:mm" or "HH:mm:ss" to friendly 12h time (e.g. "11:00 PM IST" or "02:00 PM IST")
+ * Format canonical 24h time "HH:mm" / "HH:mm:ss" using the user's selected clock style.
  */
-export function formatTime12(timeStr, includeTz = true) {
+export function formatTime12(timeStr, includeTz = true, format = getPreferredClockFormat()) {
   if (!timeStr) return '';
   const parts = timeStr.split(':');
   const h = parseInt(parts[0], 10);
   const m = parts[1] || '00';
   if (isNaN(h)) return timeStr;
+  if (resolveClockFormat(format) === '24h') {
+    return `${String(h).padStart(2, '0')}:${m}${includeTz ? ' IST' : ''}`;
+  }
   const period = h >= 12 ? 'PM' : 'AM';
   const h12 = h % 12 === 0 ? 12 : h % 12;
   const formattedH = String(h12).padStart(2, '0');
@@ -43,7 +48,8 @@ export function formatTime12(timeStr, includeTz = true) {
  * Business Rules & Separation of Concerns:
  * 1. Cutoff Deadline Engine (Student Token Updates):
  *    - Web is open to login ANY TIME (24/7)
- *    - TODAY: Finalized for kitchen prep (locked for regular students, admin override available)
+ *    - TODAY: Closed by default; an active unlock override can open today for students.
+ *    - PAST SERVICE DATES: Always immutable, including during unlock overrides.
  *    - TOMORROW: Open all day until the cutoff deadline (default: 11:00 PM / 23:00 IST)
  *    - FUTURE DATES: Always open for advance scheduling and leaves
  *
@@ -61,6 +67,8 @@ export const DEFAULT_LOCK_CONFIG = {
     deadlineTime: '23:00', // 11:00 PM IST unified cutoff deadline fallback
     breakfastDeadlineTime: '23:00', // Breakfast cutoff deadline
     lunchDeadlineTime: '23:00',     // Lunch cutoff deadline
+    hasBreakfastDeadline: false,
+    hasLunchDeadline: false,
     timezone: 'Asia/Kolkata',
     restrictOpenTime: false, // By default FALSE: Open all day until cutoff deadline
     openTime: '00:00',
@@ -76,7 +84,6 @@ export const DEFAULT_LOCK_CONFIG = {
       tu: { autoShiftTime: '14:00' },
       we: { autoShiftTime: '14:00' },
       th: { autoShiftTime: '14:00' },
-      fr: { autoShiftTime: '14:15' }, // Friday Jumu'ah prayer schedule
       sa: { autoShiftTime: '14:00' },
     },
   },
@@ -90,13 +97,13 @@ export const DEFAULT_LOCK_CONFIG = {
   schedule: {
     enabled: false,
     days: {
-      su: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
-      mo: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
-      tu: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
-      we: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
-      th: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
-      fr: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
-      sa: { startTime: '00:00', endTime: '23:00', deadlineTime: '23:00', breakfastDeadlineTime: '23:00', lunchDeadlineTime: '23:00' },
+      su: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
+      mo: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
+      tu: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
+      we: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
+      th: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
+      fr: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
+      sa: { startTime: '', endTime: '', deadlineTime: '', breakfastDeadlineTime: '', lunchDeadlineTime: '' },
     },
   },
   temporaryOverride: {
@@ -115,6 +122,13 @@ export const DEFAULT_LOCK_CONFIG = {
  */
 export function useTokenLockStatus() {
   const { timeHms, todayIST: worldTodayIST, isSynced, isDeviceDesynced, syncSource } = useWorldTime('Asia/Kolkata');
+  const { preferences } = usePreferences();
+  const governance = useMasterGovernance();
+  const clockFormat = preferences?.clockFormat || getPreferredClockFormat();
+  const formatConfiguredTime = useCallback(
+    (timeStr, includeTz = true) => formatTime12(timeStr, includeTz, clockFormat),
+    [clockFormat]
+  );
   const [config, setConfig] = useState(DEFAULT_LOCK_CONFIG);
   const [loadingConfig, setLoadingConfig] = useState(true);
 
@@ -147,13 +161,15 @@ export function useTokenLockStatus() {
             const normalizedDays = {};
             ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'].forEach((dKey) => {
               const dConf = rawDays[dKey] || {};
-              const dayDl = dConf.deadlineTime || dConf.endTime || deadline;
               normalizedDays[dKey] = {
                 ...DEFAULT_LOCK_CONFIG.schedule.days[dKey],
                 ...dConf,
-                deadlineTime: dayDl,
-                breakfastDeadlineTime: dConf.breakfastDeadlineTime || dayDl,
-                lunchDeadlineTime: dConf.lunchDeadlineTime || dayDl,
+                // Keep empty overrides empty so the global meal-specific
+                // deadlines remain effective when a day has no custom cutoff.
+                deadlineTime: dConf.deadlineTime || dConf.endTime || '',
+                endTime: dConf.endTime || dConf.deadlineTime || '',
+                breakfastDeadlineTime: dConf.breakfastDeadlineTime || '',
+                lunchDeadlineTime: dConf.lunchDeadlineTime || '',
               };
             });
 
@@ -164,6 +180,8 @@ export function useTokenLockStatus() {
                 deadlineTime: deadline,
                 breakfastDeadlineTime: breakfastDeadline,
                 lunchDeadlineTime: lunchDeadline,
+                hasBreakfastDeadline: Boolean(cutoffData.breakfastDeadlineTime),
+                hasLunchDeadline: Boolean(cutoffData.lunchDeadlineTime),
                 timezone: cutoffData.timezone || windowData.timezone || 'Asia/Kolkata',
                 restrictOpenTime: restrictOpen,
                 openTime,
@@ -231,18 +249,22 @@ export function useTokenLockStatus() {
   // Determine active cutoff window for today (considering day-specific schedule and scheduled events)
   const activeWindow = useMemo(() => {
     let deadline = config.cutoff?.deadlineTime || config.window?.endTime || DEFAULT_LOCK_CONFIG.cutoff.deadlineTime;
-    let breakfastDeadline = config.cutoff?.breakfastDeadlineTime || config.window?.breakfastEndTime || deadline;
-    let lunchDeadline = config.cutoff?.lunchDeadlineTime || config.window?.lunchEndTime || deadline;
+    let breakfastDeadline = config.cutoff?.hasBreakfastDeadline
+      ? config.cutoff.breakfastDeadlineTime
+      : (governance.mealWindows?.breakfast?.cutoffTime || config.window?.breakfastEndTime || deadline);
+    let lunchDeadline = config.cutoff?.hasLunchDeadline
+      ? config.cutoff.lunchDeadlineTime
+      : (governance.mealWindows?.lunch?.cutoffTime || config.window?.lunchEndTime || deadline);
     let openTime = config.cutoff?.openTime || config.window?.startTime || '00:00';
     let restrictOpen = Boolean(config.cutoff?.restrictOpenTime);
 
     // Day-specific schedule override
     if (config.schedule?.enabled && config.schedule?.days?.[todayDayShort]) {
       const dayConf = config.schedule.days[todayDayShort];
-      const dayDl = dayConf.deadlineTime || dayConf.endTime || deadline;
-      deadline = dayDl;
-      breakfastDeadline = dayConf.breakfastDeadlineTime || dayDl;
-      lunchDeadline = dayConf.lunchDeadlineTime || dayDl;
+      const dayDl = dayConf.deadlineTime || dayConf.endTime;
+      if (dayDl) deadline = dayDl;
+      breakfastDeadline = dayConf.breakfastDeadlineTime || dayDl || breakfastDeadline;
+      lunchDeadline = dayConf.lunchDeadlineTime || dayDl || lunchDeadline;
 
       if (dayConf.startTime) {
         openTime = dayConf.startTime;
@@ -275,7 +297,7 @@ export function useTokenLockStatus() {
       openTime,
       restrictOpenTime: restrictOpen,
     };
-  }, [config.cutoff, config.window, config.schedule, todayDayShort, activeScheduledEvent]);
+  }, [config.cutoff, config.window, config.schedule, todayDayShort, activeScheduledEvent, governance.mealWindows]);
 
   // Determine active Board Today-Tomorrow Switch Time for today
   const activeBoardSwitchTime = useMemo(() => {
@@ -330,6 +352,9 @@ export function useTokenLockStatus() {
 
   // Effective Operating Mode calculation
   const effectiveMode = useMemo(() => {
+    // Institutional universal unlock feeds the same evaluator as the token
+    // cutoff controls. The immutable-history guard still runs before this mode.
+    if (governance.isEmergencyMealOverrideActive) return 'force_unlocked';
     // 1. Timed Override takes precedence if currently active
     if (temporaryOverrideActive) {
       return config.temporaryOverride.mode || 'force_unlocked';
@@ -344,7 +369,7 @@ export function useTokenLockStatus() {
       return config.overrideMode;
     }
     return 'auto';
-  }, [temporaryOverrideActive, config.temporaryOverride, activeScheduledEvent, config.overrideMode]);
+  }, [governance.isEmergencyMealOverrideActive, temporaryOverrideActive, config.temporaryOverride, activeScheduledEvent, config.overrideMode]);
 
   const startTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.startTime, '00:00:00'), [activeWindow.startTime]);
   const endTimeHms = useMemo(() => normalizeTimeToHms(activeWindow.endTime, '23:00:00'), [activeWindow.endTime]);
@@ -374,6 +399,45 @@ export function useTokenLockStatus() {
         : Boolean(options && (options.isAdmin || options.role === 'admin' || options.role === 'canteen_committee' || options.role === 'central_committee'));
 
       const queriedMeal = (typeof options === 'object' && options?.mealType) ? options.mealType : null;
+
+      // Student edits to past service dates stay immutable, including during
+      // force-unlock and scheduled-unlock periods. Admins retain their audited
+      // correction path for historical records.
+      if (targetDateStr < todayIST && !isAdmin) {
+        return {
+          isLocked: true,
+          isBreakfastLocked: true,
+          isLunchLocked: true,
+          isBothLocked: true,
+          isPartiallyLocked: false,
+          isAdminOverride: false,
+          reason: 'Past Date: Cannot modify previous days.',
+          code: 'PAST',
+          isTomorrow: false,
+          isToday: false,
+          isPast: true,
+        };
+      }
+
+      // Institutional read-only mode and the self-toggle switch block student
+      // writes even when a cutoff or unlock override would otherwise open them.
+      if (!isAdmin && (governance.isReadOnlyLockdown || !governance.allowStudentSelfToggles)) {
+        return {
+          isLocked: true,
+          isBreakfastLocked: true,
+          isLunchLocked: true,
+          isBothLocked: true,
+          isPartiallyLocked: false,
+          isAdminOverride: false,
+          reason: governance.isReadOnlyLockdown
+            ? 'Institutional read-only lockdown is active.'
+            : 'Student self-service updates are disabled by administration.',
+          code: governance.isReadOnlyLockdown ? 'READ_ONLY_LOCKDOWN' : 'STUDENT_TOGGLES_DISABLED',
+          isTomorrow: targetDateStr === tomorrowIST,
+          isToday: targetDateStr === todayIST,
+          isPast: false,
+        };
+      }
 
       // 1. Emergency Lockdown or Scheduled Lock
       if (effectiveMode === 'force_locked' || effectiveMode === 'scheduled_locked') {
@@ -418,7 +482,7 @@ export function useTokenLockStatus() {
           ? (activeScheduledEvent?.reason || activeScheduledEvent?.title || 'Scheduled Unlock active.')
           : (config.temporaryOverride?.active && config.temporaryOverride.mode === 'force_unlocked'
               ? (config.temporaryOverride.reason || 'Temporary Extension active.')
-              : 'Admin Override Active: Updates unlocked for all dates.');
+              : 'Admin Override Active: Updates unlocked for today and future dates.');
 
         return {
           isLocked: false,
@@ -432,23 +496,6 @@ export function useTokenLockStatus() {
           isTomorrow: targetDateStr === tomorrowIST,
           isToday: targetDateStr === todayIST,
           isPast: targetDateStr < todayIST,
-        };
-      }
-
-      // 3. Past dates are always closed/read-only (immutable historical ledger)
-      if (targetDateStr < todayIST) {
-        return {
-          isLocked: true,
-          isBreakfastLocked: true,
-          isLunchLocked: true,
-          isBothLocked: true,
-          isPartiallyLocked: false,
-          isAdminOverride: false,
-          reason: 'Past Date: Cannot modify previous days.',
-          code: 'PAST',
-          isTomorrow: false,
-          isToday: false,
-          isPast: true,
         };
       }
 
@@ -527,7 +574,7 @@ export function useTokenLockStatus() {
                 isBothLocked: false,
                 isPartiallyLocked: false,
                 isAdminOverride: true,
-                reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)} • Admin override authority enabled.`,
+                reason: `Tomorrow's meal updation window opens at ${formatConfiguredTime(activeWindow.startTime)} • Admin override authority enabled.`,
                 code: 'ADMIN_WINDOW_OVERRIDE',
                 isTomorrow: true,
                 isToday: false,
@@ -544,7 +591,7 @@ export function useTokenLockStatus() {
               isBothLocked: true,
               isPartiallyLocked: false,
               isAdminOverride: false,
-              reason: `Tomorrow's meal updation window opens at ${formatTime12(activeWindow.startTime)}.`,
+              reason: `Tomorrow's meal updation window opens at ${formatConfiguredTime(activeWindow.startTime)}.`,
               code: 'BEFORE_WINDOW',
               isTomorrow: true,
               isToday: false,
@@ -564,44 +611,44 @@ export function useTokenLockStatus() {
           isLockedForQuery = isBfLocked;
           reasonForQuery = isBfLocked
             ? (isAdmin
-                ? `Tomorrow's breakfast cutoff passed at ${formatTime12(activeWindow.breakfastDeadlineTime)} • Admin override authority enabled.`
-                : `Tomorrow's breakfast cutoff passed at ${formatTime12(activeWindow.breakfastDeadlineTime)}. Changes are locked for kitchen prep.`)
-            : `Open for tomorrow's breakfast until cutoff at ${formatTime12(activeWindow.breakfastDeadlineTime)}.`;
+                ? `Tomorrow's breakfast cutoff passed at ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)} • Admin override authority enabled.`
+                : `Tomorrow's breakfast cutoff passed at ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}. Changes are locked for kitchen prep.`)
+            : `Open for tomorrow's breakfast until cutoff at ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}.`;
           codeForQuery = isBfLocked ? (isAdmin ? 'ADMIN_CUTOFF_OVERRIDE' : 'BREAKFAST_CUTOFF_PASSED') : 'BREAKFAST_OPEN';
         } else if (queriedMeal === 'lunch') {
           isLockedForQuery = isLuLocked;
           reasonForQuery = isLuLocked
             ? (isAdmin
-                ? `Tomorrow's lunch cutoff passed at ${formatTime12(activeWindow.lunchDeadlineTime)} • Admin override authority enabled.`
-                : `Tomorrow's lunch cutoff passed at ${formatTime12(activeWindow.lunchDeadlineTime)}. Changes are locked for kitchen prep.`)
-            : `Open for tomorrow's lunch until cutoff at ${formatTime12(activeWindow.lunchDeadlineTime)}.`;
+                ? `Tomorrow's lunch cutoff passed at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)} • Admin override authority enabled.`
+                : `Tomorrow's lunch cutoff passed at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}. Changes are locked for kitchen prep.`)
+            : `Open for tomorrow's lunch until cutoff at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}.`;
           codeForQuery = isLuLocked ? (isAdmin ? 'ADMIN_CUTOFF_OVERRIDE' : 'LUNCH_CUTOFF_PASSED') : 'LUNCH_OPEN';
         } else {
           // General date query: Locked if both are locked!
           isLockedForQuery = isBothLocked;
           if (isBothLocked) {
             reasonForQuery = isAdmin
-              ? `Tomorrow's cutoffs passed (Breakfast: ${formatTime12(activeWindow.breakfastDeadlineTime)}, Lunch: ${formatTime12(activeWindow.lunchDeadlineTime)}) • Admin override authority enabled.`
+              ? `Tomorrow's cutoffs passed (Breakfast: ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}, Lunch: ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}) • Admin override authority enabled.`
               : (activeWindow.breakfastDeadlineTime === activeWindow.lunchDeadlineTime
-                  ? `Tomorrow's cutoff passed at ${formatTime12(activeWindow.lunchDeadlineTime)}. Changes are locked for kitchen prep.`
-                  : `Tomorrow's cutoffs passed (Breakfast: ${formatTime12(activeWindow.breakfastDeadlineTime)}, Lunch: ${formatTime12(activeWindow.lunchDeadlineTime)}). Changes are locked for kitchen prep.`);
+                  ? `Tomorrow's cutoff passed at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}. Changes are locked for kitchen prep.`
+                  : `Tomorrow's cutoffs passed (Breakfast: ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}, Lunch: ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}). Changes are locked for kitchen prep.`);
             codeForQuery = isAdmin ? 'ADMIN_CUTOFF_OVERRIDE' : 'CUTOFF_PASSED';
           } else if (isPartiallyLocked) {
             if (isBfLocked) {
               reasonForQuery = isAdmin
-                ? `Tomorrow's breakfast passed cutoff at ${formatTime12(activeWindow.breakfastDeadlineTime)}; Lunch open until ${formatTime12(activeWindow.lunchDeadlineTime)} • Admin override authority enabled.`
-                : `Tomorrow's breakfast cutoff passed at ${formatTime12(activeWindow.breakfastDeadlineTime)}. Lunch updates remain open until ${formatTime12(activeWindow.lunchDeadlineTime)}.`;
+                ? `Tomorrow's breakfast passed cutoff at ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}; Lunch open until ${formatConfiguredTime(activeWindow.lunchDeadlineTime)} • Admin override authority enabled.`
+                : `Tomorrow's breakfast cutoff passed at ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}. Lunch updates remain open until ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}.`;
               codeForQuery = 'BREAKFAST_CUTOFF_PASSED_LUNCH_OPEN';
             } else {
               reasonForQuery = isAdmin
-                ? `Tomorrow's lunch passed cutoff at ${formatTime12(activeWindow.lunchDeadlineTime)}; Breakfast open until ${formatTime12(activeWindow.breakfastDeadlineTime)} • Admin override authority enabled.`
-                : `Tomorrow's lunch cutoff passed at ${formatTime12(activeWindow.lunchDeadlineTime)}. Breakfast updates remain open until ${formatTime12(activeWindow.breakfastDeadlineTime)}.`;
+                ? `Tomorrow's lunch passed cutoff at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}; Breakfast open until ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)} • Admin override authority enabled.`
+                : `Tomorrow's lunch cutoff passed at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}. Breakfast updates remain open until ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}.`;
               codeForQuery = 'LUNCH_CUTOFF_PASSED_BREAKFAST_OPEN';
             }
           } else {
             reasonForQuery = (activeWindow.breakfastDeadlineTime === activeWindow.lunchDeadlineTime)
-              ? `Open for tomorrow until cutoff at ${formatTime12(activeWindow.lunchDeadlineTime)}.`
-              : `Open for tomorrow until cutoffs (Breakfast: ${formatTime12(activeWindow.breakfastDeadlineTime)}, Lunch: ${formatTime12(activeWindow.lunchDeadlineTime)}).`;
+              ? `Open for tomorrow until cutoff at ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}.`
+              : `Open for tomorrow until cutoffs (Breakfast: ${formatConfiguredTime(activeWindow.breakfastDeadlineTime)}, Lunch: ${formatConfiguredTime(activeWindow.lunchDeadlineTime)}).`;
             codeForQuery = 'TOMORROW_OPEN';
           }
         }
@@ -612,8 +659,8 @@ export function useTokenLockStatus() {
           isLunchLocked: isLuLocked,
           isBothLocked,
           isPartiallyLocked,
-          breakfastCutoffDeadline: formatTime12(activeWindow.breakfastDeadlineTime),
-          lunchCutoffDeadline: formatTime12(activeWindow.lunchDeadlineTime),
+          breakfastCutoffDeadline: formatConfiguredTime(activeWindow.breakfastDeadlineTime),
+          lunchCutoffDeadline: formatConfiguredTime(activeWindow.lunchDeadlineTime),
           rawBreakfastDeadline: activeWindow.breakfastDeadlineTime,
           rawLunchDeadline: activeWindow.lunchDeadlineTime,
           isAdminOverride: isAdmin,
@@ -643,7 +690,7 @@ export function useTokenLockStatus() {
         isPast: false,
       };
     },
-    [effectiveMode, todayIST, tomorrowIST, timeHms, startTimeHms, breakfastEndTimeHms, lunchEndTimeHms, activeWindow, isSynced, isDeviceDesynced, activeScheduledEvent, config.temporaryOverride]
+    [effectiveMode, todayIST, tomorrowIST, timeHms, startTimeHms, breakfastEndTimeHms, lunchEndTimeHms, activeWindow, isSynced, isDeviceDesynced, activeScheduledEvent, config.temporaryOverride, formatConfiguredTime, governance.isReadOnlyLockdown, governance.allowStudentSelfToggles]
   );
 
   // Quick state for today and tomorrow
@@ -681,30 +728,30 @@ export function useTokenLockStatus() {
       if (config.temporaryOverride?.active && config.temporaryOverride.mode === 'force_unlocked') {
         return `Timed Extension Active (${config.temporaryOverride.reason || 'Admin Extension'})`;
       }
-      return 'Admin Override (All Dates Unlocked)';
+      return 'Admin Override (Today & Future Unlocked)';
     }
     if (effectiveMode === 'scheduled_unlocked') {
       return `Scheduled Open: ${activeScheduledEvent?.title || 'Advance Window'}`;
     }
     if (isTomorrowLocked) {
       if (activeWindow.restrictOpenTime && timeHms && timeHms < startTimeHms) {
-        return `Next Day Opens at ${formatTime12(activeWindow.startTime, false)}`;
+        return `Next Day Opens at ${formatConfiguredTime(activeWindow.startTime, false)}`;
       }
       return (activeWindow.breakfastDeadlineTime === activeWindow.lunchDeadlineTime)
-        ? `Next Day Locked (${formatTime12(activeWindow.lunchDeadlineTime, false)} Cutoff)`
-        : `Next Day Locked (Bf: ${formatTime12(activeWindow.breakfastDeadlineTime, false)}, Lunch: ${formatTime12(activeWindow.lunchDeadlineTime, false)})`;
+        ? `Next Day Locked (${formatConfiguredTime(activeWindow.lunchDeadlineTime, false)} Cutoff)`
+        : `Next Day Locked (Bf: ${formatConfiguredTime(activeWindow.breakfastDeadlineTime, false)}, Lunch: ${formatConfiguredTime(activeWindow.lunchDeadlineTime, false)})`;
     }
     if (isTomorrowBreakfastLocked && !isTomorrowLunchLocked) {
-      return `Next Day: Lunch Open until ${formatTime12(activeWindow.lunchDeadlineTime, false)} (Bf Locked at ${formatTime12(activeWindow.breakfastDeadlineTime, false)})`;
+      return `Next Day: Lunch Open until ${formatConfiguredTime(activeWindow.lunchDeadlineTime, false)} (Bf Locked at ${formatConfiguredTime(activeWindow.breakfastDeadlineTime, false)})`;
     }
     if (!isTomorrowBreakfastLocked && isTomorrowLunchLocked) {
-      return `Next Day: Breakfast Open until ${formatTime12(activeWindow.breakfastDeadlineTime, false)} (Lunch Locked at ${formatTime12(activeWindow.lunchDeadlineTime, false)})`;
+      return `Next Day: Breakfast Open until ${formatConfiguredTime(activeWindow.breakfastDeadlineTime, false)} (Lunch Locked at ${formatConfiguredTime(activeWindow.lunchDeadlineTime, false)})`;
     }
     if (activeWindow.breakfastDeadlineTime === activeWindow.lunchDeadlineTime) {
-      return `Next Day Open until ${formatTime12(activeWindow.lunchDeadlineTime, false)}`;
+      return `Next Day Open until ${formatConfiguredTime(activeWindow.lunchDeadlineTime, false)}`;
     }
-    return `Next Day Open (Bf: ${formatTime12(activeWindow.breakfastDeadlineTime, false)}, Lu: ${formatTime12(activeWindow.lunchDeadlineTime, false)})`;
-  }, [effectiveMode, isTomorrowLocked, isTomorrowBreakfastLocked, isTomorrowLunchLocked, activeWindow, timeHms, startTimeHms, activeScheduledEvent, config.temporaryOverride]);
+    return `Next Day Open (Bf: ${formatConfiguredTime(activeWindow.breakfastDeadlineTime, false)}, Lu: ${formatConfiguredTime(activeWindow.lunchDeadlineTime, false)})`;
+  }, [effectiveMode, isTomorrowLocked, isTomorrowBreakfastLocked, isTomorrowLunchLocked, activeWindow, timeHms, startTimeHms, activeScheduledEvent, config.temporaryOverride, formatConfiguredTime]);
 
   // Persistence helper to update configuration in Firestore
   const saveLockConfig = useCallback(async (updates) => {
@@ -758,20 +805,20 @@ export function useTokenLockStatus() {
 
     // Cutoff Deadline Window Details
     activeWindow,
-    startTime: formatTime12(activeWindow.startTime),
-    endTime: formatTime12(activeWindow.endTime),
+    startTime: formatConfiguredTime(activeWindow.startTime),
+    endTime: formatConfiguredTime(activeWindow.endTime),
     rawStartTime: activeWindow.startTime,
     rawEndTime: activeWindow.endTime,
-    cutoffDeadline: formatTime12(activeWindow.endTime),
-    breakfastCutoffDeadline: formatTime12(activeWindow.breakfastDeadlineTime),
-    lunchCutoffDeadline: formatTime12(activeWindow.lunchDeadlineTime),
+    cutoffDeadline: formatConfiguredTime(activeWindow.endTime),
+    breakfastCutoffDeadline: formatConfiguredTime(activeWindow.breakfastDeadlineTime),
+    lunchCutoffDeadline: formatConfiguredTime(activeWindow.lunchDeadlineTime),
     rawBreakfastDeadlineTime: activeWindow.breakfastDeadlineTime,
     rawLunchDeadlineTime: activeWindow.lunchDeadlineTime,
     currentTime: timeHms,
 
     // Dedicated Board Today-Tomorrow Display Transition Details
     boardSwitch: config.boardSwitch,
-    boardSwitchTime: formatTime12(activeBoardSwitchTime),
+    boardSwitchTime: formatConfiguredTime(activeBoardSwitchTime),
     rawBoardSwitchTime: activeBoardSwitchTime,
     isPastBoardSwitch,
     isPastBoardSwitchTime: isPastBoardSwitch,

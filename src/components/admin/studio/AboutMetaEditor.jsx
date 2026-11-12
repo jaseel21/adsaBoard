@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Save,
@@ -25,6 +25,17 @@ export default function AboutMetaEditor({ meta, actor }) {
     adsaStory: { ...(meta?.adsaStory || {}) },
     tboardStory: { ...(meta?.tboardStory || {}) },
   });
+
+  useEffect(() => {
+    if (!meta) return;
+    setFormData({
+      hero: { ...(meta.hero || {}) },
+      stats: meta.stats || [],
+      darsEthos: { ...(meta.darsEthos || {}) },
+      adsaStory: { ...(meta.adsaStory || {}) },
+      tboardStory: { ...(meta.tboardStory || {}) },
+    });
+  }, [meta]);
 
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -280,4 +291,3 @@ export default function AboutMetaEditor({ meta, actor }) {
     </form>
   );
 }
-

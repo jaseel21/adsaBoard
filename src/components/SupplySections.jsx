@@ -40,6 +40,7 @@ import {
   MANIFEST_STATUS,
 } from '../utils/manifestPrintService';
 import { formatAuditTime } from '../utils/auditLogger';
+import { formatISTDateTime } from '../utils/time';
 import AdvancedExportModal from './export/AdvancedExportModal';
 import UniversalDocumentModal from './export/UniversalDocumentModal';
 import ExportActionMenu from './export/ExportActionMenu';
@@ -375,7 +376,7 @@ export default function SupplySections({ defaultMeal }) {
         statusFilter: 'canceled_only',
         revision: targetRevision,
         printedByName: user?.displayName || user?.email || 'Admin',
-        printedAt: new Date().toLocaleTimeString('en-IN'),
+        printedAt: formatISTDateTime(new Date()),
         deltaNotes,
         isReprint: isDuplicateReprint,
       });

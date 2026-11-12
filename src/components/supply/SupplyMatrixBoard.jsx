@@ -17,6 +17,7 @@ import {
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { getEffectiveStudentMealStatus } from '../../utils/studentExceptionService';
+import { formatISTDateTime } from '../../utils/time';
 
 export default function SupplyMatrixBoard({
   documents = [],
@@ -454,7 +455,7 @@ export default function SupplyMatrixBoard({
                 <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 text-xs text-purple-900 dark:text-purple-200 space-y-1">
                   <div>
                     <strong>Served Time:</strong>{' '}
-                    {new Date(selectedTokenDetail.servedRecord.servedAtIso).toLocaleTimeString('en-IN')}
+                    {formatISTDateTime(selectedTokenDetail.servedRecord.servedAtIso)}
                   </div>
                   <div>
                     <strong>Served By:</strong>{' '}

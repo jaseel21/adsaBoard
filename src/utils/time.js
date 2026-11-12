@@ -35,7 +35,47 @@ const syncState = {
   error: null,
 };
 
-import { safeSessionStorage } from './storage';
+import { safeSessionStorage, safeLocalStorage } from './storage';
+
+const PREFERENCES_STORAGE_KEY = 'adsatboard-app-preferences';
+
+/** Resolve an explicit clock format or the browser's system locale preference. */
+export function resolveClockFormat(format = 'system') {
+  if (format === '12h' || format === '24h') return format;
+
+  const formatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric' });
+  const options = formatter.resolvedOptions();
+  const hourCycle = options.hourCycle || (options.hour12 ? 'h12' : 'h23');
+  return hourCycle === 'h11' || hourCycle === 'h12' ? '12h' : '24h';
+}
+
+/** Read the app's saved format, falling back to the system default. */
+export function getPreferredClockFormat() {
+  try {
+    const saved = safeLocalStorage.getJSON(PREFERENCES_STORAGE_KEY, null);
+    const format = saved?.clockFormat;
+    return format === '12h' || format === '24h' ? format : 'system';
+  } catch (_) {
+    return 'system';
+  }
+}
+
+/** Format a stored or live timestamp in IST using the app's clock preference. */
+export function formatISTDateTime(value, format = getPreferredClockFormat(), includeSeconds = false) {
+  if (value == null) return '';
+  const date = value && typeof value.toDate === 'function'
+    ? value.toDate()
+    : (value instanceof Date ? value : new Date(value));
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(includeSeconds ? { second: '2-digit' } : {}),
+    hour12: resolveClockFormat(format) === '12h',
+  }).format(date);
+}
 
 const listeners = new Set();
 let isSyncing = false;
@@ -439,7 +479,7 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
    * Formats current IST time according to requested format ('12h' or '24h')
    */
   const formatTime = useCallback(
-    (format = '12h', includeSeconds = false) => {
+    (format = getPreferredClockFormat(), includeSeconds = false) => {
       return formatISTTime(istParts, format, includeSeconds);
     },
     [istParts]
@@ -475,7 +515,7 @@ export function useWorldTime(timezone = 'Asia/Kolkata') {
  * @param {boolean} includeSeconds - Whether to include seconds (:ss)
  * @returns {Object} { hours, minutes, seconds, period, formattedString }
  */
-export function formatISTTime(istParts, format = '12h', includeSeconds = false) {
+export function formatISTTime(istParts, format = getPreferredClockFormat(), includeSeconds = false) {
   if (!istParts) {
     return {
       hours: '--',
@@ -489,7 +529,7 @@ export function formatISTTime(istParts, format = '12h', includeSeconds = false) 
   const mm = String(istParts.minutes).padStart(2, '0');
   const ss = String(istParts.seconds).padStart(2, '0');
 
-  if (format === '24h') {
+  if (resolveClockFormat(format) === '24h') {
     const hh24 = String(istParts.hours24).padStart(2, '0');
     return {
       hours: hh24,

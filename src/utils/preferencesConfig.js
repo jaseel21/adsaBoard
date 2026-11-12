@@ -21,7 +21,7 @@ import { ROLES, hasRole } from './rbac';
 export const DEFAULT_PREFERENCES = {
   // General
   language: 'system', // 'system' | 'en' | 'ml'
-  clockFormat: '12h', // '12h' | '24h'
+  clockFormat: 'system', // 'system' | '12h' | '24h'
   showHijriDate: true,
   hijriDateOffset: 0, // -2 | -1 | 0 | 1 | 2 (days offset for local Hilal moon sighting)
   defaultLandingRoute: '/', // '/', '/menu', '/student', '/kitchen', '/admin'

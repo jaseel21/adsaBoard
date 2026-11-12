@@ -3,6 +3,7 @@ import { Globe, Clock, Compass, Waves, Check, Moon, Sparkles, Calendar } from 'l
 import { useLanguage } from '../../../store/LanguageContext';
 import { useFeedback } from '../../../utils/useFeedback';
 import { getCalibratedHijriDate } from '../../../utils/hijriCalendar';
+import { resolveClockFormat } from '../../../utils/time';
 
 export default function GeneralSection({ preferences, setPreference }) {
   const { language, t } = useLanguage();
@@ -102,29 +103,25 @@ export default function GeneralSection({ preferences, setPreference }) {
             <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
               {language === 'ml' ? 'ക്ലോക്ക് ശൈലി' : 'Clock Display'}:
             </span>
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
-              <button
-                type="button"
-                onClick={() => handleClockToggle('12h')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                  preferences.clockFormat === '12h'
-                    ? 'bg-white dark:bg-[#1c2824] text-emerald-600 dark:text-emerald-400 shadow-xs ring-1 ring-emerald-500/20'
-                    : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-                }`}
-              >
-                12h (AM/PM)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleClockToggle('24h')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                  preferences.clockFormat === '24h'
-                    ? 'bg-white dark:bg-[#1c2824] text-emerald-600 dark:text-emerald-400 shadow-xs ring-1 ring-emerald-500/20'
-                    : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-                }`}
-              >
-                24h (Military)
-              </button>
+            <div className="grid grid-cols-3 p-1 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200/70 dark:border-white/10">
+              {[
+                { id: 'system', label: 'System default' },
+                { id: '12h', label: '12h (AM/PM)' },
+                { id: '24h', label: '24h' },
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleClockToggle(option.id)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                    preferences.clockFormat === option.id
+                      ? 'bg-white dark:bg-[#1c2824] text-emerald-600 dark:text-emerald-400 shadow-xs ring-1 ring-emerald-500/20'
+                      : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -132,7 +129,7 @@ export default function GeneralSection({ preferences, setPreference }) {
           <div className="px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-right">
             <span className="text-[10px] text-gray-400 block font-semibold">Active Preview</span>
             <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-              {preferences.clockFormat === '24h' ? '16:45:00' : '04:45:00 PM'}
+              {resolveClockFormat(preferences.clockFormat) === '24h' ? '16:45:00' : '04:45:00 PM'}
             </span>
           </div>
         </div>

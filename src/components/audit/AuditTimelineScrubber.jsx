@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, RotateCcw } from 'lucide-react';
+import { formatISTDateTime } from '../../utils/time';
 
 /**
  * Builds time buckets (e.g. 12 intervals over recent period)
@@ -18,7 +19,7 @@ function computeTimeBuckets(logs = [], bucketCount = 12) {
     const bucketStart = startMs + i * bucketDuration;
     const bucketEnd = bucketStart + bucketDuration;
     const dateObj = new Date(bucketStart);
-    const label = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    const label = formatISTDateTime(dateObj);
 
     return {
       index: i,

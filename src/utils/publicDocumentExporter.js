@@ -8,6 +8,7 @@ import {
   formatFriendlyDate,
 } from './studentExceptionService';
 import { getCachedCanteenConfig } from './canteenConfigService';
+import { formatISTDateTime } from './time';
 
 const BATCH_NAMES = ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4', 'Batch 5', 'Batch 6', 'Batch 7'];
 
@@ -296,7 +297,7 @@ export function generateSinglePageCombinedManifestDoc({
   const adminLabel = printedByName ? `  •  Admin: ${printedByName}` : '';
   doc.setTextColor(200, 235, 225);
   doc.text(
-    `Service Date: ${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()})  •  Grouping: ${catLabel}  •  Sort: ${sortLabel}${adminLabel}  •  Printed: ${printedAt || new Date().toLocaleTimeString('en-IN')}`,
+    `Service Date: ${targetDateIST} (${(dayFull || dayKey || '').toUpperCase()})  •  Grouping: ${catLabel}  •  Sort: ${sortLabel}${adminLabel}  •  Printed: ${printedAt || formatISTDateTime(new Date())}`,
     8,
     12.5
   );

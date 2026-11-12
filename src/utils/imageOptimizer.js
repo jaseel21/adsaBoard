@@ -10,6 +10,7 @@ export async function optimizeProfilePhoto(fileOrBlob, options = {}) {
     maxHeight = 400,
     quality = 0.85,
     cropSquare = true,
+    maxSizeKb = null,
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -27,11 +28,6 @@ export async function optimizeProfilePhoto(fileOrBlob, options = {}) {
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            return reject(new Error('Canvas 2D context unavailable.'));
-          }
 
           let srcX = 0;
           let srcY = 0;
@@ -49,45 +45,53 @@ export async function optimizeProfilePhoto(fileOrBlob, options = {}) {
             }
           }
 
-          canvas.width = Math.min(maxWidth, srcWidth);
-          canvas.height = Math.min(maxHeight, srcHeight);
+          let outputWidth = Math.min(maxWidth, srcWidth);
+          let outputHeight = Math.min(maxHeight, srcHeight);
+          let dataUrl;
+          let format;
+          let sizeKb;
+          let outputQuality = quality;
 
-          // High-quality bicubic-style image smoothing
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
+          // Retry with lower quality and smaller dimensions when a caller needs
+          // a bounded payload (About photos are stored in Firestore documents).
+          do {
+            canvas.width = outputWidth;
+            canvas.height = outputHeight;
+            const renderContext = canvas.getContext('2d');
+            if (!renderContext) {
+              return reject(new Error('Canvas 2D context unavailable.'));
+            }
+            renderContext.imageSmoothingEnabled = true;
+            renderContext.imageSmoothingQuality = 'high';
+            renderContext.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, outputWidth, outputHeight);
 
-          // Draw cropped & scaled image
-          ctx.drawImage(
-            img,
-            srcX,
-            srcY,
-            srcWidth,
-            srcHeight,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
+            format = 'image/webp';
+            dataUrl = canvas.toDataURL(format, outputQuality);
+            if (!dataUrl.startsWith('data:image/webp')) {
+              format = 'image/jpeg';
+              dataUrl = canvas.toDataURL(format, outputQuality);
+            }
 
-          // Try exporting to WebP first, fallback to JPEG
-          let format = 'image/webp';
-          let dataUrl = canvas.toDataURL(format, quality);
+            const base64Payload = dataUrl.slice(dataUrl.indexOf(',') + 1);
+            sizeKb = Math.ceil((base64Payload.length * 3) / 4 / 1024);
+            if (!maxSizeKb || sizeKb <= maxSizeKb) break;
 
-          // Check if browser actually supported WebP
-          if (!dataUrl.startsWith('data:image/webp')) {
-            format = 'image/jpeg';
-            dataUrl = canvas.toDataURL(format, quality);
+            if (outputQuality > 0.45) {
+              outputQuality = Math.max(0.45, outputQuality - 0.1);
+            } else {
+              outputWidth = Math.max(96, Math.floor(outputWidth * 0.85));
+              outputHeight = Math.max(96, Math.floor(outputHeight * 0.85));
+            }
+          } while (outputWidth > 96 || outputHeight > 96);
+
+          if (maxSizeKb && sizeKb > maxSizeKb) {
+            return reject(new Error(`Image could not be compressed below ${maxSizeKb} KB.`));
           }
-
-          // Calculate approximate payload size in KB
-          const stringLength = dataUrl.length - 'data:image/webp;base64,'.length;
-          const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.5624896334383;
-          const sizeKb = Math.round(sizeInBytes / 1024);
 
           resolve({
             dataUrl,
-            width: canvas.width,
-            height: canvas.height,
+            width: outputWidth,
+            height: outputHeight,
             sizeKb,
             format,
             originalSizeKb: Math.round((fileOrBlob.size || 0) / 1024),

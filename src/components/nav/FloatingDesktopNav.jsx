@@ -390,7 +390,7 @@ export default function FloatingDesktopNav({
           >
             <span className="font-mono font-bold tracking-tight">
               {formatTime
-                ? formatTime(preferences?.clockFormat || '12h', false).formattedString
+                ? formatTime(preferences?.clockFormat || 'system', false).formattedString
                 : timeParts
                 ? `${timeParts.hours}:${timeParts.minutes} ${timeParts.period}`
                 : '--:--'}

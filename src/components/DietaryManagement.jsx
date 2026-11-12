@@ -48,6 +48,7 @@ import { dialog } from '../utils/dialog';
 import { useLanguage } from '../store/LanguageContext';
 import { useFeedback } from '../utils/useFeedback';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
+import { formatISTDateTime } from '../utils/time';
 import { AuthContext } from '../store/AuthContext';
 import {
   subscribeAllDietaryRequests,
@@ -739,7 +740,7 @@ export default function DietaryManagement() {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(
-      `Generated on: ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} IST`,
+      `Generated on: ${new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })} ${formatISTDateTime(new Date())} IST`,
       14,
       25
     );

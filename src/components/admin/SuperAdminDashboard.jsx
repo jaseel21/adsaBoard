@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatISTDateTime } from '../../utils/time';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
@@ -907,7 +908,7 @@ export default function SuperAdminDashboard() {
                   </div>
                 </div>
                 <span className="text-[10px] text-gray-400 shrink-0 font-mono ml-2">
-                  {log.timestamp ? new Date(log.timestamp.toDate ? log.timestamp.toDate() : log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently'}
+                  {log.timestamp ? formatISTDateTime(log.timestamp) : 'recently'}
                 </span>
               </div>
             ))}

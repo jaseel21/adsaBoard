@@ -761,7 +761,7 @@ export const translations = {
 
     // Admin & Token Locking (Admin.jsx & TokenLockManagerModal.jsx)
     tokenCutoffAndLocking: "Token Cutoff & Locking",
-    boardIsUnlocked: "Board is UNLOCKED (Open 24/7 for all dates)",
+    boardIsUnlocked: "Board is UNLOCKED (Today and future dates)",
     boardIsFrozen: "EMERGENCY FREEZE (All updates suspended)",
     scheduleActiveStatus: "Schedule Active ({start} – {end}) • Tomorrow is {status}",
     open: "Open",
@@ -906,7 +906,7 @@ export const translations = {
     autoSchedule: "Automatic Schedule",
     autoScheduleDesc: "Strictly enforces daily time window. Locks tomorrow after cutoff, keeps future dates open.",
     forceUnlocked247: "Force Unlocked (24/7)",
-    forceUnlockedDesc: "Emergency override. Bypasses all cutoff hours; students can update any date anytime.",
+    forceUnlockedDesc: "Emergency override. Bypasses cutoffs for today and future dates; past service dates remain locked.",
     emergencyFreeze: "Emergency Freeze",
     emergencyFreezeDesc: "Complete lockdown. Pauses student login and prohibits all edits across all dates.",
     dynamicDailyCutoffWindow: "2. Dynamic Daily Cutoff Window",
@@ -2518,7 +2518,7 @@ export const translations = {
     autoSchedule: "ഓട്ടോമാറ്റിക് ഷെഡ്യൂൾ",
     autoScheduleDesc: "നിശ്ചിത സമയപരിധി കൃത്യമായി പാലിക്കുന്നു. കട്ട്ഓഫിന് ശേഷം നാളത്തെ തീയതി ലോക്കാകുകയും ഭാവി തീയതികൾ ലഭ്യമാകുകയും ചെയ്യും.",
     forceUnlocked247: "ഫോഴ്സ് അൺലോക്ക് (24/7)",
-    forceUnlockedDesc: "അടിയന്തര അൺലോക്ക്. എല്ലാ സമയപരിധികളും ഒഴിവാക്കി ഏത് സമയത്തും ഏത് തീയതിയും മാറ്റാം.",
+    forceUnlockedDesc: "അടിയന്തര അൺലോക്ക്. ഇന്നത്തെയും ഭാവി സർവീസ് തീയതികളുടെയും സമയപരിധി ഒഴിവാക്കും; കഴിഞ്ഞ തീയതികൾ ലോക്ക് ചെയ്തുതന്നെ തുടരും.",
     emergencyFreeze: "അടിയന്തര ഫ്രീസ്",
     emergencyFreezeDesc: "മുഴുവൻ ലോക്ക്ഡൗൺ. സ്റ്റുഡന്റ് ലോഗിനും എല്ലാ മാറ്റങ്ങളും താൽക്കാലികമായി നിർത്തലാക്കുന്നു.",
     dynamicDailyCutoffWindow: "2. പ്രതിദിന കട്ട്ഓഫ് സമയപരിധി",
@@ -3225,4 +3225,3 @@ export const translations = {
     supplyStatusOff: "വിതരണമില്ല",
   }
 };
-

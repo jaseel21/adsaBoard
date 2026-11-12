@@ -1,5 +1,6 @@
 import firebase from '../firebase/config';
 import { safeSessionStorage, safeLocalStorage } from './storage';
+import { formatISTDateTime } from './time';
 
 /**
  * ADSA T-Board Centralized Audit Logging Service
@@ -294,13 +295,12 @@ export function formatAuditTime(isoStr, includeDate = true) {
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
   if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
 
-  const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-  const timeFormatted = date.toLocaleTimeString('en-US', timeOptions);
+  const timeFormatted = formatISTDateTime(date);
 
   if (!includeDate) return timeFormatted;
 
-  const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-  const dateFormatted = date.toLocaleDateString('en-US', dateOptions);
+  const dateOptions = { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' };
+  const dateFormatted = date.toLocaleDateString(undefined, dateOptions);
 
   return `${dateFormatted} at ${timeFormatted}`;
 }

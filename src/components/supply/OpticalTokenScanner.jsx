@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
+import { formatISTDateTime } from '../../utils/time';
 
 export default function OpticalTokenScanner({
   onScanToken,
@@ -69,7 +70,7 @@ export default function OpticalTokenScanner({
     (tokenNo, rawText) => {
       if (!tokenNo) return;
       playScanBeep();
-      setLastScannedRaw({ tokenNo, rawText, time: new Date().toLocaleTimeString() });
+      setLastScannedRaw({ tokenNo, rawText, time: formatISTDateTime(new Date()) });
       onScanToken(tokenNo);
     },
     [onScanToken, playScanBeep]

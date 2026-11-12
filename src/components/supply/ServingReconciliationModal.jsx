@@ -15,6 +15,7 @@ import {
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useFeedback } from '../../utils/useFeedback';
+import { formatISTDateTime } from '../../utils/time';
 
 export default function ServingReconciliationModal({
   isOpen,
@@ -61,7 +62,7 @@ export default function ServingReconciliationModal({
     doc.setFontSize(12);
     doc.setTextColor(80, 80, 80);
     doc.text(`Official Dining Service Reconciliation Report • ${mealLabel}`, 14, 28);
-    doc.text(`Service Date: ${targetDateIST} | Generated: ${new Date().toLocaleTimeString('en-IN')}`, 14, 34);
+    doc.text(`Service Date: ${targetDateIST} | Generated: ${formatISTDateTime(new Date())} IST`, 14, 34);
 
     // Summary KPI Table
     doc.autoTable({

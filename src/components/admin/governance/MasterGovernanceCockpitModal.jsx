@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   X,
   Sliders,
-  DollarSign,
   Info,
   ShieldCheck,
 } from 'lucide-react';
@@ -25,9 +24,11 @@ import { soundEngine } from '../../../utils/soundEffects';
 import { hapticEngine } from '../../../utils/haptics';
 import { useLanguage } from '../../../store/LanguageContext';
 import { dialog } from '../../../utils/dialog';
+import { useTokenLockStatus } from '../../../utils/useTokenLockStatus';
 
 export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
   const { t } = useLanguage();
+  const { config: lockConfig, saveLockConfig, loadingConfig: loadingLockConfig } = useTokenLockStatus();
   const {
     governance,
     loadingGovernance,
@@ -39,9 +40,15 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
     toggleMaintenance,
     toggleReadOnly,
     toggleEmergencyOverride,
-    updateMealWindow,
     updateSettings,
   } = useMasterGovernance();
+
+  const breakfastCutoff = lockConfig.cutoff?.hasBreakfastDeadline
+    ? lockConfig.cutoff.breakfastDeadlineTime
+    : (governance.mealWindows?.breakfast?.cutoffTime || lockConfig.window?.breakfastEndTime || '23:00');
+  const lunchCutoff = lockConfig.cutoff?.hasLunchDeadline
+    ? lockConfig.cutoff.lunchDeadlineTime
+    : (governance.mealWindows?.lunch?.cutoffTime || lockConfig.window?.lunchEndTime || '23:00');
 
   // Local editing states
   const [activeTab, setActiveTab] = useState('switches'); // 'switches' | 'schedules' | 'layout'
@@ -50,19 +57,36 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
   const [saving, setSaving] = useState(false);
 
   // Meal windows local states
-  const [breakfastConfig, setBreakfastConfig] = useState(governance.mealWindows?.breakfast || {});
-  const [lunchConfig, setLunchConfig] = useState(governance.mealWindows?.lunch || {});
+  const [breakfastConfig, setBreakfastConfig] = useState({
+    ...(governance.mealWindows?.breakfast || {}),
+    cutoffTime: breakfastCutoff,
+  });
+  const [lunchConfig, setLunchConfig] = useState({
+    ...(governance.mealWindows?.lunch || {}),
+    cutoffTime: lunchCutoff,
+  });
   const [chunkSize, setChunkSize] = useState(governance.sectionChunkSize || 25);
+  const [scheduleDraftDirty, setScheduleDraftDirty] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !scheduleDraftDirty && !loadingLockConfig && !loadingGovernance) {
       setLocalMsg(maintenanceMessage || '');
       setLocalOverrideNote(emergencyMealOverrideNote || '');
-      setBreakfastConfig(governance.mealWindows?.breakfast || {});
-      setLunchConfig(governance.mealWindows?.lunch || {});
+      setBreakfastConfig({
+        ...(governance.mealWindows?.breakfast || {}),
+        cutoffTime: breakfastCutoff,
+      });
+      setLunchConfig({
+        ...(governance.mealWindows?.lunch || {}),
+        cutoffTime: lunchCutoff,
+      });
       setChunkSize(governance.sectionChunkSize || 25);
     }
-  }, [isOpen, governance, maintenanceMessage, emergencyMealOverrideNote]);
+  }, [isOpen, governance, lockConfig, breakfastCutoff, lunchCutoff, maintenanceMessage, emergencyMealOverrideNote, scheduleDraftDirty, loadingLockConfig, loadingGovernance]);
+
+  useEffect(() => {
+    if (!isOpen) setScheduleDraftDirty(false);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -153,9 +177,37 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
     hapticEngine.mediumTick();
     setSaving(true);
     try {
-      await updateMealWindow('breakfast', breakfastConfig);
-      await updateMealWindow('lunch', lunchConfig);
+      if (loadingLockConfig || loadingGovernance) {
+        throw new Error('Settings are still loading. Wait a moment, then save again.');
+      }
+      const breakfastDeadline = breakfastConfig.cutoffTime || '23:00';
+      const lunchDeadline = lunchConfig.cutoffTime || '23:00';
+      const legacyDeadline = breakfastDeadline > lunchDeadline ? breakfastDeadline : lunchDeadline;
+      const lockSave = await saveLockConfig({
+        cutoff: {
+          deadlineTime: legacyDeadline,
+          breakfastDeadlineTime: breakfastDeadline,
+          lunchDeadlineTime: lunchDeadline,
+          openTime: lockConfig.cutoff?.openTime || '00:00',
+          restrictOpenTime: Boolean(lockConfig.cutoff?.restrictOpenTime),
+          timezone: 'Asia/Kolkata',
+        },
+        window: {
+          startTime: lockConfig.window?.startTime || '00:00',
+          endTime: legacyDeadline,
+          breakfastEndTime: breakfastDeadline,
+          lunchEndTime: lunchDeadline,
+          timezone: 'Asia/Kolkata',
+        },
+      });
+      if (!lockSave.success) throw lockSave.error || new Error('Could not save token cutoff settings.');
+
       await updateSettings({
+        mealWindows: {
+          ...(governance.mealWindows || {}),
+          breakfast: Object.fromEntries(Object.entries(breakfastConfig).filter(([key]) => key !== 'fineForLateCancel')),
+          lunch: Object.fromEntries(Object.entries(lunchConfig).filter(([key]) => key !== 'fineForLateCancel')),
+        },
         sectionChunkSize: Number(chunkSize) || 25,
         maintenanceMessage: localMsg,
         emergencyMealOverrideNote: localOverrideNote,
@@ -244,7 +296,7 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            Meal Cutoffs & Fines
+            Meal Cutoffs & Service Times
           </button>
           <button
             type="button"
@@ -324,7 +376,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                   <input
                     type="text"
                     value={localMsg}
-                    onChange={(e) => setLocalMsg(e.target.value)}
+                    onChange={(e) => {
+                      setScheduleDraftDirty(true);
+                      setLocalMsg(e.target.value);
+                    }}
                     placeholder="Enter broadcast reason for students..."
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
@@ -442,7 +497,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                   <input
                     type="text"
                     value={localOverrideNote}
-                    onChange={(e) => setLocalOverrideNote(e.target.value)}
+                    onChange={(e) => {
+                      setScheduleDraftDirty(true);
+                      setLocalOverrideNote(e.target.value);
+                    }}
                     placeholder="e.g. Special Eid Banquet / Exam Night Leniency"
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
@@ -451,7 +509,7 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* TAB 2: MEAL CUTOFFS & FINES */}
+          {/* TAB 2: MEAL CUTOFFS & SERVICE TIMES */}
           {activeTab === 'schedules' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Breakfast Config Card */}
@@ -467,7 +525,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     <input
                       type="time"
                       value={breakfastConfig.servingStartTime || '07:00'}
-                      onChange={(e) => setBreakfastConfig({ ...breakfastConfig, servingStartTime: e.target.value })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setBreakfastConfig({ ...breakfastConfig, servingStartTime: e.target.value });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -476,7 +537,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     <input
                       type="time"
                       value={breakfastConfig.servingEndTime || '09:00'}
-                      onChange={(e) => setBreakfastConfig({ ...breakfastConfig, servingEndTime: e.target.value })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setBreakfastConfig({ ...breakfastConfig, servingEndTime: e.target.value });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -487,8 +551,11 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Lock Cutoff (IST)</label>
                     <input
                       type="time"
-                      value={breakfastConfig.cutoffTime || '21:00'}
-                      onChange={(e) => setBreakfastConfig({ ...breakfastConfig, cutoffTime: e.target.value })}
+                      value={breakfastConfig.cutoffTime || '23:00'}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setBreakfastConfig({ ...breakfastConfig, cutoffTime: e.target.value });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -499,28 +566,25 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                       min="0"
                       max="60"
                       value={breakfastConfig.graceMinutes ?? 15}
-                      onChange={(e) => setBreakfastConfig({ ...breakfastConfig, graceMinutes: Number(e.target.value) })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setBreakfastConfig({ ...breakfastConfig, graceMinutes: Number(e.target.value) });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200 dark:border-white/5">
+                <div className="grid grid-cols-1 gap-3 pt-2 border-t border-gray-200 dark:border-white/5">
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Meal Cost (₹)</label>
                     <input
                       type="number"
                       value={breakfastConfig.costPerMeal ?? 35}
-                      onChange={(e) => setBreakfastConfig({ ...breakfastConfig, costPerMeal: Number(e.target.value) })}
-                      className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Late Cancel Fine (₹)</label>
-                    <input
-                      type="number"
-                      value={breakfastConfig.fineForLateCancel ?? 15}
-                      onChange={(e) => setBreakfastConfig({ ...breakfastConfig, fineForLateCancel: Number(e.target.value) })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setBreakfastConfig({ ...breakfastConfig, costPerMeal: Number(e.target.value) });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -540,7 +604,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     <input
                       type="time"
                       value={lunchConfig.servingStartTime || '12:30'}
-                      onChange={(e) => setLunchConfig({ ...lunchConfig, servingStartTime: e.target.value })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setLunchConfig({ ...lunchConfig, servingStartTime: e.target.value });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -549,7 +616,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     <input
                       type="time"
                       value={lunchConfig.servingEndTime || '14:30'}
-                      onChange={(e) => setLunchConfig({ ...lunchConfig, servingEndTime: e.target.value })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setLunchConfig({ ...lunchConfig, servingEndTime: e.target.value });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -560,8 +630,11 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Lock Cutoff (IST)</label>
                     <input
                       type="time"
-                      value={lunchConfig.cutoffTime || '08:30'}
-                      onChange={(e) => setLunchConfig({ ...lunchConfig, cutoffTime: e.target.value })}
+                      value={lunchConfig.cutoffTime || '23:00'}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setLunchConfig({ ...lunchConfig, cutoffTime: e.target.value });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -572,28 +645,25 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                       min="0"
                       max="60"
                       value={lunchConfig.graceMinutes ?? 15}
-                      onChange={(e) => setLunchConfig({ ...lunchConfig, graceMinutes: Number(e.target.value) })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setLunchConfig({ ...lunchConfig, graceMinutes: Number(e.target.value) });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200 dark:border-white/5">
+                <div className="grid grid-cols-1 gap-3 pt-2 border-t border-gray-200 dark:border-white/5">
                   <div>
                     <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Meal Cost (₹)</label>
                     <input
                       type="number"
                       value={lunchConfig.costPerMeal ?? 50}
-                      onChange={(e) => setLunchConfig({ ...lunchConfig, costPerMeal: Number(e.target.value) })}
-                      className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Late Cancel Fine (₹)</label>
-                    <input
-                      type="number"
-                      value={lunchConfig.fineForLateCancel ?? 20}
-                      onChange={(e) => setLunchConfig({ ...lunchConfig, fineForLateCancel: Number(e.target.value) })}
+                      onChange={(e) => {
+                        setScheduleDraftDirty(true);
+                        setLunchConfig({ ...lunchConfig, costPerMeal: Number(e.target.value) });
+                      }}
                       className="w-full mt-1 text-xs px-3 py-2 rounded-xl bg-gray-50 dark:bg-black/30 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -622,7 +692,10 @@ export default function MasterGovernanceCockpitModal({ isOpen, onClose }) {
                     max="100"
                     step="5"
                     value={chunkSize}
-                    onChange={(e) => setChunkSize(Number(e.target.value))}
+                    onChange={(e) => {
+                      setScheduleDraftDirty(true);
+                      setChunkSize(Number(e.target.value));
+                    }}
                     className="flex-1 accent-emerald-500 h-2 bg-gray-200 dark:bg-white/10 rounded-lg cursor-pointer"
                   />
                   <span className="w-16 text-center px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-black font-mono text-sm">

@@ -43,9 +43,9 @@ import { AuthContext } from '../store/AuthContext';
 import { DataOfOne } from '../store/StudentData';
 import { useLanguage } from '../store/LanguageContext';
 import { usePreferences } from '../store/PreferencesContext';
+import { resolveClockFormat, useWorldTime } from '../utils/time';
 import { useFeedback } from '../utils/useFeedback';
 import { useTokenLockStatus } from '../utils/useTokenLockStatus';
-import { useWorldTime } from '../utils/time';
 import { subscribeToPreferences } from '../utils/preferenceService';
 import { subscribeToCanteenConfig } from '../utils/canteenConfigService';
 import {
@@ -93,7 +93,7 @@ export default function LandingPage() {
   } = useTokenLockStatus();
 
   const { preferences: clientPreferences, setPreference } = usePreferences();
-  const is24Hour = clientPreferences?.clockFormat === '24h';
+  const is24Hour = resolveClockFormat(clientPreferences?.clockFormat) === '24h';
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Document Manifest Target Selection: 'today' (0) | 'tomorrow' (1)

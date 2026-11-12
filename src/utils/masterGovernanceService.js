@@ -15,20 +15,18 @@ export const DEFAULT_MASTER_GOVERNANCE = {
     breakfast: {
       servingStartTime: '07:00',
       servingEndTime: '09:00',
-      cutoffTime: '21:00', // Previous evening 9:00 PM IST
+      cutoffTime: '21:00', // Previous evening breakfast update cutoff (IST)
       graceMinutes: 15,
       enforceLock: true,
       costPerMeal: 35,
-      fineForLateCancel: 15,
     },
     lunch: {
       servingStartTime: '12:30',
       servingEndTime: '14:30',
-      cutoffTime: '08:30', // Morning 8:30 AM IST
+      cutoffTime: '08:30', // Morning lunch update cutoff (IST)
       graceMinutes: 15,
       enforceLock: true,
       costPerMeal: 50,
-      fineForLateCancel: 20,
     },
   },
 

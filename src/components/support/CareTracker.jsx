@@ -25,6 +25,7 @@ import {
 import { soundEngine } from '../../utils/soundEffects';
 import { hapticEngine } from '../../utils/haptics';
 import { useLanguage } from '../../store/LanguageContext';
+import { formatISTDateTime } from '../../utils/time';
 
 const STAGES = [
   { id: 'new', key: 'stageReceived', label: 'Logged' },
@@ -321,7 +322,7 @@ export default function CareTracker({ initialCode = '' }) {
                         {msg.senderName}
                       </span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatISTDateTime(msg.timestamp)}
                       </span>
                     </div>
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.message}</p>

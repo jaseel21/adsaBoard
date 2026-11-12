@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
@@ -30,7 +30,10 @@ import { useTokenLockStatus, formatTime12 } from '../utils/useTokenLockStatus';
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from '../utils/auditLogger';
 import { subscribeToCanteenConfig, updateSectionChunkSize } from '../utils/canteenConfigService';
 import { useLanguage } from '../store/LanguageContext';
+import { useMasterGovernance } from '../store/MasterGovernanceContext';
 import { addDaysToDate, formatFriendlyDate, normalizeTimeToHms } from '../utils/studentExceptionService';
+import firebase from '../firebase/config';
+import { formatISTDateTime } from '../utils/time';
 
 const PRESETS = [
   { label: 'Standard (11:00 PM Cutoff)', end: '23:00' },
@@ -59,12 +62,15 @@ const DAYS_META = [
 
 export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModal }) {
   const { t } = useLanguage();
+  const { governance, loadingGovernance } = useMasterGovernance();
   const { feedback } = useFeedback();
   const {
     config,
+    loadingConfig,
     effectiveMode,
     isTomorrowLocked,
     tomorrowLockInfo,
+    todayLockInfo,
     activeWindow,
     startTime,
     endTime,
@@ -78,6 +84,12 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
     boardSwitchTime,
     isPastBoardSwitch,
   } = useTokenLockStatus();
+  const configuredBreakfastCutoff = config.cutoff?.hasBreakfastDeadline
+    ? config.cutoff.breakfastDeadlineTime
+    : (governance.mealWindows?.breakfast?.cutoffTime || config.window?.breakfastEndTime || '23:00');
+  const configuredLunchCutoff = config.cutoff?.hasLunchDeadline
+    ? config.cutoff.lunchDeadlineTime
+    : (governance.mealWindows?.lunch?.cutoffTime || config.window?.lunchEndTime || '23:00');
 
   // Active navigation tab: 'operating_mode' | 'timed_timer' | 'scheduled_events' | 'simulator'
   const [activeTab, setActiveTab] = useState('operating_mode');
@@ -85,6 +97,12 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
   // Working form state - Operating Mode & Window
   const [mode, setMode] = useState(config.overrideMode || 'auto');
   const [deadlineInput, setDeadlineInput] = useState(config.cutoff?.deadlineTime || config.window?.endTime || '23:00');
+  const [breakfastCutoffInput, setBreakfastCutoffInput] = useState(
+    configuredBreakfastCutoff
+  );
+  const [lunchCutoffInput, setLunchCutoffInput] = useState(
+    configuredLunchCutoff
+  );
   const [restrictOpenTime, setRestrictOpenTime] = useState(Boolean(config.cutoff?.restrictOpenTime));
   const [startInput, setStartInput] = useState(config.cutoff?.openTime || config.window?.startTime || '00:00');
 
@@ -125,6 +143,7 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
   const [newEventCutoff, setNewEventCutoff] = useState('20:00');
   const [newEventReason, setNewEventReason] = useState('');
   const [showAddEventForm, setShowAddEventForm] = useState(false);
+  const didInitializeDraftRef = useRef(false);
 
   // Live Rule Simulator & Sandbox State
   const [simDate, setSimDate] = useState(tomorrowIST);
@@ -141,11 +160,21 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
     return () => unsub();
   }, []);
 
-  // Sync state whenever modal opens or config updates from Firestore
+  // Initialize the form once both configuration sources have loaded.
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      didInitializeDraftRef.current = false;
+      return;
+    }
+    if (!loadingConfig && !loadingGovernance && !didInitializeDraftRef.current) {
+      didInitializeDraftRef.current = true;
       setMode(config.overrideMode || 'auto');
-      setDeadlineInput(config.cutoff?.deadlineTime || config.window?.endTime || '23:00');
+      const fallbackDeadline = config.cutoff?.deadlineTime || config.window?.endTime || '23:00';
+      const breakfastDeadline = configuredBreakfastCutoff || fallbackDeadline;
+      const lunchDeadline = configuredLunchCutoff || fallbackDeadline;
+      setBreakfastCutoffInput(breakfastDeadline);
+      setLunchCutoffInput(lunchDeadline);
+      setDeadlineInput(breakfastDeadline > lunchDeadline ? breakfastDeadline : lunchDeadline);
       setRestrictOpenTime(Boolean(config.cutoff?.restrictOpenTime));
       setStartInput(config.cutoff?.openTime || config.window?.startTime || '00:00');
       setBoardSwitchEnabled(config.boardSwitch?.enabled !== false);
@@ -158,11 +187,13 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
       setScheduledEvents(config.scheduledEvents || []);
       setSimDate(tomorrowIST);
     }
-  }, [isOpen, config, tomorrowIST]);
+  }, [isOpen, loadingConfig, loadingGovernance, config, tomorrowIST, configuredBreakfastCutoff, configuredLunchCutoff]);
 
   const handleApplyPreset = (preset) => {
     feedback('tick');
     setDeadlineInput(preset.end);
+    setBreakfastCutoffInput(preset.end);
+    setLunchCutoffInput(preset.end);
     dialog.toast.info('Cutoff Selected', `Cutoff deadline set to ${preset.label}`);
   };
 
@@ -170,9 +201,8 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
     setDaySchedules((prev) => ({
       ...prev,
       [dayKey]: {
-        ...(prev[dayKey] || { deadlineTime: deadlineInput, startTime: startInput, endTime: deadlineInput }),
+        ...(prev[dayKey] || {}),
         [field]: value,
-        deadlineTime: field === 'endTime' ? value : (prev[dayKey]?.deadlineTime || deadlineInput),
       },
     }));
   };
@@ -325,14 +355,18 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
       const updates = {
         overrideMode: mode,
         cutoff: {
-          deadlineTime: deadlineInput,
+          deadlineTime: breakfastCutoffInput > lunchCutoffInput ? breakfastCutoffInput : lunchCutoffInput,
+          breakfastDeadlineTime: breakfastCutoffInput,
+          lunchDeadlineTime: lunchCutoffInput,
           openTime: restrictOpenTime ? startInput : '00:00',
           restrictOpenTime,
           timezone: 'Asia/Kolkata',
         },
         window: {
           startTime: restrictOpenTime ? startInput : '00:00',
-          endTime: deadlineInput,
+          endTime: breakfastCutoffInput > lunchCutoffInput ? breakfastCutoffInput : lunchCutoffInput,
+          breakfastEndTime: breakfastCutoffInput,
+          lunchEndTime: lunchCutoffInput,
           timezone: 'Asia/Kolkata',
         },
         boardSwitch: {
@@ -341,7 +375,6 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
           timezone: 'Asia/Kolkata',
           days: {
             ...(config.boardSwitch?.days || {}),
-            ...(fridaySpecialEnabled ? { fr: { autoShiftTime: fridaySwitchTimeInput } } : {}),
           },
         },
         schedule: {
@@ -352,8 +385,26 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
         note: overrideReason.trim() || 'Updated via Admin Center',
       };
 
+      if (fridaySpecialEnabled) {
+        updates.boardSwitch.days.fr = { autoShiftTime: fridaySwitchTimeInput };
+      } else {
+        // Firestore merge writes preserve omitted nested keys; explicitly delete
+        // the stored Friday setting so it stays disabled after the next snapshot.
+        updates.boardSwitch.days.fr = firebase.firestore.FieldValue.delete();
+      }
+
       const result = await saveLockConfig(updates);
       if (result.success) {
+        const auditUpdates = {
+          ...updates,
+          boardSwitch: {
+            ...updates.boardSwitch,
+            days: {
+              ...updates.boardSwitch.days,
+              fr: fridaySpecialEnabled ? { autoShiftTime: fridaySwitchTimeInput } : null,
+            },
+          },
+        };
         await updateSectionChunkSize(sectionChunkSize, {
           displayName: 'Committee Admin',
           role: 'admin',
@@ -364,10 +415,10 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
           severity: mode === 'force_locked' ? AUDIT_SEVERITIES.CRITICAL : AUDIT_SEVERITIES.WARNING,
           target: { type: 'system_config', id: 'tokenboard', label: 'Cutoff Rules' },
           changes: {
-            diffSummary: `Cutoff: ${mode.toUpperCase()} (${deadlineInput}), Board Switch: ${boardSwitchEnabled ? boardSwitchTimeInput : 'Disabled'}${fridaySpecialEnabled ? ` (Fri: ${fridaySwitchTimeInput})` : ''}, Events: ${scheduledEvents.length}`,
+            diffSummary: `Cutoff: ${mode.toUpperCase()} (Breakfast ${breakfastCutoffInput}, Lunch ${lunchCutoffInput}), Board Switch: ${boardSwitchEnabled ? boardSwitchTimeInput : 'Disabled'}${fridaySpecialEnabled ? ` (Fri: ${fridaySwitchTimeInput})` : ''}, Events: ${scheduledEvents.length}`,
             fieldsChanged: ['overrideMode', 'cutoff', 'window', 'boardSwitch', 'schedule', 'scheduledEvents'],
             before: null,
-            after: updates,
+            after: auditUpdates,
           },
           metadata: {
             reason: overrideReason.trim() || 'Cutoff configuration updated by committee admin',
@@ -466,8 +517,11 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="p-2 rounded-xl bg-white/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/5">
               <span className="text-[10px] font-bold text-gray-400 uppercase block">Today ({todayIST})</span>
-              <span className="font-black text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1 mt-0.5 text-[11px]">
-                <Lock className="w-3 h-3" /> Finalized
+              <span className={`font-black flex items-center justify-center gap-1 mt-0.5 text-[11px] ${
+                todayLockInfo?.isLocked ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+              }`}>
+                {todayLockInfo?.isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                {todayLockInfo?.isLocked ? 'Finalized' : 'Open via override'}
               </span>
             </div>
 
@@ -477,7 +531,9 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
                 !isTomorrowLocked ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
               }`}>
                 {!isTomorrowLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                {!isTomorrowLocked ? `Open until ${formatTime12(deadlineInput || '23:00', false)}` : 'Locked (Cutoff Passed)'}
+                {!isTomorrowLocked
+                  ? `Open · Bf ${formatTime12(breakfastCutoffInput, false)} / Lu ${formatTime12(lunchCutoffInput, false)}`
+                  : 'Locked (Cutoff Passed)'}
               </span>
             </div>
 
@@ -504,7 +560,7 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
                   {config.temporaryOverride.mode === 'force_locked' ? 'Timed Emergency Freeze Active' : 'Timed Extension Active'}
                 </span>
                 <span className="text-[11px] opacity-90">
-                  {config.temporaryOverride.reason || 'Manual override in progress'} • Expires at {new Date(config.temporaryOverride.expiresAt).toLocaleTimeString()}
+                  {config.temporaryOverride.reason || 'Manual override in progress'} • Expires at {formatISTDateTime(config.temporaryOverride.expiresAt)} IST
                 </span>
               </div>
             </div>
@@ -644,12 +700,12 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-xs flex items-center gap-1.5">
                       <Unlock className="w-4 h-4 text-blue-500" />
-                      Force Unlocked (24/7)
+                      Force Unlocked (Today + Future)
                     </span>
                     {mode === 'force_unlocked' && <Check className="w-4 h-4 text-blue-500" />}
                   </div>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    Emergency override. Bypasses all cutoff hours; students can update any date anytime.
+                    Bypasses cutoff hours for today and future service dates. Past dates remain locked.
                   </p>
                 </button>
 
@@ -684,15 +740,15 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
             <div className="space-y-3 p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                    2. Daily Cutoff Deadline
+                    <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                    2. Meal-Specific Cutoff Deadlines
                   </label>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Students can freely update tomorrow&apos;s meals from 12:00 AM until this deadline.
+                    Tomorrow&apos;s breakfast and lunch lock independently at their configured IST deadlines.
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                  {formatTime12(deadlineInput, false)} IST
+                  Breakfast {formatTime12(breakfastCutoffInput, false)} · Lunch {formatTime12(lunchCutoffInput, false)} IST
                 </span>
               </div>
 
@@ -715,21 +771,34 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
                 ))}
               </div>
 
-              {/* Deadline Input & Optional Opening Restriction */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Meal-specific cutoff inputs & Optional Opening Restriction */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div className="space-y-1">
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">
-                    Cutoff Deadline (Closing Time):
-                  </span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Breakfast Cutoff (IST)</span>
                   <input
                     type="time"
-                    value={deadlineInput}
-                    onChange={(e) => setDeadlineInput(e.target.value)}
+                    value={breakfastCutoffInput}
+                    onChange={(e) => {
+                      setBreakfastCutoffInput(e.target.value);
+                      setDeadlineInput(e.target.value > lunchCutoffInput ? e.target.value : lunchCutoffInput);
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     required
                   />
                 </div>
-
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">Lunch Cutoff (IST)</span>
+                  <input
+                    type="time"
+                    value={lunchCutoffInput}
+                    onChange={(e) => {
+                      setLunchCutoffInput(e.target.value);
+                      setDeadlineInput(e.target.value > breakfastCutoffInput ? e.target.value : breakfastCutoffInput);
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  />
+                </div>
                 <div className="p-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
@@ -800,7 +869,7 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
               <div className="p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-500/20 text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                 <span className="leading-relaxed">
-                  <strong>Decoupled from Cutoff:</strong> Student editing remains open until <strong>{formatTime12(deadlineInput, false)}</strong>. This setting strictly controls whether boards show Today (Breakfast &amp; Lunch) or Tomorrow (Dinner &amp; Advance Prep) by default.
+                  <strong>Separate controls:</strong> Breakfast and lunch student edits close at their own cutoffs. Board auto-shift only controls whether public boards show Today or Tomorrow by default.
                 </span>
               </div>
 
@@ -938,23 +1007,34 @@ export default function TokenLockManagerModal({ isOpen, onClose, onOpenBlockModa
               {scheduleEnabled && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-gray-100 dark:border-white/5">
                   {DAYS_META.map((day) => {
-                    const dayConf = daySchedules[day.key] || { deadlineTime: deadlineInput, endTime: deadlineInput };
+                    const dayConf = daySchedules[day.key] || {};
                     return (
                       <div
                         key={day.key}
-                        className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs"
+                        className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200/60 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
                       >
                         <span className="font-bold text-gray-700 dark:text-gray-200 w-16">
                           {day.full}:
                         </span>
-                        <div className="flex items-center gap-1.5 font-mono">
-                          <span className="text-[10px] text-gray-400">Cutoff:</span>
+                        <div className="flex items-center gap-2 font-mono">
+                          <label className="flex items-center gap-1 text-[10px] text-gray-400">
+                            Bf
+                            <input
+                              type="time"
+                              value={dayConf.breakfastDeadlineTime || dayConf.deadlineTime || dayConf.endTime || breakfastCutoffInput}
+                              onChange={(e) => handleDayScheduleChange(day.key, 'breakfastDeadlineTime', e.target.value)}
+                              className="px-2 py-1 rounded bg-white dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs font-bold"
+                            />
+                          </label>
+                          <label className="flex items-center gap-1 text-[10px] text-gray-400">
+                            Lu
                           <input
                             type="time"
-                            value={dayConf.deadlineTime || dayConf.endTime || deadlineInput}
-                            onChange={(e) => handleDayScheduleChange(day.key, 'endTime', e.target.value)}
+                            value={dayConf.lunchDeadlineTime || dayConf.deadlineTime || dayConf.endTime || lunchCutoffInput}
+                            onChange={(e) => handleDayScheduleChange(day.key, 'lunchDeadlineTime', e.target.value)}
                             className="px-2 py-1 rounded bg-white dark:bg-black/30 border border-gray-200 dark:border-white/10 text-xs font-bold"
                           />
+                          </label>
                         </div>
                       </div>
                     );

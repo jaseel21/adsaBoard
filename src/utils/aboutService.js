@@ -16,10 +16,19 @@ import {
 import { logAuditEvent, AUDIT_CATEGORIES, AUDIT_SEVERITIES } from './auditLogger';
 import { optimizeProfilePhoto } from './imageOptimizer';
 
+const normalizePhotoURL = (value) =>
+  typeof value === 'string' ? value : value?.dataUrl || '';
+
+const normalizeRosterMembers = (members = []) =>
+  (Array.isArray(members) ? members : []).map((member) => ({
+    ...member,
+    photoURL: normalizePhotoURL(member.photoURL),
+  }));
+
 /**
  * 1. Subscribe to Institutional Metadata & Hero Configuration
  */
-export function subscribeAboutMeta(callback) {
+export function subscribeAboutMeta(callback, { useFallback = true, onError } = {}) {
   const db = firebase.firestore();
   const docRef = db.collection('about_meta').doc('config');
 
@@ -47,13 +56,13 @@ export function subscribeAboutMeta(callback) {
           updatedAt: remote.updatedAt || null,
         });
       } else {
-        // Return rich default fallbacks
-        callback(DEFAULT_ABOUT_META);
+        callback(useFallback ? DEFAULT_ABOUT_META : null);
       }
     },
     (err) => {
       console.warn('[aboutService] Metadata sync notice (using defaults):', err.message);
-      callback(DEFAULT_ABOUT_META);
+      callback(useFallback ? DEFAULT_ABOUT_META : null);
+      onError?.(err);
     }
   );
 }
@@ -61,22 +70,26 @@ export function subscribeAboutMeta(callback) {
 /**
  * 2. Subscribe to Mudarrisun (Faculty) List
  */
-export function subscribeMudarrisun(callback) {
+export function subscribeMudarrisun(callback, { useFallback = false, onError } = {}) {
   const db = firebase.firestore();
   const colRef = db.collection('about_mudarrisun').orderBy('order', 'asc');
 
   return colRef.onSnapshot(
     (snap) => {
       if (!snap.empty) {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const list = snap.docs.map((d) => {
+          const data = d.data();
+          return { id: d.id, ...data, photoURL: normalizePhotoURL(data.photoURL) };
+        });
         callback(list);
       } else {
-        callback(DEFAULT_MUDARRISUN);
+        callback(useFallback ? DEFAULT_MUDARRISUN : []);
       }
     },
     (err) => {
       console.warn('[aboutService] Mudarrisun sync notice (using defaults):', err.message);
-      callback(DEFAULT_MUDARRISUN);
+      callback(useFallback ? DEFAULT_MUDARRISUN : []);
+      onError?.(err);
     }
   );
 }
@@ -84,14 +97,22 @@ export function subscribeMudarrisun(callback) {
 /**
  * 3. Subscribe to Tenures & Committees List
  */
-export function subscribeTenures(callback) {
+export function subscribeTenures(callback, { useFallback = false, onError } = {}) {
   const db = firebase.firestore();
   const colRef = db.collection('about_committees');
 
   return colRef.onSnapshot(
     (snap) => {
       if (!snap.empty) {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const list = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            ...data,
+            centralCommittee: normalizeRosterMembers(data.centralCommittee),
+            canteenWing: normalizeRosterMembers(data.canteenWing),
+          };
+        });
         // Sort current tenure first, then academic year descending
         list.sort((a, b) => {
           if (a.isCurrentTenure && !b.isCurrentTenure) return -1;
@@ -100,12 +121,13 @@ export function subscribeTenures(callback) {
         });
         callback(list);
       } else {
-        callback(DEFAULT_TENURES);
+        callback(useFallback ? DEFAULT_TENURES : []);
       }
     },
     (err) => {
       console.warn('[aboutService] Tenures sync notice (using defaults):', err.message);
-      callback(DEFAULT_TENURES);
+      callback(useFallback ? DEFAULT_TENURES : []);
+      onError?.(err);
     }
   );
 }
@@ -113,7 +135,7 @@ export function subscribeTenures(callback) {
 /**
  * 4. Subscribe to Features Matrix
  */
-export function subscribeFeatures(callback) {
+export function subscribeFeatures(callback, { useFallback = false, onError } = {}) {
   const db = firebase.firestore();
   const colRef = db.collection('about_features').orderBy('order', 'asc');
 
@@ -123,12 +145,13 @@ export function subscribeFeatures(callback) {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         callback(list);
       } else {
-        callback(DEFAULT_FEATURES);
+        callback(useFallback ? DEFAULT_FEATURES : []);
       }
     },
     (err) => {
       console.warn('[aboutService] Features sync notice (using defaults):', err.message);
-      callback(DEFAULT_FEATURES);
+      callback(useFallback ? DEFAULT_FEATURES : []);
+      onError?.(err);
     }
   );
 }
@@ -136,7 +159,7 @@ export function subscribeFeatures(callback) {
 /**
  * 5. Subscribe to Milestones Timeline
  */
-export function subscribeMilestones(callback) {
+export function subscribeMilestones(callback, { useFallback = false, onError } = {}) {
   const db = firebase.firestore();
   const colRef = db.collection('about_milestones').orderBy('order', 'asc');
 
@@ -146,12 +169,13 @@ export function subscribeMilestones(callback) {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         callback(list);
       } else {
-        callback(DEFAULT_MILESTONES);
+        callback(useFallback ? DEFAULT_MILESTONES : []);
       }
     },
     (err) => {
       console.warn('[aboutService] Milestones sync notice (using defaults):', err.message);
-      callback(DEFAULT_MILESTONES);
+      callback(useFallback ? DEFAULT_MILESTONES : []);
+      onError?.(err);
     }
   );
 }
@@ -159,7 +183,7 @@ export function subscribeMilestones(callback) {
 /**
  * 6. Subscribe to Campus Gallery
  */
-export function subscribeGallery(callback) {
+export function subscribeGallery(callback, { useFallback = false, onError } = {}) {
   const db = firebase.firestore();
   const colRef = db.collection('about_gallery');
 
@@ -169,12 +193,13 @@ export function subscribeGallery(callback) {
         const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         callback(list);
       } else {
-        callback(DEFAULT_GALLERY);
+        callback(useFallback ? DEFAULT_GALLERY : []);
       }
     },
     (err) => {
       console.warn('[aboutService] Gallery sync notice (using defaults):', err.message);
-      callback(DEFAULT_GALLERY);
+      callback(useFallback ? DEFAULT_GALLERY : []);
+      onError?.(err);
     }
   );
 }
@@ -288,7 +313,7 @@ export async function saveTenureCommittees(tenureData, actor = {}) {
   const docRef = db.collection('about_committees').doc(tenureId);
 
   // If set to current tenure, unset any other active current tenures
-  if (tenureData.isCurrentTenure) {
+  if (tenureData.isCurrentTenure && actor.role !== 'canteen_committee') {
     const existingActive = await db
       .collection('about_committees')
       .where('isCurrentTenure', '==', true)
@@ -307,7 +332,7 @@ export async function saveTenureCommittees(tenureData, actor = {}) {
     ...tenureData,
     id: tenureId,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedBy: actor.name || actor.email || 'Admin',
+    lastUpdatedBy: actor.name || actor.email || 'Admin',
   };
 
   await docRef.set(payload, { merge: true });
@@ -500,11 +525,12 @@ export async function processMemberImage(fileOrBlobOrUrl) {
   if (typeof fileOrBlobOrUrl === 'string') {
     return fileOrBlobOrUrl.trim();
   }
-  return await optimizeProfilePhoto(fileOrBlobOrUrl, {
+  const optimized = await optimizeProfilePhoto(fileOrBlobOrUrl, {
     maxWidth: 400,
     maxHeight: 400,
     quality: 0.85,
     cropSquare: true,
+    maxSizeKb: 45,
   });
+  return optimized.dataUrl;
 }
-

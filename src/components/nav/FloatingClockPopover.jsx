@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../store/LanguageContext';
 import { usePreferences } from '../../store/PreferencesContext';
-import { useWorldTime } from '../../utils/time';
+import { resolveClockFormat, useWorldTime } from '../../utils/time';
 import { getCalibratedHijriDate } from '../../utils/hijriCalendar';
 import { useTokenLockStatus, formatTime12 } from '../../utils/useTokenLockStatus';
 import {
@@ -49,7 +49,7 @@ export default function FloatingClockPopover({
     syncSource,
   } = useWorldTime('Asia/Kolkata');
 
-  const is24h = preferences?.clockFormat === '24h';
+  const is24h = resolveClockFormat(preferences?.clockFormat) === '24h';
   const activeTimeParts = is24h && timeParts24 ? timeParts24 : timeParts;
 
   const hijriData = useMemo(() => {

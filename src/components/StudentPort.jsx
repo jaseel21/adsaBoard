@@ -63,7 +63,6 @@ import {
   getQuickDateOptions,
   validateExceptionDate,
   cleanPastDateExceptions,
-  syncStudentDiningHistory,
   getDayOfWeekShort,
   calculateEffectiveDateMeals,
   cleanRedundantDateExceptions,
@@ -429,6 +428,19 @@ function StudentPort() {
       let exceptionsToSave = cleanRedundantDateExceptions(dateExceptions || {}, { lunch, breakfast });
       const preservedDatesList = [];
 
+      // Preserve historical exceptions exactly as stored; discard any locally
+      // introduced key for a past service date.
+      const existingExceptions = {
+        ...(savedBaseline?.dateExceptions || {}),
+        ...(stdata?.dateExceptions || {}),
+      };
+      Object.keys(exceptionsToSave).forEach((dateKey) => {
+        if (dateKey < todayIST && !existingExceptions[dateKey]) delete exceptionsToSave[dateKey];
+      });
+      Object.entries(existingExceptions).forEach(([dateKey, exception]) => {
+        if (dateKey < todayIST) exceptionsToSave[dateKey] = exception;
+      });
+
       // Safeguard Scenario 1: Tomorrow's Granular Cutoffs (Breakfast & Lunch)
       const baselineExc = savedBaseline.dateExceptions?.[tomorrowIST];
       const baselineBf = baselineExc?.breakfast !== undefined
@@ -470,7 +482,8 @@ function StudentPort() {
         }
       }
 
-      // Safeguard Rule 2: Today is always locked for student portal saves; preserve today's baseline status if it diverges
+      // Keep today's baseline only while today is locked. An active unlock
+      // override deliberately permits today's student edits.
       const baselineTodayExc = savedBaseline.dateExceptions?.[todayIST];
       const baselineTodayBf = baselineTodayExc?.breakfast !== undefined
         ? baselineTodayExc.breakfast
@@ -482,26 +495,16 @@ function StudentPort() {
       const newTodayRoutineBf = breakfast?.[todayDayShort] !== undefined ? Boolean(breakfast[todayDayShort]) : true;
       const newTodayRoutineLu = lunch?.[todayDayShort] !== undefined ? Boolean(lunch[todayDayShort]) : true;
 
-      // Only create/preserve an exception for today IF today's locked meal actually differs from the new routine
-      if (baselineTodayBf !== newTodayRoutineBf || baselineTodayLu !== newTodayRoutineLu) {
+      if (isTodayLocked && (baselineTodayBf !== newTodayRoutineBf || baselineTodayLu !== newTodayRoutineLu)) {
         exceptionsToSave[todayIST] = {
           breakfast: baselineTodayBf,
           lunch: baselineTodayLu,
           label: baselineTodayExc?.label || 'Today Locked (Preserved)',
         };
         preservedDatesList.push(`Today (${formatFriendlyDate(todayIST, false)})`);
-      } else {
+      } else if (isTodayLocked) {
         delete exceptionsToSave[todayIST];
       }
-
-      // Synchronize and lock past dining history into immutable ledger
-      const syncedHistory = syncStudentDiningHistory({
-        ...stdata,
-        obj: { lunch, breakfast },
-        obj2: dietary,
-        dateExceptions: exceptionsToSave,
-        diningHistory: stdata?.diningHistory || {},
-      });
 
       const payload = {
         obj: {
@@ -509,7 +512,6 @@ function StudentPort() {
           breakfast,
         },
         dateExceptions: exceptionsToSave,
-        diningHistory: syncedHistory,
         templates,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -589,7 +591,7 @@ function StudentPort() {
           breakfast,
         },
         dateExceptions: exceptionsToSave,
-        diningHistory: syncedHistory,
+        diningHistory: stdata?.diningHistory || {},
       };
       setStdata(updatedStdata);
       setDateExceptions(exceptionsToSave);

@@ -140,7 +140,8 @@ service cloud.firestore {
           ])
         ) ||
         
-        // C) Student Self-Service: Strictly restricted to meal routine & calendar exceptions for non-blocked tokens.
+        // C) Student Self-Service: Meal routine & calendar fields for non-blocked tokens.
+        // Historical diningHistory is intentionally excluded from student writes.
         // Students CANNOT edit profile info (name, phone, batch, password, token, or block status).
         (
           resource.data.block == false &&
@@ -148,7 +149,6 @@ service cloud.firestore {
             'obj',
             'dateExceptions',
             'templates',
-            'diningHistory',
             'pendingPhotoRequest',
             'pendingPhoneRequest',
             'pendingEmailRequest',

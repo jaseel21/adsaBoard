@@ -163,7 +163,7 @@ export default function MobileTopBar({
             >
               <span className="font-mono font-bold tracking-tight whitespace-nowrap truncate">
                 {formatTime
-                  ? formatTime(preferences?.clockFormat || '12h', false).formattedString
+                  ? formatTime(preferences?.clockFormat || 'system', false).formattedString
                   : timeParts
                   ? `${timeParts.hours}:${timeParts.minutes} ${timeParts.period}`
                   : '--:--'}
